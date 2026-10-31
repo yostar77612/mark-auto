@@ -1,15 +1,25 @@
+"""Bounded history responsibility; validation, digest and publication ordering preserved."""
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from quantlab.market import InstrumentRef, MarketValidationError, utc, day
+import hashlib
+import json
 from quantlab.errors import fail
+from quantlab.market import InstrumentRef, MarketSeries, MarketValidationError, day, utc
+from quantlab.shared.time import aware_iso_utc
+
 
 MAX_BARS = 100000
 
+
 MAX_SESSIONS = 256
+
 
 PRODUCT_SOURCES = {'TX': 'https://www.taifex.com.tw/cht/2/tX', 'MTX': 'https://www.taifex.com.tw/cht/2/mTX', 'TMF': 'https://www.taifex.com.tw/cht/2/tMF'}
 
+
 UTC = timezone.utc
+
 
 TAIPEI = timezone(timedelta(hours=8))
 
@@ -22,7 +32,7 @@ def _stamp(text):
     if not isinstance(text, str) or len(text) > 40:
         _fail('invalid session timestamp')
     try:
-        value = datetime.fromisoformat(text.replace('Z', '+00:00'))
+        value = aware_iso_utc(text)
         if value.tzinfo is None:
             raise ValueError()
         return value.astimezone(UTC)
@@ -55,10 +65,11 @@ class MarketSession:
         native = self.instrument.contract_id.split(':')[1]
         if self.source != PRODUCT_SOURCES[native]:
             _fail('fixed independent official product reference required')
+        # Dates are explicitly supplied, never inferred from weekends/holidays.
         local_open = self.open.astimezone(TAIPEI)
         if self.session == 'day' and (self.trade_date != local_open.date().isoformat() or self.end.astimezone(TAIPEI).date() != local_open.date()):
             _fail('day session must use its explicit local trade date')
-        if self.session == 'night' and (not local_open.date().isoformat() < self.trade_date):
+        if self.session == 'night' and not local_open.date().isoformat() < self.trade_date:
             _fail('night attributed trade date must be explicitly later than its opening date')
         if (datetime.fromisoformat(self.trade_date).date() - local_open.date()).days > 14:
             _fail('session trade date attribution exceeds bounded window')
@@ -93,10 +104,10 @@ def session_from_dict(value):
 def _sessions(values):
     if not isinstance(values, (tuple, list)) or not 1 <= len(values) <= MAX_SESSIONS:
         _fail('bounded explicit sessions required')
-    if any((not isinstance(s, MarketSession) for s in values)):
+    if any(not isinstance(s, MarketSession) for s in values):
         _fail('typed session policy required')
     result = tuple(sorted(values, key=lambda s: (s.instrument.contract_id, s.open, s.trade_date, s.session)))
-    if sum((int((s.end - s.open).total_seconds() / 60) for s in result)) > MAX_BARS:
+    if sum(int((s.end - s.open).total_seconds() / 60) for s in result) > MAX_BARS:
         _fail('session minute budget exceeded')
     for i, s in enumerate(result):
         for other in result[i + 1 :]:
@@ -105,3 +116,21 @@ def _sessions(values):
             if s.instrument == other.instrument and (other.open < s.end or (other.open == s.end and s.include_end)):
                 _fail('overlapping explicit sessions')
     return result
+
+
+@dataclass(frozen=True)
+class HistoryLoad:
+    series: tuple[MarketSeries, ...]
+    policy_hash: str
+    source_hash: str
+    counters: tuple[tuple[str, int], ...]
+    warnings: tuple[str, ...]
+    cache_id: str
+
+
+def _canonical(value):
+    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
+
+
+def _hash(value):
+    return hashlib.sha256(_canonical(value).encode('utf-8')).hexdigest()

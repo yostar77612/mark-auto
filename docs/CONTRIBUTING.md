@@ -230,3 +230,17 @@ composed by `desktop_app/research_bootstrap.py` without importing Qt; the Qt
 session lives in `desktop_app/research_session.py`. CredentialVault,
 DesktopCredentialReference and the atomic_write binding remain in
 `quantlab/desktop_runtime.py`. Historical producer profiles and G3 locks are unchanged.
+
+
+PR E4 history ownership: `quantlab/research_core/domain/market_sessions.py` owns
+session values, policy validation and canonical JSON digests;
+`quantlab/research_core/adapters/history_decoder.py` owns native CSV/tick decoding
+and bar/provenance projection; `quantlab/research_core/adapters/market_history.py`
+owns bounded local cache IO, locking and atomic publication;
+`quantlab/research_core/application/history_import.py` coordinates imports through
+`quantlab/research_core/ports/history.py`. `quantlab/research_core/ports/market_data.py`
+defines the daily MarketDataProvider Protocol. `desktop_app/research_bootstrap.py`
+composes both services with a plain dict registry and create functions. Widgets
+receive read ports through PageHost; explicit network consent, injected transport,
+JSON encoding, digests and error messages are preserved. The old history location
+has no implementation exports or compatibility re-exports.

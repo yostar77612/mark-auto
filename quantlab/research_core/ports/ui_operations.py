@@ -1,6 +1,7 @@
 """Only the capabilities exercised by existing desktop worker use cases."""
 
 from typing import Any, Callable, Protocol
+from .market_data import MarketDataProvider
 
 
 class AuthPort(Protocol):
@@ -51,6 +52,7 @@ class FilesPort(Protocol):
 
 
 class HistoryPort(Protocol):
+    list_history: Any
     import_history: Any
     session_from_dict: Any
 
@@ -67,12 +69,6 @@ class ManualPort(Protocol):
     export_request_file: Any
     import_response: Any
     import_response_file: Any
-
-
-class MarketPort(Protocol):
-    MAX_BYTES: Any
-    import_daily: Any
-    refresh_daily: Any
 
 
 class RecoveryPort(Protocol):
@@ -125,7 +121,7 @@ class UiOperationPorts(Protocol):
     history: HistoryPort
     inputs: InputsPort
     manual: ManualPort
-    market: MarketPort
+    market: MarketDataProvider
     recovery: RecoveryPort
     repository: RepositoryPort
     subscription: SubscriptionPort

@@ -300,11 +300,20 @@
     "quantlab/research_core/application/job_manager.py": "application",
     "tools/refactor/e_runtime.py": "tooling",
     "desktop_app/research_session.py": "composition",
-    "tools/refactor/scan_runtime_imports.py": "tooling"
+    "tools/refactor/scan_runtime_imports.py": "tooling",
+    "quantlab/research_core/domain/market_sessions.py": "domain",
+    "quantlab/research_core/adapters/history_decoder.py": "infrastructure",
+    "quantlab/research_core/adapters/market_history.py": "infrastructure",
+    "quantlab/research_core/application/history_import.py": "application",
+    "quantlab/research_core/ports/history.py": "application",
+    "quantlab/research_core/ports/market_data.py": "application",
+    "tools/refactor/e_market_history.py": "tooling",
+    "tools/refactor/scan_market_imports.py": "tooling"
   },
   "ports": [
     "quantlab/assistant/ports/",
     "quantlab/trading/ports/",
-    "quantlab/assistant/application/connection_contracts.py"
+    "quantlab/assistant/application/connection_contracts.py",
+    "quantlab/research_core/ports/"
   ]
 }

@@ -368,6 +368,10 @@ class ExpiryInputTests(unittest.TestCase):
         with patch('os.mkdir', side_effect=inherited), tempfile.TemporaryDirectory(prefix='t9-market-') as folder:
             host = Mock()
             host.state = PageState(root=Path(folder), _market_outcomes={}, _section_toggles={})
+            from desktop_app.research_bootstrap import create_market_provider, create_history_service
+
+            host.market_data = create_market_provider()
+            host.history = create_history_service()
             host.latest_market_observations.return_value = ()
             host.dataset_market_series.return_value = ()
             page = MarketPage(host)

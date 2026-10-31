@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Callable
+from quantlab.research_core.ports.market_data import MarketDataProvider
+from quantlab.research_core.ports.ui_operations import HistoryPort
 
 
 class PageState(SimpleNamespace):
@@ -11,6 +13,8 @@ class PageState(SimpleNamespace):
 
 @dataclass
 class PageHost:
+    history: HistoryPort
+    market_data: MarketDataProvider
     callbacks: dict
     find_child: Callable
     window_screen: Callable

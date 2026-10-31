@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class HistorySmokeFixtureTests(unittest.TestCase):
     def test_tiny_explicit_fixture_contract_and_dates(self):
         from desktop import _history_smoke_fixture
-        from quantlab.market_history import COLUMNS
+        from quantlab.research_core.adapters.history_decoder import COLUMNS
         from quantlab.research_core.domain.market_sessions import PRODUCT_SOURCES, session_from_dict
         import csv
 
@@ -54,7 +54,7 @@ class HistorySmokeFixtureTests(unittest.TestCase):
     def test_omitted_history_module_cannot_prepare_smoke(self):
         from desktop import _history_smoke_fixture
 
-        with tempfile.TemporaryDirectory() as temporary, patch.dict(sys.modules, {'quantlab.market_history': None}):
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(sys.modules, {'quantlab.research_core.domain.market_sessions': None}):
             with self.assertRaises(ImportError):
                 _history_smoke_fixture(Path(temporary))
 
@@ -148,7 +148,7 @@ class HistorySmokeResultTests(unittest.TestCase):
     @unittest.skipIf(sys.platform == 'win32', 'Frozen installer harness owns isolated Windows profile smoke')
     def test_missing_module_bad_result_and_worker_failure_fail_overall(self):
         variants = {
-            'missing_module': "sys.modules['quantlab.market_history'] = None\n",
+            'missing_module': "sys.modules['quantlab.research_core.domain.market_sessions'] = None\n",
             'bad_result': "original = desktop._check_history_worker_result\ndef bad(result, *args):\n return original(dict(result, contracts=2), *args)\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_history_worker_result = bad\n",
             'worker_failure': "original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke', fromlist=['__name__'])._history_smoke_fixture = missing\n",
         }

@@ -213,7 +213,7 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
                 self.smoke(redirected=redirected)
 
     def test_failure_preserves_user_state_and_pending_recovery(self):
-        self.smoke(injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
+        self.smoke(injected="sys.modules['quantlab.research_core.domain.market_sessions'] = None", expected_status='failed')
         self.smoke(
             redirected=True,
             injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke', fromlist=['__name__'])._history_smoke_fixture = missing",
@@ -221,7 +221,7 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
         )
 
     def test_smoke_does_not_create_an_absent_user_workspace(self):
-        self.smoke(seeded=False, injected="sys.modules['quantlab.market_history'] = None", expected_status='failed')
+        self.smoke(seeded=False, injected="sys.modules['quantlab.research_core.domain.market_sessions'] = None", expected_status='failed')
 
     def test_isolated_long_temp_smoke_cannot_discover_or_read_user_state(self):
         self.smoke(

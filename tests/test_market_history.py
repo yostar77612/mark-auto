@@ -1,5 +1,11 @@
 """Frozen synthetic edge cases; real-file integration is separate private evidence."""
 
+from desktop_app.research_bootstrap import create_history_storage
+from quantlab.research_core.adapters.history_decoder import _decode
+from quantlab.research_core.adapters.market_history import _safe
+from quantlab.research_core.adapters.market_history import _windows_local_drive
+from quantlab.research_core.domain.market_sessions import _hash
+
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -7,8 +13,9 @@ from pathlib import Path
 import csv, io, json, tempfile, unittest
 from unittest.mock import patch
 from quantlab.market import InstrumentRef, MarketValidationError
-from quantlab.market_history import MarketSession, PRODUCT_SOURCES, session_from_dict
-from quantlab.market_history import import_history, load_history, list_history
+from quantlab.research_core.domain.market_sessions import MarketSession, PRODUCT_SOURCES, session_from_dict
+from quantlab.research_core.application.history_import import import_history
+from quantlab.research_core.adapters.market_history import load_history, list_history
 
 UTC = timezone.utc
 OPEN = datetime(2026, 10, 8, 0, 45, tzinfo=UTC)
@@ -47,7 +54,7 @@ class R6ImportCompatibilityTests(unittest.TestCase):
         exports = (
             ('quantlab.desktop_errors', 'quantlab.errors', ('ErrorCode', 'ErrorText', 'ERROR_LABELS')),
             ('quantlab.__main__', 'quantlab.core', ('content_hash',)),
-            ('quantlab.market_history', 'dataclasses', ('replace',)),
+            ('dataclasses', 'dataclasses', ('replace',)),
             ('quantlab.paper', 'typing', ('Any',)),
             (
                 'quantlab.research_analysis',
@@ -88,7 +95,7 @@ class HistoryTests(unittest.TestCase):
         root = Path(tmp.name)
         p = root / ('input' + suffix)
         p.write_bytes(fixture(rows))
-        return import_history(p, root / 'cache', sessions=tuple(sessions or [session()]), **kwargs), root
+        return import_history(p, root / 'cache', sessions=tuple(sessions or [session()]), **kwargs, storage=create_history_storage()), root
 
     def test_same_second_and_close_tick_and_restart(self):
         result, root = self.run_import([row(price='100'), row(price='102'), row('084600', '101'), row('084800', '103')])
@@ -124,7 +131,7 @@ class HistoryTests(unittest.TestCase):
         with self.assertRaises(MarketValidationError):
             self.run_import([row()], cancelled=lambda: True)
         result, root = self.run_import([row()])
-        again = import_history(root / 'input.csv', root / 'cache', sessions=(session(),))
+        again = import_history(root / 'input.csv', root / 'cache', sessions=(session(),), storage=create_history_storage())
         self.assertEqual(result, again)
         self.assertEqual(len(list((root / 'cache').glob('*.json'))), 1)
 
@@ -148,13 +155,13 @@ class HistoryTests(unittest.TestCase):
         with self.assertRaises(MarketValidationError):
             load_history(root / 'cache', result.cache_id)
         with self.assertRaises(MarketValidationError):
-            import_history(root / 'input.csv', root / 'cache', sessions=(session(),))
+            import_history(root / 'input.csv', root / 'cache', sessions=(session(),), storage=create_history_storage())
         with self.assertRaises(MarketValidationError):
             load_history(root / 'cache', '../escape')
         link = root / 'link'
         link.symlink_to(root / 'input.csv')
         with self.assertRaises(MarketValidationError):
-            import_history(link, root / 'other', sessions=(session(),))
+            import_history(link, root / 'other', sessions=(session(),), storage=create_history_storage())
         with self.assertRaises(MarketValidationError):
             replace(session(), source='https://evil.test')
 
@@ -175,15 +182,17 @@ class HistoryTests(unittest.TestCase):
 
 class HistoryBoundaryTests(HistoryTests):
     def test_frozen_resource_limits_and_stream_cancel(self):
-        from quantlab import market_history as h
 
-        with patch.object(h, 'MAX_FILE_BYTES', 10):
+        with (
+            patch('quantlab.research_core.adapters.history_decoder.MAX_FILE_BYTES', 10),
+            patch('quantlab.research_core.adapters.market_history.MAX_FILE_BYTES', 10),
+        ):
             with self.assertRaises(MarketValidationError):
                 self.run_import([row()])
-        with patch.object(h, 'MAX_ROWS', 1):
+        with patch('quantlab.research_core.adapters.history_decoder.MAX_ROWS', 1):
             with self.assertRaises(MarketValidationError):
                 self.run_import([row(), row()])
-        with patch.object(h, 'MAX_SECONDS', 0):
+        with patch('quantlab.research_core.application.history_import.MAX_SECONDS', 0):
             with self.assertRaises(MarketValidationError):
                 self.run_import([row()])
         checks = []
@@ -202,7 +211,7 @@ class HistoryBoundaryTests(HistoryTests):
                 path = Path(tmp) / 'bad.rpt'
                 path.write_bytes(raw)
                 with self.assertRaises(MarketValidationError):
-                    import_history(path, Path(tmp) / 'cache', sessions=(session(),))
+                    import_history(path, Path(tmp) / 'cache', sessions=(session(),), storage=create_history_storage())
         with self.assertRaises(MarketValidationError):
             self.run_import([row()], suffix='.json')
 
@@ -221,13 +230,12 @@ class HistoryBoundaryTests(HistoryTests):
         self.assertEqual(result.series[0].bars[-1].timestamp, s.end - timedelta(minutes=1))
 
     def test_source_hash_immutable_and_cache_policy_tamper(self):
-        from quantlab import market_history as h
 
         result, root = self.run_import([row()])
         path = root / 'cache' / (result.cache_id + '.json')
         envelope = json.loads(path.read_text())
         envelope['payload']['bars'][0]['session_end'] = '2026-10-08T05:45:00+00:00'
-        envelope['sha256'] = h._hash(envelope['payload'])
+        envelope['sha256'] = _hash(envelope['payload'])
         path.write_text(json.dumps(envelope))
         with self.assertRaises(MarketValidationError):
             load_history(root / 'cache', result.cache_id)
@@ -235,17 +243,16 @@ class HistoryBoundaryTests(HistoryTests):
     def test_no_core_or_network_import_graph(self):
         import subprocess, sys
 
-        code = "import sys,socket; socket.socket=lambda *a,**k: (_ for _ in ()).throw(Exception('network')); import quantlab.market_history; assert not any(x=='quantlab.core' or x.startswith('trader') or x.startswith('shioaji') for x in sys.modules)"
+        code = "import sys,socket; socket.socket=lambda *a,**k: (_ for _ in ()).throw(Exception('network')); import quantlab.research_core.adapters.history_decoder; assert not any(x=='quantlab.core' or x.startswith('trader') or x.startswith('shioaji') for x in sys.modules)"
         self.assertEqual(subprocess.run([sys.executable, '-c', code], capture_output=True).returncode, 0)
 
     def test_windows_reparse_and_unsafe_cache_identity(self):
-        from quantlab import market_history as h
         from types import SimpleNamespace
         import stat
 
         with patch.object(Path, 'lstat', return_value=SimpleNamespace(st_mode=stat.S_IFDIR, st_file_attributes=0x400)):
             with self.assertRaises(MarketValidationError):
-                h._safe(Path('/tmp/cache'), directory=True)
+                _safe(Path('/tmp/cache'), directory=True)
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / 'user.json').write_text('{}')
             with self.assertRaises(MarketValidationError):
@@ -260,51 +267,50 @@ class HistoryCacheRegressionTests(unittest.TestCase):
         return source, root / 'cache'
 
     def test_reload_rejects_zero_volume_and_subminute_even_with_new_digest(self):
-        from quantlab import market_history as h
 
         for change in ({'volume': 0}, {'end': '2026-10-08T00:45:30+00:00'}, {'open': '0'}, {'close': '100.5'}):
             with tempfile.TemporaryDirectory() as tmp:
                 source, cache = self.setup_import(tmp)
-                r = import_history(source, cache, sessions=(session(),))
+                r = import_history(source, cache, sessions=(session(),), storage=create_history_storage())
                 path = cache / (r.cache_id + '.json')
                 obj = json.loads(path.read_text())
                 obj['payload']['bars'][0].update(change)
-                obj['sha256'] = h._hash(obj['payload'])
+                obj['sha256'] = _hash(obj['payload'])
                 path.write_text(json.dumps(obj))
                 with self.assertRaises(MarketValidationError):
                     load_history(cache, r.cache_id)
 
     def test_reimport_compares_source_to_existing_normalized_cache(self):
-        from quantlab import market_history as h
 
         with tempfile.TemporaryDirectory() as tmp:
             source, cache = self.setup_import(tmp)
-            r = import_history(source, cache, sessions=(session(),))
+            r = import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             path = cache / (r.cache_id + '.json')
             obj = json.loads(path.read_text())
             obj['payload']['bars'][0]['volume'] = 2
-            obj['sha256'] = h._hash(obj['payload'])
+            obj['sha256'] = _hash(obj['payload'])
             path.write_text(json.dumps(obj))
             before = path.read_bytes()
             with self.assertRaises(MarketValidationError):
-                import_history(source, cache, sessions=(session(),))
+                import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             self.assertEqual(path.read_bytes(), before)
 
     def test_atomic_combined_quota_preserves_visible_first_import(self):
-        from quantlab import market_history as h
 
         with tempfile.TemporaryDirectory() as tmp:
             source, cache = self.setup_import(tmp)
-            first = import_history(source, cache, sessions=(session(),))
+            first = import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             size = (cache / (first.cache_id + '.json')).stat().st_size
             second, _ = self.setup_import(tmp, '101')
-            with patch.object(h, 'MAX_FILE_BYTES', size + 100):
+            with (
+                patch('quantlab.research_core.adapters.history_decoder.MAX_FILE_BYTES', size + 100),
+                patch('quantlab.research_core.adapters.market_history.MAX_FILE_BYTES', size + 100),
+            ):
                 with self.assertRaises(MarketValidationError):
-                    import_history(second, cache, sessions=(session(),))
+                    import_history(second, cache, sessions=(session(),), storage=create_history_storage())
                 self.assertEqual(list_history(cache), (first,))
 
     def test_concurrent_imports_respect_count_limit(self):
-        from quantlab import market_history as h
         from concurrent.futures import ThreadPoolExecutor
         from threading import Barrier
 
@@ -313,7 +319,7 @@ class HistoryCacheRegressionTests(unittest.TestCase):
             second, _ = self.setup_import(tmp, '101')
             cache.mkdir()
             barrier = Barrier(2)
-            decode = h._decode
+            decode = _decode
 
             def synced(*args, **kwargs):
                 result = decode(*args, **kwargs)
@@ -322,48 +328,56 @@ class HistoryCacheRegressionTests(unittest.TestCase):
 
             def attempt(path):
                 try:
-                    return import_history(path, cache, sessions=(session(),))
+                    return import_history(path, cache, sessions=(session(),), storage=create_history_storage())
                 except MarketValidationError:
                     return None
 
-            with patch.object(h, 'MAX_IMPORTS', 1), patch.object(h, '_decode', side_effect=synced), ThreadPoolExecutor(max_workers=2) as pool:
+            with (
+                patch('quantlab.research_core.adapters.market_history.MAX_IMPORTS', 1),
+                patch('quantlab.research_core.adapters.history_decoder._decode', side_effect=synced),
+                ThreadPoolExecutor(max_workers=2) as pool,
+            ):
                 results = list(pool.map(attempt, (first, second)))
             self.assertEqual(sum(r is not None for r in results), 1)
             self.assertEqual(len(list_history(cache)), 1)
 
     def test_cancelled_empty_lock_recovers_and_orphans_count_toward_quota(self):
-        from quantlab import market_history as h
 
         with tempfile.TemporaryDirectory() as tmp:
             source, cache = self.setup_import(tmp)
             cache.mkdir()
             (cache / '.history.lock').touch()
-            result = import_history(source, cache, sessions=(session(),))
+            result = import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             self.assertEqual((cache / '.history.lock').read_bytes(), b'\0')
             self.assertEqual(list_history(cache), (result,))
             (cache / '.history-leftover.tmp').write_bytes(b'x' * 1000)
             size = (cache / (result.cache_id + '.json')).stat().st_size
-            with patch.object(h, 'MAX_FILE_BYTES', size + 100):
+            with (
+                patch('quantlab.research_core.adapters.history_decoder.MAX_FILE_BYTES', size + 100),
+                patch('quantlab.research_core.adapters.market_history.MAX_FILE_BYTES', size + 100),
+            ):
                 with self.assertRaises(MarketValidationError):
                     list_history(cache)
                 with self.assertRaises(MarketValidationError):
-                    import_history(source, cache, sessions=(session(),))
+                    import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             self.assertEqual((cache / '.history-leftover.tmp').stat().st_size, 1000)
 
     def test_postlink_cancellation_alias_does_not_hide_committed_history(self):
-        from quantlab import market_history as h
         import os
 
         with tempfile.TemporaryDirectory() as tmp:
             source, cache = self.setup_import(tmp)
-            result = import_history(source, cache, sessions=(session(),))
+            result = import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             target = cache / (result.cache_id + '.json')
             size = target.stat().st_size
             # Exact filesystem state after link publication and kill before unlink.
             os.link(target, cache / '.history-postlink.tmp')
-            with patch.object(h, 'MAX_FILE_BYTES', size + 100):
+            with (
+                patch('quantlab.research_core.adapters.history_decoder.MAX_FILE_BYTES', size + 100),
+                patch('quantlab.research_core.adapters.market_history.MAX_FILE_BYTES', size + 100),
+            ):
                 self.assertEqual(list_history(cache), (result,))
-                self.assertEqual(import_history(source, cache, sessions=(session(),)), result)
+                self.assertEqual(import_history(source, cache, sessions=(session(),), storage=create_history_storage()), result)
             self.assertTrue((cache / '.history-postlink.tmp').exists())
 
     def test_publication_does_not_reopen_locked_byte_through_second_handle(self):
@@ -378,11 +392,10 @@ class HistoryCacheRegressionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             source, cache = self.setup_import(tmp)
             with patch.object(Path, 'open', refuse_second_handle):
-                result = import_history(source, cache, sessions=(session(),))
+                result = import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             self.assertEqual(load_history(cache, result.cache_id), result)
 
     def test_unc_device_and_reserved_paths_rejected_before_probe(self):
-        from quantlab import market_history as h
 
         for path in (
             '//server/share/ticks.csv',
@@ -398,10 +411,9 @@ class HistoryCacheRegressionTests(unittest.TestCase):
         ):
             with self.subTest(path=path), patch.object(Path, 'lstat', side_effect=AssertionError('must not probe')):
                 with self.assertRaises(MarketValidationError):
-                    h._safe(path)
+                    _safe(path)
 
     def test_mapped_remote_drive_classification_is_refused(self):
-        from quantlab import market_history as h
         from pathlib import PureWindowsPath
         from types import SimpleNamespace
 
@@ -415,9 +427,9 @@ class HistoryCacheRegressionTests(unittest.TestCase):
         for code in (0, 1, 4):
             with patch('ctypes.windll', SimpleNamespace(kernel32=SimpleNamespace(GetDriveTypeW=DriveType(code))), create=True):
                 with self.assertRaises(MarketValidationError):
-                    h._windows_local_drive(PureWindowsPath('Z:/data'))
+                    _windows_local_drive(PureWindowsPath('Z:/data'))
         with patch('ctypes.windll', SimpleNamespace(kernel32=SimpleNamespace(GetDriveTypeW=DriveType(3))), create=True):
-            h._windows_local_drive(PureWindowsPath('C:/data'))
+            _windows_local_drive(PureWindowsPath('C:/data'))
 
     def test_unknown_files_refused_but_orphan_temp_is_bounded(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -425,25 +437,26 @@ class HistoryCacheRegressionTests(unittest.TestCase):
             cache.mkdir()
             (cache / 'foreign.txt').write_text('user data')
             with self.assertRaises(MarketValidationError):
-                import_history(source, cache, sessions=(session(),))
+                import_history(source, cache, sessions=(session(),), storage=create_history_storage())
             self.assertEqual((cache / 'foreign.txt').read_text(), 'user data')
             self.assertEqual(list(cache.glob('*.json')), [])
 
 
 def _process_import(source, cache, barrier, queue):
-    from quantlab import market_history as h
 
-    original = h._decode
+    from quantlab.research_core.adapters import history_decoder, market_history
+
+    original = history_decoder._decode
 
     def synced(*args, **kwargs):
         value = original(*args, **kwargs)
         barrier.wait(timeout=10)
         return value
 
-    h._decode = synced
-    h.MAX_IMPORTS = 1
+    history_decoder._decode = synced
+    market_history.MAX_IMPORTS = 1
     try:
-        value = h.import_history(Path(source), Path(cache), sessions=(session(),))
+        value = import_history(Path(source), Path(cache), sessions=(session(),), storage=create_history_storage())
         queue.put(('accepted', value.cache_id))
     except MarketValidationError as exc:
         queue.put(('rejected', str(exc)))

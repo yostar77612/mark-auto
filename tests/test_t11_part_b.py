@@ -212,7 +212,8 @@ class SharedErrorTests(unittest.TestCase):
                 self.assertEqual(exception_code(SimpleNamespace(code=code.value)), code.value)
 
     def test_wrappers_preserve_exact_exception_contract(self):
-        from quantlab import analysis_contracts, analysis_recovery, chart_data, market_history, saved_candidate_pool
+        from quantlab import analysis_contracts, analysis_recovery, chart_data, saved_candidate_pool
+        from quantlab.research_core.domain import market_sessions as market_history
         from quantlab.core import ValidationError
         from quantlab.market import MarketValidationError
 

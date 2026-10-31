@@ -1,5 +1,10 @@
 """Real Windows filesystem/SQLite regressions; synthetic data, no account requests."""
 
+from desktop_app.research_bootstrap import create_history_storage
+from quantlab.research_core.adapters.market_history import list_history
+from quantlab.research_core.adapters.market_history import load_history
+from quantlab.research_core.application.history_import import import_history
+
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -125,19 +130,18 @@ class WindowsLongPathTests(unittest.TestCase):
                     _require_local_wal_path(path)
 
     def test_history_long_source_and_cache_keep_namespace_and_reload_guards(self):
-        from quantlab import market_history as history
         from quantlab.market import MarketValidationError
 
         source = self.deep / 'SYNTHETIC-ticks.csv'
         cache = self.deep / 'history-cache'
         self._extended(self.deep).mkdir(parents=True)
         self._extended(source).write_bytes(history_fixture.fixture([history_fixture.row()]))
-        result = history.import_history(source, cache, sessions=[history_fixture.session()])
-        self.assertEqual(history.load_history(cache, result.cache_id), result)
-        self.assertEqual(history.list_history(cache)[0].cache_id, result.cache_id)
+        result = import_history(source, cache, sessions=[history_fixture.session()], storage=create_history_storage())
+        self.assertEqual(load_history(cache, result.cache_id), result)
+        self.assertEqual(list_history(cache)[0].cache_id, result.cache_id)
         # The external source boundary still rejects namespace spellings before I/O.
         with self.assertRaises(MarketValidationError):
-            history.import_history(self._extended(source), cache, sessions=[history_fixture.session()])
+            import_history(self._extended(source), cache, sessions=[history_fixture.session()], storage=create_history_storage())
 
     def test_paper_writes_read_only_snapshot_and_restart_preserve_safety(self):
         now = datetime(2026, 10, 9, 1, tzinfo=timezone.utc)

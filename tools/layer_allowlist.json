@@ -3,378 +3,366 @@
     "path": "desktop_automatic_backup.py",
     "target": "quantlab.analysis_recovery",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/settings/automatic_backup.py:88 (operation_guard, RecoveryError). Retains durable recovery admission/receipt validation; moving this safety boundary requires a separate recovery port migration."
   },
   {
     "path": "desktop_automatic_backup.py",
     "target": "quantlab.automatic_backup",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/settings/automatic_backup.py:6 (AutomaticBackup). Retains backup scheduling/retention inspection used by the settings UI; E4 changes only market services."
   },
   {
     "path": "desktop_charts.py",
     "target": "quantlab.chart_drawings",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/components/charts.py:11 (quantlab.chart_drawings). Retains the persisted drawing store and drawing validation used by chart editing; drawing storage has no injected UI port yet."
   },
   {
     "path": "desktop_chatgpt_provider.py",
     "target": "quantlab.research",
     "rule": "infrastructure-to-application",
-    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+    "justification": "quantlab/assistant/adapters/chatgpt/provider.py:44 (PARAMETER_CONTRACTS); quantlab/assistant/adapters/chatgpt/provider.py:45 (PROMPT); quantlab/assistant/adapters/chatgpt/provider.py:46 (validate_dsl). Retains the frozen campaign/provider contract and provenance validation at its G3 owner; E4 must keep research.py byte-identical."
   },
   {
     "path": "desktop_chatgpt_provider.py",
     "target": "quantlab.research_analysis",
     "rule": "infrastructure-to-application",
-    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+    "justification": "quantlab/assistant/adapters/chatgpt/provider.py:253 (validate_analysis_context); quantlab/assistant/adapters/chatgpt/provider.py:267 (ANALYSIS_PROMPT); quantlab/assistant/adapters/chatgpt/provider.py:316 (validate_analysis_response); quantlab/assistant/adapters/chatgpt/provider.py:349 (validate_analysis_plan). Retains analysis plan/receipt validation and report projection; separating these values needs an analysis-contract migration."
   },
   {
     "path": "desktop_expiry_inputs.py",
     "target": "quantlab.taifex_expiries",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/components/expiry_inputs.py:7 (load_expiries, lookup_expiry). Retains authoritative expiry lookup for contract input validation; E4 does not replace expiry-file admission."
   },
   {
     "path": "desktop_market_workspace.py",
     "target": "desktop_market_layout",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/market/workspace.py:12 (PANEL_IDS, AREAS, MAX_LAYOUTS, LayoutStore, preset, valid_name, validate_layout). Retains persisted market-workspace layout validation; the market-data provider port does not own display layouts."
   },
   {
     "path": "desktop_pages/assistant_completion.py",
     "target": "quantlab.agent_skills",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/assistant/assistant_completion.py:11 (SkillLoader). Retains assistant skill loading/selection; market/history ports do not define assistant skill storage."
   },
   {
     "path": "desktop_pages/assistant_runtime.py",
     "target": "desktop_chatgpt_auth",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "desktop_app/features/assistant/worker.py:58 (OAuthCredentialReference). Retains credential-reference construction in the assistant worker; auth must still resolve secrets only in the HTTP child."
   },
   {
     "path": "desktop_pages/assistant_runtime.py",
     "target": "desktop_chatgpt_provider",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "desktop_app/features/assistant/worker.py:61 (PlanHTTPTransport); desktop_app/features/assistant/worker.py:64 (SSEParser); desktop_app/features/assistant/worker.py:67 (read_account_status). Retains ChatGPT transport/stream/provider assembly inside the existing worker; changing it requires separate auth/provenance review."
   },
   {
     "path": "desktop_pages/backtest.py",
     "target": "quantlab.__main__",
     "rule": "presentation-to-composition",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/backtest/backtest.py:184 (config_from_json). Retains existing CLI config parsing or job dispatch; extracting that composition entry requires a separate command-contract migration."
   },
   {
     "path": "desktop_pages/backtest.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/backtest/backtest.py:9 (load_result, demo_config). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/backtest.py",
     "target": "quantlab.strict_json",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/backtest/backtest.py:3 (strict_json). Retains strict JSON boundary validation for user-supplied payloads; replacing it must preserve duplicate/nonfinite rejection."
   },
   {
     "path": "desktop_pages/backup_inspection.py",
     "target": "quantlab.backup_inspection",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/settings/backup_inspection.py:8 (human_size, identity, inspect_archive, latest_metadata, local_time). Retains read-only backup evidence inspection in settings; history-cache ports cannot inspect backup archives."
   },
   {
     "path": "desktop_pages/compare.py",
     "target": "quantlab.analysis_recovery",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/compare/compare.py:254 (inspect_recovery, validate_stop_receipt, supports_durable_recovery, RecoveryError); desktop_app/features/compare/compare.py:313 (inspect_recovery, RecoveryError). Retains durable recovery admission/receipt validation; moving this safety boundary requires a separate recovery port migration."
   },
   {
     "path": "desktop_pages/compare.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/compare/compare.py:7 (saved_analysis_entries). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/maintenance.py",
     "target": "quantlab.payload_cleanup",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/settings/maintenance.py:15 (execute_payload_cleanup, plan_payload_cleanup). Retains explicit managed-payload cleanup controls; E4 does not change deletion admission or retention policy."
   },
   {
     "path": "desktop_pages/maintenance.py",
     "target": "quantlab.update_check",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/settings/maintenance.py:16 (UpdateResult, check_for_update). Retains opt-in release/update lookup; it has a different contract from official market-data retrieval."
   },
   {
     "path": "desktop_pages/market.py",
     "target": "quantlab.chart_drawings",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_pages/market.py",
-    "target": "quantlab.market_history",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_pages/market.py",
-    "target": "quantlab.market_providers",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/market/market.py:9 (DrawingStore). Retains the persisted drawing store and drawing validation used by chart editing; drawing storage has no injected UI port yet."
   },
   {
     "path": "desktop_pages/market.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/market/market.py:6 (read_json, load_dataset, load_result, load_selection); desktop_app/features/market/market.py:162 (validate_result_payload). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/paper.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/paper/paper.py:12 (read_json, write_json, load_dataset, load_selection). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/paper_layout.py",
     "target": "quantlab.strict_json",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/paper/paper_layout.py:12 (strict_json). Retains strict JSON boundary validation for user-supplied payloads; replacing it must preserve duplicate/nonfinite rejection."
   },
   {
     "path": "desktop_pages/paper_readiness.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/paper/paper_readiness.py:5 (load_selection). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/paper_tabs.py",
     "target": "quantlab.strict_json",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/paper/paper_tabs.py:3 (strict_json). Retains strict JSON boundary validation for user-supplied payloads; replacing it must preserve duplicate/nonfinite rejection."
   },
   {
     "path": "desktop_pages/paper_tabs.py",
     "target": "shiboken6",
     "rule": "presentation-to-external-sdk",
-    "justification": "Existing Qt binding validity helper; spec 3.1 only names PySide6. Replace through the C/E2 shared UI component work."
+    "justification": "desktop_app/features/paper/paper_tabs.py:9 (isValid). Retains Qt object-lifetime validity checks before accessing widgets; this is a binding-level guard, not an external business service."
   },
   {
     "path": "desktop_pages/quick_start.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/onboarding/quick_start.py:7 (demo_config). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/result_widgets.py",
     "target": "shiboken6",
     "rule": "presentation-to-external-sdk",
-    "justification": "Existing Qt binding validity helper; spec 3.1 only names PySide6. Replace through the C/E2 shared UI component work."
+    "justification": "desktop_app/components/result_widgets.py:8 (isValid). Retains Qt object-lifetime validity checks before accessing widgets; this is a binding-level guard, not an external business service."
   },
   {
     "path": "desktop_pages/settings.py",
     "target": "quantlab.__main__",
     "rule": "presentation-to-composition",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/settings/settings.py:134 (config_from_json). Retains existing CLI config parsing or job dispatch; extracting that composition entry requires a separate command-contract migration."
   },
   {
     "path": "desktop_pages/strategy.py",
     "target": "quantlab.__main__",
     "rule": "presentation-to-composition",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/strategy/strategy.py:369 (config_from_json). Retains existing CLI config parsing or job dispatch; extracting that composition entry requires a separate command-contract migration."
   },
   {
     "path": "desktop_pages/strategy.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/strategy/strategy.py:6 (write_json). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/views.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/shell/views.py:7 (read_json, load_dataset, demo_config, load_result, load_selection). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "desktop_pages/widgets.py",
     "target": "quantlab.strict_json",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/components/widgets.py:6 (strict_json). Retains strict JSON boundary validation for user-supplied payloads; replacing it must preserve duplicate/nonfinite rejection."
   },
   {
     "path": "quantlab/agent_read_tools.py",
     "target": "quantlab.reporting",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/agent_read_tools.py:25 (validate_result_payload). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "quantlab/agent_skills.py",
     "target": "quantlab.agent_tools",
     "rule": "infrastructure-to-application",
-    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+    "justification": "quantlab/agent_skills.py:14 (_refusal). Retains the assistant tool registry/schema used by skill validation; splitting the registry contract is separate assistant work."
   },
   {
     "path": "quantlab/analysis_contracts.py",
     "target": "quantlab.research",
     "rule": "domain-to-application",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "quantlab/analysis_contracts.py:8 (validate_dsl, _validated_provider_descriptor, PARAMETER_CONTRACTS). Retains the frozen campaign/provider contract and provenance validation at its G3 owner; E4 must keep research.py byte-identical."
   },
   {
     "path": "quantlab/data_gap_report.py",
     "target": "quantlab.data",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/data_gap_report.py:98 (validate_dataset). Retains validated Dataset/calendar loading and data admission; the market-history display contract must not replace research Dataset safety checks."
   },
   {
     "path": "quantlab/data_gap_report.py",
     "target": "quantlab.desktop_errors",
     "rule": "application-to-presentation",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/data_gap_report.py:8 (error_message). Retains fixed error-code projection shared with existing UI/worker evidence; extracting the catalog requires a distinct error-contract change."
   },
   {
     "path": "quantlab/desktop_runtime.py",
     "target": "quantlab.__main__",
     "rule": "application-to-composition",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/research_core/adapters/job_worker.py:153 (execute). Retains existing CLI config parsing or job dispatch; extracting that composition entry requires a separate command-contract migration."
   },
   {
     "path": "quantlab/desktop_runtime.py",
     "target": "quantlab.analysis_recovery",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/research_core/adapters/job_process.py:162 (admission, register_launch, plan_bindings); quantlab/research_core/adapters/job_worker.py:90 (admission, operation_guard, read_launch, SOURCE_WRITERS, ANALYSIS_STARTS, WORKSPACE_MUTATIONS); quantlab/research_core/application/job_manager.py:75 (require_operation); quantlab/research_core/application/job_requests.py:169 (plan_bindings); quantlab/research_core/application/job_requests.py:187 (validate_stop_receipt, supports_durable_recovery). Retains durable recovery admission/receipt validation; moving this safety boundary requires a separate recovery port migration."
   },
   {
     "path": "quantlab/desktop_runtime.py",
     "target": "quantlab.analysis_recovery_windows",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/research_core/adapters/job_process.py:165 (WindowsAnalysisRecoveryTree). Retains Windows process-tree recovery evidence and stop verification; removing this edge would bypass the existing recovery safety proof."
   },
   {
     "path": "quantlab/desktop_runtime.py",
     "target": "quantlab.desktop_errors",
     "rule": "application-to-presentation",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/research_core/adapters/job_worker.py:182 (exception_code). Retains fixed error-code projection shared with existing UI/worker evidence; extracting the catalog requires a distinct error-contract change."
   },
   {
     "path": "quantlab/desktop_runtime.py",
     "target": "quantlab.runtime_support",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/research_core/application/job_requests.py:10 (validate_analysis_request). Retains atomic/durable runtime persistence or bounded child-process utilities; replacing these primitives requires lifecycle-focused review."
   },
   {
     "path": "quantlab/diagnostics.py",
     "target": "quantlab.desktop_feedback",
     "rule": "application-to-presentation",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/diagnostics.py:8 (OPERATION_LABELS). Retains diagnostic feedback rendering in its current catalog owner; relocating presentation messages is outside the market service split."
   },
   {
     "path": "quantlab/download_import.py",
     "target": "quantlab.data",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/download_import.py:11 (MAX_FILE_BYTES, MAX_ROWS, OFFICIAL_TICK_COLUMNS, SessionCalendar, import_taifex, validate_dataset). Retains validated Dataset/calendar loading and data admission; the market-history display contract must not replace research Dataset safety checks."
   },
   {
     "path": "quantlab/download_import.py",
     "target": "quantlab.downloads",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/download_import.py:154 (refresh). Retains explicit download acquisition and its consent/admission controls; the daily MarketSeries port cannot substitute for Dataset downloads."
   },
   {
     "path": "quantlab/download_import.py",
     "target": "quantlab.reporting",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/download_import.py:13 (MAX_JSON_BYTES, read_json, save_dataset, write_json). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "quantlab/download_import.py",
     "target": "quantlab.runtime_support",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/download_import.py:14 (atomic_write). Retains atomic/durable runtime persistence or bounded child-process utilities; replacing these primitives requires lifecycle-focused review."
   },
   {
     "path": "quantlab/idea_research.py",
     "target": "quantlab.idea_search",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/idea_research.py:23 (AccountPaused, Cancelled, MAX_PAGES, RemoteFailure, SearchUnavailable, build_search_request, classify_error, run_search, select_direct_urls, select_urls). Retains idea discovery/search sources; these return research citations rather than market bars and need their own port."
   },
   {
     "path": "quantlab/idea_research.py",
     "target": "quantlab.reporting",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/idea_research.py:36 (read_json, write_json). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   },
   {
     "path": "quantlab/idea_research.py",
     "target": "quantlab.response_output",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/idea_research.py:37 (CompletedOutput). Retains bounded structured AI response parsing; it is not a market transport/parser dependency."
   },
   {
     "path": "quantlab/idea_research.py",
     "target": "quantlab.web_fetch",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/idea_research.py:39 (FetchBlocked, Fetcher, canonical_url). Retains bounded source-page retrieval for idea citations; the official daily market URL allowlist cannot cover arbitrary research sources."
   },
   {
     "path": "quantlab/manual_exchange.py",
     "target": "quantlab.research",
     "rule": "infrastructure-to-application",
-    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+    "justification": "quantlab/manual_exchange.py:20 (PARAMETER_CONTRACTS, PROMPT, _campaign_config, _dataset_identity, candidate_fingerprint, registry_json_schema, training_summary, validate_dsl). Retains the frozen campaign/provider contract and provenance validation at its G3 owner; E4 must keep research.py byte-identical."
   },
   {
     "path": "quantlab/paper_replay.py",
     "target": "quantlab.data",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/paper_replay.py:18 (validate_dataset). Retains validated Dataset/calendar loading and data admission; the market-history display contract must not replace research Dataset safety checks."
   },
   {
     "path": "quantlab/provider.py",
     "target": "quantlab.research",
     "rule": "infrastructure-to-application",
-    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+    "justification": "quantlab/provider.py:131 (_unique_keys). Retains the frozen campaign/provider contract and provenance validation at its G3 owner; E4 must keep research.py byte-identical."
   },
   {
     "path": "quantlab/reporting.py",
     "target": "quantlab.research_analysis",
     "rule": "infrastructure-to-application",
-    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
+    "justification": "quantlab/reporting.py:32 (_safe_path). Retains analysis plan/receipt validation and report projection; separating these values needs an analysis-contract migration."
   },
   {
     "path": "quantlab/research.py",
     "target": "quantlab.runtime_support",
     "rule": "application-to-infrastructure",
-    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
+    "justification": "quantlab/research.py:10 (replace_file). Retains atomic/durable runtime persistence or bounded child-process utilities; replacing these primitives requires lifecycle-focused review."
   },
   {
     "path": "quantlab/research_analysis.py",
     "target": "quantlab.analysis_recovery",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/research_analysis.py:469 (admission, supports_durable_recovery); quantlab/research_analysis.py:486 (supports_durable_recovery); quantlab/research_analysis.py:507 (validate_stop_receipt). Retains durable recovery admission/receipt validation; moving this safety boundary requires a separate recovery port migration."
   },
   {
     "path": "quantlab/saved_candidate_pool.py",
     "target": "quantlab.data",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/research_core/adapters/saved_pool_source.py:15 (parse_timestamp, validate_dataset); quantlab/research_core/application/saved_pool_validation.py:9 (parse_timestamp); quantlab/saved_candidate_pool.py:28 (parse_timestamp, validate_dataset). Retains validated Dataset/calendar loading and data admission; the market-history display contract must not replace research Dataset safety checks."
   },
   {
     "path": "quantlab/walk_forward.py",
     "target": "quantlab.data",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/walk_forward.py:30 (validate_dataset). Retains validated Dataset/calendar loading and data admission; the market-history display contract must not replace research Dataset safety checks."
   },
   {
     "path": "quantlab/walk_forward.py",
     "target": "quantlab.runtime_support",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
+    "justification": "quantlab/walk_forward.py:32 (replace_file). Retains atomic/durable runtime persistence or bounded child-process utilities; replacing these primitives requires lifecycle-focused review."
   },
   {
     "path": "desktop_market.py",
     "target": "quantlab.reporting",
     "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
+    "justification": "desktop_app/features/market/dashboard.py:192 (synthetic_dataset). Retains dataset/result/selection file serialization and loading; these persistence operations have no dedicated page/research read-model port yet."
   }
 ]

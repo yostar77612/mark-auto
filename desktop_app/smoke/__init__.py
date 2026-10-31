@@ -332,7 +332,7 @@ def _history_smoke_fixture(workspace):
     """Tiny invented native-schema CSV and explicit synthetic dated session policy."""
     from datetime import datetime, timedelta
     import hashlib
-    from quantlab.market_history import PRODUCT_SOURCES
+    from quantlab.research_core.domain.market_sessions import PRODUCT_SOURCES
 
     header = ui_text('desktop.history_smoke_fixture.tick_csv_header')
     rows, sessions = [], []
@@ -379,7 +379,7 @@ def _check_history_worker_result(result, paths, payload, fixture_sha256):
     import json
     from datetime import datetime, timedelta, timezone
     from decimal import Decimal
-    from quantlab.market_history import load_history, list_history
+    from quantlab.research_core.adapters.market_history import load_history, list_history
 
     with native_path(payload['local_path']).open('rb') as stream:
         source = stream.read(2049)  # This fixed fixture is smaller than 2 KiB.
@@ -497,7 +497,7 @@ def _history_smoke_ui(app, series):
             'timeframe_bars': counts,
             'chart_rendered_bars': rendered,
             'chart_render_checks': 24,
-            'modules': ['quantlab.market_history', 'desktop_app.features.market.dashboard', 'desktop_app.components.charts'],
+            'modules': ['quantlab.research_core.adapters.history_decoder', 'desktop_app.features.market.dashboard', 'desktop_app.components.charts'],
         }
     finally:
         dashboard.close()
