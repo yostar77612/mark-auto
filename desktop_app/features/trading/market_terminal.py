@@ -8,7 +8,7 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.features.trading.market_watch import _Result, _Request
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text
-from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status
+from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
 from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiCommand, UiAction
 from quantlab.trading.domain.watch import FIXED_INDICES
 
@@ -156,7 +156,7 @@ class MarketTerminalWidget(QWidget):
                 return
             if error is None and generation == self._generation:
                 accepted, state, self._terminal_status = value
-                self._history_only = accepted is False
+                self._history_only = accepted is False and self._terminal_status.connected
                 self.render(state)
 
         self._submit(operation, completed)
@@ -196,15 +196,8 @@ class MarketTerminalWidget(QWidget):
             self._series_loading = False
             if error is None and generation == self._generation:
                 page, index, self._terminal_status = value
-                bars = series_bars(page)
-                if (key, period, bars) != self._last_series:
-                    self.chart.set_series(
-                        bars,
-                        source_label=source_text(self._market_environment()),
-                        status_label=ui_text('watch.forming') if page.bars and not page.bars[-1].final else state_label(self._view(key).health.freshness),
-                    )
-                    self._last_series = key, period, bars
-                    self._focus_event()
+                render_chart(self, page)
+                self._focus_event()
                 latest = index.bars[-1].trade_date if index.bars else None
                 self.index_chart.set_series(
                     series_bars(replace(index, bars=tuple(bar for bar in index.bars if bar.trade_date == latest))),

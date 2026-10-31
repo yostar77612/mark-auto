@@ -9,6 +9,8 @@ from desktop_app.features.trading.market_terminal_layout import TerminalWorkspac
 from desktop_app.features.trading.market_terminal_search import SymbolSearch
 from quantlab.trading.domain.watch import FIXED_INDICES
 from desktop_app.features.trading.market_terminal_rows import quote_values, quota_text, market_summary
+from desktop_app.features.trading.market_terminal_rows import source_text, state_label
+from desktop_app.features.trading.market_watch_rows import series_bars
 
 
 def identify(widget, name, text):
@@ -212,3 +214,24 @@ def render_status(host):
     if status and status.warning_code == 'kline_store_unavailable' and host._last_warning != status.warning_code:
         host.show_message(ui_text('terminal.cache_rebuilt'))
     host._last_warning = status.warning_code if status else ''
+
+
+def render_chart(host, page):
+    bars = series_bars(page)
+    key = page.instrument_id, page.period
+    previous = host._last_series
+    old = previous[2] if previous is not None and previous[:2] == key else ()
+    if previous != (*key, bars):
+        if old and len(old) <= len(bars) <= len(old) + 1 and bars[: len(old) - 1] == old[:-1] and bars[len(old) - 1].start == old[-1].start:
+            if old[-1] != bars[len(old) - 1]:
+                host.chart.replace_last_bar(bars[len(old) - 1])
+            if len(bars) > len(old):
+                host.chart.append_bar(bars[-1])
+        else:
+            host.chart.set_series(bars)
+        host._last_series = *key, bars
+    host.chart.source_label = source_text(host._market_environment())
+    host.chart.status_label = (
+        ui_text('watch.forming') if page.bars and not page.bars[-1].final else state_label(host._view(page.instrument_id).health.freshness)
+    )
+    host.chart.update()

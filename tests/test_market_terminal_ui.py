@@ -259,6 +259,40 @@ class TerminalTests(unittest.TestCase):
         self.assertTrue(any(query.offset == 1000 for query in requests))
         self.assertEqual(self.widget.chart._count, 22)
 
+    def test_forming_updates_preserve_view_and_same_instrument_alert_focuses(self):
+        original = self.facade.market_series
+        self.widget.chart._count = 22
+
+        def changed(query):
+            page = original(query)
+            return replace(page, bars=(replace(page.bars[0], close=Decimal('101')),))
+
+        self.facade.market_series = changed
+        self.widget.load_series()
+        self.wait_for(lambda: not self.widget._requests)
+        self.assertEqual(self.widget.chart.bars[-1].close, Decimal('101'))
+        self.assertEqual(self.widget.chart._count, 22)
+        self.widget.chart.crosshair_index = None
+        self.widget.select_instrument(self.widget.current_instrument, NOW)
+        self.wait_for(lambda: not self.widget._requests)
+        self.assertEqual(self.widget.chart.crosshair_index, 0)
+
+    def test_disconnected_selection_does_not_claim_subscription_full(self):
+        original = self.facade.market_status
+
+        def status():
+            value = original()
+            value.connected = False
+            return value
+
+        self.facade.market_status = status
+        self.facade.select_market_instrument = lambda key, period: False
+        self.facade.state = replace(self.facade.state, market_connection='DISCONNECTED')
+        self.widget.select_instrument(STOCK.instrument_id)
+        self.wait_for(lambda: not self.widget._requests)
+        self.assertFalse(self.widget._history_only)
+        self.assertNotIn(ui_text('terminal.history_only'), self.widget.freshness.text())
+
     def test_presets_named_persistence_and_responsive_layout(self):
         for size in ((1366, 768), (1920, 1080)):
             self.widget.resize(*size)

@@ -104,3 +104,13 @@ excluded from the actual M1-2 commit.
 - Real App visual inspection, broker login, market permissions, actual quota and
   subscriptions remain pending owner verification. No SDK login or credential
   resolver was called by any test or screenshot.
+
+## Integration QA follow-up (2026-11-01 02:16 Asia/Taipei)
+
+Offline selection no longer claims the subscription limit was reached; the
+historical-only/full label requires a connected status. Last-minute updates and
+minute rollovers now use the existing chart append/replace APIs so zoom and pan
+survive live updates. Clicking an alert for the instrument already on screen
+still focuses its event time even when the bar data has not changed. The terminal
+UI suite now has 11 passing tests. GitNexus returned UNKNOWN for the injected
+widget/method references; direct composition and test references were checked.
