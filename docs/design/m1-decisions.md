@@ -89,3 +89,18 @@
 - catalog upstream CRITICAL：以完整字串/alias/UI 閘門與本分支 full discover 驗證，
   不用圖譜空流程取代測試。影響 strings/marketdata.py、strings/catalog.py、
   第2節清冊、desktop_catalog_main_6b78239.json、test_desktop_catalog_split.py。
+## 2026-11-01 03:54 +08:00 — M1-U：完整基準相依項
+
+- U9 將兩個紙上交易 advanced 勾選框改為 Qt 原生展開按鈕，tooltip 基準輸入數精確5→3；
+  原五項 tooltip 測試、術語與可見性斷言全部保留。獨立 fixture-only 提交3ad742c。
+- U5 的淨損益／夏普短表頭只改 table_values_e0e604f.json 第一張表兩個 header；
+  cells、sort roles、其餘兩表不變。新增 saved_results_empty 另以明確一名稱 delta 准入；
+  舊六個 download 名稱與原 historical digest 保持原值，未盲目重釘歷史 hash。
+- 選項：重錄 r7_base／另加 U 專屬精確 delta。選後者，m1_u_ui_delta.json 逐列釘選焦點與
+  四種 refresh 狀態；原 Counter 數量、八個結果快照、呼叫順序、錯誤與畫筆斷言不變。
+  Windows 原像素比對實測通過，保留既有像素 pin，不改未觀察到的基準。
+- 新增基準 import 使 R7 兩個 observer 定位72→73；原歷史投影及174筆 guard／hash 全留，
+  tests/page_services_inventory.py 在整個投影之後套用完整列與數量的 M1 定位差異，
+  test_page_services_r1 仍對全部 inventory 做精確相等。此 helper 在整合圖譜為HIGH，
+  直接影響清冊測試與 replay 工具；已讀三個呼叫者並以原完整斷言驗證。
+- 相關原閘門73項、相鄰47項通過。完整 discover 與遠端 CI 仍須完成，不能據此宣稱全綠。

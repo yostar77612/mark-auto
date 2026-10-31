@@ -588,8 +588,49 @@
       ]
     },
     "m1_patch_points": {
-      "removed": [],
+      "removed": [
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 72,
+            "name": "_busy",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 72,
+            "name": "_safe",
+            "receiver": "shell"
+          },
+          "count": 1
+        }
+      ],
       "added": [
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 73,
+            "name": "_busy",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 73,
+            "name": "_safe",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
         {
           "row": {
             "file": "tests/test_history_sync.py",
