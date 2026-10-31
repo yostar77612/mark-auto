@@ -1,5 +1,5 @@
 {
-  "default_input_counts": [3, 0, 0, 0, 5, 4, 4],
+  "default_input_counts": [3, 0, 0, 0, 3, 4, 4],
   "default_domain_terms": ["JSON", "MTX", "MXF", "TMF", "TWD"],
   "data_sources": 4,
   "import_formats": 9,
