@@ -596,11 +596,6 @@ def complete_mechanical_references():
         )
         if text != path.read_text(encoding='utf-8'):
             write(path.relative_to(ROOT).as_posix(), text)
-    replace(
-        'quantlab/research_core/domain/job_protocol.py',
-        "DEFAULT_OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'",
-        "DEFAULT_OPERATION_REGISTRAR = 'desktop_app.connection_composition:execute_ui_operation'",
-    )
     text = (ROOT / 'desktop.py').read_text(encoding='utf-8')
     if 'configure_connection()' not in text:
         first = next(n for n in ast.parse(text).body if isinstance(n, (ast.FunctionDef, ast.ClassDef)))

@@ -308,6 +308,7 @@ def render_result(result):
 
 def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False, inputs):
     """Render application results at the Qt-free desktop operation boundary."""
+    # Keep operation-specific dependencies out of module startup.
     from quantlab.research_core.application.walk_forward_operations import execute_walk_forward as execute
 
     return render_result(execute(operation, payload, paths, descendants_stopped=descendants_stopped, inputs=inputs))

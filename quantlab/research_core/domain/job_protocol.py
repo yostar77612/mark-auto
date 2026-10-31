@@ -1,6 +1,6 @@
 """Bounded desktop operation grammar and IPC constants."""
 
-DEFAULT_OPERATION_REGISTRAR = 'desktop_app.connection_composition:execute_ui_operation'
+DEFAULT_OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'
 MAX_JSON = 1024 * 1024
 
 UI_OPERATIONS = frozenset(

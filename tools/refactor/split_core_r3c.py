@@ -42,11 +42,6 @@ def repair_workers():
     )
     replace(
         'desktop_app/shell/main_window.py',
-        "OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'",
-        "OPERATION_REGISTRAR = 'desktop_app.connection_composition:execute_ui_operation'",
-    )
-    replace(
-        'desktop_app/shell/main_window.py',
         '    from desktop_app.features.walk_forward.presenter import render_result',
         '    # Resolve presentation only when the operation runs in its owning process.\n    from desktop_app.features.walk_forward.presenter import render_result',
     )

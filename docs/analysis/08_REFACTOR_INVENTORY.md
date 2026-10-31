@@ -132,7 +132,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_trading/workspaces.py` | 403 | presentation | `desktop_app/features/trading/workspaces.py` | 既有 v2 UI／row 投影：`workspaces`；保留現行較嚴格交易閘門；`build`，`desktop_trading/workspaces.py:38` |
 | `desktop_ui.py` | 1902 | composition | `desktop_app/shell/main_window.py` | PR C: shell split leaves registrar and window factory |
 | `desktop_ui_polish.py` | 167 | presentation | `desktop_app/shell/polish.py` | 主視窗標籤與停用提示；`DisabledHint`，`desktop_ui_polish.py:8` |
-| `desktop_walk_forward.py` | 313 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
+| `desktop_walk_forward.py` | 314 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
 | `docs/script samples/strategy_sample.py` | 338 | tooling | `docs/script samples/strategy_sample.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`dats_source`，`docs/script samples/strategy_sample.py:11` |
 | `packaging/broker_package.py` | 181 | tooling | `packaging/broker_package.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`digest`，`packaging/broker_package.py:23` |
 | `packaging/broker_probe.py` | 120 | tooling | `packaging/broker_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_output`，`packaging/broker_probe.py:16` |
@@ -403,13 +403,13 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/refactor/split_core_profile.py` | 99 | tooling | `tools/refactor/split_core_profile.py` | PR D reproducible repair |
 | `tools/refactor/split_core_slice1_references.py` | 77 | tooling | `tools/refactor/split_core_slice1_references.py` | PR D reproducible repair |
 | `tools/refactor/split_core_test_paths.py` | 94 | tooling | `tools/refactor/split_core_test_paths.py` | PR D reproducible repair |
-| `tools/refactor/split_core_ui.py` | 697 | tooling | `tools/refactor/split_core_ui.py` | PR D reproducible repair |
+| `tools/refactor/split_core_ui.py` | 692 | tooling | `tools/refactor/split_core_ui.py` | PR D reproducible repair |
 | `tools/refactor/verify_moves.py` | 258 | tooling | `tools/refactor/verify_moves.py` | T4 extracted owner; behaviour preserved. |
 
 | `quantlab/assistant/domain/__init__.py` | 0 | domain | `quantlab/assistant/domain/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
 | `quantlab/assistant/ports/__init__.py` | 0 | application | `quantlab/assistant/ports/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
 | `quantlab/research_core/domain/__init__.py` | 0 | domain | `quantlab/research_core/domain/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
-| `tools/refactor/split_core_r3c.py` | 246 | tooling | `tools/refactor/split_core_r3c.py` | PR D reproducible repair |
+| `tools/refactor/split_core_r3c.py` | 241 | tooling | `tools/refactor/split_core_r3c.py` | PR D reproducible repair |
 | `desktop_app/__init__.py` | 0 | presentation | `desktop_app/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
 | `desktop_app/components/__init__.py` | 0 | presentation | `desktop_app/components/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
 | `desktop_app/features/__init__.py` | 0 | presentation | `desktop_app/features/__init__.py` | PR D extracted responsibility owner (r3c inventory completion) |
@@ -643,7 +643,8 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | `tools/refactor/split_core_r4.py` | 376 | tooling | `tools/refactor/split_core_r4.py` | C/D merged source inventory; existing layer assignment. |
 
-| `tools/refactor/split_core_r8.py` | 32 | tooling | `tools/refactor/split_core_r8.py` | C/D merged source inventory; existing layer assignment. |
+| `tools/refactor/split_core_r8.py` | 33 | tooling | `tools/refactor/split_core_r8.py` | C/D merged source inventory; existing layer assignment. |
+| `tools/refactor/split_core_r10.py` | 58 | tooling | `tools/refactor/split_core_r10.py` | T4-r10 reproducible integration repair; existing tools/ layer assignment. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
