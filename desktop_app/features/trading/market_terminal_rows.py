@@ -6,6 +6,10 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.features.trading.market_watch_rows import quote_detail_rows
 
 
+def _change_direction(value):
+    return 'UP' if value is not None and value > 0 else 'DOWN' if value is not None and value < 0 else 'FLAT'
+
+
 def number(value, *, signed=False, percent=False):
     if value is None:
         return ui_text('watch.unknown')

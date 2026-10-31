@@ -7,19 +7,18 @@ from PySide6.QtWidgets import QWidget, QMenu, QDialog, QVBoxLayout, QLabel
 from desktop_app.strings.catalog import ui_text
 from desktop_app.features.trading.market_watch import _Result, _Request
 from desktop_app.features.trading.market_watch_rows import series_bars
-from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text
+from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text, _change_direction
 from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
 from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiCommand, UiAction
 from quantlab.trading.domain.watch import FIXED_INDICES
 
 
 class MarketTerminalWidget(QWidget):
-    def __init__(
-        self, facade, chart, state, parent=None, *, layout_store, index_chart, panel_factory, alerts_panel=None, colours=lambda widget: ('#c62828', '#16803c')
-    ):
+    def __init__(self, facade, chart, state, parent=None, *, layout_store, index_chart, panel_factory, alerts_panel=None, colours=None, style_terminal=None):
         super().__init__(parent)
         self.facade, self.chart, self.index_chart, self.state = facade, chart, index_chart, state
-        self.colours = colours
+        self.colours = colours or (lambda widget: ('#c62828', '#16803c'))
+        self.style_terminal = style_terminal
         self.current_instrument = FIXED_INDICES[0].instrument_id
         self.period, self.periods, self._requests = '1m', {}, set()
         self._generation, self._series_loading, self._pending, self._busy = 0, False, False, False
@@ -91,8 +90,8 @@ class MarketTerminalWidget(QWidget):
             )
         )
         self.freshness.setText(ui_text('terminal.state_dot') + ' ' + freshness)
-        self.freshness.setStyleSheet('color:' + {'LIVE': '#238636', 'DELAYED': '#a66b00'}.get(view.health.freshness, '#808080'))
-        self.title.setStyleSheet('color:' + self._colour(view).name())
+        self.freshness.setProperty('terminalFreshness', view.health.freshness)
+        self.title.setProperty('terminalDirection', _change_direction(view.change))
         self.toggle_watch.setText(ui_text('terminal.remove_watch') if self.current_instrument in state.watchlist else ui_text('terminal.add_watch'))
         self.toggle_watch.setAccessibleName(self.toggle_watch.text())
         self.toggle_watch.setEnabled(self.current_instrument not in {item.instrument_id for item in FIXED_INDICES})
@@ -103,10 +102,12 @@ class MarketTerminalWidget(QWidget):
                 (ui_text('terminal.taiex'), number(index.price), number(index.change, signed=True), number(index.change_percent, signed=True, percent=True))
             )
         )
-        self.index_title.setStyleSheet('color:' + self._colour(index).name())
+        self.index_title.setProperty('terminalDirection', _change_direction(index.change))
         self.history_error.setText(ui_text('watch.history_error').format(view.health.history_error) if view.health.history_error else '')
         self.retry.setVisible(bool(view.health.history_error))
         self._render_status()
+        if self.style_terminal is not None:
+            self.style_terminal(self)
         if state.market_connection == 'CONNECTED' and not was_connected:
             self.refresh_directory()
         if self._ready and not self._series_loading and not self._selecting:
