@@ -79,6 +79,7 @@ class JsonAlertStore:
             return ()
         try:
             rows = []
+            expired = False
             for line in self.events_path.read_text(encoding='utf-8').splitlines():
                 row = json.loads(line)
                 stamp = aware(datetime.fromisoformat(row['occurred_at'])).astimezone(timezone.utc)
@@ -94,7 +95,14 @@ class JsonAlertStore:
                             }
                         )
                     )
-            self._atomic(self.events_path, ''.join(json.dumps(asdict(event), default=_json_value, ensure_ascii=False) + '\n' for event in rows))
+                else:
+                    expired = True
+            if expired:
+                # The owner's no-data-deletion boundary takes precedence over
+                # retention: preserve the complete original before active cleanup.
+                stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+                self.events_path.rename(self.events_path.with_name(self.events_path.name + '.archive-' + stamp))
+                self._atomic(self.events_path, ''.join(json.dumps(asdict(event), default=_json_value, ensure_ascii=False) + '\n' for event in rows))
             return tuple(rows[-500:])
         except (ValueError, KeyError, TypeError, UnicodeError, InvalidOperation):
             self._quarantine(self.events_path)

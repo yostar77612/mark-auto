@@ -2,8 +2,10 @@
 
 from collections import deque
 from dataclasses import replace
+from datetime import datetime
 import logging
 from threading import Lock
+from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.alerts import AlertKind, AlertObservation
 from quantlab.trading.domain.validation import DomainError, decimal_value, identity
@@ -86,9 +88,12 @@ class ShioajiScannerStream:
             instrument_id = ('TWSE:' if exchange == 'TSE' else 'TPEX:') + code
             identity(instrument_id)
             price = decimal_value(sdk_decimal(sdk_value(quote, 'close'), 'scanner price'), 'scanner price', positive=True)
+            timestamp = sdk_value(quote, 'datetime')
+            if isinstance(timestamp, datetime) and timestamp.tzinfo is None:
+                timestamp = timestamp.replace(tzinfo=ZoneInfo('Asia/Taipei'))
             observation = AlertObservation(
                 instrument_id,
-                sdk_time(sdk_value(quote, 'datetime')),
+                sdk_time(timestamp),
                 price=price,
                 scanner_kind=kind,
                 scanner_subtype=subtype,

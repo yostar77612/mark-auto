@@ -72,6 +72,8 @@ class RuntimeBundle:
     engine_factory: EngineFactory | None = None
     version_journal: Journal | None = None
     connect_timeout: float = 8.0
+    market_terminal: object | None = None
+    alerts: object | None = None
 
     def __post_init__(self) -> None:
         if type(self.connect_timeout) not in (int, float) or not 0 < self.connect_timeout <= 8:
@@ -79,6 +81,9 @@ class RuntimeBundle:
         from .watchlist_settings import WatchlistSettings
 
         self.watch_settings = WatchlistSettings(self.launch.root / 'settings.json')
+        from .market_connection import MarketConnection
+
+        self.market_connection = MarketConnection(self.launch.root)
         if self.engine is not None:
             self.watch_settings.restore(self.engine)
         self.lock = RLock()
@@ -160,12 +165,33 @@ class RuntimeBundle:
             if self.control_failed:
                 raise DomainError('journal_failed', 'runtime control confirmation is unavailable')
             state = self.facade.snapshot()
+            terminal_state = self.market_terminal is not None and self.market_terminal.active
+            views = self.market_terminal.views() if terminal_state else state.market_watch
             version = state.version + self.version_offset
             self._checkpoint(version)
             return replace(
                 state,
-                watchlist=tuple(view.instrument_id for view in state.market_watch) if self.watch_settings.watchlist is None else self.watch_settings.watchlist,
-                market_connection='CONNECTING' if self.transitioning else 'CONNECTED' if self.engine is not None else 'DISCONNECTED',
+                watchlist=(
+                    self.market_terminal.watchlist
+                    if terminal_state
+                    else tuple(view.instrument_id for view in state.market_watch)
+                    if self.watch_settings.watchlist is None
+                    else self.watch_settings.watchlist
+                ),
+                market_watch=views,
+                market_health=self.market_terminal.health(views) if terminal_state else state.market_health,
+                market_revision=self.market_terminal.market_revision if terminal_state else state.market_revision,
+                market_connection=(
+                    self.market_connection.connection_status()
+                    if self.market_connection.settings.enabled or terminal_state
+                    else 'CONNECTING'
+                    if self.transitioning
+                    else 'CONNECTED'
+                    if self.engine is not None
+                    else 'DISCONNECTED'
+                ),
+                market_data_settings=self.market_connection.settings,
+                market_data_error=self.market_connection.error,
                 version=version,
                 engine_state='CONNECTING' if self.transitioning else state.engine_state,
                 configuration_id=self.configuration_id,
@@ -183,6 +209,15 @@ class RuntimeBundle:
                 return UiReceipt(False, 'validation_failed', '')
             if self.control_failed:
                 return UiReceipt(False, 'journal_failed', '')
+            if command.action in (UiAction.SAVE_MARKET_DATA_SETTINGS, UiAction.CONNECT_MARKET_DATA, UiAction.DISCONNECT_MARKET_DATA):
+                if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
+                    return UiReceipt(False, 'state_conflict', '')
+                receipt = self.market_connection.execute(command)
+                if receipt.accepted:
+                    self.version_offset += 1
+                    if self.market_terminal is not None:
+                        self.market_terminal.active = self.market_connection.settings.enabled
+                return receipt
             if self.transitioning and command.action not in (UiAction.STOP_NEW, UiAction.SHUTDOWN_ENGINE):
                 return UiReceipt(False, 'state_conflict', '')
             if command.action is UiAction.SAVE_SETTINGS and command.watchlist is not None:
@@ -192,7 +227,17 @@ class RuntimeBundle:
                     return UiReceipt(False, 'state_conflict', '')
                 if command.settings is not None:
                     return UiReceipt(False, 'validation_failed', '')
-                receipt = self.watch_settings.save(self.engine, command.watchlist)
+                if self.market_terminal is not None and self.market_terminal.active:
+                    try:
+                        self.market_terminal.set_watchlist(command.watchlist)
+                        receipt = UiReceipt(True, 'completed', '')
+                    except DomainError as exc:
+                        from quantlab.trading.application.errors import ERROR_TABLE
+
+                        error = ERROR_TABLE.get(exc.code, ERROR_TABLE['operation_failed'])
+                        receipt = UiReceipt(False, exc.code, error.explanation + ' ' + error.action)
+                else:
+                    receipt = self.watch_settings.save(self.engine, command.watchlist)
                 if receipt.accepted:
                     self.version_offset += 1
                 return receipt
@@ -357,6 +402,9 @@ class RuntimeBundle:
                     self._control_failure()
 
     def pump(self) -> None:
+        if self.market_terminal is not None and not self.closing:
+            self.market_terminal.poll()
+            self.alerts.poll_scanner()
         with self.lock:
             self._expire_connection()
             engine = self.engine
@@ -428,6 +476,10 @@ class RuntimeBundle:
                 return
             self.resources_closed = True
         self.cancel_owned_workers()
+        if self.market_terminal is not None:
+            if self.market_history.close():
+                self.kline_store.close()
+        self.market_connection.close()
         errors = []
         if self.engine is not None and self.launch.environment is not Environment.LOCAL:
             seen_gateways = set()
@@ -486,7 +538,11 @@ def build_runtime(launch: RuntimeLaunch, *, engine_factory: EngineFactory | None
         # The composition root owns the optional local-exchange resource; the
         # authenticated host itself knows only the Journal lifecycle contract.
         journals = (engine.journal, engine.simulation.ledger)
-        return RuntimeBundle(launch, LocalFacade(engine), journals, engine)
+        bundle = RuntimeBundle(launch, LocalFacade(engine), journals, engine)
+        from .market_terminal import attach_terminal
+
+        attach_terminal(bundle)
+        return bundle
     resources = None
     settings = None
     stock = futures = Decimal('0')
@@ -507,9 +563,13 @@ def build_runtime(launch: RuntimeLaunch, *, engine_factory: EngineFactory | None
             journal, launch.environment, refs, launch.account_ref, WallClock(), inspector, settings=settings, stock_allocation=stock, futures_allocation=futures
         )
         versions = Ledger(launch.root / 'runtime-control-v2.sqlite', 'runtime-public-version-' + launch.environment.value, datetime.now(timezone.utc))
-        return RuntimeBundle(
+        bundle = RuntimeBundle(
             launch, session, (journal, versions), resources=resources, engine_factory=engine_factory or connect_profile_engine, version_journal=versions
         )
+        from .market_terminal import attach_terminal
+
+        attach_terminal(bundle)
+        return bundle
     except BaseException:
         journal.close()
         if versions is not None:

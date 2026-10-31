@@ -1,7 +1,7 @@
 """Persistence, scope filtering and enabled-only SDK scanner subscriptions."""
 
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal as D
 import json
 from pathlib import Path
@@ -108,6 +108,13 @@ class AlertServiceTests(unittest.TestCase):
         self.assertEqual(1, len(deliver('2330', 60)))
         self.assertEqual('UP', service.events[-1].message_args[1])
 
+    def test_scanner_local_datetime_is_localized_at_sdk_boundary(self):
+        facade = FakeFacade()
+        scanner = ShioajiScannerStream(facade, fake_sdk())
+        scanner.set_kinds(frozenset((AlertKind.PRICE_JUMP,)))
+        facade.callback(NS(scanner=NS(id='trade_surge'), exchange='TSE', quote=NS(code='2330', close='102', datetime=datetime(2026, 10, 30, 9, 10))))
+        self.assertEqual(scanner.drain()[-1].occurred_at, datetime(2026, 10, 30, 1, 10, tzinfo=timezone.utc))
+
     def test_corrupt_rules_and_events_preserved_and_warned(self):
         self.store.directory.mkdir()
         self.store.rules_path.write_text('{broken', encoding='utf-8')
@@ -130,6 +137,9 @@ class AlertServiceTests(unittest.TestCase):
         lines = self.store.events_path.read_text(encoding='utf-8').splitlines()
         self.assertEqual(505, len(lines))
         self.assertFalse(any(json.loads(line)['event_id'] == 'old' for line in lines))
+        archived = tuple(self.store.directory.glob('alert_events.jsonl.archive-*'))
+        self.assertEqual(len(archived), 1)
+        self.assertEqual(json.loads(archived[0].read_text(encoding='utf-8').splitlines()[0])['event_id'], 'old')
 
     def test_scanner_boundary_rejects_invalid_data_and_gap_without_raw_messages(self):
         facade = FakeFacade()

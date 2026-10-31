@@ -43,20 +43,20 @@ def valid_name(name):
     )
 
 
-def validate_layout(value):
+def validate_layout(value, panel_ids=PANEL_IDS, areas=AREAS):
     """Reject structure/type surprises; clamp strictly integral size hints."""
     if type(value) is not dict or set(value) != {'version', 'panels'} or type(value['version']) is not int or value['version'] != VERSION:
         return None
     panels = value['panels']
-    if type(panels) is not dict or set(panels) != set(PANEL_IDS):
+    if type(panels) is not dict or set(panels) != set(panel_ids):
         return None
     result = {'version': VERSION, 'panels': {}}
     for key, panel in panels.items():
         if type(panel) is not dict or set(panel) != {'area', 'position', 'size', 'collapsed'}:
             return None
-        if type(panel['area']) is not str or panel['area'] not in AREAS:
+        if type(panel['area']) is not str or panel['area'] not in areas:
             return None
-        if type(panel['position']) is not int or not 0 <= panel['position'] < len(PANEL_IDS):
+        if type(panel['position']) is not int or not 0 <= panel['position'] < len(panel_ids):
             return None
         if type(panel['size']) is not int or type(panel['collapsed']) is not bool:
             return None
@@ -65,10 +65,13 @@ def validate_layout(value):
 
 
 class LayoutStore:
-    def __init__(self, directory=None):
-        self.path = Path(directory) / FILE_NAME if directory is not None else None
+    def __init__(self, directory=None, *, panel_ids=PANEL_IDS, areas=AREAS, file_name=FILE_NAME, default_layout=None):
+        self.panel_ids = tuple(panel_ids)
+        self.areas = tuple(areas)
+        self.default_layout = deepcopy(default_layout) if default_layout is not None else preset('overview')
+        self.path = Path(directory) / file_name if directory is not None else None
         self.layouts = {}
-        self.current = preset('overview')
+        self.current = deepcopy(self.default_layout)
         if self.path is not None:
             self.load()
 
@@ -88,8 +91,12 @@ class LayoutStore:
                 or len(value['layouts']) > MAX_LAYOUTS
             ):
                 return
-            self.current = validate_layout(value['current']) or preset('overview')
-            self.layouts = {name: layout for name, item in value['layouts'].items() if valid_name(name) and (layout := validate_layout(item)) is not None}
+            self.current = validate_layout(value['current'], self.panel_ids, self.areas) or deepcopy(self.default_layout)
+            self.layouts = {
+                name: layout
+                for name, item in value['layouts'].items()
+                if valid_name(name) and (layout := validate_layout(item, self.panel_ids, self.areas)) is not None
+            }
         except (OSError, ValueError, UnicodeError, RecursionError):
             return
 

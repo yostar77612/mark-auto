@@ -1,6 +1,9 @@
 # M1 實作規格書：個股與指數看盤終端
 
-Status: SPEC FOR IMPLEMENTATION / NOT IMPLEMENTED. Verification: NOT RUN.
+Status: IMPLEMENTED across the M1-1/M1-2/M1-3/M1-U PR branches.
+Verification: offline fake SDK/application/UI tests completed; exact commands and
+known Windows host limitations are recorded in the phase verification documents.
+Real broker and final human visual acceptance remain PENDING OWNER CHECK.
 Audience: implementing agent (Codex). Owner decisions dated 2026-10-31.
 Design rationale and layout sketch: [m1-stock-index-market-terminal.md](m1-stock-index-market-terminal.md).
 

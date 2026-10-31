@@ -64,6 +64,7 @@ ZH_TW.update(_ZH_TW_CHUNKS[13])
 ZH_TW.update(_ZH_TW_CHUNKS[14])
 
 ZH_TW.update(_ZH_TW_CHUNKS[15])
+ZH_TW.update(_ZH_TW_CHUNKS[57])
 
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
@@ -200,6 +201,7 @@ ZH_TW.update(_ZH_TW_CHUNKS[54])
 
 # Lane LM1 dashboard
 ZH_TW.update(_ZH_TW_CHUNKS[55])
+ZH_TW.update(_ZH_TW_CHUNKS[56])
 
 # M1 alert controls
 ZH_TW.update(_ZH_TW_CHUNKS[58])

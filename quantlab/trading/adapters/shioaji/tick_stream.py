@@ -14,6 +14,7 @@ from typing import Callable
 
 from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.ticks import Tick
+from quantlab.trading.domain.watch import WatchInstrument
 from quantlab.trading.domain.validation import DomainError, integer
 from quantlab.trading.ports.interfaces import Clock
 from quantlab.trading.ports.tick_stream import TickLoss
@@ -51,9 +52,14 @@ class ShioajiTickStream:
         connected: Callable[[], bool],
         settings: LiveMarketSettings,
         session_down: Callable[..., None],
+        *,
+        watch_instruments: tuple[WatchInstrument, ...] = (),
+        tick_normalizer: Callable = normalise_tick,
     ) -> None:
         self.facade, self.clock, self.resolver, self.connected = facade, clock, resolver, connected
         self.by_code = {binding.sdk_code: binding.spec.instrument_id for binding in bindings}
+        self.by_code.update((item.code, item.instrument_id) for item in watch_instruments)
+        self.tick_normalizer = tick_normalizer
         self.limit = settings.queue_limit
         self._lock = Lock()
         self._ticks: deque[Tick] = deque()
@@ -84,7 +90,7 @@ class ShioajiTickStream:
             with self._lock:
                 if instrument_id not in self._active:
                     return
-            tick = normalise_tick(raw, instrument_id, self.clock.now(), self.resolver)
+            tick = self.tick_normalizer(raw, instrument_id, self.clock.now(), self.resolver)
             with self._lock:
                 if instrument_id not in self._active:
                     return

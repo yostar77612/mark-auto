@@ -1,6 +1,7 @@
 """Traditional Chinese alert labels and bounded form captions."""
 
 ENTRIES = (
+    (58, 2973, 'alert.latest', '最新警示：{0}'),
     (58, 2969, 'alert.period_1m', '1分'),
     (58, 2970, 'alert.period_5m', '5分'),
     (58, 2971, 'alert.period_15m', '15分'),

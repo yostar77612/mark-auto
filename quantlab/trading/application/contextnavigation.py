@@ -54,6 +54,26 @@ class CompositeFacade:
                 raise DomainError('state_conflict', 'context changed during series read')
         return page
 
+    def symbol_directory(self):
+        with self._lock:
+            return self._current.symbol_directory()
+
+    def select_market_instrument(self, instrument_id: str, period: str = '1m') -> bool:
+        with self._lock:
+            return self._current.select_market_instrument(instrument_id, period)
+
+    def market_status(self):
+        with self._lock:
+            return self._current.market_status()
+
+    def market_preferences(self) -> str:
+        with self._lock:
+            return self._current.market_preferences()
+
+    def alerts(self, command):
+        with self._lock:
+            return self._current.alerts(command)
+
     def execute(self, command: UiCommand) -> UiReceipt:
         if not isinstance(command, UiCommand):
             return _failure('validation_failed')

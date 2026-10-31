@@ -289,8 +289,7 @@ class AlertPanel(QWidget):
         dialog.exec()
 
     def clear_events(self):
-        self.service.clear_events()
-        self.refresh()
+        self._mutate(self.service.clear_events)
 
     def refresh(self):
         if self.service.warning:

@@ -1,0 +1,49 @@
+"""Minute history and cache contracts for the independent market-data session."""
+
+from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Protocol
+
+from quantlab.trading.domain.live_bars import LiveBar
+from quantlab.trading.domain.validation import integer
+from quantlab.trading.domain.watch import WatchInstrument
+from quantlab.trading.domain.ticks import Tick
+from quantlab.trading.ports.tick_stream import TickLoss
+
+
+@dataclass(frozen=True)
+class HistoryUsage:
+    used_bytes: int
+    limit_bytes: int
+
+    def __post_init__(self) -> None:
+        integer(self.used_bytes, 'used bytes')
+        integer(self.limit_bytes, 'limit bytes', 1)
+
+
+class HistorySessionPort(Protocol):
+    def history(self, instrument: WatchInstrument, start: datetime, end: datetime) -> tuple[LiveBar, ...]: ...
+    def usage(self) -> HistoryUsage | None: ...
+
+
+class MarketSessionPort(HistorySessionPort, Protocol):
+    connected: bool
+
+    def subscribe(self, instrument: WatchInstrument) -> None: ...
+    def unsubscribe(self, instrument_id: str) -> None: ...
+    def drain_ticks(self, max_items: int) -> tuple[Tick, ...]: ...
+    def drain_tick_losses(self) -> tuple[TickLoss, ...]: ...
+    def quote_details(self, instrument_id: str) -> dict[str, object]: ...
+
+
+class KlineStorePort(Protocol):
+    revision: int
+
+    def upsert(self, bars: tuple[LiveBar, ...], *, source: str = 'SHIOAJI_KBARS') -> None: ...
+    def mark_coverage(self, instrument_id: str, start: datetime, end: datetime) -> None: ...
+    def missing_ranges(self, instrument_id: str, start: datetime, end: datetime) -> tuple[tuple[datetime, datetime], ...]: ...
+    def read(self, instrument_id: str, start: datetime, end: datetime) -> tuple[LiveBar, ...]: ...
+    def last_bar(self, instrument_id: str) -> LiveBar | None: ...
+    def instrument_ids(self) -> tuple[str, ...]: ...
+    def queried_bars(self, day: date) -> int: ...
+    def record_queried_bars(self, day: date, count: int) -> None: ...
