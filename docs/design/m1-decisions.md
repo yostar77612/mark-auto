@@ -156,3 +156,21 @@
   catalog 放 Lane M1-3。修來源後才獨立重釘總數、目錄、模組與四個 history observer 定位。
 - 原 B11 上限與全部原測試斷言保留；不需要放大類別限制。樣式繼承上一層，不重釘未改變的
   app/market 樣式 hash。沒有真實 SDK 登入、CA、帳務或執行能力變更。
+
+## 2026-11-01 04:20 +08:00 — 完整清冊與 main 環境對照
+
+- M1-3 新增 scanner-runtime 測試的 self.bars／self.market 被既有 conservative 清冊掃入。
+  選項：改新測試命名掩去觀察／保留並精確釘選。選後者，五個新增完整位置、兩個搬動位置
+  與同一 bars alias 的 observer flag False→True 均列入獨立基準提交e48d855；
+  原 alias 的 name/page/attribute、順序、歷史投影與精確清冊斷言不變，不代表新增 UI 能力。
+- 原失敗閘門76項與樣式/接線46項通過；測試模組名稱誤打的一次載入錯誤已用正確名稱重跑，
+  沒有把它當成產品失敗或既有問題。
+- origin/main ba597b5 完整 discover：3760項、1898.475秒，10 failures／27 errors／42原平台skips。
+  四分支須逐一跑完整相同測試並比對失敗 ID；不以舊 changed-file prepush 當完整驗收。
+- main 的四個 ConnectionDiagnosticTests 額外失敗已最小重現：controller100924 →
+  venv launcher352236 → actual child232984，子程序 ppid 是launcher而非controller，
+  原 controller-owned fixture guard 於首個 checkpoint／DB 寫入前拒絕。
+  同一未修改案例改用既有實際解釋器，維持10秒與120次FULL commits，2.08秒完成且正常清理。
+  因此保留 PID 安全檢查，不改期限、權限、斷言或來源；第三方 tests 套件不是此四例原因。
+- main 的 named mutex／symlink 權限／原生 retained-handle 問題另記錄，不終止使用者程式，
+  不取得額外權限、不新增 skip。只有主分支實測已存在的失敗可作對照，遠端 CI 必須另確認。
