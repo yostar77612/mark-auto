@@ -1,7 +1,8 @@
 # M1：個股與指數看盤終端
 
 Status: PROPOSED / NOT IMPLEMENTED. Verification: NOT RUN.
-Owner review: PENDING（區塊切法與警示清單待使用者確認）。
+Owner review: APPROVED 2026-11-01 for implementation; detailed spec:
+[m1-implementation-spec.md](m1-implementation-spec.md).
 
 ## Problem
 
