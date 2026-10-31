@@ -126,7 +126,7 @@ class WorkspacePanel(QWidget):
     def dropEvent(self, event):
         if event.source() in [panel.handle for panel in self.workspace.panels.values()]:
             panel_id = bytes(event.mimeData().data(MIME)).decode('ascii', errors='ignore')
-            if panel_id in PANEL_IDS:
+            if panel_id in self.workspace.panels:
                 target = self.workspace.serialize()['panels'][self.panel_id]
                 self.workspace.move_panel(panel_id, target['area'], target['position'])
                 event.acceptProposedAction()

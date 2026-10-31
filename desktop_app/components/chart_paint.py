@@ -26,11 +26,12 @@ def _paint_chart_bars(self, p, text, start, end, visible, r, low, high, x, y, st
         p.setBrush(color)
         p.drawLine(QPointF(x(i), y(b.high)), QPointF(x(i), y(b.low)))
         p.drawRect(QRectF(x(i) - max(0.7, step * 0.3), min(y(b.open), y(b.close)), max(1, step * 0.6), max(1, abs(y(b.open) - y(b.close)))))
-        if b.volume is not None:
+        if self.show_volume and b.volume is not None:
             vh = (volume_bottom - volume_top) * b.volume / volume_max
             p.fillRect(QRectF(x(i) - step * 0.3, volume_bottom - vh, max(1, step * 0.6), vh), color)
     p.setPen(self.TEXT)
-    text(12, volume_top - 5, ui_text('charts.paint_event.volume'))
+    if self.show_volume:
+        text(12, volume_top - 5, ui_text('charts.paint_event.volume'))
     self._draw_lines(p, self.overlays, start, end, x, y, r)
     paint_drawings(p, self.drawings, self.bars, r, x, y)
     self.paper_orders.paint(p, r, visible[0].contract_id, y, low, high)

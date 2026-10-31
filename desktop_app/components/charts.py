@@ -80,8 +80,9 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
     def COLORS(self):
         return _theme.chart_color(self, 'overlay')
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, show_volume=True):
         super().__init__(parent)
+        self.show_volume = show_volume
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMinimumSize(360, 280)
@@ -112,7 +113,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
 
     @property
     def price_rect(self):
-        lower = 0.55 if self.panes else 0.71
+        lower = 0.55 if self.panes else 0.71 if self.show_volume else 0.88
         return QRectF(12, 86, max(40, self.width() - 102), max(50, self.height() * lower - 86))
 
     @property

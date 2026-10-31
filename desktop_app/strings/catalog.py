@@ -200,6 +200,7 @@ ZH_TW.update(_ZH_TW_CHUNKS[54])
 
 # Lane LM1 dashboard
 ZH_TW.update(_ZH_TW_CHUNKS[55])
+ZH_TW.update(_ZH_TW_CHUNKS[56])
 
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
