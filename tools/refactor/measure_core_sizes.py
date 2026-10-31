@@ -19,7 +19,8 @@ def changed_paths(root, base):
         ['git', 'diff', '--name-only', '--diff-filter=AM', '-z', base, 'HEAD', '--'],
         cwd=root,
     ).decode('utf-8')
-    return sorted(p for p in output.split('\0') if p.endswith('.py') and not p.startswith(('tests/', 'tools/refactor/')))
+    # Test code is outside the product size rules; migration tooling is measured.
+    return sorted(p for p in output.split('\0') if p.endswith('.py') and not p.startswith('tests/'))
 
 
 def measure(root, base=DEFAULT_BASE):
