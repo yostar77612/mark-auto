@@ -325,6 +325,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/install_sqlite_runtime.py` | 170 | tooling | `tools/install_sqlite_runtime.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`reject_links`，`tools/install_sqlite_runtime.py:39` |
 | `tools/list_unverified_goldens.py` | 55 | tooling | `tools/list_unverified_goldens.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`golden_entries`，`tools/list_unverified_goldens.py:21` |
 | `tools/lm1_slice1_probe.py` | 125 | tooling | `tools/lm1_slice1_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`measure`，`tools/lm1_slice1_probe.py:16` |
+| `tools/m1_market_probe.py` | 122 | tooling | `tools/m1_market_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`read_keys`，`tools/m1_market_probe.py:40` |
 | `tools/make_icon.py` | 58 | tooling | `tools/make_icon.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_chunk`，`tools/make_icon.py:12` |
 | `tools/measure_ci_margin.py` | 83 | tooling | `tools/measure_ci_margin.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/measure_ci_margin.py:20` |
 | `tools/probe_windows_guest_host.py` | 224 | tooling | `tools/probe_windows_guest_host.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`query_kvm_api`，`tools/probe_windows_guest_host.py:42` |
@@ -332,6 +333,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/research_app.py` | 404 | tooling | `tools/research_app.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`guard`，`tools/research_app.py:37` |
 | `tools/research_campaign.py` | 95 | tooling | `tools/research_campaign.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`run_fixture_campaign`，`tools/research_campaign.py:21` |
 | `tools/run_test_group.py` | 620 | tooling | `tools/run_test_group.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`core_shard_for_module`，`tools/run_test_group.py:78` |
+| `tools/store_sinopac_key.py` | 59 | tooling | `tools/store_sinopac_key.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_write`，`tools/store_sinopac_key.py:35` |
 | `tools/trading_load_probe.py` | 494 | tooling | `tools/trading_load_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`process_memory`，`tools/trading_load_probe.py:42` |
 | `tools/trading_load_report.py` | 10 | tooling | `tools/trading_load_report.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`write_report`，`tools/trading_load_report.py:9` |
 | `tools/ui_readability_audit.py` | 217 | tooling | `tools/ui_readability_audit.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_luminance`，`tools/ui_readability_audit.py:26` |

@@ -181,8 +181,12 @@ M1-3b 警示 UI 與規則存檔                       ← 只依賴 M1-2a 的 al
      並通過既有 `identity()` 驗證。
    - 不得把 `WatchInstrument` 放入交易 `Catalog` 或 `bindings`；交易路徑不可接受它。
 2. 商品目錄（建議 `quantlab/trading/adapters/shioaji/symbol_directory.py`）：
-   登入後列舉 `api.Contracts.Stocks.TSE`、`Stocks.OTC`、`Indexs`（以 facade 新增的方法取得，
-   不在 adapter 外直接碰 SDK），只收普通股、ETF 與指數（排除權證）。
+   登入後以 Contract V2 列舉 `api.contracts.list("STK")` 與 `api.contracts.list("IND")`
+   （以 facade 新增的方法取得，不在 adapter 外直接碰 SDK），只收普通股、ETF 與指數（排除權證）。
+   **實測：`contracts.get()` 回傳的 `BaseContract` 沒有名稱（`name` 為空）**；
+   名稱要從 `api.contracts.info(base).name`（`StockInfo`／`IndexInfo`）取得。
+   實作時先量測對全部股票逐一呼叫 `info` 的耗時；若過慢，改為只在建立目錄時批次取得並快取，
+   不得在搜尋時即時呼叫。
    寫入工作區 `market/symbol_directory.json`：`{"version":1,"fetched_at":ISO8601,"items":[[id,kind,exchange,code,name],...]}`，
    原子寫入（暫存檔＋`os.replace`）。每個交易日最多更新一次；讀檔失敗時視為空目錄，不中斷。
 3. 指數清單固定提供 `IX0001 加權指數`、`IX0043 櫃買指數`，即使目錄尚未下載。
@@ -247,6 +251,9 @@ M1-3b 警示 UI 與規則存檔                       ← 只依賴 M1-2a 的 al
 5. 每段查詢前後讀取流量；剩餘低於 `limit × quota_reserve_ratio` 時暫停回補，
    狀態列顯示「今日行情流量將滿，已暫停歷史更新」。`usage()` 不可用時照常回補，
    但狀態列流量顯示「未知」。
+   **實測：擁有者帳號額度為 500 MB／日（最低級距），且 `usage().bytes` 不會在查詢後立即更新**，
+   所以不能只靠前後差值控管；另以本機累計「本日已查詢 K 棒根數」做保守上限
+   （預設每日 600,000 根，約為 20 檔 × 一年 1 分 K 的一半），超過即暫停，次日歸零。
 6. 查詢頻率不得超過 40 次／10 秒（低於官方 50 次以留餘裕）。
 7. 盤中（09:00–13:30）不得對已有 K 線庫涵蓋的區間重查；盤中只用即時 tick 組 K
    並以 `LIVE_TICKS` 寫入 K 線庫（只寫已完成的分鐘）。
@@ -263,6 +270,8 @@ M1-3b 警示 UI 與規則存檔                       ← 只依賴 M1-2a 的 al
    超過 `buffer_trade_days` 的歷史從 K 線庫讀取；分頁行為不變。
 3. 1 分 K 的時間標示：K 線庫存「分鐘起點」，畫面 x 軸以起點顯示；收盤集合競價那根照實顯示。
 4. 日 K 依 `trade_date` 彙整；當日未收盤時最後一根標為未完成。
+5. 冷門股的 1 分 K 會缺分鐘（實測 6104 四天只有 406 根，熱門股約 266 根／天）。
+   缺的分鐘不補假 K 棒、不視為資料缺口，也不觸發重查；coverage 以查詢區間為準。
 
 ### 4.6 M1-1 驗收條件
 
@@ -456,8 +465,9 @@ AlertEvent: event_id, rule_id, kind, instrument_id, occurred_at (UTC), value (De
 
 1. facade 新增 `subscribe_scanner`、`unsubscribe_scanner`、`set_on_scanner_callback`（以 SDK 實際名稱為準），
    範圍 `Region.TW`、`SecurityType.Stock`、`Exchange.TSE` 與 `Exchange.OTC`。
-2. **先確認 SDK 1.7.9 是否提供**；不提供時這四類在下拉選單顯示為停用，附說明
-   「目前 SDK 版本不支援」，不得自行升級 SDK 版本（`BROKER_SDK_VERSION` 屬鎖定設定）。
+2. 已實測 SDK 1.7.9 提供 `subscribe_scanner(scanner, *, region, security_type, exchange)`、
+   `set_on_scanner_callback`（見第 10 節），直接實作，不需要「不支援」分支；
+   不得自行升級 SDK 版本（`BROKER_SDK_VERSION` 屬鎖定設定）。
 3. 只有存在至少一條啟用中的 9–12 類規則時才訂閱；全部停用或刪除時退訂。
 4. `scope=WATCHLIST` 時在本機過濾非自選事件。
 
@@ -483,7 +493,7 @@ AlertEvent: event_id, rule_id, kind, instrument_id, occurred_at (UTC), value (De
 - [ ] K 棒類只在 K 棒完成後判斷；形成中 K 棒不觸發（以刻意構造的反例驗證）。
 - [ ] 回補中或行情非即時時 tick 類不觸發。
 - [ ] 規則重開程式後仍在；檔案損毀時以空規則啟動並提示，原檔保留為 `.bad-<時間>`。
-- [ ] SDK 不支援訊號時 9–12 類顯示停用說明，其餘功能正常。
+- [ ] 9–12 類只在有啟用規則時訂閱永豐訊號，全部停用或刪除後退訂。
 
 ### 6.6 M1-3 測試
 
@@ -537,7 +547,6 @@ AlertEvent: event_id, rule_id, kind, instrument_id, occurred_at (UTC), value (De
 | `alert.kind_*` | 6.2 表格「顯示名稱」欄 |
 | `alert.scope_instrument` / `scope_watchlist` / `scope_market` | 目前主圖商品／全部自選／全市場 |
 | `alert.cooldown` | 冷卻秒數 |
-| `alert.unsupported` | 目前 SDK 版本不支援 |
 
 ## 9. 新增錯誤碼（`quantlab/trading/application/errors.py`）
 
@@ -550,20 +559,27 @@ AlertEvent: event_id, rule_id, kind, instrument_id, occurred_at (UTC), value (De
 | `symbol_not_found` | 找不到這個商品。 | 確認股號；未連線時只能搜尋本機已有資料。 |
 | `kline_store_unavailable` | 本機 K 線庫無法使用。 | 原檔已保留，已建立新檔；可重新更新歷史。 |
 | `alert_invalid_params` | 警示參數不正確。 | 依欄位提示修正後再建立。 |
-| `alert_unsupported` | 目前 SDK 版本不支援這類警示。 | 改用其他警示類型。 |
 
 既有 `subscription_limit_reached` 的下一步文字目前與訊息串接會重複出現「既有策略訂閱保留」，
 M1-2 一併修正顯示方式（只顯示一次）。
 
-## 10. 需要擁有者以真實帳號確認（實作完成後）
+## 10. 真實帳號實測結果（2026-11-01，`tools/m1_market_probe.py`，SDK 1.7.9）
 
-1. `IX0001`、`IX0043` 能否以 `kbars` 取得 1 分 K。
-2. `simulation=True` 時 `kbars` 是否回傳真實歷史資料。
-3. 帳號每日流量額度與一次完整回補（自選 18 檔＋2 指數、60 天 1 分 K）實際用量。
-4. 永豐即時訂閱的實際檔數上限（文件未列），決定 `subscription_limit=20` 是否放寬。
-5. SDK 1.7.9 是否支援 `subscribe_scanner`。
+查詢區間 2026-10-26～11-01；10-26 為光復節補假，實得 10-27～10-30 四個交易日。
 
-以上結果記錄在設計稿，不得在實作 PR 中假設為已確認。
+| 問題 | 結果 | 對實作的影響 |
+|---|---|---|
+| `IX0001`、`IX0043` 能否以 `kbars` 取 1 分 K | **可以**，各 1088 根（272 根／天） | 指數與個股走同一條歷史路徑 |
+| `simulation=True` 是否回傳真實歷史 | **是**，與正式環境逐值相同（2330 首末收盤 2390／2370） | 行情環境預設用模擬即可看真實歷史 |
+| 每日流量額度 | **500 MB**（`limit_bytes=524288000`） | 見 4.4 第 5 點的本機根數上限 |
+| `usage()` 是否即時反映查詢 | **否**，查詢前後數值相同 | 不能用前後差值估用量 |
+| 名稱欄位 | `BaseContract` 無名稱 | 見 4.2 第 2 點，改用 `info().name` |
+| 冷門股 1 分 K | 會缺分鐘（6104 四天 406 根） | 見 4.5 第 5 點 |
+| 連線數 | 模擬與正式各算一條（正式登入時顯示 2） | 同一時間只保留一個行情 session，切換環境前必須先 `logout` |
+| `subscribe_scanner` | **SDK 1.7.9 有提供**（含 `LimitScanner`、`PriceMoveScanner`、`VolumeScanner`） | 6.3 第 2 點的停用分支不需要，警示 9–12 類照常實作 |
+
+仍未確認：永豐即時訂閱的實際檔數上限（文件未列、本次未測）。先維持
+`subscription_limit=20`，上線後由擁有者觀察再調整。
 
 ## 11. 交付檢查表（每個 PR）
 
