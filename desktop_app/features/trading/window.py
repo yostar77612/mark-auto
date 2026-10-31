@@ -27,6 +27,7 @@ from desktop_app.features.trading.widgets import fit_available_screen, label, se
 from desktop_app.features.trading.rendering import render_tables
 from desktop_app.features.trading.workspaces import build
 from desktop_app.features.trading.wizard import StrategyWizard
+from desktop_app.features.trading.context_header import install_context_header, refresh_context_header
 
 
 class _Operation(QThread):
@@ -114,6 +115,7 @@ class TradingWindow(QMainWindow):
         self.resize(1180, 720)
         self.setMinimumSize(600, 300)
         build(self)
+        install_context_header(self)
         self.apply_state(initial_state)
         self.poll = QTimer(self)
         self.poll.setInterval(1000)
@@ -537,6 +539,7 @@ class TradingWindow(QMainWindow):
         self.notice.setText(
             ui_text('v2.issue_summary').format(len(state.issues), state.issues[0]) if state.issues else self._last_feedback or ui_text('v2.no_issues')
         )
+        refresh_context_header(self, state)
         self.overview_step.setEnabled(state.environment == Environment.LOCAL)
         self.connect_read_only_button.setEnabled(state.environment is not Environment.LOCAL and state.engine_state == 'DISCONNECTED')
         self.add_context_button.setVisible(bool(state.contexts))

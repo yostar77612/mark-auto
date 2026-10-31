@@ -1,6 +1,7 @@
 """Shared page widget construction and advanced-input handling."""
 
 from desktop_app.shell.theme import set_theme_property
+from desktop_app.components.disclosure import disclosure_button
 from PySide6.QtCore import Qt
 from desktop_app.strings.catalog import ui_text
 from quantlab import strict_json
@@ -12,7 +13,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QLineEdit,
     QPlainTextEdit,
-    QCheckBox,
     QFileDialog as QFileDialog,
     QFormLayout,
     QMessageBox,
@@ -121,8 +121,7 @@ class WidgetTools(PageContext):
     def _advanced(self, layout, title=ui_text('ui.advanced.default_title')):
         title = title if title.startswith(ui_text('ui.advanced.title')) else ui_text('ui.advanced.named_title').format(title)
         key = str(self.stack.count()) + ':' + title
-        toggle = QCheckBox(title)
-        toggle.setObjectName('advanced_' + str(len(self._section_toggles)))
+        toggle = disclosure_button(title, 'advanced_' + str(len(self._section_toggles)))
         self._section_toggles[key] = toggle
         layout.addWidget(toggle)
         box = QWidget()

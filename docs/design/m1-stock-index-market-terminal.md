@@ -1,6 +1,8 @@
 # M1：個股與指數看盤終端
 
 Status: PROPOSED / NOT IMPLEMENTED. Verification: NOT RUN.
+M1-U: IMPLEMENTED with offline UI tests and before/after snapshots; owner visual
+confirmation pending. M1-1/M1-2/M1-3 status is tracked in their own stacked PRs.
 Owner review: APPROVED 2026-11-01 for implementation; detailed spec:
 [m1-implementation-spec.md](m1-implementation-spec.md).
 
