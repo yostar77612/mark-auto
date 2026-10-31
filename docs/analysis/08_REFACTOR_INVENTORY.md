@@ -132,7 +132,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_trading/workspaces.py` | 403 | presentation | `desktop_app/features/trading/workspaces.py` | 既有 v2 UI／row 投影：`workspaces`；保留現行較嚴格交易閘門；`build`，`desktop_trading/workspaces.py:38` |
 | `desktop_ui.py` | 1902 | composition | `desktop_app/shell/main_window.py` | PR C: shell split leaves registrar and window factory |
 | `desktop_ui_polish.py` | 167 | presentation | `desktop_app/shell/polish.py` | 主視窗標籤與停用提示；`DisabledHint`，`desktop_ui_polish.py:8` |
-| `desktop_walk_forward.py` | 609 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
+| `desktop_walk_forward.py` | 313 | presentation | `desktop_app/features/walk_forward/presenter.py` | 桌面請求與結果轉譯混合 worker；D 抽離執行責任；`_folder`，`desktop_walk_forward.py:29` |
 | `docs/script samples/strategy_sample.py` | 338 | tooling | `docs/script samples/strategy_sample.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`dats_source`，`docs/script samples/strategy_sample.py:11` |
 | `packaging/broker_package.py` | 181 | tooling | `packaging/broker_package.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`digest`，`packaging/broker_package.py:23` |
 | `packaging/broker_probe.py` | 120 | tooling | `packaging/broker_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_output`，`packaging/broker_probe.py:16` |
@@ -370,7 +370,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `desktop_app/features/walk_forward/rows.py` | 56 | presentation | `desktop_app/features/walk_forward/rows.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/adapters/chatgpt/connection_worker.py` | 189 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_worker.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/adapters/chatgpt/connection_probe.py` | 72 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_probe.py` | PR D slice 2b responsibility owner |
-| `quantlab/research_core/application/walk_forward_operations.py` | 204 | application | `quantlab/research_core/application/walk_forward_operations.py` | PR D slice 2b responsibility owner |
+| `quantlab/research_core/application/walk_forward_operations.py` | 206 | application | `quantlab/research_core/application/walk_forward_operations.py` | PR D slice 2b responsibility owner |
 | `quantlab/research_core/application/walk_forward_projection.py` | 72 | application | `quantlab/research_core/application/walk_forward_projection.py` | PR D slice 2b responsibility owner |
 | `quantlab/research_core/application/walk_forward_inputs.py` | 15 | application | `quantlab/research_core/application/walk_forward_inputs.py` | PR D slice 2b responsibility owner |
 
@@ -570,7 +570,7 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | Source | Lines | Layer | Target | Reason |
 | --- | ---: | --- | --- | --- |
-| `desktop_app/bootstrap.py` | 139 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/bootstrap.py` | 148 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/analysis/presenter.py` | 130 | presentation | `desktop_app/features/analysis/presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/chart_presenter.py` | 76 | presentation | `desktop_app/features/market/chart_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/history_dialog.py` | 254 | presentation | `desktop_app/features/market/history_dialog.py` | PR C: slice 2 responsibility extraction |
@@ -642,6 +642,8 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `tools/refactor/replay_pr_c_inventory.json` | 4 | tooling | `tools/refactor/replay_pr_c_inventory.json` | PR C r5: ordered content and mechanical replay. |
 
 | `tools/refactor/split_core_r4.py` | 376 | tooling | `tools/refactor/split_core_r4.py` | C/D merged source inventory; existing layer assignment. |
+
+| `tools/refactor/split_core_r8.py` | 32 | tooling | `tools/refactor/split_core_r8.py` | C/D merged source inventory; existing layer assignment. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
