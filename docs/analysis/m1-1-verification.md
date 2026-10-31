@@ -31,11 +31,13 @@ runs encountered an unrelated installed `tests` package shadowing fixture childr
 No assertions, timeout or fixtures were weakened. The known ADR formatting case is
 explicitly documented in CONTRIBUTING; that ADR is untouched.
 
-`detect_changes(scope=all, repo=mark-auto)` reported 66 changed symbols from 33
-files, one affected flow, MEDIUM aggregate; all 66 listed, neither partial nor
-truncated. Pre-edit CRITICAL/HIGH warnings remain applicable independently of the
-aggregate and are documented in contracts/decisions. Index refresh was requested
-with `analyze --index-only`; no FTS/vector download or root instruction edits.
+After a successful 51.8-second `analyze --index-only` refresh,
+`detect_changes(scope=all, repo=mark-auto)` reported 279 changed symbols from 33
+files, 20 affected flows, CRITICAL aggregate; all 279 listed, neither partial nor
+truncated. The earlier unrefreshed result (66 symbols) was superseded. Shared
+runtime creation, IPC dispatch, chart/watch presentation and contract registration
+are covered by the tests above; risk remains recorded, not waived by the passing
+tests. No FTS/vector download or root instruction edits.
 
 Required owner checks: real connection permissions/callbacks/reconnection and
 quota behavior, measured full-market info latency, native human visual inspection.
