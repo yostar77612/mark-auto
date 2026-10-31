@@ -124,6 +124,7 @@ def choose_mode(page, mode):
         button.setChecked(mode == key)
         set_theme_property(button, 'role', 'taskChoice')
     page.mode_group.setExclusive(True)
+    page.walk_forward_entry.setChecked(mode == 'walk_forward')
     refresh_connection(page)
 
 
@@ -184,11 +185,16 @@ def build_strategy(page, outer, settings, research, walk_forward):
         button.setObjectName('strategy_mode_' + mode)
         button.setAccessibleName(button.text())
         button.setMinimumHeight(42)
+        button.setProperty('themePart', 'strategyTab')
         button.clicked.connect(lambda checked=False, value=mode: choose_mode(page, value))
         group.addButton(button)
         selector.addWidget(button, 1)
         page.mode_buttons[mode] = button
-    page.host.button(selector, ui_text('redesign.strategy.walk_forward'), 'strategy_walk_forward_entry', lambda: choose_mode(page, 'walk_forward'))
+    page.walk_forward_entry = page.host.button(
+        selector, ui_text('redesign.strategy.walk_forward'), 'strategy_walk_forward_entry', lambda: choose_mode(page, 'walk_forward')
+    )
+    page.walk_forward_entry.setCheckable(True)
+    page.walk_forward_entry.setProperty('themePart', 'strategyTab')
     page.tabs.tabBar().hide()
     page.connection_workspace = QWidget()
     connection = QHBoxLayout(page.connection_workspace)

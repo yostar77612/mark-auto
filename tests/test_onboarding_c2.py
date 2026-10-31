@@ -97,6 +97,8 @@ class CompactOnboardingTests(unittest.TestCase):
         self.assertFalse(layout.itemAt(0).isEmpty())
         self.shell._dataset_ready = True
         bar.refresh()
+        self.assertFalse(bar.isHidden(), 'partial completion must still show completed and pending steps')
+        bar.set_dismissed(True)
         self.assertTrue(bar.isHidden())
         self.assertTrue(layout.itemAt(0).isEmpty())
         self.assertEqual(layout.sizeHint().height(), visible_height - bar.sizeHint().height())
@@ -113,7 +115,7 @@ class CompactOnboardingTests(unittest.TestCase):
             path.write_text('{}', encoding='utf-8')
             bar.refresh()
             self.assertEqual(bar.completed, expected)
-            self.assertTrue(bar.isHidden())
+            self.assertFalse(bar.isHidden(), 'a saved strategy must not hide unfinished workflow steps')
             path.unlink()
         self.shell.result_choice = SimpleNamespace(count=lambda: 1)
         self.shell.comparison_list = SimpleNamespace(count=lambda: 1, selectedItems=lambda: [object()])
@@ -137,7 +139,7 @@ class CompactOnboardingTests(unittest.TestCase):
         fixture.path.rename(path)
         bar.refresh()
         self.assertEqual(bar.completed, (False, False, False, False, True))
-        self.assertTrue(bar.isHidden())
+        self.assertFalse(bar.isHidden(), 'paper completion must not hide unfinished workflow steps')
 
     def test_existing_automation_names_preserved(self):
         bar = self.bar()

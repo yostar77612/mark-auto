@@ -42,7 +42,7 @@ ENTRIES = (
     (0, 1324, 'charts.set_reference_lines.reference_limit', '期末快照最多六個參考點'),
     (0, 1325, 'charts.set_reference_lines.snapshot_time_mismatch', '快照須對應確切的 K 線末端可用時間'),
     (0, 1326, 'charts.paint_event.title', '{0}  ｜  {1}'),
-    (0, 1327, 'charts.paint_event.legend', 'K 線漲 + 紅／跌 − 綠   ◇ 訊號   ▲ 成交   滾輪縮放 · 拖曳平移'),
+    (0, 1327, 'charts.paint_event.legend', 'K 線漲 + 紅／跌 - 綠   ◇ 訊號   ▲ 成交   滾輪縮放 · 拖曳平移'),
     (0, 1328, 'charts.paint_event.no_data', '尚無可用資料，請選擇真實來源'),
     (0, 1329, 'charts.paint_event.unknown', '未知'),
     (0, 1330, 'charts.paint_event.ohlcv', '{0}  開 {1} 高 {2} 低 {3} 收 {4}  Δ{5}  量 {6}'),
