@@ -608,6 +608,46 @@
             "receiver": "shell"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 95,
+            "name": "_safe",
+            "receiver": "window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 96,
+            "name": "read_logs",
+            "receiver": "window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 97,
+            "name": "refresh_market",
+            "receiver": "window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 98,
+            "name": "refresh_views",
+            "receiver": "window"
+          },
+          "count": 1
         }
       ],
       "added": [
@@ -658,6 +698,46 @@
             "line": 66,
             "name": "history",
             "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 96,
+            "name": "_safe",
+            "receiver": "window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 97,
+            "name": "read_logs",
+            "receiver": "window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 98,
+            "name": "refresh_market",
+            "receiver": "window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_page_identity_r4.py",
+            "kind": "patch.object",
+            "line": 99,
+            "name": "refresh_views",
+            "receiver": "window"
           },
           "count": 1
         }

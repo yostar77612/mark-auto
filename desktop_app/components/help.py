@@ -1,7 +1,7 @@
 """Progressive disclosure for page explanations; input values stay untouched."""
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QToolButton, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy
+from PySide6.QtWidgets import QLabel, QMenu, QToolButton, QWidget, QWidgetAction, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy
 from desktop_app.components.disclosure import disclosure_button
 from desktop_app.strings.catalog import ui_text
 import desktop_app.strings.catalog as _strings
@@ -141,7 +141,8 @@ def install_page_help(shell):
             button = help_button(help_row, key, texts[key])
             button.setProperty('help_string_key', key)
             shell.help_relocations.append((key, button))
-        # Compact field captions retain the complete previous caption on hover.
+        if name == 'settings':
+            _group_settings_help(help_row)
         for label in page.findChildren(QLabel):
             for key, short in CAPTIONS.get(name, ()):
                 if label.text() == texts[key]:
@@ -203,3 +204,35 @@ CAPTIONS = {
         ('ui.settings_page.backup_path', 'help.caption.backup'),
     ),
 }
+
+
+def _group_settings_help(layout):
+    """Keep the settings title compact without losing existing explanation widgets."""
+    topics = [layout.takeAt(0).widget() for _ in range(layout.count())]
+    anchor = help_button(layout, 'settings_topics', ui_text('help.accessible'))
+    anchor.setObjectName('settings_help_topics')
+    anchor.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+    menu = QMenu(anchor)
+    anchor.setMenu(menu)
+    for button in topics:
+        # The compact helpButton theme belongs only to the original '?' control.
+        # A separate wrapping label gives the explanation its own geometry.
+        button.setAccessibleDescription(button.toolTip())
+        button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        row = QWidget()
+        row.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        row.setFocusProxy(button)
+        content = QHBoxLayout(row)
+        content.setContentsMargins(6, 6, 6, 6)
+        content.addWidget(button, alignment=Qt.AlignmentFlag.AlignTop)
+        label = QLabel(button.toolTip())
+        label.setTextFormat(Qt.TextFormat.PlainText)
+        label.setWordWrap(True)
+        label.setFixedWidth(480)
+        label.setAccessibleName(button.toolTip())
+        content.addWidget(label)
+        action = QWidgetAction(menu)
+        action.setText(button.toolTip())
+        action.setDefaultWidget(row)
+        menu.addAction(action)
+    menu.hide()
