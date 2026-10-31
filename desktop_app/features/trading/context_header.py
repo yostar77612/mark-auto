@@ -3,7 +3,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QToolButton, QVBoxLayout
 
-from desktop_app.components.formatting import display_number
 from desktop_app.strings.catalog import ui_text
 
 
@@ -35,8 +34,8 @@ def install_context_header(window):
 
 def refresh_context_header(window, state):
     known = state.financial_facts_verified
-    pnl = display_number(state.daily_pnl, 'cash') if known and state.daily_pnl is not None else ui_text('watch.unknown')
-    risk = display_number(state.remaining_risk, 'cash') if known and state.remaining_risk is not None else ui_text('watch.unknown')
+    pnl = f'{state.daily_pnl:,.2f} TWD' if known and state.daily_pnl is not None else ui_text('watch.unknown')
+    risk = f'{state.remaining_risk:,.2f} TWD' if known and state.remaining_risk is not None else ui_text('watch.unknown')
     window.compact_context.setText(
         ui_text('m1u.header').format(
             window._environment_label(state.environment), state.trading_day[-5:] or ui_text('v2.context_unknown_day'), pnl, risk, len(state.issues)
