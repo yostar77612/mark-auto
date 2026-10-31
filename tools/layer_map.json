@@ -291,6 +291,7 @@
     "desktop_app/components/validation_feedback.py": "presentation",
     "quantlab/shared/time.py": "shared",
     "tools/refactor/e_components.py": "tooling",
+    "tools/refactor/e7_references.py": "tooling",
     "quantlab/research_core/adapters/workspace_store.py": "infrastructure",
     "quantlab/research_core/adapters/settings_store.py": "infrastructure",
     "quantlab/research_core/adapters/state_json.py": "infrastructure",

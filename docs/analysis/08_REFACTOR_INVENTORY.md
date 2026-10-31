@@ -30,7 +30,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 
 | path | lines | layer | target path | note |
 |---|---:|---|---|---|
-| `desktop.py` | 430 | composition | `desktop.py` | 啟動入口；C/D 抽出非 launcher 組裝至 desktop_app/bootstrap.py；`_prepare_startup_workspace`，`desktop.py:38` |
+| `desktop.py` | 424 | composition | `desktop.py` | 啟動入口；C/D 抽出非 launcher 組裝至 desktop_app/bootstrap.py；`_prepare_startup_workspace`，`desktop.py:38` |
 | `desktop_accessibility.py` | 150 | presentation | `desktop_app/shell/accessibility.py` | 語意名稱與鍵盤導覽；`semantic_name`，`desktop_accessibility.py:25` |
 | `desktop_automatic_backup.py` | 155 | presentation | `desktop_app/features/settings/automatic_backup.py` | 備份設定 UI，直接依賴 adapter；匯入違規見第 3 節；`AutomaticBackupPanel`，`desktop_automatic_backup.py:9` |
 | `desktop_capital_scenario.py` | 51 | application | `desktop_app/features/capital_scenario/worker.py` | worker 用例混入 UI；B 先純搬，D 抽取核心責任；匯入違規見第 3 節；`execute`，`desktop_capital_scenario.py:13` |
@@ -161,12 +161,12 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/agent_tools.py` | 141 | application | `quantlab/agent_tools.py` | 記憶體工具註冊與授權流程；R4 無違規／超大觸發，原址保留；`_refusal`，`quantlab/agent_tools.py:13` |
 | `quantlab/analysis_contracts.py` | 363 | domain | `quantlab/research_core/domain/analysis_contracts.py` | 純分析 wire grammar；仍從 research 服務取得驗證規則；E 按責任抽取；匯入違規見第 3 節；`_fail`，`quantlab/analysis_contracts.py:42` |
 | `quantlab/analysis_recovery.py` | 768 | infrastructure | `quantlab/research_core/adapters/analysis_recovery.py` | SQLite 復原日誌與作業鎖；E 按責任抽取；`_fail`，`quantlab/analysis_recovery.py:86` |
-| `quantlab/analysis_recovery_windows.py` | 423 | infrastructure | `quantlab/analysis_recovery_windows.py` | Windows handle 與復原 helper；R4 無違規／超大觸發，原址保留；`_kernel`，`quantlab/analysis_recovery_windows.py:25` |
+| `quantlab/analysis_recovery_windows.py` | 424 | infrastructure | `quantlab/analysis_recovery_windows.py` | Windows handle 與復原 helper；R4 無違規／超大觸發，原址保留；`_kernel`，`quantlab/analysis_recovery_windows.py:25` |
 | `quantlab/assistant_chat.py` | 49 | application | `quantlab/assistant_chat.py` | 唯讀對話分派用例；R4 無違規／超大觸發，原址保留；`ChatDispatcher`，`quantlab/assistant_chat.py:10` |
-| `quantlab/automatic_backup.py` | 179 | infrastructure | `quantlab/research_core/adapters/automatic_backup.py` | 備份排程與檔案實作混合；E 按責任抽取；匯入違規見第 3 節；`AutomaticBackup`，`quantlab/automatic_backup.py:28` |
+| `quantlab/automatic_backup.py` | 183 | infrastructure | `quantlab/research_core/adapters/automatic_backup.py` | 備份排程與檔案實作混合；E 按責任抽取；匯入違規見第 3 節；`AutomaticBackup`，`quantlab/automatic_backup.py:28` |
 | `quantlab/backtest.py` | 374 | application | `quantlab/backtest.py` | 回測執行；含來源檔雜湊，非純 domain；`_performance_metrics`，`quantlab/backtest.py:21` |
 | `quantlab/backtest_summary.py` | 14 | domain | `quantlab/backtest_summary.py` | 樣本警告規則；R4 無違規／超大觸發，原址保留；`warning_keys`，`quantlab/backtest_summary.py:7` |
-| `quantlab/backup_inspection.py` | 156 | infrastructure | `quantlab/research_core/adapters/backup_inspection.py` | ZIP 與備份 metadata 讀取；E 按責任抽取；匯入違規見第 3 節；`ArchiveMetadata`，`quantlab/backup_inspection.py:24` |
+| `quantlab/backup_inspection.py` | 158 | infrastructure | `quantlab/research_core/adapters/backup_inspection.py` | ZIP 與備份 metadata 讀取；E 按責任抽取；匯入違規見第 3 節；`ArchiveMetadata`，`quantlab/backup_inspection.py:24` |
 | `quantlab/capital_scenario.py` | 113 | application | `quantlab/capital_scenario.py` | 抽樣計算與取消／deadline 協調；使用 monotonic；R4 無違規／超大觸發，原址保留；`empty_result`，`quantlab/capital_scenario.py:19` |
 | `quantlab/chart_data.py` | 285 | domain | `quantlab/chart_data.py` | OHLCV 聚合規則；R4 無違規／超大觸發，原址保留；`AggregationResult`，`quantlab/chart_data.py:28` |
 | `quantlab/chart_drawings.py` | 253 | infrastructure | `quantlab/chart_drawings.py` | 圖形值物件混合 DrawingStore 檔案儲存；R4 無違規／超大觸發，原址保留；`Anchor`，`quantlab/chart_drawings.py:24` |
@@ -176,14 +176,14 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/data_gap_report.py` | 100 | application | `quantlab/research_core/application/data_gap_report.py` | 匯入品質投影；混入 desktop 錯誤呈現；E 按責任抽取；匯入違規見第 3 節；`Gap`，`quantlab/data_gap_report.py:15` |
 | `quantlab/desktop_errors.py` | 38 | presentation | `desktop_app/components/desktop_errors.py` | 桌面例外分類；混入 runtime 依賴；E 按責任抽取；匯入違規見第 3 節；`error_message`，`quantlab/desktop_errors.py:7` |
 | `quantlab/desktop_feedback.py` | 171 | presentation | `quantlab/desktop_feedback.py` | 無 Qt 的 UI 完成／停止文案投影；R4 無違規／超大觸發，原址保留；`stop_presentation`，`quantlab/desktop_feedback.py:77` |
-| `quantlab/desktop_runtime.py` | 1840 | infrastructure | `quantlab/desktop_runtime.py` | 工作管理用例混合路徑、vault、備份與 process IO；不是整檔 composition；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`_OperationExecutorRegistry`，`quantlab/desktop_runtime.py:52` |
+| `quantlab/desktop_runtime.py` | 119 | infrastructure | `quantlab/desktop_runtime.py` | 工作管理用例混合路徑、vault、備份與 process IO；不是整檔 composition；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`_OperationExecutorRegistry`，`quantlab/desktop_runtime.py:52` |
 | `quantlab/research_core/adapters/workspace_store.py` | 297 | infrastructure | `quantlab/research_core/adapters/workspace_store.py` | E3 done: Workspace discovery and durable compatibility markers; moved bodies retain safety ordering. |
 | `quantlab/research_core/adapters/settings_store.py` | 28 | infrastructure | `quantlab/research_core/adapters/settings_store.py` | E3 done: Versioned settings IO; moved bodies retain safety ordering. |
 | `quantlab/research_core/adapters/state_json.py` | 30 | infrastructure | `quantlab/research_core/adapters/state_json.py` | E3 done: Bounded state JSON codec and reader; moved bodies retain safety ordering. |
 | `quantlab/research_core/adapters/runtime_safety.py` | 58 | infrastructure | `quantlab/research_core/adapters/runtime_safety.py` | E3 done: WAL admission and session clock guard; moved bodies retain safety ordering. |
 | `quantlab/research_core/adapters/event_log.py` | 77 | infrastructure | `quantlab/research_core/adapters/event_log.py` | E3 done: Bounded redacted status log with injected error catalog; moved bodies retain safety ordering. |
 | `quantlab/research_core/adapters/walk_forward_owner.py` | 50 | infrastructure | `quantlab/research_core/adapters/walk_forward_owner.py` | E3 done: Durable original-writer claim and verification; moved bodies retain safety ordering. |
-| `quantlab/research_core/application/job_manager.py` | 259 | application | `quantlab/research_core/application/job_manager.py` | E3 done: Port-driven admission, deadlines, cancellation and recovery proof; moved bodies retain safety ordering. |
+| `quantlab/research_core/application/job_manager.py` | 277 | application | `quantlab/research_core/application/job_manager.py` | E3 done: Port-driven admission, deadlines, cancellation and recovery proof; moved bodies retain safety ordering. |
 | `desktop_app/research_session.py` | 378 | composition | `desktop_app/research_session.py` | E3 done: Qt session separated from Qt-free adapter defaults; moved bodies retain safety ordering. |
 | `quantlab/diagnostics.py` | 127 | application | `quantlab/research_core/application/diagnostics.py` | 診斷組合用例；混有讀檔與 UI 標籤；E 按責任抽取；匯入違規見第 3 節；`fixed`，`quantlab/diagnostics.py:21` |
 | `quantlab/download_import.py` | 177 | application | `quantlab/research_core/application/download_import.py` | 下載與嚴格匯入流程協調；E 按責任抽取；匯入違規見第 3 節；`import_settings`，`quantlab/download_import.py:18` |
@@ -207,11 +207,11 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/provider.py` | 146 | infrastructure | `quantlab/provider.py` | 預設關閉 HTTP transport；匯入違規見第 3 節；`HTTPTransport`，`quantlab/provider.py:18` |
 | `quantlab/replay_pacing.py` | 52 | application | `quantlab/replay_pacing.py` | 回播 pacing 與 monotonic 時鐘協調；R4 無違規／超大觸發，原址保留；`ReplayPacer`，`quantlab/replay_pacing.py:13` |
 | `quantlab/reporting.py` | 358 | infrastructure | `quantlab/research_core/adapters/reporting.py` | 結果檔、CSV 匯出與資料持久化；E 按責任抽取；匯入違規見第 3 節；`saved_analysis_entries`，`quantlab/reporting.py:24` |
-| `quantlab/research.py` | 1093 | application | `quantlab/research.py` | 研究 campaign 協調與 SQLite 預算混合；匯入違規見第 3 節；`registry_json_schema`，`quantlab/research.py:51` |
+| `quantlab/research.py` | 1038 | application | `quantlab/research.py` | 研究 campaign 協調與 SQLite 預算混合；匯入違規見第 3 節；`registry_json_schema`，`quantlab/research.py:51` |
 | `quantlab/research_analysis.py` | 545 | application | `quantlab/research_analysis.py` | 分析流程與 journal 混合；G3 provider 直接匯入；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`_safe_path`，`quantlab/research_analysis.py:60` |
 | `quantlab/response_output.py` | 54 | infrastructure | `quantlab/response_output.py` | Responses wire 輸出重組；依賴 transport error；R4 無違規／超大觸發，原址保留；`CompletedOutput`，`quantlab/response_output.py:8` |
-| `quantlab/runtime_support.py` | 171 | infrastructure | `quantlab/runtime_support.py` | durable IO 與 Windows mutex；不是純 shared；保留本體與既有路徑，見 G3 相依限制；`RuntimeSafetyError`，`quantlab/runtime_support.py:14` |
-| `quantlab/saved_candidate_pool.py` | 2063 | application | `quantlab/saved_candidate_pool.py` | 候選來源 admission 與固定 producer profiles；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`SavedCandidatePool`，`quantlab/saved_candidate_pool.py:1160` |
+| `quantlab/runtime_support.py` | 170 | infrastructure | `quantlab/runtime_support.py` | durable IO 與 Windows mutex；不是純 shared；保留本體與既有路徑，見 G3 相依限制；`RuntimeSafetyError`，`quantlab/runtime_support.py:14` |
+| `quantlab/saved_candidate_pool.py` | 1439 | application | `quantlab/saved_candidate_pool.py` | 候選來源 admission 與固定 producer profiles；保留本體與既有路徑，見 G3 相依限制；匯入違規見第 3 節；`SavedCandidatePool`，`quantlab/saved_candidate_pool.py:1160` |
 | `quantlab/significance.py` | 311 | domain | `quantlab/significance.py` | 純統計推論公式；R4 無違規／超大觸發，原址保留；`_decimal`，`quantlab/significance.py:33` |
 | `quantlab/sqlite_runtime.py` | 84 | infrastructure | `quantlab/sqlite_runtime.py` | 原生 SQLite 載入驗證與來源雜湊；R4 無違規／超大觸發，原址保留；`loaded_library`，`quantlab/sqlite_runtime.py:15` |
 | `quantlab/startup_timing.py` | 47 | shared | `quantlab/startup_timing.py` | 共用記憶體計時工具；R4 無違規／超大觸發，原址保留；`StartupTiming`，`quantlab/startup_timing.py:11` |
@@ -306,19 +306,19 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/update_check.py` | 86 | infrastructure | `quantlab/update_check.py` | 使用者觸發的 HTTP 版本查詢；R4 無違規／超大觸發，原址保留；`UpdateResult`，`quantlab/update_check.py:28` |
 | `quantlab/value_bounds.py` | 71 | domain | `quantlab/value_bounds.py` | 依賴 core 的數值／metadata 規則；不是 shared；R4 無違規／超大觸發，原址保留；`_bounded_number`，`quantlab/value_bounds.py:11` |
 | `quantlab/verdict.py` | 109 | domain | `quantlab/verdict.py` | 純 OOS 顯示判定規則；R4 無違規／超大觸發，原址保留；`_number`，`quantlab/verdict.py:19` |
-| `quantlab/walk_forward.py` | 810 | application | `quantlab/research_core/application/walk_forward.py` | 固定候選池選擇協調與 SQLite state；E 按責任抽取；匯入違規見第 3 節；`_bounds`，`quantlab/walk_forward.py:39` |
+| `quantlab/walk_forward.py` | 814 | application | `quantlab/research_core/application/walk_forward.py` | 固定候選池選擇協調與 SQLite state；E 按責任抽取；匯入違規見第 3 節；`_bounds`，`quantlab/walk_forward.py:39` |
 | `quantlab/web_fetch.py` | 368 | infrastructure | `quantlab/web_fetch.py` | 公開 HTTPS 文件擷取 adapter；R4 無違規／超大觸發，原址保留；`FetchBlocked`，`quantlab/web_fetch.py:54` |
 | `quantlab/wf_estimate.py` | 21 | presentation | `quantlab/wf_estimate.py` | 畫面時間估計；R4 無違規／超大觸發，原址保留；`estimated_seconds`，`quantlab/wf_estimate.py:11` |
 | `quantlab/windows_paths.py` | 54 | shared | `quantlab/windows_paths.py` | 跨層路徑拼寫工具；無讀寫副作用；保留本體與既有路徑，見 G3 相依限制；`canonical_path`，`quantlab/windows_paths.py:14` |
 | `tools/bench_backtest_scale.py` | 57 | tooling | `tools/bench_backtest_scale.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/bench_backtest_scale.py:17` |
-| `tools/bench_worker_latency.py` | 185 | tooling | `tools/bench_worker_latency.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summary`，`tools/bench_worker_latency.py:23` |
-| `tools/check_layers.py` | 207 | tooling | `tools/check_layers.py` | R1 全 repo 匯入分層閘門；只解析來源、不執行產品碼；`tools/check_layers.py:1` |
+| `tools/bench_worker_latency.py` | 189 | tooling | `tools/bench_worker_latency.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summary`，`tools/bench_worker_latency.py:23` |
+| `tools/check_layers.py` | 218 | tooling | `tools/check_layers.py` | R1 全 repo 匯入分層閘門；只解析來源、不執行產品碼；`tools/check_layers.py:1` |
 | `tools/check_trading_architecture.py` | 276 | tooling | `tools/check_trading_architecture.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Finding`，`tools/check_trading_architecture.py:22` |
 | `tools/ci_changes.py` | 95 | tooling | `tools/ci_changes.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`is_doc_candidate`，`tools/ci_changes.py:23` |
-| `tools/diagnose_paper_replay.py` | 1070 | tooling | `tools/diagnose_paper_replay.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Timings`，`tools/diagnose_paper_replay.py:26` |
+| `tools/diagnose_paper_replay.py` | 1071 | tooling | `tools/diagnose_paper_replay.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Timings`，`tools/diagnose_paper_replay.py:26` |
 | `tools/diagnose_research_phases.py` | 401 | tooling | `tools/diagnose_research_phases.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`source_key`，`tools/diagnose_research_phases.py:36` |
 | `tools/diagnose_wfo_storage.py` | 472 | tooling | `tools/diagnose_wfo_storage.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`canonical`，`tools/diagnose_wfo_storage.py:39` |
-| `tools/extract_desktop_smoke_r2.py` | 66 | tooling | `tools/extract_desktop_smoke_r2.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/extract_desktop_smoke_r2.py:23` |
+| `tools/extract_desktop_smoke_r2.py` | 51 | tooling | `tools/extract_desktop_smoke_r2.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/extract_desktop_smoke_r2.py:23` |
 | `tools/generate_significance_goldens.py` | 24 | tooling | `tools/generate_significance_goldens.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`generate`，`tools/generate_significance_goldens.py:10` |
 | `tools/generate_welch_goldens.py` | 28 | tooling | `tools/generate_welch_goldens.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`generate`，`tools/generate_welch_goldens.py:9` |
 | `tools/install_desktop_auth.py` | 114 | tooling | `tools/install_desktop_auth.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`requirements_text`，`tools/install_desktop_auth.py:26` |
@@ -328,41 +328,41 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/make_icon.py` | 58 | tooling | `tools/make_icon.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_chunk`，`tools/make_icon.py:12` |
 | `tools/measure_ci_margin.py` | 83 | tooling | `tools/measure_ci_margin.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/measure_ci_margin.py:20` |
 | `tools/probe_windows_guest_host.py` | 224 | tooling | `tools/probe_windows_guest_host.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`query_kvm_api`，`tools/probe_windows_guest_host.py:42` |
-| `tools/quality_gate.py` | 235 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
+| `tools/quality_gate.py` | 248 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
 | `tools/research_app.py` | 404 | tooling | `tools/research_app.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`guard`，`tools/research_app.py:37` |
 | `tools/research_campaign.py` | 95 | tooling | `tools/research_campaign.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`run_fixture_campaign`，`tools/research_campaign.py:21` |
 | `tools/run_test_group.py` | 620 | tooling | `tools/run_test_group.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`core_shard_for_module`，`tools/run_test_group.py:78` |
 | `tools/trading_load_probe.py` | 494 | tooling | `tools/trading_load_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`process_memory`，`tools/trading_load_probe.py:42` |
 | `tools/trading_load_report.py` | 10 | tooling | `tools/trading_load_report.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`write_report`，`tools/trading_load_report.py:9` |
-| `tools/ui_readability_audit.py` | 209 | tooling | `tools/ui_readability_audit.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_luminance`，`tools/ui_readability_audit.py:26` |
-| `tools/ui_redesign_preview.py` | 202 | tooling | `tools/ui_redesign_preview.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`isolate`，`tools/ui_redesign_preview.py:15` |
-| `tools/ui_snapshot.py` | 383 | tooling | `tools/ui_snapshot.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`parse_size`，`tools/ui_snapshot.py:19` |
+| `tools/ui_readability_audit.py` | 217 | tooling | `tools/ui_readability_audit.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_luminance`，`tools/ui_readability_audit.py:26` |
+| `tools/ui_redesign_preview.py` | 210 | tooling | `tools/ui_redesign_preview.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`isolate`，`tools/ui_redesign_preview.py:15` |
+| `tools/ui_snapshot.py` | 391 | tooling | `tools/ui_snapshot.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`parse_size`，`tools/ui_snapshot.py:19` |
 | `tools/ui_test_gate.py` | 252 | tooling | `tools/ui_test_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`producer_assignments`，`tools/ui_test_gate.py:26` |
 | `tools/ui_theme_diff.py` | 63 | tooling | `tools/ui_theme_diff.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`compare`，`tools/ui_theme_diff.py:14` |
 | `tools/update_taifex_expiries.py` | 107 | tooling | `tools/update_taifex_expiries.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`SettlementTable`，`tools/update_taifex_expiries.py:17` |
 | `tools/validate_core_shards.py` | 282 | tooling | `tools/validate_core_shards.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`read_core_report`，`tools/validate_core_shards.py:70` |
-| `tools/validate_market_download.py` | 57 | tooling | `tools/validate_market_download.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_download.py:17` |
-| `tools/validate_market_history_import.py` | 99 | tooling | `tools/validate_market_history_import.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_history_import.py:23` |
+| `tools/validate_market_download.py` | 58 | tooling | `tools/validate_market_download.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_download.py:17` |
+| `tools/validate_market_history_import.py` | 101 | tooling | `tools/validate_market_history_import.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`validate`，`tools/validate_market_history_import.py:23` |
 | `tools/validate_official_history.py` | 408 | tooling | `tools/validate_official_history.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`verified_oct8_calendar`，`tools/validate_official_history.py:35` |
 | `tools/validate_real_ai.py` | 396 | tooling | `tools/validate_real_ai.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`sha256_file`，`tools/validate_real_ai.py:110` |
-| `tools/validate_web_search.py` | 160 | tooling | `tools/validate_web_search.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/validate_web_search.py:31` |
+| `tools/validate_web_search.py` | 164 | tooling | `tools/validate_web_search.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/validate_web_search.py:31` |
 | `tools/verify_format_equivalence.py` | 104 | tooling | `tools/verify_format_equivalence.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`equivalent`，`tools/verify_format_equivalence.py:26` |
 | `trading_entry.py` | 11 | composition | `trading_entry.py` | 根目錄 launcher／桌面接線；保留路徑；`launch`，`trading_entry.py:6` |
 | `trading_runtime.py` | 103 | composition | `trading_runtime.py` | 根目錄 launcher／桌面接線；保留路徑；`default_root`，`trading_runtime.py:18` |
 
 | `quantlab/research_core/__init__.py` | 0 | shared | `quantlab/research_core/__init__.py` | PR D; slice 2a responsibility owner |
-| `quantlab/research_core/adapters/job_process.py` | 325 | application | `quantlab/research_core/adapters/job_process.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/adapters/job_worker.py` | 188 | application | `quantlab/research_core/adapters/job_worker.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/job_process.py` | 326 | application | `quantlab/research_core/adapters/job_process.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/job_worker.py` | 198 | application | `quantlab/research_core/adapters/job_worker.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/adapters/saved_pool_source.py` | 297 | application | `quantlab/research_core/adapters/saved_pool_source.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/adapters/workspace_backup.py` | 302 | infrastructure | `quantlab/research_core/adapters/workspace_backup.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/adapters/workspace_backup.py` | 334 | infrastructure | `quantlab/research_core/adapters/workspace_backup.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/adapters/__init__.py` | 0 | infrastructure | `quantlab/research_core/adapters/__init__.py` | PR D; slice 2a owner; extracted orchestration retains application classification |
 | `quantlab/research_core/application/job_requests.py` | 264 | application | `quantlab/research_core/application/job_requests.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/application/saved_pool_attempts.py` | 302 | application | `quantlab/research_core/application/saved_pool_attempts.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/application/saved_pool_validation.py` | 442 | application | `quantlab/research_core/application/saved_pool_validation.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/application/__init__.py` | 1 | application | `quantlab/research_core/application/__init__.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/domain/job_protocol.py` | 51 | domain | `quantlab/research_core/domain/job_protocol.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/domain/saved_pool.py` | 50 | domain | `quantlab/research_core/domain/saved_pool.py` | PR D; slice 2a real owner |
-| `quantlab/research_core/ports/jobs.py` | 15 | application | `quantlab/research_core/ports/jobs.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/domain/job_protocol.py` | 53 | domain | `quantlab/research_core/domain/job_protocol.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/domain/saved_pool.py` | 52 | domain | `quantlab/research_core/domain/saved_pool.py` | PR D; slice 2a real owner |
+| `quantlab/research_core/ports/jobs.py` | 26 | application | `quantlab/research_core/ports/jobs.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/ports/__init__.py` | 1 | application | `quantlab/research_core/ports/__init__.py` | PR D; slice 2a real owner |
 | `tools/refactor/split_core_runtime.py` | 626 | tooling | `tools/refactor/split_core_runtime.py` | PR D reproducible repair |
 | `tools/refactor/split_core_controller_fixes.py` | 136 | tooling | `tools/refactor/split_core_controller_fixes.py` | PR D reproducible repair |
@@ -372,14 +372,14 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/assistant/application/context_usage.py` | 9 | application | `quantlab/assistant/application/context_usage.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/domain/connection_errors.py` | 15 | domain | `quantlab/assistant/domain/connection_errors.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/ports/connection.py` | 21 | application | `quantlab/assistant/ports/connection.py` | PR D slice 2b responsibility owner |
-| `desktop_app/connection_composition.py` | 15 | composition | `desktop_app/connection_composition.py` | PR D slice 2b responsibility owner |
+| `desktop_app/connection_composition.py` | 17 | composition | `desktop_app/connection_composition.py` | PR D slice 2b responsibility owner |
 | `desktop_app/features/assistant/connection_presenter.py` | 233 | presentation | `desktop_app/features/assistant/connection_presenter.py` | PR D slice 2b responsibility owner |
 | `desktop_app/features/capital_scenario/presenter.py` | 29 | presentation | `desktop_app/features/capital_scenario/presenter.py` | PR D slice 2b responsibility owner |
 | `desktop_app/features/walk_forward/rows.py` | 56 | presentation | `desktop_app/features/walk_forward/rows.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/adapters/chatgpt/connection_worker.py` | 189 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_worker.py` | PR D slice 2b responsibility owner |
 | `quantlab/assistant/adapters/chatgpt/connection_probe.py` | 72 | infrastructure | `quantlab/assistant/adapters/chatgpt/connection_probe.py` | PR D slice 2b responsibility owner |
 | `quantlab/research_core/application/walk_forward_operations.py` | 206 | application | `quantlab/research_core/application/walk_forward_operations.py` | PR D slice 2b responsibility owner |
-| `quantlab/research_core/application/walk_forward_projection.py` | 72 | application | `quantlab/research_core/application/walk_forward_projection.py` | PR D slice 2b responsibility owner |
+| `quantlab/research_core/application/walk_forward_projection.py` | 74 | application | `quantlab/research_core/application/walk_forward_projection.py` | PR D slice 2b responsibility owner |
 | `quantlab/research_core/application/walk_forward_inputs.py` | 15 | application | `quantlab/research_core/application/walk_forward_inputs.py` | PR D slice 2b responsibility owner |
 
 | `quantlab/assistant/adapters/chatgpt/account_paths.py` | 26 | infrastructure | `quantlab/assistant/adapters/chatgpt/account_paths.py` | T4 extracted owner; behaviour preserved. |
@@ -403,7 +403,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/research_core/domain/receipts.py` | 65 | domain | `quantlab/research_core/domain/receipts.py` | T4 extracted owner; behaviour preserved. |
 | `quantlab/shared/runtime_errors.py` | 5 | shared | `quantlab/shared/runtime_errors.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/adapt_test_paths.py` | 352 | tooling | `tools/refactor/adapt_test_paths.py` | T4 extracted owner; behaviour preserved. |
-| `tools/refactor/extract_runtime_error.py` | 138 | tooling | `tools/refactor/extract_runtime_error.py` | T4 extracted owner; behaviour preserved. |
+| `tools/refactor/extract_runtime_error.py` | 139 | tooling | `tools/refactor/extract_runtime_error.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/move_desktop_app.py` | 394 | tooling | `tools/refactor/move_desktop_app.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/repair_paths.py` | 283 | tooling | `tools/refactor/repair_paths.py` | T4 extracted owner; behaviour preserved. |
 | `tools/refactor/split_core_assistant.py` | 200 | tooling | `tools/refactor/split_core_assistant.py` | PR D reproducible repair |
@@ -458,9 +458,9 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `desktop_app/components/chart_paint_footer.py` | 51 | presentation | `desktop_app/components/chart_paint_footer.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/components/form_values.py` | 48 | presentation | `desktop_app/components/form_values.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/components/job_messages.py` | 20 | presentation | `desktop_app/components/job_messages.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `desktop_app/components/result_tables.py` | 141 | presentation | `desktop_app/components/result_tables.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/components/result_tables.py` | 143 | presentation | `desktop_app/components/result_tables.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/backtest/forms.py` | 126 | presentation | `desktop_app/features/backtest/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
-| `desktop_app/features/backtest/summary.py` | 196 | presentation | `desktop_app/features/backtest/summary.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
+| `desktop_app/features/backtest/summary.py` | 193 | presentation | `desktop_app/features/backtest/summary.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/paper/forms.py` | 198 | presentation | `desktop_app/features/paper/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/paper/policy_form.py` | 64 | presentation | `desktop_app/features/paper/policy_form.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
 | `desktop_app/features/research/forms.py` | 90 | presentation | `desktop_app/features/research/forms.py` | PR C slice 1 responsibility extraction; existing behavior retained. |
@@ -578,15 +578,15 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | Source | Lines | Layer | Target | Reason |
 | --- | ---: | --- | --- | --- |
-| `desktop_app/bootstrap.py` | 148 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/bootstrap.py` | 151 | composition | `desktop_app/bootstrap.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/analysis/presenter.py` | 130 | presentation | `desktop_app/features/analysis/presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/chart_presenter.py` | 76 | presentation | `desktop_app/features/market/chart_presenter.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/history_dialog.py` | 254 | presentation | `desktop_app/features/market/history_dialog.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/indicator_controls.py` | 144 | presentation | `desktop_app/features/market/indicator_controls.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/history_dialog.py` | 257 | presentation | `desktop_app/features/market/history_dialog.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/indicator_controls.py` | 145 | presentation | `desktop_app/features/market/indicator_controls.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/indicator_presenter.py` | 168 | presentation | `desktop_app/features/market/indicator_presenter.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/layout.py` | 162 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/layout.py` | 165 | presentation | `desktop_app/features/market/layout.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/preferences.py` | 102 | presentation | `desktop_app/features/market/preferences.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/features/market/rows.py` | 164 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/features/market/rows.py` | 158 | presentation | `desktop_app/features/market/rows.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/market/watchlist_presenter.py` | 145 | presentation | `desktop_app/features/market/watchlist_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/strategy/idea_events.py` | 58 | presentation | `desktop_app/features/strategy/idea_events.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/features/strategy/idea_labels.py` | 49 | presentation | `desktop_app/features/strategy/idea_labels.py` | PR C: slice 2 responsibility extraction |
@@ -596,16 +596,16 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `desktop_app/features/strategy/idea_rows.py` | 131 | presentation | `desktop_app/features/strategy/idea_rows.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/shell/job_presenter.py` | 209 | presentation | `desktop_app/shell/job_presenter.py` | PR C: slice 2 responsibility extraction |
 | `desktop_app/shell/navigation.py` | 34 | presentation | `desktop_app/shell/navigation.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/shell/services.py` | 27 | presentation | `desktop_app/shell/services.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/shell/setup.py` | 172 | presentation | `desktop_app/shell/setup.py` | PR C: slice 2 responsibility extraction |
-| `desktop_app/shell/window.py` | 157 | presentation | `desktop_app/shell/window.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/services.py` | 31 | presentation | `desktop_app/shell/services.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/setup.py` | 174 | presentation | `desktop_app/shell/setup.py` | PR C: slice 2 responsibility extraction |
+| `desktop_app/shell/window.py` | 158 | presentation | `desktop_app/shell/window.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/adapters/ui_files.py` | 49 | infrastructure | `quantlab/research_core/adapters/ui_files.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/adapters/ui_idea_stream.py` | 47 | infrastructure | `quantlab/research_core/adapters/ui_idea_stream.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/adapters/ui_repository.py` | 93 | infrastructure | `quantlab/research_core/adapters/ui_repository.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/analysis_operations.py` | 126 | application | `quantlab/research_core/application/analysis_operations.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/paper_operations.py` | 182 | application | `quantlab/research_core/application/paper_operations.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/research_operations.py` | 110 | application | `quantlab/research_core/application/research_operations.py` | PR C: slice 2 responsibility extraction |
-| `quantlab/research_core/application/ui_operations/assistant.py` | 140 | application | `quantlab/research_core/application/ui_operations/assistant.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/application/ui_operations/assistant.py` | 138 | application | `quantlab/research_core/application/ui_operations/assistant.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/backup.py` | 15 | application | `quantlab/research_core/application/ui_operations/backup.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/binding_policy.py` | 9 | application | `quantlab/research_core/application/ui_operations/binding_policy.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/application/ui_operations/data.py` | 124 | application | `quantlab/research_core/application/ui_operations/data.py` | PR C: slice 2 responsibility extraction |
@@ -616,13 +616,13 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `quantlab/research_core/application/ui_operations/registry.py` | 135 | application | `quantlab/research_core/application/ui_operations/registry.py` | PR C: slice 2 responsibility extraction |
 | `quantlab/research_core/domain/market_sessions.py` | 136 | domain | `quantlab/research_core/domain/market_sessions.py` | T5-E4 DONE: authoritative session values/policy and canonical digests; shared by UI and history pipeline. |
 | `quantlab/research_core/ports/idea_records.py` | 9 | application | `quantlab/research_core/ports/idea_records.py` | PR C: slice 2 responsibility extraction |
-| `quantlab/research_core/ports/ui_operations.py` | 132 | application | `quantlab/research_core/ports/ui_operations.py` | PR C: slice 2 responsibility extraction |
+| `quantlab/research_core/ports/ui_operations.py` | 128 | application | `quantlab/research_core/ports/ui_operations.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_consumers.py` | 174 | tooling | `tools/refactor/split_ui_consumers.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_finish.py` | 77 | tooling | `tools/refactor/split_ui_finish.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_idea.py` | 190 | tooling | `tools/refactor/split_ui_idea.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_inputs.py` | 110 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_inputs.py` | 117 | tooling | `tools/refactor/split_ui_inputs.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_market.py` | 218 | tooling | `tools/refactor/split_ui_market.py` | PR C: slice 2 responsibility extraction |
-| `tools/refactor/split_ui_oracles.py` | 92 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
+| `tools/refactor/split_ui_oracles.py` | 96 | tooling | `tools/refactor/split_ui_oracles.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_shell.py` | 318 | tooling | `tools/refactor/split_ui_shell.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_slice2.py` | 268 | tooling | `tools/refactor/split_ui_slice2.py` | PR C: slice 2 responsibility extraction |
 | `tools/refactor/split_ui_verify.py` | 56 | tooling | `tools/refactor/split_ui_verify.py` | PR C: slice 2 responsibility extraction |
@@ -636,8 +636,8 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 
 | `tools/refactor/split_ui_r3f.py` | 81 | tooling | `tools/refactor/split_ui_r3f.py` | PR C repair replay; existing behavior retained. |
 
-| `tools/refactor/measure_ui_sizes.py` | 70 | tooling | `tools/refactor/measure_ui_sizes.py` | PR C r4 size/replay audit. |
-| `tools/refactor/measure_core_sizes.py` | 74 | tooling | `tools/refactor/measure_core_sizes.py` | PR D r5: complete base-relative size measurement including migration tooling and exact section 10.3 exception gate. |
+| `tools/refactor/measure_ui_sizes.py` | 81 | tooling | `tools/refactor/measure_ui_sizes.py` | PR C r4 size/replay audit. |
+| `tools/refactor/measure_core_sizes.py` | 83 | tooling | `tools/refactor/measure_core_sizes.py` | PR D r5: complete base-relative size measurement including migration tooling and exact section 10.3 exception gate. |
 
 | `tools/refactor/check_ui_scripts.py` | 59 | tooling | `tools/refactor/check_ui_scripts.py` | PR C r4b: audit every historical UI script for byte-identical reruns. |
 
@@ -679,7 +679,7 @@ PR E4 market/history owners (content-only):
 
 | `tools/refactor/cleanup_e2.py` | 75 | tooling | `tools/refactor/cleanup_e2.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
 | `tools/refactor/e_runtime.py` | 416 | tooling | `tools/refactor/e_runtime.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
-| `tools/refactor/scan_runtime_imports.py` | 98 | tooling | `tools/refactor/scan_runtime_imports.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
+| `tools/refactor/scan_runtime_imports.py` | 118 | tooling | `tools/refactor/scan_runtime_imports.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
 
 | `desktop_app/smoke/auth.py` | 99 | tooling | `desktop_app/smoke/auth.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
 | `desktop_app/smoke/fixtures.py` | 60 | tooling | `desktop_app/smoke/fixtures.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
@@ -690,7 +690,12 @@ PR E4 market/history owners (content-only):
 | `desktop_app/smoke/walk_forward.py` | 176 | tooling | `desktop_app/smoke/walk_forward.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
 | `tools/refactor/e_smoke.py` | 257 | tooling | `tools/refactor/e_smoke.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
 
-| `tools/refactor/e6_references.py` | 32 | tooling | `tools/refactor/e6_references.py` | T5-E6: exact mechanical reference replay; assertions preserved. |
+| `tools/refactor/e6_references.py` | 31 | tooling | `tools/refactor/e6_references.py` | T5-E6: exact mechanical reference replay; assertions preserved. |
+
+| `tests/fixtures/layered_paths/e6_service_relocations.json` | 1357 | tooling | `tests/fixtures/layered_paths/e6_service_relocations.json` | T5-E6: reviewed service relocation fixture; excluded from runtime layer scanning. |
+| `tests/legacy_history.py` | 32 | tooling | `tests/legacy_history.py` | T5-E6: test-only legacy history interface fixture; excluded from runtime layer scanning. |
+| `tools/refactor/e6_references.json` | 1821 | tooling | `tools/refactor/e6_references.json` | T5-E6: anchored mechanical reference recipes. |
+| `tools/refactor/e7_references.py` | 60 | tooling | `tools/refactor/e7_references.py` | T5-E7: exact owner-reference and fixture-interface correction replay. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
