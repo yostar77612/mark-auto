@@ -1,9 +1,10 @@
 # M1：個股與指數看盤終端
 
 Status: IMPLEMENTED across M1-1, M1-2, M1-3 and the independent M1-U PR branches.
-Verification: M1-1 offline fake SDK, storage, scheduling and protocol tests passed;
-stage prepush evidence is recorded in the implementation contracts. Real broker
-and manual visual verification remain PENDING OWNER CHECK.
+Verification: offline SDK, storage, scheduling, protocol, alert, UI and screenshot
+evidence is recorded in the phase verification documents and implementation
+contracts. Full combined source is on codex/m1-integration. Known Windows host
+prerequisites and real broker/manual visual checks remain explicitly pending.
 Owner review: APPROVED 2026-11-01 for implementation; detailed spec:
 [m1-implementation-spec.md](m1-implementation-spec.md).
 

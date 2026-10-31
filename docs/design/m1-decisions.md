@@ -94,3 +94,33 @@
   Ruff／格式／3.11語法／static／layers均通過；真正Python程序的12項原生runtime測試通過。
 - 同時寫入不同設定區段的回歸案例通過；新增與修改的執行緒操作沒有提升交易能力。
 - 失敗測試留下的明確測試專屬LOCAL引擎以正常關閉協定釋放，未終止使用者程序，也未刪其資料。
+
+## 2026-11-01 03:05 +08:00 — M1-U：集中記錄自主決策
+
+- 問題：新進度列要求同時呈現完成、進行中、待完成，但舊版任一步完成就隱藏。
+  選項：保留舊隱藏規則／保留部分完成進度。選後者；順序與側欄共用頁面識別，
+  全部完成或明確關閉仍收回高度。影響 onboarding.py、test_onboarding_c2.py；不減少原關閉斷言。
+- 問題：重複說明入口與既有無障礙識別。選項：刪舊元件／保留隱藏相容控制。
+  選後者，唯一可見入口為 onboarding_help；原 objectName、鍵盤與展開行為保留。
+  影響 app_header.py、onboarding.py；詳細說明見 m1-u-notes.md。
+- 問題：進階區塊箭頭與四策略入口樣式不一致。選項：重建控制邏輯／只統一外觀。
+  選後者，以 Qt 原生 disclosure 與四個既有按鈕的分頁樣式保留狀態、識別與快捷操作。
+  影響 components/disclosure.py、widgets.py、help.py、redesign_strategy_layout.py。
+- 問題：回測停用原因過窄。選項：縮字／獨佔整列。選後者保留完整原因，影響 shell/polish.py。
+- 問題：U13 要一行但原內容仍須可查。選項：刪詳細資訊／搬至點開對話框。
+  選後者，保留三個原標籤與全部文字；原 UI 斷言改為先開對話框，另加 <=48px 檢查。
+  影響 context_header.py、window.py、test_trading_ui.py。
+- 問題：獨立 U 分支引入的通用金額 helper 超出 strict trading presentation 邊界。
+  選項：放寬 gate／就地格式化已驗證 Decimal。選後者，保留未知分支、金額與 TWD 單位；
+  不增加跨層依賴，不重驗內部 dataclass。影響 context_header.py。
+
+## 2026-11-01 03:05 +08:00 — 最終整合與驗證限制
+
+- 問題：四個 PR 尚未合併但需驗證共同執行。選項：直接改 main／另開 codex/m1-integration。
+  選後者，正常 merge 保留歷史與原分支 base，不 force-push；字串註冊與契約衝突兩側皆保留。
+- 最終 prepush456項：3個原生 retained-handle 失敗、3個缺 Windows symlink 權限錯誤、
+  1個 Python redirector PID 啟動錯誤、1個原有平台 skip；同類失敗已在 origin/main 重現。
+  選項：調整權限／期限／斷言製造通過，或如實記錄並用真正解釋器補驗；選後者。
+  既有 ADR0006 的格式差異保留，沒有為 M1 改寫無關檔案。
+- 根目錄原始未追蹤 AGENTS.md、CLAUDE.md、handoff、reports 等仍不納入提交；
+  原半成品與借用依賴均保留備份。未登入真實帳號，未碰 CA、帳務或下單。

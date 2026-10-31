@@ -5,7 +5,7 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.components.async_status import AsyncStatus
 from desktop_app.features.onboarding.quick_start import QuickStart
 from desktop_app.features.settings.preferences import load_store
-from desktop_app.shell.palette_commands import MOUNT_PAGE_ORDER, page_index, register_pages
+from desktop_app.shell.palette_commands import DEFAULT_PAGE_ORDER, MOUNT_PAGE_ORDER, page_index, register_pages
 from desktop_app.shell.theme import set_theme_property
 from quantlab.paper import PaperBroker
 import sqlite3
@@ -34,13 +34,14 @@ class GettingStarted(QWidget):
         self.labels = []
         self.buttons = []
         captions = {
-            'data': ui_text('onboarding.data'),
-            'strategy': ui_text('onboarding.strategy'),
-            'backtest': ui_text('onboarding.backtest'),
-            'compare': ui_text('onboarding.compare'),
-            'paper': ui_text('onboarding.paper'),
+            'data': ui_text('redesign.nav.data'),
+            'strategy': ui_text('redesign.nav.strategy'),
+            'backtest': ui_text('redesign.nav.backtest'),
+            'compare': ui_text('redesign.nav.compare'),
+            'paper': ui_text('redesign.nav.paper'),
         }
-        for index, page in enumerate(('data', 'strategy', 'backtest', 'compare', 'paper')):
+        self.page_ids = tuple(page for page in DEFAULT_PAGE_ORDER if page in captions)
+        for index, page in enumerate(self.page_ids):
             button = QPushButton(captions[page])
             # Preserve status-label lookup for automation; the visible chip includes its text.
             label = QLabel(button)
@@ -56,15 +57,18 @@ class GettingStarted(QWidget):
         layout.addStretch()
         layout.addWidget(dismiss)
         self.refresh()
+        if isinstance(shell, QWidget):
+            shell.navigation.currentRowChanged.connect(lambda _: self.refresh())
 
     def restore_visibility(self):
         settings = getattr(self.shell, 'settings', None)
         value = load_store(settings)
         self._dismissed = value.get('onboarding_dismissed', self._dismissed)
-        self.setVisible(not self._dismissed and not any(self.completed))
+        self.setVisible(not self._dismissed and not all(self.completed))
 
     def go(self, index):
-        self.shell.navigation.setCurrentRow(index)
+        row = page_index(self.shell, self.page_ids[index]) if hasattr(self.shell, '_page_widgets') else index
+        self.shell.navigation.setCurrentRow(row)
 
     def set_dismissed(self, dismissed):
         self._dismissed = dismissed
@@ -102,11 +106,17 @@ class GettingStarted(QWidget):
                 ui_text('onboarding.step').format(button.property('onboardingCaption'), ui_text('onboarding.done') if done else ui_text('onboarding.pending'))
             )
             set_theme_property(button, 'state', 'done' if done else 'pending')
+            if hasattr(shell, '_page_widgets'):
+                current = shell.navigation.currentRow() == page_index(shell, self.page_ids[index - 1])
+                set_theme_property(button, 'current', current)
+                if current and not done:
+                    button.setText(ui_text('onboarding.step').format(button.property('onboardingCaption'), ui_text('m1u.progress')))
+                    set_theme_property(button, 'state', 'progress')
             button.setMinimumWidth(button.sizeHint().width())
         empty = (
             not bool(getattr(getattr(shell, 'market', None), '_quote_series', ())),
             getattr(getattr(shell, 'candidate_choice', None), 'count', lambda: 0)() == 0,
-            getattr(getattr(shell, 'result_choice', None), 'count', lambda: 0)() == 0,
+            not bool(getattr(shell, '_dataset_ready', False)),
             getattr(getattr(shell, 'comparison_list', None), 'count', lambda: 0)() == 0,
             not self.completed[4],
         )
@@ -116,7 +126,7 @@ class GettingStarted(QWidget):
         # An empty result panel has one primary next action.
         for name, is_empty in (
             ('run_campaign', empty[1] or bool(getattr(shell, '_candidate_valid', False))),
-            ('run_backtest', empty[2]),
+            ('run_backtest', not bool(getattr(shell, '_dataset_ready', False))),
             ('compare_results', empty[3]),
             ('paper_submit', empty[4]),
             ('paper_replay', empty[4]),
@@ -149,7 +159,7 @@ def install_onboarding(shell):
         shell.stack.addWidget(pages[old_index])
     # Comparison remains the same page/shortcut, reached from saved results.
     # The primary sidebar follows data -> strategy -> backtest -> paper.
-    shell.navigation.item(page_index(shell, 'compare')).setHidden(True)
+    shell.navigation.item(page_index(shell, 'compare')).setHidden(False)
     captions = {
         'data': ui_text('redesign.nav.data'),
         'strategy': ui_text('redesign.nav.strategy'),
