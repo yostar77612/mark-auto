@@ -114,3 +114,16 @@ survive live updates. Clicking an alert for the instrument already on screen
 still focuses its event time even when the bar data has not changed. The terminal
 UI suite now has 11 passing tests. GitNexus returned UNKNOWN for the injected
 widget/method references; direct composition and test references were checked.
+
+Full TradingWindow capture exposed a 90px index chart with an 86px internal
+header. The new `show_volume=False` mode now omits that redundant header/detail
+and starts its price viewport at 12px; the panel's external index title supplies
+the quote information. Default charts still start at 86px and keep all volume,
+header, paper and drawing behavior. Pre-edit GitNexus on the refreshed index
+reported **CRITICAL** for CandlestickChart (28 dependents,119 processes) and
+_prepare_chart_geometry (11 dependents,119 processes). This warning was reported
+before editing. Mitigation: the default branch is retained and only the new index
+mode changes; unchanged suites passed: test_desktop_charts 12,
+test_lb_b8_drawings 12, test_lb_b10_paper_orders 22. The real-window geometry
+regression additionally verifies both requested sizes with six visible columns
+and no outer scroll area. Native screen/DPI and owner visual checks remain pending.

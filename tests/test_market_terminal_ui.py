@@ -8,8 +8,9 @@ import tempfile
 import time
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
-from PySide6.QtCore import Qt, QThreadPool
+from PySide6.QtCore import Qt, QThreadPool, QRect
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QAbstractButton, QScrollArea
 import shiboken6
@@ -19,6 +20,7 @@ from desktop_app.features.market.workspace import WorkspacePanel
 from desktop_app.features.trading.market_terminal import MarketTerminalWidget
 from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
 from desktop_app.features.trading.market_terminal_rows import diagnostic_text, market_summary, quote_values
+from desktop_app.features.trading.window import TradingWindow
 from desktop_app.strings.catalog import ui_text
 from quantlab.research_core.adapters.market_layout import LayoutStore, FILE_NAME
 from quantlab.trading.application.contracts import MarketHealthView, MarketSeriesPage, MarketWatchView, OverviewMarketSummary, UiReceipt, UiState
@@ -132,7 +134,12 @@ class TerminalTests(unittest.TestCase):
         self.facade = FakeFacade()
         self.store = LayoutStore(panel_ids=PANEL_IDS, default_layout=terminal_preset())
         self.widget = MarketTerminalWidget(
-            self.facade, CandlestickChart(), self.facade.state, layout_store=self.store, index_chart=CandlestickChart(), panel_factory=WorkspacePanel
+            self.facade,
+            CandlestickChart(),
+            self.facade.state,
+            layout_store=self.store,
+            index_chart=CandlestickChart(show_volume=False),
+            panel_factory=WorkspacePanel,
         )
         self.widget.resize(1366, 768)
         self.widget.show()
@@ -322,6 +329,8 @@ class TerminalTests(unittest.TestCase):
             self.assertFalse((Path(folder) / FILE_NAME).exists())
 
     def test_accessible_controls_and_status_diagnostics(self):
+        self.assertEqual(self.widget.chart.price_rect.top(), 86)
+        self.assertEqual(self.widget.index_chart.price_rect.top(), 12)
         for control in (
             *self.widget.findChildren(QAbstractButton),
             self.widget.search.input,
@@ -341,6 +350,34 @@ class TerminalTests(unittest.TestCase):
         self.assertNotIn('+00:00', text)
         self.assertIn(ui_text('terminal.source_sim'), text)
         self.assertEqual(quote_values(FIXED_INDICES[0], quote(FIXED_INDICES[0]))[-1], ui_text('watch.unknown'))
+
+    def test_real_trading_window_contains_terminal_at_both_sizes(self):
+        window = TradingWindow(self.facade, self.facade.state, market_watch=self.widget)
+        window.poll.stop()
+        try:
+            for width, height in ((1366, 768), (1920, 1080)):
+                screen = SimpleNamespace(availableGeometry=lambda: QRect(0, 0, width + 40, height + 80))
+                with patch.object(window, 'screen', return_value=screen):
+                    window.resize(width, height)
+                    window.navigation.setCurrentRow(2)
+                    window.show()
+                    self.wait_for(lambda: not self.widget._requests)
+                    self.app.processEvents()
+                    self.assertEqual(window.size().toTuple(), (width, height))
+                    self.assertFalse(window.pages.currentWidget().findChildren(QScrollArea))
+                    self.assertGreater(self.widget.chart.height(), 180)
+                    self.assertGreater(self.widget.chart.width(), 500)
+                    self.assertLessEqual(self.widget.workspace.splitter.width(), self.widget.width())
+                    self.assertFalse(self.widget.table.horizontalScrollBar().isVisible())
+                    self.assertLessEqual(
+                        self.widget.table.columnViewportPosition(5) + self.widget.table.columnWidth(5), self.widget.table.viewport().width() + 1
+                    )
+        finally:
+            window.poll.stop()
+            QThreadPool.globalInstance().waitForDone(3000)
+            self.app.processEvents()
+            self.widget.setParent(None)
+            shiboken6.delete(window)
 
 
 if __name__ == '__main__':

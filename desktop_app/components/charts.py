@@ -114,7 +114,8 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
     @property
     def price_rect(self):
         lower = 0.55 if self.panes else 0.71 if self.show_volume else 0.88
-        return QRectF(12, 86, max(40, self.width() - 102), max(50, self.height() * lower - 86))
+        top = 86 if self.show_volume else 12
+        return QRectF(12, top, max(40, self.width() - 102), max(50, self.height() * lower - top))
 
     @property
     def visible_range(self):
@@ -304,14 +305,15 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             p.drawText(QPointF(x, y), str(s))
 
         fm = p.fontMetrics()
-        text(
-            12,
-            22,
-            fm.elidedText(ui_text('charts.paint_event.title').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
-        )
-        text(12, 43, _theme.chart_legend(self))
-        if self.paper_orders.notice:
-            text(12, 81, self.paper_orders.notice)
+        if self.show_volume:
+            text(
+                12,
+                22,
+                fm.elidedText(ui_text('charts.paint_event.title').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
+            )
+            text(12, 43, _theme.chart_legend(self))
+            if self.paper_orders.notice:
+                text(12, 81, self.paper_orders.notice)
         self.last_rendered_bar_count = 0
         if self.error or not self.bars:
             self.setToolTip('')
