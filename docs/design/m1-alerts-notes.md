@@ -109,3 +109,38 @@ retained local event logging, an authenticated DTO/proxy presentation boundary a
 accessible parameterized rule/record UI. No alert owns an execution capability or
 performs financial actions. Existing strategy risk, execution, credentials, SDK pin,
 G3, historical profiles and project acceptance state remain unchanged.
+
+## Runtime composition follow-up
+
+`quantlab/trading/runtime/market_alerts.py:attach_alerts(bundle)` now creates the
+workspace JsonAlertStore, engine AlertService, live observer and a RuntimeAlerts
+coordinator. Its own RLock serializes IPC rule edits, scanner polling and connection
+callbacks without acquiring the runtime bundle lock inside a market callback.
+Existing tick, completed-bar, watchlist-save and connection callbacks are chained.
+Watchlist persistence succeeds before the in-memory alert filter changes; a failed
+save leaves it unchanged. Scanner close runs before the existing disconnect
+callback and therefore before session logout. No SDK object is built at startup.
+
+The terminal callback contract is:
+`on_tick(Tick, tuple[LiveBar])` for a new actual tick, and
+`on_bars(instrument_id, tuple[LiveBar], now_utc, trade_date)` for timer finalization.
+The latter uses current time rather than replaying the last tick. LIVE and CLOSED
+states permit newly finalized bars, so session-end and daily indicators can fire;
+DELAYED/STOPPED/UNKNOWN, disconnect and active backfill suppress finalization.
+Tick alert eligibility remains strictly LIVE and not backfilling.
+
+`tests.test_market_alerts_runtime` passes 11 tests as a separate offline process,
+covering INSTRUMENT/WATCHLIST/MARKET scope, fixed indices, actual stored prior-day
+range, successful/failed watchlist saves, delayed/backfill suppression, completed
+bar timing, subscriber disable/reconnect and unsubscribe-before-logout ordering.
+Ruff, Python3.11 compilation and check_layers pass for the new runtime module/test.
+The parent controller owns invoking attach_alerts, installing the terminal on_bars
+callback and exposing AlertCommand/AlertSnapshot over the existing protocol.
+
+HistorySync completion now invalidates only that instrument observer seed through
+`observer.reset(id)` under the alert lock, never the market lock. Queued as well as
+running history suppresses observations; completion can happen entirely between ticks
+and still reseeds next time. Disconnect recreates only ephemeral observer state, so
+new-session ticks never cross against the prior session price; service cooldown and
+rule edge state remain retained. Regression tests cover these cases. The HistorySync
+on_complete callback must run outside its condition lock to avoid lock inversion.

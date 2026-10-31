@@ -24,6 +24,15 @@ class AlertTickObserver:
         self._ends = {}
         self._minute_ends = {}
 
+    def reset(self, instrument_id: str):
+        """Reseed after official history completes; retain service cooldown/edges."""
+        self._days.pop(instrument_id, None)
+        self._seeds.pop(instrument_id, None)
+        self._previous.pop(instrument_id, None)
+        self._prior_range.pop(instrument_id, None)
+        self._minute_ends.pop(instrument_id, None)
+        self._ends = {key: end for key, end in self._ends.items() if key[0] != instrument_id}
+
     def _new_day(self, tick: Tick):
         key, day = tick.instrument_id, tick.trade_date
         self._days[key] = day
