@@ -8,6 +8,7 @@ from quantlab.trading.application.contracts import BrokerReadiness, BrokerSettin
 from quantlab.trading.domain.models import Environment
 
 from desktop_app.features.trading.widgets import button, label, rows, table
+from desktop_app.features.trading.market_data_panel import MarketDataPanel
 
 
 FIELDS = (
@@ -46,6 +47,9 @@ CHECK_KEYS = {
 class BrokerPanel(QWidget):
     save_requested = Signal(object)
     check_requested = Signal()
+    market_save_requested = Signal(object)
+    market_connect_requested = Signal()
+    market_disconnect_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -54,6 +58,11 @@ class BrokerPanel(QWidget):
         self._loading = False
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        self.market_panel = MarketDataPanel()
+        self.market_panel.save_requested.connect(self.market_save_requested)
+        self.market_panel.connect_requested.connect(self.market_connect_requested)
+        self.market_panel.disconnect_requested.connect(self.market_disconnect_requested)
+        layout.addWidget(self.market_panel)
         layout.addWidget(label('v2.broker_title'))
         self.status = QLabel(ui_text('v2.broker_not_checked'))
         self.status.setTextFormat(Qt.TextFormat.PlainText)
@@ -61,7 +70,7 @@ class BrokerPanel(QWidget):
         self.status.setObjectName('broker_readiness_status')
         layout.addWidget(self.status)
         layout.addWidget(label('v2.broker_reference_hint'))
-        self.group = QGroupBox(ui_text('v2.broker_configuration'))
+        self.group = QGroupBox(ui_text('marketdata.advanced_broker'))
         self.group.setCheckable(True)
         self.group.setChecked(False)
         group_layout = QVBoxLayout(self.group)
@@ -99,6 +108,9 @@ class BrokerPanel(QWidget):
         layout.addWidget(check)
         self.checks = table(('v2.broker_check_item', 'v2.state', 'v2.broker_next_step'), 'broker_readiness_checks')
         layout.addWidget(self.checks)
+
+    def apply_market(self, settings, connection):
+        self.market_panel.apply(settings, connection)
 
     def _edited(self) -> None:
         if not self._loading:

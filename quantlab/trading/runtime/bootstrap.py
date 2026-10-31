@@ -79,6 +79,9 @@ class RuntimeBundle:
         from .watchlist_settings import WatchlistSettings
 
         self.watch_settings = WatchlistSettings(self.launch.root / 'settings.json')
+        from .market_connection import MarketConnection
+
+        self.market_connection = MarketConnection(self.launch.root)
         if self.engine is not None:
             self.watch_settings.restore(self.engine)
         self.lock = RLock()
@@ -165,7 +168,16 @@ class RuntimeBundle:
             return replace(
                 state,
                 watchlist=tuple(view.instrument_id for view in state.market_watch) if self.watch_settings.watchlist is None else self.watch_settings.watchlist,
-                market_connection='CONNECTING' if self.transitioning else 'CONNECTED' if self.engine is not None else 'DISCONNECTED',
+                market_connection=(
+                    self.market_connection.connection_status()
+                    if self.market_connection.settings.enabled
+                    else 'CONNECTING'
+                    if self.transitioning
+                    else 'CONNECTED'
+                    if self.engine is not None
+                    else 'DISCONNECTED'
+                ),
+                market_data_settings=self.market_connection.settings,
                 version=version,
                 engine_state='CONNECTING' if self.transitioning else state.engine_state,
                 configuration_id=self.configuration_id,
@@ -183,6 +195,13 @@ class RuntimeBundle:
                 return UiReceipt(False, 'validation_failed', '')
             if self.control_failed:
                 return UiReceipt(False, 'journal_failed', '')
+            if command.action in (UiAction.SAVE_MARKET_DATA_SETTINGS, UiAction.CONNECT_MARKET_DATA, UiAction.DISCONNECT_MARKET_DATA):
+                if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
+                    return UiReceipt(False, 'state_conflict', '')
+                receipt = self.market_connection.execute(command)
+                if receipt.accepted:
+                    self.version_offset += 1
+                return receipt
             if self.transitioning and command.action not in (UiAction.STOP_NEW, UiAction.SHUTDOWN_ENGINE):
                 return UiReceipt(False, 'state_conflict', '')
             if command.action is UiAction.SAVE_SETTINGS and command.watchlist is not None:
@@ -428,6 +447,7 @@ class RuntimeBundle:
                 return
             self.resources_closed = True
         self.cancel_owned_workers()
+        self.market_connection.close()
         errors = []
         if self.engine is not None and self.launch.environment is not Environment.LOCAL:
             seen_gateways = set()

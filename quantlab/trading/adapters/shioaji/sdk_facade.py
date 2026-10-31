@@ -154,6 +154,39 @@ class ShioajiSDKFacade:
     def logout(self) -> object:
         return _callable(self._client, 'logout')()
 
+    def market_contracts(self, security_type: str) -> list[object]:
+        if security_type not in ('STK', 'IND'):
+            raise DomainError('validation_failed', 'watch security type')
+        return _rows(_callable(self.contracts._store(), 'list')(security_type))
+
+    def market_contract(self, code: str) -> object:
+        identity(code)
+        return _callable(self.contracts._store(), 'get')(code)
+
+    def market_contract_info(self, contract: object) -> object:
+        return _callable(self.contracts._store(), 'info')(contract)
+
+    def market_kbars(self, contract: object, start: str, end: str) -> object:
+        return _callable(self._client, 'kbars')(contract=contract, start=start, end=end, timeout=self.query_timeout_ms)
+
+    def market_subscribe(self, contract: object, *, remove: bool = False) -> None:
+        quote_type = 'quote' if sdk_text(sdk_value(contract, 'security_type')) == 'IND' else 'tick'
+        kind = self._enum('QuoteType', quote_type, ('tick', 'quote'))
+        version = self._enum('QuoteVersion', 'v1', ('v1',))
+        _callable(self._client, 'unsubscribe' if remove else 'subscribe')(contract, quote_type=kind, version=version)
+
+    def usage(self) -> object:
+        return _callable(self._client, 'usage')()
+
+    def subscribe_scanner(self, scanner: object, *, region: object, security_type: object, exchange: object) -> None:
+        _callable(self._client, 'subscribe_scanner')(scanner, region=region, security_type=security_type, exchange=exchange)
+
+    def unsubscribe_scanner(self, scanner: object, *, region: object, security_type: object, exchange: object) -> None:
+        _callable(self._client, 'unsubscribe_scanner')(scanner, region=region, security_type=security_type, exchange=exchange)
+
+    def set_on_scanner_callback(self, callback: Callable[..., None]) -> None:
+        self._callback('set_on_scanner_callback', callback)
+
     def activate_ca(self, *, ca_path: str, ca_passwd: str, person_id: str) -> bool:
         result = _callable(self._client, 'activate_ca')(ca_path=ca_path, ca_passwd=ca_passwd, person_id=person_id)
         if type(result) is not bool:
@@ -231,6 +264,9 @@ class ShioajiSDKFacade:
 
     def set_on_tick_stk_v1_callback(self, callback: Callable[..., None], bind: bool = False) -> None:
         self._callback('set_on_tick_stk_v1_callback', callback, bind=bind)
+
+    def set_on_quote_idx_v1_callback(self, callback: Callable[..., None]) -> None:
+        self._callback('set_on_quote_idx_v1_callback', callback)
 
     def set_on_bidask_stk_v1_callback(self, callback: Callable[..., None], bind: bool = False) -> None:
         self._callback('set_on_bidask_stk_v1_callback', callback, bind=bind)

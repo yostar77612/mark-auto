@@ -64,6 +64,7 @@ ZH_TW.update(_ZH_TW_CHUNKS[13])
 ZH_TW.update(_ZH_TW_CHUNKS[14])
 
 ZH_TW.update(_ZH_TW_CHUNKS[15])
+ZH_TW.update(_ZH_TW_CHUNKS[57])
 
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
