@@ -128,7 +128,11 @@ class IdleHintTests(unittest.TestCase):
                     self.assertTrue(hint.button.toolTip())
                     labels = [*window.app_header.findChildren(QLabel), window.status, hint.label]
                     text = '\n'.join(label.text() for label in labels if not label.isHidden())
-                    self.assertIn(ui_text('ui.init.ready'), text)
+                    # M1-U4 keeps the idle job status once; the compatibility
+                    # ready label retains its value while remaining hidden.
+                    self.assertIn(ui_text('header.idle'), text)
+                    self.assertNotIn(ui_text('ui.init.ready'), text)
+                    self.assertTrue(window.status.isHidden())
                     prefix = ui_text('ui_polish.update.prerequisite_required').split('{0}')[0]
                     self.assertNotIn(prefix, text)
                     self.assertNotIn(ui_text('ui_polish.install_polish.cancellable_job_prerequisite'), text)
