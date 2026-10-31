@@ -25,9 +25,12 @@ class SettingsHelpMenuTests(unittest.TestCase):
         buttons = page.findChildren(QPushButton) + page.findChildren(QToolButton)
         self.assertLessEqual(sum(button.isVisibleTo(page) for button in buttons), 8)
         keys = (
-            'ui.settings_page.workspace_path', 'ui.settings_page.state_path',
-            'ui.settings_page.irreversible_records_hint', 'ui.settings_page.log_path',
-            'ui.settings_page.manual_update_hint', 'chatgpt_ui.init.included_usage_hint',
+            'ui.settings_page.workspace_path',
+            'ui.settings_page.state_path',
+            'ui.settings_page.irreversible_records_hint',
+            'ui.settings_page.log_path',
+            'ui.settings_page.manual_update_hint',
+            'chatgpt_ui.init.included_usage_hint',
             'automatic_backup.init.schedule_hint',
         )
         topics = [action.defaultWidget().findChild(QToolButton) for action in anchor.menu().actions()]
