@@ -1,5 +1,6 @@
 """Feature partitions in original registration order."""
 
+from .alerts import ENTRIES as _part_alerts
 from .assistant import ENTRIES as _part_assistant
 from .popout import ENTRIES as _part_popout
 from .replay import ENTRIES as _part_replay
@@ -73,6 +74,7 @@ from .watch import ENTRIES as _part_watch
 from .dashboard import ENTRIES as _part_dashboard
 
 PARTS = (
+    _part_alerts,
     _part_assistant,
     _part_popout,
     _part_replay,

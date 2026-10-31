@@ -1,0 +1,81 @@
+{
+  "records": {
+    "page_height": 420,
+    "visible_input_count": 0,
+    "button_count": 3,
+    "label_char_count": 0,
+    "visible_text": [
+      "＋ 新增警示",
+      "管理規則",
+      "清除紀錄"
+    ],
+    "combo_items": [],
+    "table_headers": [
+      "時間",
+      "代碼",
+      "名稱",
+      "警示",
+      "內容"
+    ],
+    "unlabeled_inputs": [],
+    "disabled_buttons": [],
+    "primary_button_count": 0
+  },
+  "kd_rule": {
+    "page_height": 620,
+    "visible_input_count": 10,
+    "button_count": 2,
+    "label_char_count": 67,
+    "visible_text": [
+      "警示類型",
+      "KD 黃金／死亡交叉",
+      "對象",
+      "目前主圖商品",
+      "週期",
+      "1分",
+      "KD 期數（2–30）",
+      "9",
+      "K 平滑（2–30）",
+      "3",
+      "D 平滑（2–30）",
+      "3",
+      "低檔門檻（0–50）",
+      "20",
+      "高檔門檻（50–100）",
+      "80",
+      "方向",
+      "任一",
+      "冷卻秒數",
+      "60",
+      "建立",
+      "取消"
+    ],
+    "combo_items": [
+      "價格突破／跌破",
+      "漲跌幅超過",
+      "短時間急漲急跌",
+      "創當日新高／新低",
+      "突破前日高／跌破前日低",
+      "量能放大",
+      "均線交叉",
+      "KD 黃金／死亡交叉",
+      "漲停相關",
+      "跌停相關",
+      "1 秒急漲急跌",
+      "爆量大單",
+      "目前主圖商品",
+      "全部自選",
+      "1分",
+      "5分",
+      "15分",
+      "日K",
+      "上穿／漲／新高",
+      "下穿／跌／新低",
+      "任一"
+    ],
+    "table_headers": [],
+    "unlabeled_inputs": [],
+    "disabled_buttons": [],
+    "primary_button_count": 0
+  }
+}

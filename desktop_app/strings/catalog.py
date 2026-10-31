@@ -201,6 +201,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[54])
 # Lane LM1 dashboard
 ZH_TW.update(_ZH_TW_CHUNKS[55])
 
+# M1 alert controls
+ZH_TW.update(_ZH_TW_CHUNKS[58])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.
