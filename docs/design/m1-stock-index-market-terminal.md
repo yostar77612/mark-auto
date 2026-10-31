@@ -1,7 +1,8 @@
 # M1：個股與指數看盤終端
 
 Status: M1-U → M1-1 → M1-2 → M1-3 IMPLEMENTED offline in one PR stack.
-Verification: CI baseline repair and full-suite verification in progress. Real broker
+Verification: all four PR CI runs pass; complete local discovery adds no failures
+beyond unchanged main. See m1-run-report.md for exact heads and evidence. Real broker
 and final human visual acceptance remain PENDING OWNER CHECK.
 Owner review: APPROVED 2026-11-01 for implementation; detailed spec:
 [m1-implementation-spec.md](m1-implementation-spec.md).

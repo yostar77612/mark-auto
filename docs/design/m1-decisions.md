@@ -222,3 +222,61 @@
   各種上限與斷言不變。修改後135個相關測試全部通過；接著重跑完整 discover。
 - 來源在隔離 worktree 完成後 cherry-pick（1b8394f、db5538b），父層之間仍只用正常 merge。
   首次增量圖譜缺 UID 的 CRITICAL 寬泛結果保留為限制，強制離線重建後再完整偵測，不下載擴充。
+
+## 2026-11-01 05:43 +08:00 — M1-U：遠端 native AV 的證據與整套重跑
+
+- 問題：baaf503 的第一次 CI 在 Windows Python3.11 桌面視窗初始化，於設定說明
+  `action.setText` 發生 native access violation；三個相依彙總因它失敗。
+- 選項：猜測改 Qt／物件生命週期／相依版本，或先重現並以同一來源整套重跑。
+  選後者。3.11.3／Qt6.12 的同一案例20次與前17案例完整順序通過，分別強制GC280／238次；
+  33項前序 context 通過，另有3.13.11元件循環100次通過。None／True 引用計數未呈現下溢。
+  CI為3.11.9，差異與未重現限制保留，不宣稱已找到或修掉 native 原因。
+- 執行 `gh run rerun 41243604116` 重跑所有job；attempt2 35／35成功，後續M1-1與M1-2
+  同一路徑也全部成功。沒有加 skip、改依賴、猜測性 guard 或產品 fallback。
+- 發現CI失敗時先停止已核對 PID 鏈的舊M1-1完整測試；該不完整紀錄不算驗證，後來從頭重跑。
+  檔案：說明選單來源不變；PR說明、m1-run-report.md、本決策紀錄記錄證據與限制。
+
+## 2026-11-01 07:15+08:00 — M1-1／2／3／U：完整驗證、正常堆疊及最後交付
+
+- 問題：changed-file prepush 不覆蓋基準鎖定與全部舊功能。選擇每個分支用同一個
+  offscreen／UTF8 venv完整 discover，逐一和未修改 main ba597b5 比較完整失敗身分與原因。
+  同時保留各PR實際parent為base的額外prepush，明列各自exit1的既有Windows問題，
+  不把它們寫成全過；本機完整測試結果及遠端CI工作在最終報告分欄記錄。
+- 問題：字串order為全域序列。依擁有者指定，以正常merge維持 U→1→2→3，#118 base改為U；
+  四段2608–2617／2618–2631／2632–2679／2680–2752。只推自己的codex/m1-*，
+  沒有rebase、force-push、main合併或自動合併。每次推送僅含已完整驗證且凍結的head。
+- 最終整合預覽只有catalog與文件衝突。catalog採已驗證M1-3版，保留全部Lane與歷史lookup；
+  contracts內容相同僅空行不同，採堆疊版；設計狀態採正確堆疊後更新驗證狀態。
+  決策檔保留原03:05兩段與後來全部CI段落，沒有捨棄原自主決策；原整合報告／截圖在merge中保留；之後用fake資料重拍兩尺寸，記錄本次集中樣式的實際幾何。
+- GitNexus先強制離線重建，沒有下載擴充。MCP曾回舊metadata，讀registry並用完整Windows
+  路徑更新後才採用新圖。逐項影響：ui_text為CRITICAL（574直接、82索引流程）；render為HIGH
+  （5直接、12總參照、13個receiver未解析）、apply_theme為HIGH（6直接、16總）、
+  reviewed_inventory為HIGH（3直接及歷史重播工具）。呼叫者與原碼已核對；UNKNOWN constructor、
+  新helper及unittest方法另用實際組裝／discovery參照確認，沒有把零當安全證明。
+- 整合來源、測試、工具與inventory必須逐檔等於已完整驗證的M1-3；因此不另改產品來源。
+  最終提交再作完整圖譜變更檢查，拒絕partial／truncated結果；report-only提交亦檢查。
+  根目錄原有AGENTS／CLAUDE先後雜湊一致，原未追蹤handoff等不動、不加入提交。
+- main既有錯誤的LOCAL測試引擎，只在CIM命令列、fixture路徑、實際session PID及LOCAL狀態
+  全部對上後，以認證正常shutdown收尾；保留檔案及所有既存程序。OpenMutex的3064是HANDLE，
+  不是PID；持有者未識別，原失敗斷言也可能保留handle，不能據此說是使用者app。
+- 基準更新維持獨立commit，理由逐項記錄；U3/U4/U13的呈現驗證依核准需求等價更新，
+  安全檢查、功能內容、類別／介面上限、原skip、timeout／budget與歷史producer pins不放寬。
+  30個G3、PROJECT_STATE、SDK pin、歷史profile與驗收分數全部維持原值。
+- 整合後91項首輪有兩個layer測試失敗，原因是本輪五個臨時驗證.py留在根目錄。
+  選擇移到既有.gitignore已忽略的臨時資料夾，而非增加清冊或改排除／斷言；搬移前核對來源與
+  目的皆在workspace，只移本輪自建檔案。相同91項重跑全過（22.205秒），layers／architecture皆0。
+- root整體format僅有CONTRIBUTING已記錄的舊ADR CRLF差異；Git內容與main相同、原檔不動。
+  26個合併變更檔format過；四PR工作樹整體format均過。保留此例外，未宣稱root整體format成功。
+- 兩個更新的整合截圖使用FakeFacade及fixture警示、投影monitor；699×339／1032×558圖區，
+  外層scroll為0。它們是文件驗收證據，不是重釘測試golden，也不是實際券商或實體DPI驗收。
+- 檔案：docs/design/m1-run-report.md、m1-decisions.md、設計狀態、
+  docs/analysis/m1-ci-main-baseline.md；來源與既有fixture僅由正常merge納入已驗證版本。
+  四個PR說明記錄本輪完整結果、精確head、workflow／attempt與待擁有者的真實環境驗收。
+
+## 2026-11-01 07:20+08:00 — M1：保留主工作區原有舊archive資料
+
+- 問題：額外文件／目錄檢查37項中，36過、1項因實體root的 `archives/legacy_autotrading/trader` 而失敗。
+  該資料夾建立於2026-10-19、最後改於2026-10-31 23:12，早於本輪；不在Git追蹤內容中。
+- 選項：刪／移既存資料以通過，或依0.3硬停止線保留並記錄。選保留，不修改斷言、skip或路徑規則。
+  原測試與main逐位元相同，直接執行origin/main原案例在相同實體root也同樣失敗。四工作樹完整測試及四PR CI不含此舊目錄，結果不變。
+- 此項只記為額外root環境限制，不加入main工作樹36個失敗身分白名單。檔案：m1-run-report.md及本紀錄；舊archive未動。

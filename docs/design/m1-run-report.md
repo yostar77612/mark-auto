@@ -1,26 +1,27 @@
 # M1 autonomous implementation report
 
-Date: 2026-11-01, Asia/Taipei. Status: **all four implementation PRs opened;
-offline functional acceptance completed; external/native owner checks pending**.
-No PR was merged into main. CI/review results were not awaited or represented as passed.
+Date: 2026-11-01, Asia/Taipei. CI repair verification is recorded below.
+No PR was merged into main. Real broker and owner visual checks remain pending.
+
+Verification completed: 2026-11-01 07:20+08:00.
 
 ## Delivery and branch order
 
 | Work | PR | Head branch | Base | Result |
 |---|---|---|---|---|
-| M1-1 market connection/history | [#118](https://github.com/yostar77612/mark-auto/pull/118) | codex/m1-1-market-history | main | Implemented, fake SDK/store/history/runtime tests and settings screenshot |
+| M1-U U1–U13 | [#119](https://github.com/yostar77612/mark-auto/pull/119) | codex/m1-u-ui-defects | main | Implemented, seven research pages before/after plus compact v2 header |
+| M1-1 market connection/history | [#118](https://github.com/yostar77612/mark-auto/pull/118) | codex/m1-1-market-history | codex/m1-u-ui-defects | Implemented, fake SDK/store/history/runtime tests and settings screenshot |
 | M1-2 terminal | [#120](https://github.com/yostar77612/mark-auto/pull/120) | codex/m1-2-terminal-layout | codex/m1-1-market-history | Implemented, search/subscriptions/C5/chart/UI tests and two sizes |
 | M1-3 alerts | [#121](https://github.com/yostar77612/mark-auto/pull/121) | codex/m1-3-alerts | codex/m1-2-terminal-layout | Implemented, twelve kinds/scanners/persistence/typed IPC/async UI |
-| M1-U U1–U13 | [#119](https://github.com/yostar77612/mark-auto/pull/119) | codex/m1-u-ui-defects | main | Implemented, seven research pages before/after plus compact v2 header |
 
 Combined source and this report are on `codex/m1-integration`, using ordinary
 merges without rewriting history. This branch is the final runnable workspace;
 it also resolves the independent branches' string registrations and appended
-contracts together. Only `codex/m1-*` branches were pushed. `origin/main`
+contracts together. The repair stack is **M1-U → M1-1 → M1-2 → M1-3**;
+the four string ranges are2608–2617,2618–2631,2632–2679,2680–2752. Only `codex/m1-*` branches were pushed. `origin/main`
 remained `ba597b5`; design/tool base was `origin/claude/m1-terminal-design`.
 The uncommitted previous attempt was inspected and usable work completed rather
-than discarded. Originals and borrowed dependency copies remain under ignored
-`.tmp-m1-originals` / `.tmp-m1-borrowed`. Root AGENTS.md, CLAUDE.md, handoffs,
+than discarded. Root AGENTS.md, CLAUDE.md, handoffs,
 reports and other original untracked material were not included in commits.
 
 ## Acceptance evidence
@@ -58,7 +59,7 @@ Exact commands, individual module counts and known limitations:
   draggable/collapsible/named layouts, chart pan/zoom and old drawings/order-line
   behavior retain their regression tests.
 - Combined TradingWindow screenshots show no outer scroll area at either size;
-  chart area grows from 699×326 to 1032×545. Header details remain accessible
+  chart area grows from 699×339 to 1032×558. Header details remain accessible
   by clicking the one-line context control.
 
 Evidence: [M1-2 verification](../analysis/m1-2-verification.md),
@@ -94,101 +95,148 @@ badge, comparison empty state/headers, full-row prerequisite, Chinese strategy,
 single replay caption, page-title help, strategy tabs and one primary action
 are implemented. The v2 context is <=48px with all original details retained.
 
-Two presentation tests were updated equivalently for intentional requirements:
+The original partial-progress/detail tests were updated equivalently for the original U requirements:
 partial progress now stays visible, and original detailed-label assertions run
 after opening the details dialog. Their dismissal/height/content assertions
 remain; no safety assertions, thresholds, timeouts or fixtures were weakened.
 
-## Verification results and remaining failures
+## CI repair and full-suite verification
 
-Environment: provisioned `.venv/Scripts/python.exe` (Python 3.13.11, patched
-SQLite), Ruff 0.16.10; Python 3.11 for syntax compilation. Offline Qt uses
-`QT_QPA_PLATFORM=offscreen`, `PYTHONUTF8=1`, `PYTHONPATH=<repo>/tests;<repo>`.
-Only one comprehensive prepush ran at a time. Phase module commands/counts are
-in the linked verification files and U notes.
+The first delivery used changed-file prepush only. Its figures were insufficient
+for complete acceptance. This repair runs full discovery on each branch and
+checks the remote workflow independently; the earlier partial counts are not
+represented as successful full verification.
 
-| Stage | `powershell -File tools/prepush.ps1 -Tests` | Interpretation |
+The repaired stack uses ordinary merges, without rebase, force-push or a main
+merge. #118 now targets the U branch. The final catalog contains2753 contiguous
+records; each phase registers its additions inside an explicit Lane block.
+Only actual new modules are appended to inventory §2.
+
+Baseline changes are separate commits, following f05328b:
+
+| PR | Baseline-only commits | Exact admitted changes |
 |---|---|---|
-| M1-1 | 140 tests, exit 1 | Three baseline Windows handle cases; unchanged ADR formatting |
-| M1-2 | 205 tests, exit 1 | Same three handle cases plus redirector startup PID error; one original platform skip |
-| M1-3 final | 249 tests, exit 1 | Same native limits; lint/format/syntax/static/layers passed |
-| M1-U final | 290 tests, exit 1 | Three baseline symlink-privilege errors and three handle cases; remaining 284 passed |
-| Combined | 456 tests in 115.325s, exit 1 | Three handle failures, three symlink errors, one startup error, one original skip |
+| #119 | 30e8cee,3ad742c,f537fe5,b10ea42,e9c4905 | Ten catalog records, five historical text substitutions, actual U styling/text/names/tooltip inputs/table headers, precise R7 and observer deltas, U3/U4 presentation expectations |
+| #118 | 4f81ab3 | Fourteen records, sixteen modules, three history-test observer rows |
+| #120 | 4833324 | Forty-eight records, eight modules; source styling is a separate commit |
+| #121 | e48d855 | Seventy-three unique records, eleven modules, exact observer positions/flag |
 
-The combined prepush passed Ruff lint, Python 3.11 syntax for 1032 tracked files
-and the static gate. Its format failure is only the unchanged documented
-`docs/adr/0006-strategy-intent-pipeline.md` formatting case. After the final
-U13 import correction, both `tools/check_layers.py` and
-`tools/check_trading_architecture.py` exit 0. Targeted lint/format pass.
-`tests.test_m1_ui_defects`, `test_trading_ui`, `test_market_terminal_ui` and
-`test_trading_architecture` together ran 58 tests, all passed.
+Original historical digests, provenance, r7_base, pixel/painter expectations and
+eight result snapshots remain pinned. Safety assertions, class/interface limits, existing skips and timeout budgets
+remain unchanged. Presentation expectations explicitly required by U3/U4/U13
+were replaced with reviewed equivalent assertions, retaining original
+dismissal, height and detail-content coverage. Four inline
+styles move to scoped private theme functions with immediate appearance updates.
 
-Host failures were reproduced on unchanged origin/main `ba597b5`. The venv
-Python redirector's launcher PID differs from its engine child PID, so existing
-identity guards correctly refuse startup. The original twelve
-`tests.test_trading_runtime` tests pass on the combined source with the actual
-base interpreter and unchanged assertions. Exact supplementary command:
+Full discovery uses the same provisioned Windows Python3.13.11 venv, patched
+SQLite3.54.0 and Qt6.12.0. Per-worktree imports use that checkout and its tests first.
+Only one full suite runs at a time:
 
 ```powershell
-& 'C:/Users/Mark/Desktop/Mark auto/.runtime-sqlite/python.exe' -S -c "import sys,unittest; sys.path[:0]=[r'C:/Users/Mark/Desktop/Mark auto',r'C:/Users/Mark/Desktop/Mark auto/tests',r'C:/Users/Mark/Desktop/Mark auto/.venv/Lib/site-packages']; result=unittest.TextTestRunner(verbosity=1).run(unittest.defaultTestLoader.loadTestsFromName('tests.test_trading_runtime')); sys.exit(not result.wasSuccessful())"
+$env:QT_QPA_PLATFORM='offscreen'; $env:PYTHONUTF8='1'
+& 'C:/Users/Mark/Desktop/Mark auto/.venv/Scripts/python.exe' -m unittest discover -s tests -v
 ```
 
-Result: 12 passed in 13.705s, exit 0. Alternative base-interpreter attempts for
-the three retained-handle fixtures encountered a pre-existing installed `tests`
-package shadowing child-process imports. WinError1314 symlink cases require
-host privileges absent here. No permission escalation, timeout changes, new
-skips or altered assertions were used to report these as successful. Explicitly
-identified failed-test LOCAL engines were gracefully stopped through the normal
-shutdown protocol, preserving files and other user processes.
+| Stage | Tested head | Complete discovery | Exit / difference from main |
+|---|---|---|---|
+| unchanged main | ba597b5 |3760 tests /1898.475s |1;10 failures,27 errors,42 original skips |
+| U | `baaf503` |3769 tests /1464.224s |1; FAILED (failures=10, errors=27, skipped=42); **zero new failure identities** |
+| M1-1 | `f71d1a0` |3821 tests /1485.703s |1; FAILED (failures=10, errors=27, skipped=42); **zero new failure identities** |
+| M1-2 | `2b324f7` |3838 tests /1451.909s |1; FAILED (failures=10, errors=27, skipped=42); **zero new failure identities** |
+| M1-3 | `b445db3` |3882 tests /1466.537s |1; FAILED (failures=10, errors=27, skipped=42); **zero new failure identities** |
 
-## §11 delivery checklist disposition
 
-| Required item | All four PRs |
-|---|---|
-| Impact before edits; HIGH/CRITICAL called out | Done; shared runtime/contracts/charts/UI remain high risk, dynamic UNKNOWN references checked in source |
-| Prepush, individual relevant tests, layers | Executed; feature tests/layers pass, baseline host/ADR failures disclosed above and in each PR |
-| Complete precommit graph detection | Done per phase; M1-1 279 symbols/20 flows, M1-2 420/36, M1-3 630/52, U57/13; none partial/truncated |
-| Contracts and design status | Appended each phase, merged both append sets; IMPLEMENTED means offline implementation, not real-account acceptance |
-| Locked files and existing safety | Reviewed unchanged; G3, PROJECT_STATE, SDK pin, saved profiles, acceptance score, OOS/budgets/timeouts untouched |
-| SDK safety | Fake-only tests; no actual key login, CA/account/order operations |
-| Screenshots and human acceptance | Attached/linked; native owner visual/DPI check explicitly pending |
+The unchanged-main run failed with10 failures/27 errors/42 original skips.
+The36 distinct identities and host causes are listed in
+[m1-ci-main-baseline.md](../analysis/m1-ci-main-baseline.md). Full branch results
+are checked against those identities and failure evidence; no local nonzero
+exit is called a passing suite. Native Windows host failures were not waived
+on CI: every mandatory remote check is checked separately.
 
-Graph indexing used GitNexus only and did not download FTS/vector extensions.
-Large shared-flow/dispatch limitations remain lower bounds, not evidence of
-zero impact. Passing tests do not waive CRITICAL aggregate graph risk.
-The final merged-workspace precommit detection lists all 39 changed symbols
-across 63 files and 603 affected indexed flows, CRITICAL, with neither partial
-nor truncated. This covers the pending U merge relative to M1-3, rather than
-recounting the already committed history/alerts. The broad shared disclosure/UI
-process memberships were reviewed alongside the preserved presentation-only
-diff and UI regressions; analyzer process-budget/type-resolution warnings remain
-explicit limitations. Final index: 19,548 nodes, 51,698 edges, 627 flows.
+Additional per-PR `pwsh -File tools/prepush.ps1 -Tests -Base <parent>` results:
 
-## Pending owner checks / incomplete external verification
+| Stage | Changed-file tests | Exit / remaining host failures |
+|---|---|---|
+| U, parent origin/main |329 in60.256s |1; three existing symlink errors and three existing handle failures |
+| M1-1, parent U |142 in30.937s |1; same three handle failures |
+| M1-2, parent M1-1 |88 in35.963s |1; existing redirector startup class error, one original skip |
+| M1-3, parent M1-2 |121 in35.254s |1; same existing redirector startup class error |
 
-There are no deliberately unfinished M1 source features. These checks require
-the owner or a suitable Windows/market environment and have not been claimed:
+On all four branches Ruff check/format, the tracked-source Python3.11 syntax
+scan and static credential gate pass. These partial test counts supplement,
+rather than replace, the complete discovery results above.
 
-1. Real broker environment/reference login, quote/index/scanner callback fields,
-   latency, reconnect, full directory info performance and actual subscription
-   limit (configured 20), real usage/quota updates and 13:35 correction.
-2. Real sparse/illiquid ticks under the existing fail-closed incomplete-minute
-   policy. This policy was retained rather than relaxed for cosmetic continuity.
-3. Native app visual review of all seven research pages and market terminal at
-   both sizes/DPI; keyboard/screen reader and OS local notification behavior.
-4. Original Windows symlink and retained-handle test prerequisites above; full
-   prepush is consequently **not green**. CI/review remain external results.
+| PR | Tested source | Workflow / attempt | CI |
+|---|---|---|---|
+| [#119](https://github.com/yostar77612/mark-auto/pull/119) | `baaf503` | [workflow](https://github.com/yostar77612/mark-auto/actions/runs/41243604116), attempt2 | **35/35 SUCCESS** |
+| [#118](https://github.com/yostar77612/mark-auto/pull/118) | `f71d1a0` | [workflow](https://github.com/yostar77612/mark-auto/actions/runs/41246989363), attempt1 | **35/35 SUCCESS** |
+| [#120](https://github.com/yostar77612/mark-auto/pull/120) | `2b324f7` | [workflow](https://github.com/yostar77612/mark-auto/actions/runs/41248844837), attempt1 | **35/35 SUCCESS** |
+| [#121](https://github.com/yostar77612/mark-auto/pull/121) | `b445db3` | [workflow](https://github.com/yostar77612/mark-auto/actions/runs/41250590842), attempt1 | **35/35 SUCCESS** |
 
-No true key login, CA or financial operation was performed. No user data was
-deleted, no history rewritten, and no locked file change was attempted. M1-4
-five-depth/order details/sector ranking/futures are explicitly outside M1.
 
-## Decision highlights
+The U workflow initially reported a Windows3.11 native AV during settings-help
+construction. It was not treated as a passing result or assigned a speculative
+cause. On localPython3.11.3/Qt6.12, the exact case20 times and exact17-case prefix
+passed with280/238 forced collections;33 predecessor/context tests also passed.
+The prefix took49.858s. SeparatePython3.13.11 widget lifecycle probes passed
+100 cycles. CI usedPython3.11.9; the native failure remains unreproduced locally. The entire workflow was rerun with `gh run rerun 41243604116`;
+attempt2 completed successfully with all35 checks green; the first native AV
+remains unreproduced, and no product fix is claimed for that event.
+No dependency changes, product workarounds, test skips or reduced coverage were
+introduced for this unreproduced native failure. One obsolete M1-1 full run was
+stopped after checking its exact test-owned process chain, then restarted from
+scratch; that incomplete log is excluded from all verification counts.
 
-[m1-decisions.md](m1-decisions.md) records autonomous choices, affected files and
-reasons: independent settings/session; official-over-live/holiday coverage;
-strict UI module boundaries; no duplicate subscriptions; safe IO lock order;
-queued-history alert suppression; asynchronous notification-safe UI; archive
-before retention; preserved originals; equivalent presentation test updates;
-and honest host-test limitations. Temporary tool/approval failures were resolved
-through backups and clean worktree evidence; none blocks delivery.
+The resolved integration passed91 focused catalog/alias/layer/inventory/appearance,
+privacy, no-inline-style, terminal and settings-help tests in22.205s. Layers and
+trading architecture have zero findings. The first local integration run admitted
+five task-created temporary Python helpers into the product scan; those helpers
+were moved into an already ignored temporary directory, and the same91 tests
+then passed. No inventory entry, exclusion rule or assertion was changed.
+
+Integration lint, Python3.11 syntax and static credential checks pass. The root
+repository-wide format check exits1 solely on the unchanged documented CRLF
+checkout issue in docs/adr/0006-strategy-intent-pipeline.md. Its Git content is
+identical to main; CONTRIBUTING explicitly says not to normalize it for this
+item. Formatting checks on all26 changed source/document files pass. The four
+PR worktrees' whole format checks also pass.
+
+The final fake-facade/fixture-alert screenshot recapture passed at1366×768 and
+1920×1080 with zero outer scroll areas. Current chart sizes are699×339 and
+1032×558 after centralized terminal styles; images and measured JSON are linked
+above. This is projected-monitor offline evidence, not physical-DPI or live
+broker acceptance.
+
+The additional root documentation/layout selection ran37 tests:36 passed and
+one preexisting physical-workspace archive check failed. The ignored/untracked
+`archives/legacy_autotrading/trader` directory dates from2026-10-19 (last
+modified2026-10-31 23:12), before this work. The test is byte-identical to
+origin/main; executing that original main case against the same physical root
+reproduces the identical failure. The directory is preserved under the explicit
+no-user-data-deletion stop line; no assertion, skip or path rule is changed.
+This artifact is absent in the four clean worktrees and CI clones, where their
+complete suites have the results above. It is not added to the36-identity
+main-worktree failure allowance.
+
+## Final delivery and remaining owner checks
+
+All source phases retain their §4.6/5.7/6.5/7.5 acceptance evidence above.
+Fresh GitNexus integration-merge precommit analysis: 68 changed symbols, 16 indexed flows, 38 files; **CRITICAL**, no partial/truncated result. Shared UI/theme/runtime callers remain an explicit risk, not a waiver based on unknown graph edges. Per-PR repair comparisons were U32/5 MEDIUM, M1-1 93/15 HIGH, M1-2 118/32 CRITICAL, M1-3 121/26 CRITICAL; all complete listings. No FTS/vector extension was downloaded.
+
+The final integration source/fixtures/inventory match the fully tested M1-3
+stack. Integration-only report/screenshots/contracts are retained. The30 G3
+files, PROJECT_STATE, SDK pin, historical saved profiles and acceptance score
+remain unchanged. No real key login, CA, account/financial operation, user-data
+deletion or history rewrite occurred. Test-owned LOCAL engines left by the
+baseline redirector startup failure were stopped through authenticated normal
+shutdown after checking their exact fixture path and PID; user processes and
+files were retained.
+
+Pending owner checks remain actual broker quote/index/scanner fields and
+latency, full-directory performance and real quotas, reconnect/13:35 correction,
+sparse live ticks under the original incomplete-minute policy, both native
+window sizes/DPI, keyboard/screen reader and OS notifications. M1-4 is outside
+scope. Main remains ba597b5; merging any PR remains the owner’s task.
+
+Autonomous decisions, including source/baseline separation and preserved
+Windows safety guards, are recorded in [m1-decisions.md](m1-decisions.md).
