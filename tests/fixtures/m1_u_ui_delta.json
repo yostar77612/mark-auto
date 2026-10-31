@@ -1,10 +1,67 @@
 {
-  "scope": "M1-U only: native advanced disclosures, passive header badge, comparison empty state and reviewed captions. Historical R7 data, painter counts, pixels, call order, errors and eight result snapshots remain exact.",
+  "scope": "M1-U only: native advanced disclosures, passive header badge, comparison empty state, grouped settings help and reviewed captions. Historical R7 data, painter counts, pixels, call order, errors and eight result snapshots remain exact.",
   "widget_names_added": [
-    "saved_results_empty"
+    "saved_results_empty",
+    "settings_help_topics"
   ],
   "focus": {
     "removed": [
+      {
+        "row": [
+          "help_automatic_backup.__init__.text_5",
+          "欄位說明",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "help_chatgpt_ui.__init__.text_3",
+          "欄位說明",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "help_ui._settings_page.text_16",
+          "欄位說明",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "help_ui._settings_page.text_2",
+          "欄位說明",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "help_ui._settings_page.text_3",
+          "欄位說明",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "help_ui._settings_page.text_4",
+          "欄位說明",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "help_ui._settings_page.text_5",
+          "欄位說明",
+          ""
+        ],
+        "count": 1
+      },
       {
         "row": [
           "onboarding_go_backtest",
@@ -75,6 +132,14 @@
         "row": [
           "saved_results_empty",
           "尚無保存的回測結果，先到回測頁執行",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "settings_help_topics",
+          "欄位說明",
           ""
         ],
         "count": 1
@@ -166,6 +231,15 @@
             false
           ],
           "count": 1
+        },
+        {
+          "row": [
+            "settings_help_topics",
+            "?",
+            true,
+            false
+          ],
+          "count": 1
         }
       ]
     },
@@ -253,6 +327,15 @@
             false
           ],
           "count": 1
+        },
+        {
+          "row": [
+            "settings_help_topics",
+            "?",
+            true,
+            false
+          ],
+          "count": 1
         }
       ]
     },
@@ -340,6 +423,15 @@
             false
           ],
           "count": 1
+        },
+        {
+          "row": [
+            "settings_help_topics",
+            "?",
+            true,
+            false
+          ],
+          "count": 1
         }
       ]
     },
@@ -423,6 +515,15 @@
           "row": [
             "saved_results_empty",
             "尚無保存的回測結果，先到回測頁執行",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "settings_help_topics",
+            "?",
             true,
             false
           ],

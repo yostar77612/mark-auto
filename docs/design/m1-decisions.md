@@ -104,3 +104,22 @@
   test_page_services_r1 仍對全部 inventory 做精確相等。此 helper 在整合圖譜為HIGH，
   直接影響清冊測試與 replay 工具；已讀三個呼叫者並以原完整斷言驗證。
 - 相關原閘門73項、相鄰47項通過。完整 discover 與遠端 CI 仍須完成，不能據此宣稱全綠。
+
+## 2026-11-01 04:55 +08:00 — M1-U：第一輪完整測試的四項新失敗
+
+- 第一輪完整 discover a210a99：3766項、1524.589秒，14 failures／27 errors／42 skips。
+  相對 main 有四個新失敗，因此沒有推送，後續完整測試排程自動停止。
+- U3 明確要求比較頁可見；U4 明確要求閒置狀態不重複。選擇獨立 baseline-only 提交b10ea42，
+  精確更新兩項舊呈現期望，保留所有七頁身份、重排／快捷操作、原 ready 值、隱私、取消與提示斷言；
+  另加 visible-idle／hidden-ready 的正反檢查。兩個原模組六項測試通過。
+- 真實功能問題：install_page_help 把七個原先隱藏的設定說明全部移至標題，導致14按鈕超過8。
+  選項：提高限制／恢復勾選框／單一說明入口。選第三個，不改8的上限，也不退回舊 advanced 元件。
+  標題一個 InstantPopup 入口保留七個原 objectName、accessibleName、tooltip 與全部文字。
+- 首版選單功能測試通過但截圖只有33px窄格；保留修復歷史，以後續提交修正，不改寫歷史。
+  小問號維持原樣式，完整說明改用480px可換行 PlainText 標籤與 focus proxy；實際讀圖531×474，
+  文字完整。新測試檢查幾何容納、七主題鍵盤巡覽、Escape 與可存取描述，不只檢查 text 值。
+- 獨立 fixture-only 更新：settings_help_topics 一個新名稱、設定預設按鈕14→8、R7精確焦點／
+  四狀態差異、PageIdentity 四個 observer 定位各+1。原 historical digest、r7_base、圖表像素、
+  各種上限與斷言不變。修改後135個相關測試全部通過；接著重跑完整 discover。
+- 來源在隔離 worktree 完成後 cherry-pick（1b8394f、db5538b），父層之間仍只用正常 merge。
+  首次增量圖譜缺 UID 的 CRITICAL 寬泛結果保留為限制，強制離線重建後再完整偵測，不下載擴充。
