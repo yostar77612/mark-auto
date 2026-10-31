@@ -215,13 +215,24 @@ def _group_settings_help(layout):
     menu = QMenu(anchor)
     anchor.setMenu(menu)
     for button in topics:
-        # Full text is visible and available to assistive tools inside the menu;
-        # the original object name, accessible name and tooltip remain intact.
-        button.setText(button.toolTip())
+        # The compact helpButton theme belongs only to the original '?' control.
+        # A separate wrapping label gives the explanation its own geometry.
         button.setAccessibleDescription(button.toolTip())
         button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        row = QWidget()
+        row.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        row.setFocusProxy(button)
+        content = QHBoxLayout(row)
+        content.setContentsMargins(6, 6, 6, 6)
+        content.addWidget(button, alignment=Qt.AlignmentFlag.AlignTop)
+        label = QLabel(button.toolTip())
+        label.setTextFormat(Qt.TextFormat.PlainText)
+        label.setWordWrap(True)
+        label.setFixedWidth(480)
+        label.setAccessibleName(button.toolTip())
+        content.addWidget(label)
         action = QWidgetAction(menu)
         action.setText(button.toolTip())
-        action.setDefaultWidget(button)
+        action.setDefaultWidget(row)
         menu.addAction(action)
     menu.hide()

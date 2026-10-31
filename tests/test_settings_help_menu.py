@@ -2,10 +2,10 @@
 
 import unittest
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QAccessible
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QPushButton, QToolButton
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QToolButton
 
 from desktop_app.components.help import _HELP_OBJECT_NAMES
 from desktop_app.strings.catalog import ui_text
@@ -30,7 +30,7 @@ class SettingsHelpMenuTests(unittest.TestCase):
             'ui.settings_page.manual_update_hint', 'chatgpt_ui.init.included_usage_hint',
             'automatic_backup.init.schedule_hint',
         )
-        topics = [action.defaultWidget() for action in anchor.menu().actions()]
+        topics = [action.defaultWidget().findChild(QToolButton) for action in anchor.menu().actions()]
         self.assertEqual(len(topics), 7)
         self.assertEqual({button.objectName() for button in topics}, {_HELP_OBJECT_NAMES.get('help_' + key, 'help_' + key) for key in keys})
         for key in keys:
@@ -52,9 +52,12 @@ class SettingsHelpMenuTests(unittest.TestCase):
         def inspect_popup():
             observations.append(menu.isVisible())
             for action in menu.actions():
-                button = action.defaultWidget()
+                row = action.defaultWidget()
+                button = row.findChild(QToolButton)
+                label = row.findChild(QLabel)
                 observations.append(button.isVisible())
-                observations.append(button.text() == button.toolTip() == action.text())
+                observations.append(button.text() == ui_text('help.symbol'))
+                observations.append(label.text() == button.toolTip() == action.text())
                 accessible = QAccessible.queryAccessibleInterface(button)
                 observations.append(accessible.text(QAccessible.Text.Description) == button.toolTip())
                 QTest.keyClick(menu, Qt.Key.Key_Down)
@@ -70,3 +73,27 @@ class SettingsHelpMenuTests(unittest.TestCase):
         self.assertTrue(observations)
         self.assertTrue(all(observations), observations)
         self.assertFalse(menu.isVisible())
+
+    def test_popup_allocates_visible_wrapped_text_geometry(self):
+        anchor = self.page.findChild(QToolButton, 'settings_help_topics')
+        menu = anchor.menu()
+        self.addCleanup(menu.close)
+        menu.popup(anchor.mapToGlobal(QPoint(0, anchor.height())))
+        self.app.processEvents()
+        self.assertGreater(menu.width(), 480)
+        multiline = []
+        for action in menu.actions():
+            row = action.defaultWidget()
+            label = row.findChild(QLabel)
+            button = row.findChild(QToolButton)
+            self.assertTrue(label.isVisible())
+            self.assertEqual(label.text(), button.toolTip())
+            self.assertTrue(label.wordWrap())
+            self.assertGreaterEqual(label.width(), 400)
+            wrapped = label.fontMetrics().boundingRect(0, 0, label.width(), 10000, Qt.TextFlag.TextWordWrap, label.text())
+            self.assertGreaterEqual(label.height(), wrapped.height())
+            self.assertGreaterEqual(label.height(), label.heightForWidth(label.width()))
+            self.assertTrue(row.rect().contains(label.geometry()))
+            self.assertTrue(menu.rect().contains(row.geometry()))
+            multiline.append(label.height() > label.fontMetrics().lineSpacing())
+        self.assertTrue(any(multiline))
