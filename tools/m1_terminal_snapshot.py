@@ -23,6 +23,7 @@ from desktop_app.features.market.workspace import WorkspacePanel
 from desktop_app.features.trading.market_terminal import MarketTerminalWidget
 from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
 from desktop_app.features.trading.window import TradingWindow
+from desktop_app.shell.theme import _apply_terminal_theme
 from quantlab.research_core.adapters.market_layout import LayoutStore
 from tests.test_market_terminal_ui import FakeFacade, STOCK, OTHER
 from tools.ui_snapshot import _save_png, page_metrics
@@ -38,7 +39,13 @@ def capture_terminal(out):
     facade = FakeFacade((STOCK.instrument_id, OTHER.instrument_id))
     store = LayoutStore(panel_ids=PANEL_IDS, default_layout=terminal_preset())
     widget = MarketTerminalWidget(
-        facade, CandlestickChart(), facade.state, layout_store=store, index_chart=CandlestickChart(show_volume=False), panel_factory=WorkspacePanel
+        facade,
+        CandlestickChart(),
+        facade.state,
+        layout_store=store,
+        index_chart=CandlestickChart(show_volume=False),
+        panel_factory=WorkspacePanel,
+        style_terminal=_apply_terminal_theme,
     )
     widget.select_instrument(STOCK.instrument_id)
     frame = QWidget()
@@ -107,6 +114,7 @@ def capture_window(out, *, with_alerts=False):
         index_chart=CandlestickChart(show_volume=False),
         panel_factory=WorkspacePanel,
         alerts_panel=alerts.panel if alerts is not None else None,
+        style_terminal=_apply_terminal_theme,
     )
     window = TradingWindow(facade, facade.state, market_watch=terminal)
     window.poll.stop()

@@ -69,10 +69,11 @@ class PageIdentityTests(unittest.TestCase):
                     self.assertEqual(len(set(DEFAULT_PAGE_ORDER)), 7)
                     self.assertEqual(set(DEFAULT_PAGE_ORDER), {'data', 'strategy', 'backtest', 'compare', 'paper', 'market', 'settings'})
                     self.assertEqual(captured['labels'], [ui_text('redesign.nav.' + page_id) for page_id in DEFAULT_PAGE_ORDER])
-                    self.assertTrue(window.navigation.item(page_index(window, 'compare')).isHidden())
+                    # M1-U3 exposes comparison in the shared sidebar/workflow order.
+                    self.assertFalse(window.navigation.item(page_index(window, 'compare')).isHidden())
                     self.assertEqual(
                         [window.navigation.item(i).text() for i in range(7) if not window.navigation.item(i).isHidden()][:4],
-                        [ui_text('redesign.nav.' + page_id) for page_id in ('data', 'strategy', 'backtest', 'paper')],
+                        [ui_text('redesign.nav.' + page_id) for page_id in ('data', 'strategy', 'backtest', 'compare')],
                     )
                     hints = [ui_text('onboarding.hint.' + str(i)) for i in WORKFLOW_ORDER]
                     self.assertEqual(captured['hints'], hints)

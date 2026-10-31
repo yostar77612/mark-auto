@@ -39,5 +39,5 @@ class CatalogSplitTests(unittest.TestCase):
                         phases[phase].add(key)
                         orders.append(order)
                         self.assertEqual(catalog._ZH_TW_CHUNKS[phase][key], value)
-        self.assertEqual(sorted(orders), list(range(2608)))
+        self.assertEqual(sorted(orders), list(range(2753)))
         self.assertEqual(sorted(aliases), list(range(1323)))

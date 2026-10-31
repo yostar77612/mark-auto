@@ -6529,7 +6529,6 @@ explicit non-blocking sandbox exception in t4-base.md; the controller must rerun
 the original discovery commands outside the sandbox. No replacement tests,
 skips, fixture rewrites or timeout extensions were used.
 
-
 ## M1-1 — independent watch-only market history (2026-11-01)
 
 The explicitly enabled market-data connection needs only an environment and an
@@ -6640,8 +6639,6 @@ both settings sections without acquiring the core writer lock from market callba
 Existing execution/CA/account/reference gates remain unchanged. New/related offline
 modules and full-check environment limitations are listed in m1-3-verification.md.
 G3, PROJECT_STATE, SDK pin, OOS/budgets/timeouts and original test strength are intact.
-
-
 ## M1-U existing UI corrections (2026-11-01)
 
 Research workflow chips share sidebar page identity/captions, retain five
