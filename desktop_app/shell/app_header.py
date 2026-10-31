@@ -57,7 +57,7 @@ class AppHeader(QWidget):
         self.job.setAccessibleName(ui_text('access.header_job'))
         self.time = QLabel(self)
         self.time.setObjectName('header_clock')
-        self.disclosure = QCheckBox(ui_text('header.help'))
+        self.disclosure = QCheckBox(ui_text('header.help'), self)
         self.disclosure.setObjectName('research_mode_status')
         self.disclosure.setAccessibleName(ui_text('ui.init.research_mode_banner'))
         self.disclosure.setToolTip(ui_text('ui.init.research_only_disclaimer'))
@@ -82,7 +82,7 @@ class AppHeader(QWidget):
             row.addWidget(label)
         self.source.hide()
         self.time.hide()
-        row.addWidget(self.disclosure)
+        self.disclosure.hide()  # Existing automation identity; the visible guide owns help.
         self.theme = QComboBox()
         self.theme.setAccessibleName(ui_text('appearance.theme'))
         self.theme.addItem(ui_text('appearance.dark'), 'dark')
@@ -191,6 +191,9 @@ class AppHeader(QWidget):
         else:
             text = ui_text('header.idle')
         self.job.setText(text)
+        status = getattr(self.host, 'status', None)
+        if status is not None:
+            status.setVisible(bool(status.text()) and status.text() != ui_text('ui.init.ready') and not getattr(progress, 'running', False))
         controller = getattr(self.host, 'chatgpt_controller', None)
         connected = getattr(controller, 'state', None) == 'plan_ready'
         self.connection.setText(ui_text('redesign.header.connected') if connected else ui_text('redesign.header.connection'))

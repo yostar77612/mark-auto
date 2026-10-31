@@ -47,7 +47,7 @@ COLORS = {
     'danger': '#ff8282',
 }
 FONT_SIZES = {'body': 14, 'hint': 12, 'page_title': 22, 'market_title': 20}
-NUMERIC_FONT_FAMILY = 'monospace'
+NUMERIC_FONT_FAMILY = 'Microsoft JhengHei UI'
 SPACING = {'label': 3, 'input': 7, 'button_vertical': 9, 'button_horizontal': 14}
 STATUS_COLORS = {state: COLORS[state] for state in ('success', 'warning', 'danger', 'neutral')}
 
@@ -284,7 +284,7 @@ QMainWindow, QScrollArea, QStackedWidget { background: @background@; }
 QWidget { background: @background@; font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: @font_body@px; color: @text@; }
 QScrollArea { border: none; }
 QWidget#app_header { border-bottom: 1px solid @table_grid@; padding-bottom: 6px; }
-QLabel#header_live_disabled { color: @hint_text@; border: 1px solid @table_grid@; border-radius: 5px; padding: 5px 9px; }
+QLabel#header_live_disabled { color: @hint_text@; border:0; padding:2px 6px; font-weight:600; }
 QLabel#header_job_state, QLabel#status { color: @hint_text@; }
 QFrame[designCard="true"] { background: @input_background@; border: 1px solid @table_grid@; border-radius: 10px; }
 QFrame[designCard="true"] QLabel { background: transparent; }
@@ -296,12 +296,16 @@ QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 5px; }
 QLabel { padding: @space_label@px 0; }
 QWidget[resultCard="true"] { background: @input_background@; border: 1px solid @input_border@; border-radius: 6px; }
 QLabel[kpiValue="true"] { font-size: 18px; font-weight: bold; }
-QListWidget { background: @navigation_background@; color: @navigation_text@; border: none; border-radius: 9px; padding: 9px; }
+QListWidget { background: @navigation_background@; color: @navigation_text@; border: none; border-radius: 9px; padding: 9px; outline:0; }
+QListWidget:focus { border:1px solid @focus_border@; }
+QListWidget::item:focus { outline:0; border:0; }
 QListWidget::item { padding: 12px 8px; border-radius: 5px; }
 QListWidget::item:selected { background: @navigation_selection@; color: white; }
 QPushButton { background: transparent; color: @text@; border: 1px solid @button_border@; border-radius: 6px; padding: @space_button_vertical@px @space_button_horizontal@px; min-height: 20px; }
 QPushButton[role="primary"] { background: @primary@; color: white; border: 1px solid @primary@; }
-QPushButton[role="taskChoice"]:checked { background: @primary@; color: white; border: 1px solid @primary@; }
+QPushButton[role="taskChoice"]:checked { background:@tab_selection@; color:@text@; border:0; border-bottom:3px solid @focus_border@; }
+QPushButton[themePart="strategyTab"] { border:0; border-radius:0; border-bottom:3px solid transparent; background:transparent; }
+QPushButton[themePart="strategyTab"]:checked { background:@tab_selection@; color:@text@; border-bottom:3px solid @focus_border@; }
 QPushButton[role="danger"] { background: @danger_background@; color: white; border: 1px solid @danger_border@; }
 QLabel[prerequisite="true"] { color: @hint_text@; font-size: @font_hint@px; }
 QPushButton:hover { background: @button_hover@; }
@@ -328,9 +332,13 @@ QProgressBar::chunk { background: @primary@; }
 QPushButton[role="secondary"] { background: transparent; color: @text@; border: 1px solid @button_border@; }
 QPushButton[role="secondary"]:hover { background: @button_hover@; }
 QPushButton[role="secondary"]:disabled { background: @muted_background@; color: @disabled_text@; }
+QPushButton[themePart="strategyTab"] { border:0; border-radius:0; border-bottom:3px solid transparent; background:transparent; }
+QPushButton[themePart="strategyTab"]:checked { background:@tab_selection@; color:@text@; border-bottom:3px solid @focus_border@; }
 QPushButton[role="onboardingChip"], QPushButton#onboarding_dismiss { padding:2px 8px; min-height:20px; }
 QPushButton[role="onboardingChip"][state="done"] { color:@success@; border-color:@success@; }
 QPushButton[role="onboardingChip"][state="pending"] { color:@text@; border-color:@button_border@; }
+QPushButton[role="onboardingChip"][state="progress"] { color:@warning@; border-color:@warning@; }
+QPushButton[role="onboardingChip"][current="true"] { border-bottom:3px solid @focus_border@; }
 QWidget[role="asyncStatus"][state="error"] QLabel { color:@danger@; }
 QWidget[role="asyncStatus"][state="stale"] QLabel { color:@warning@; }
 QWidget[role="asyncStatus"][state="loading"] QLabel { color:@hint_text@; }

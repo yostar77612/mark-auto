@@ -519,6 +519,7 @@
   "save_automatic_backup_prerequisite",
   "save_settings",
   "save_settings_prerequisite",
+  "saved_results_empty",
   "saved_results_table",
   "seed",
   "select_strategy",

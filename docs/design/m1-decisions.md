@@ -72,3 +72,42 @@
 - 完整 prepush 205 項中，Windows 原生環境失敗據實保留；真正 Python 解釋器的12項程序測試通過。
   已確認測試啟動器 PID 361768 與引擎 PID237016 不同，未增加任何期限或削弱斷言。
 - 真實視窗兩種尺寸截圖、六欄、無外層捲軸與無障礙測試完成；最後人工目視仍待擁有者。
+## 2026-11-01 03:34 +08:00 — CI 修復，M1-U
+
+- 問題：上一輪只跑 changed-file prepush，漏掉完整基準鎖定測試。
+  選項：放寬測試／修結構並精確重釘。依擁有者要求選後者；每分支完整 discover，
+  與 origin/main 對照，最後讀遠端 CI，不把 changed-file 檢查當成完整驗收。
+- 問題：四分支的全域字串 order 會碰撞。選項：保留獨立分支／改單一堆疊。
+  依擁有者指定採 U→1→2→3，只用 merge，不重寫歷史。U 的十條新增記錄為2608–2617；
+  catalog 註冊移至 `# Lane M1-U`，不改 ui_text 或 alias 規則。
+- 問題：U1 的替代字元、U3/U5/U6/U9/U11 的真實畫面與樣式改變舊基準。
+  選擇只重釘這些實際差異，保持舊 provenance 欄位、所有斷言與類別上限不變；
+  基準更新另作 fixture-only commit，逐項說明。B11 實際是同一個新增 objectName，
+  不需要調整類別限制。
+- 檔案：strings/catalog.py、strings/m1_ui.py、08_REFACTOR_INVENTORY.md、
+  desktop_catalog_main_6b78239.json、desktop_text_alias_map.json、
+  download_auto_import_ui_delta.json、desktop_widget_names.json、
+  ui_redesign_empty_presentation.json、test_desktop_catalog_split.py、test_b4_appearance.py。
+- Graph：catalog.py upstream CRITICAL（129直接、162總參照），以全目錄、alias、
+  畫面與完整測試驗證；unittest discovery 方法 UNKNOWN 由原始碼與 runner 引用確認，
+  不當成沒人使用。沒有下載 FTS/vector 擴充。
+
+## 2026-11-01 03:45 +08:00 — CI 修復，M1-1
+
+- 正常 merge M1-U，保留兩側契約與全部決策；新的十四條行情設定字串接續為2618–2631，
+  改放 Lane M1-1。沒有改 alias 規則或 ui_text 實作。
+- 先修來源、再用獨立 fixture-only commit 更新全目錄與 record 總數2632，
+  並登記真實新增產品模組。U 基準沿用，不重釘無關基準；B11 原類別上限保留。
+- catalog upstream CRITICAL：以完整字串/alias/UI 閘門與本分支 full discover 驗證，
+  不用圖譜空流程取代測試。影響 strings/marketdata.py、strings/catalog.py、
+  第2節清冊、desktop_catalog_main_6b78239.json、test_desktop_catalog_split.py。
+
+## 2026-11-01 03:58 +08:00 — CI 修復，M1-2
+
+- 以正常 merge 接續 U→1，終端48條字串為2632–2679，註冊於 Lane M1-2。
+- 四處 inline stylesheet 搬至 theme.py 私有 scoped selector，以 semantic properties
+  與既有 composition 注入更新；不放寬 AST gate、不直接跨層匯入。保留舊 app/market QSS
+  bytes，深淺主題與漲跌配色切換仍更新標題、指數與表格。具體 HIGH/CRITICAL impact
+  與新三項/舊12項測試證據見 m1-ci-style-verification.md。
+- 只重釘終端新增字串、總數2680、真實新增模組與測試觀察點，獨立 fixture-only commit。
+  原 C5、圖表與研究基準沿用上一層，B11 類別/公開介面限制完全保留。

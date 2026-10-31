@@ -3,6 +3,7 @@
 from .assistant import ENTRIES as _part_assistant
 from .terminal import ENTRIES as _part_terminal
 from .marketdata import ENTRIES as _part_marketdata
+from .m1_ui import ENTRIES as _part_m1_ui
 from .popout import ENTRIES as _part_popout
 from .replay import ENTRIES as _part_replay
 from .tooltip import ENTRIES as _part_tooltip
@@ -77,6 +78,7 @@ from .dashboard import ENTRIES as _part_dashboard
 PARTS = (
     _part_terminal,
     _part_marketdata,
+    _part_m1_ui,
     _part_assistant,
     _part_popout,
     _part_replay,
