@@ -4,7 +4,7 @@ Status: SPEC FOR IMPLEMENTATION / NOT IMPLEMENTED. Verification: NOT RUN.
 Audience: implementing agent (Codex). Owner decisions dated 2026-10-31.
 Design rationale and layout sketch: [m1-stock-index-market-terminal.md](m1-stock-index-market-terminal.md).
 
-本規格把 M1 拆成三個可獨立交付的階段（M1-1、M1-2、M1-3），每階段一個 PR。
+本規格把 M1 拆成四個可獨立交付的工作（M1-1、M1-2、M1-3，以及既有畫面瑕疵修正 M1-U），每項一個 PR。
 M1-4 只列大綱，另開規格。所有「必須」為驗收條件；「建議」可依程式現況調整，
 但須在 PR 說明理由。
 
@@ -33,7 +33,7 @@ M1-4 只列大綱，另開規格。所有「必須」為驗收條件；「建議
 7. 每階段推送前：`powershell -File tools/prepush.ps1 -Tests`；相關測試模組逐一以
    `python -m unittest tests.<module>` 執行。
 8. 每階段 PR：分支 `codex/m1-1-market-history`、`codex/m1-2-terminal-layout`、
-   `codex/m1-3-alerts`；用 PR 範本；把該階段行為契約追加到 IMPLEMENTATION_CONTRACTS；
+   `codex/m1-3-alerts`、`codex/m1-u-ui-defects`；用 PR 範本；把該階段行為契約追加到 IMPLEMENTATION_CONTRACTS；
    **不得**編輯 `docs/agent/PROJECT_STATE.md`；不得把未驗證項目寫成已通過。
 9. 任何測試都不得登入永豐。SDK 一律用 fake／錄製 fixture。
 10. 程式碼不要過度防禦，規則見 0.1。
@@ -72,11 +72,12 @@ M1-1b K 線庫（SQLite）  ──┼─► M1-1d 回補 HistorySync ─► M1-2
 M1-1c 週期四選一（UI）     │                              M1-2c 搜尋接商品目錄
 M1-2a 版面骨架（fake 資料）─┘
 M1-3a 警示 domain 純函式（SMA、KD、12 類判斷）  ← 不依賴任何其他工作，第一天就開始
+M1-U  既有畫面瑕疵修正（第 7.5 節）              ← 不依賴任何其他工作，第一天就開始
 M1-3b 警示 UI 與規則存檔                       ← 只依賴 M1-2a 的 alerts 區塊
 ```
 
 **要做：**
-- 開工當下就同時開始所有沒有箭頭指向的工作：M1-1a、M1-1b、M1-1c、M1-2a、M1-3a。
+- 開工當下就同時開始所有沒有箭頭指向的工作：M1-1a、M1-1b、M1-1c、M1-2a、M1-3a、M1-U。
   可用多個 worktree 或子代理平行寫，各自只動自己的檔案。
 - UI 先用 fake 資料把版面做出來，不必等後端完成。
 - 介面（port、dataclass 欄位）先在一個小 commit 定下來，雙方依介面平行實作。
@@ -238,7 +239,7 @@ M1-3b 警示 UI 與規則存檔                       ← 只依賴 M1-2a 的 al
    透過 port 使用 `KlineStore` 與行情 session；不直接 import adapters。
 2. 設定（凍結 dataclass，含驗證）：
    `minute_lookback_days=60`（1、5、15 分 K 用）、`daily_lookback_days=365`（日 K 用，
-   由 1 分 K 彙整）、`chunk_days=29`、`earliest=2020-03-02`、
+   由 1 分 K 彙整；**擁有者 2026-11-01 確認日 K 先回補 1 年**，更長期留待日後改用官方日資料）、`chunk_days=29`、`earliest=2020-03-02`、
    `quota_reserve_ratio=Decimal('0.10')`。
 3. 觸發時機：
    - 行情連線成功後一次。
@@ -508,6 +509,37 @@ AlertEvent: event_id, rule_id, kind, instrument_id, occurred_at (UTC), value (De
 - 五檔與成交明細：註冊 `set_on_bidask_stk_v1_callback`，主圖右側可收合面板。
 - 類股排行：`IndustryContribution`（`IX0001/TSE`、`IX0043/OTC`）或盤後排行查詢。
 - 期指加入觀察商品（`TXFR1`、`MXFR1`；只看盤，不得綁定交易）。
+
+## 7.5 M1-U：既有畫面瑕疵修正（擁有者要求，2026-11-01）
+
+獨立 PR，分支 `codex/m1-u-ui-defects`，第一天即可開始。研究版（`desktop.py` 啟動的 7 頁）與
+v2 交易版共用 [theme.py](../../desktop_app/shell/theme.py)。改動前後以
+`tools/ui_snapshot.py --size 1366x768` 截圖附在 PR（研究版 7 頁全部）。
+v2「市場」頁的混亂由 M1-2 整頁取代，不在此節處理。
+
+| # | 瑕疵（2026-10-31 截圖觀察） | 位置 | 修正後應有的結果 |
+|---|---|---|---|
+| U1 | 缺字方塊：「進階・資料來源與診斷 □」、圖例「紅／跌 □ 綠」 | [market.py](../../desktop_app/strings/market.py) 的 `▸`／`▾`、[charts.py](../../desktop_app/strings/charts.py)、[appearance.py](../../desktop_app/strings/appearance.py) 的 `−`（U+2212）；`NUMERIC_FONT_FAMILY='monospace'` 見 [theme.py](../../desktop_app/shell/theme.py) | 所有字串改用 Microsoft JhengHei UI 確定有的字元（例：`▸`→ Qt 原生箭頭或 `›`，`−`→ `-`），或讓該元件改用 CJK 字型；全專案字串不再出現會缺字的符號，並加一個測試掃描字串目錄禁止這些字元 |
+| U2 | 側欄選中項目內多一層方框 | [setup.py](../../desktop_app/shell/setup.py) `window.navigation`、[theme.py](../../desktop_app/shell/theme.py) `QListWidget::item` | 選中項目只有一層藍底；鍵盤焦點改以樣式表 `:focus` 呈現，不出現內框 |
+| U3 | 頂部進度鈕（資料、策略、回測、結果比較、紙上交易）與側欄項目、順序不一致，且全部顯示「待完成」 | [onboarding.py](../../desktop_app/shell/onboarding.py) | 進度與側欄用同一份順序；可點擊切頁；已完成、進行中、待完成三種狀態用不同顏色；目前頁面有標示 |
+| U4 | 「說明」勾選框與「說明：開始使用」按鈕重複；「研究模式・實盤停用」做成按鈕樣式；狀態列「就緒」與頂部「作業：待命」重複 | [app_header.py](../../desktop_app/shell/app_header.py)、[onboarding.py](../../desktop_app/shell/onboarding.py) | 說明入口只留一個；研究模式改為不可點的標章樣式；作業狀態只在一處顯示 |
+| U5 | 比較頁表格欄位被截斷（「建立時間（台」「最…」），沒資料時一片空白 | [compare_table.py](../../desktop_app/features/compare/compare_table.py) | 1366 寬下欄位標題完整可讀（可縮短標題、加 tooltip 或調整欄寬策略）；空表顯示「尚無保存的回測結果，先到回測頁執行」 |
+| U6 | 回測頁停用原因「需要先完成：匯入並／驗證研究資料」被擠成兩行窄欄 | [polish.py](../../desktop_app/shell/polish.py) `prerequisite_required` 的標籤 | 提示與按鈕同列時不換行，或改放按鈕下方整列 |
+| U7 | 回測摘要顯示英文代號「策略：trend」 | [backtest.py](../../desktop_app/features/backtest/backtest.py) `redesign.backtest.summary` | 顯示策略的中文名稱（沿用策略頁已有的中文名稱來源） |
+| U8 | 紙上交易「本次重播 K 棒數」與「歷史重播長度」兩個標籤對應同一個輸入框 | [paper_layout.py](../../desktop_app/features/paper/paper_layout.py)、[polish.py](../../desktop_app/shell/polish.py) `replay_bars` | 只留一個標籤「本次重播 K 棒數」 |
+| U9 | 進階區塊有的用 ▸ 展開、有的用勾選框（紙上交易「進階・手動委託…」「進階診斷 JSON」） | [widgets.py](../../desktop_app/components/widgets.py) `_advanced`、[help.py](../../desktop_app/components/help.py) | 全部進階區塊統一用同一種展開元件與樣式 |
+| U10 | 「?」說明鈕位置不一致（左下角、主要按鈕下、群組框內） | [help.py](../../desktop_app/components/help.py) 與各頁 | 統一放在頁面標題右側 |
+| U11 | 策略中心四個入口（找策略點子、AI 研究、自行設定、進階驗證）是分頁卻長得像按鈕，第一個還是主要按鈕的藍色 | [strategy_tabs.py](../../desktop_app/features/strategy/strategy_tabs.py) | 改為分頁樣式，選中者有底線或底色，不使用主要按鈕色 |
+| U12 | 回測頁有兩個搶眼的主要按鈕（「準備回測資料與策略」整列藍色、「執行回測」） | [backtest.py](../../desktop_app/features/backtest/backtest.py) | 每頁只有一個主要按鈕；未完成前置條件時主要按鈕是「前往…」，完成後才是「執行回測」 |
+| U13 | v2 頂部狀態佔 4 行（環境、帳戶、引擎、交易日、持有政策、資金、損益、風險、行情、待處理） | [window.py](../../desktop_app/features/trading/window.py) `v2.context_line`、`v2.summary_line`、`v2.issue_summary` | 縮成一行：「本機模擬 · 交易日 10/23 · 淨損益 0 · 剩餘風險 10,000 · ⚠ 1 項待處理」，其餘點擊後展開；全部頁面頂部高度不超過 48px |
+
+**M1-U 驗收條件**
+
+- [ ] U1–U13 逐項附修正前後截圖。
+- [ ] 字串目錄掃描測試：不含已知缺字符號。
+- [ ] 既有 objectName、無障礙名稱保留；鍵盤可操作性不退步。
+- [ ] 既有 UI 測試全部通過；需更新的截圖基準以獨立 commit 說明原因。
+- [ ] 真實 App 目視由擁有者最終確認，PR 標為待確認。
 
 ## 8. 新增字串（key 建議，文字為最終顯示）
 
