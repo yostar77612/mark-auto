@@ -103,8 +103,8 @@ def legacy_walk_forward_inputs(source):
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'execute_walk_forward']
     for call in sorted(calls, key=lambda node: node.lineno, reverse=True):
         call.keywords.append(ast.keyword(arg='inputs', value=ast.parse('_layered_inputs', mode='eval').body))
-        # The fixture call is a single returned statement.
-        statement = ' ' * (call.col_offset - len('return ')) + 'return ' + ast.unparse(ast.fix_missing_locations(call)) + '\n'
-        lines[call.lineno - 1 : call.end_lineno] = [statement]
+        statement = next(node for node in ast.walk(tree) if isinstance(node, ast.Return) and node.lineno <= call.lineno <= node.end_lineno)
+        text = ' ' * statement.col_offset + ast.unparse(ast.fix_missing_locations(statement)) + '\n'
+        lines[statement.lineno - 1 : statement.end_lineno] = [text]
     # Its own research_controls and _dataset remain the golden implementations.
     return 'from desktop_app.bootstrap import create_operation_ports as _create_ports\n_layered_inputs = _create_ports().inputs\n' + ''.join(lines)

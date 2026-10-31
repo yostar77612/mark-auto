@@ -304,3 +304,10 @@ def render_result(result):
         result['oos_statistics_text'] = oos_statistics_text(result)
         del result['oos_statistics']
     return result
+
+
+def execute_walk_forward(operation, payload, paths, *, descendants_stopped=False, inputs):
+    """Render application results at the Qt-free desktop operation boundary."""
+    from quantlab.research_core.application.walk_forward_operations import execute_walk_forward as execute
+
+    return render_result(execute(operation, payload, paths, descendants_stopped=descendants_stopped, inputs=inputs))

@@ -103,7 +103,7 @@ class DesktopOperationPorts:
 
     @property
     def walk_forward(self):
-        import quantlab.research_core.application.walk_forward_operations as implementation
+        import desktop_app.features.walk_forward.presenter as implementation
 
         return implementation
 

@@ -179,7 +179,7 @@ def repair():
     write(name, source.replace(old, new))
     name = 'tools/layer_map.json'
     mapping = json.loads((ROOT / name).read_text(encoding='utf-8'))
-    mapping['split_origins']['quantlab/research_core/application/analysis_operations.py'] = 'quantlab/desktop_runtime.py'
+    mapping['split_origins'].pop('quantlab/research_core/application/analysis_operations.py', None)
     write(name, json.dumps(mapping, indent=2) + '\n')
     name = 'tools/layer_allowlist.json'
     entries = json.loads((ROOT / name).read_text(encoding='utf-8'))
@@ -214,6 +214,163 @@ def repair():
     print(json.dumps({'changed': sorted(CHANGED)}, indent=2))
 
 
+def repair_r7():
+    """Replay mechanical ownership and observer forwarding repairs after C/D merge."""
+    name = 'desktop_app/shell/job_presenter.py'
+    write(
+        name,
+        (ROOT / name)
+        .read_text(encoding='utf-8')
+        .replace(
+            'import desktop_app.features.capital_scenario.worker as _capital',
+            'import desktop_app.features.capital_scenario.presenter as _capital',
+        ),
+    )
+    name = 'quantlab/research_core/application/ui_operations/derived.py'
+    write(name, (ROOT / name).read_text(encoding='utf-8').replace('dataset_loader=ports.inputs._dataset', 'inputs=ports.inputs'))
+    for name in ('tests/smoke_timeout_diagnostics.py', 'tests/generic_smoke_phase_diagnostics.py'):
+        source = (ROOT / name).read_text(encoding='utf-8')
+        source = source.replace('job_id, reconciliation_admitted=False):', 'job_id, reconciliation_admitted=False, *worker_options):')
+        source = source.replace('job_id, reconciliation_admitted)', 'job_id, reconciliation_admitted, *worker_options)')
+        write(name, source)
+    name = 'quantlab/research_core/application/analysis_operations.py'
+    write(
+        name,
+        (ROOT / name)
+        .read_text(encoding='utf-8')
+        .replace(
+            'from quantlab.runtime_support import validate_analysis_request',
+            'from quantlab.research_core.application.job_requests import validate_analysis_request',
+        ),
+    )
+    name = 'tools/refactor/split_ui_inputs.py'
+    source = (ROOT / name).read_text(encoding='utf-8')
+    old = "        # The fixture call is a single returned statement.\n        statement = ' ' * (call.col_offset - len('return ')) + 'return ' + ast.unparse(ast.fix_missing_locations(call)) + '\\n'\n        lines[call.lineno - 1 : call.end_lineno] = [statement]"
+    new = "        statement = next(node for node in ast.walk(tree) if isinstance(node, ast.Return) and node.lineno <= call.lineno <= node.end_lineno)\n        text = ' ' * statement.col_offset + ast.unparse(ast.fix_missing_locations(statement)) + '\\n'\n        lines[statement.lineno - 1 : statement.end_lineno] = [text]"
+    write(name, source.replace(old, new))
+    name = 'tools/layer_map.json'
+    mapping = json.loads((ROOT / name).read_text(encoding='utf-8'))
+    mapping['split_origins'].pop('quantlab/research_core/application/analysis_operations.py', None)
+    write(name, json.dumps(mapping, indent=2) + '\n')
+    reasons = ROOT / '.tmp-layered/test-edit-reasons.json'
+    history = json.loads(reasons.read_text(encoding='utf-8-sig')) if reasons.exists() else []
+    for name in ('tests/smoke_timeout_diagnostics.py', 'tests/generic_smoke_phase_diagnostics.py'):
+        row = {
+            'file': name,
+            'slice': 'T4-r7',
+            'reason': 'Forward the merged worker helper nonce and operation registrar unchanged through diagnostic observers; assertions unchanged.',
+        }
+        if row not in history:
+            history.append(row)
+    reasons.write_text(json.dumps(history, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps({'r7_changed': sorted(CHANGED)}, indent=2))
+
+
+def scan_desktop_r7():
+    """Resolve merged desktop imports, module attributes and literal patch seams."""
+    from pathlib import Path
+    import ast, importlib, json, os, subprocess, sys, types
+
+    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+    sys.path.insert(0, str(Path.cwd()))
+    paths = set()
+    for ref in ('3429f2c', '7bef566'):
+        paths.update(subprocess.check_output(['git', 'diff', '--name-only', '6b78239', ref], text=True).splitlines())
+    errors = []
+    created_targets = []
+    counts = {'files': 0, 'from_imports': 0, 'module_aliases': 0, 'alias_attributes': 0, 'patch_strings': 0, 'patch_objects': 0, 'created_patch_attributes': 0}
+
+    def resolve(name):
+        parts = name.split('.')
+        for n in range(len(parts), 0, -1):
+            try:
+                obj = importlib.import_module('.'.join(parts[:n]))
+                break
+            except ModuleNotFoundError:
+                continue
+        else:
+            raise ImportError(name)
+        for part in parts[n:]:
+            obj = getattr(obj, part)
+        return obj
+
+    for name in sorted(paths | {p.as_posix() for p in Path('tests').glob('*.py')}):
+        p = Path(name)
+        if not p.is_file() or p.suffix != '.py':
+            continue
+        counts['files'] += 1
+        tree = ast.parse(p.read_text(encoding='utf-8-sig'))
+        aliases = {}
+        bindings = {}
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Import):
+                for a in n.names:
+                    if a.name.startswith('desktop_app.') and a.asname:
+                        aliases[a.asname] = a.name
+                        bindings[a.asname] = a.name
+                        counts['module_aliases'] += 1
+            if isinstance(n, ast.ImportFrom) and n.module and n.module.startswith('desktop_app.'):
+                for a in n.names:
+                    if a.name == '*':
+                        continue
+                    target = n.module + '.' + a.name
+                    counts['from_imports'] += 1
+                    try:
+                        obj = resolve(target)
+                        bindings[a.asname or a.name] = target
+                        if isinstance(obj, types.ModuleType):
+                            aliases[a.asname or a.name] = target
+                    except Exception as exc:
+                        errors.append([name, n.lineno, target, type(exc).__name__, str(exc)])
+        for n in ast.walk(tree):
+            target = None
+            kind = None
+            if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id in aliases:
+                target = aliases[n.value.id] + '.' + n.attr
+                kind = 'alias_attributes'
+            if isinstance(n, ast.Call):
+                fn = n.func
+                if (
+                    ((isinstance(fn, ast.Attribute) and fn.attr == 'patch') or (isinstance(fn, ast.Name) and fn.id == 'patch'))
+                    and n.args
+                    and isinstance(n.args[0], ast.Constant)
+                    and isinstance(n.args[0].value, str)
+                    and n.args[0].value.startswith('desktop_app.')
+                ):
+                    target = n.args[0].value
+                    kind = 'patch_strings'
+                if isinstance(fn, ast.Attribute) and fn.attr == 'object' and len(n.args) > 1 and isinstance(n.args[1], ast.Constant):
+                    owner = n.args[0]
+                    attributes = []
+                    while isinstance(owner, ast.Attribute):
+                        attributes.append(owner.attr)
+                        owner = owner.value
+                    if isinstance(owner, ast.Name) and owner.id in bindings:
+                        target = '.'.join([bindings[owner.id], *reversed(attributes), str(n.args[1].value)])
+                        kind = 'patch_objects'
+            if target:
+                counts[kind] += 1
+                try:
+                    resolve(target)
+                except Exception as exc:
+                    if isinstance(n, ast.Call) and any(k.arg == 'create' and isinstance(k.value, ast.Constant) and k.value.value is True for k in n.keywords):
+                        resolve(target.rsplit('.', 1)[0])
+                        counts['created_patch_attributes'] += 1
+                        created_targets.append([name, n.lineno, target])
+                    else:
+                        errors.append([name, n.lineno, target, type(exc).__name__, str(exc)])
+    result = {'counts': counts, 'created_targets': created_targets, 'errors': errors}
+    Path('.tmp-layered/r7-desktop-scan.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
+    print(json.dumps(result, indent=2))
+    if errors:
+        raise SystemExit(1)
+
+
 if __name__ == '__main__':
-    resolve()
-    repair()
+    if '--scan-desktop' in sys.argv:
+        scan_desktop_r7()
+    elif '--r7' in sys.argv:
+        repair_r7()
+    else:
+        resolve()
+        repair()

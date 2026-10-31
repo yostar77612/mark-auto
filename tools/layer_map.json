@@ -34,8 +34,7 @@
     "quantlab/research_core/application/job_requests.py": "quantlab/desktop_runtime.py",
     "quantlab/research_core/application/saved_pool_attempts.py": "quantlab/saved_candidate_pool.py",
     "quantlab/research_core/application/saved_pool_validation.py": "quantlab/saved_candidate_pool.py",
-    "desktop_app/features/capital_scenario/presenter.py": "desktop_capital_scenario.py",
-    "quantlab/research_core/application/analysis_operations.py": "quantlab/desktop_runtime.py"
+    "desktop_app/features/capital_scenario/presenter.py": "desktop_capital_scenario.py"
   },
   "overrides": {
     "desktop.py": "composition",

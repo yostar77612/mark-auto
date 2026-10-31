@@ -6,7 +6,7 @@ from quantlab.core import ValidationError, canonical_json, content_hash
 
 
 def analysis_plan(ports: UiOperationPorts, paths, request, *, emit=None):
-    from quantlab.runtime_support import validate_analysis_request
+    from quantlab.research_core.application.job_requests import validate_analysis_request
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
 
     validate_analysis_request(request)

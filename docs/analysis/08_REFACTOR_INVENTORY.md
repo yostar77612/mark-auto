@@ -342,7 +342,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `trading_entry.py` | 11 | composition | `trading_entry.py` | 根目錄 launcher／桌面接線；保留路徑；`launch`，`trading_entry.py:6` |
 | `trading_runtime.py` | 103 | composition | `trading_runtime.py` | 根目錄 launcher／桌面接線；保留路徑；`default_root`，`trading_runtime.py:18` |
 
-| `quantlab/research_core/__init__.py` | 0 | application | `quantlab/research_core/__init__.py` | PR D; slice 2a responsibility owner |
+| `quantlab/research_core/__init__.py` | 0 | shared | `quantlab/research_core/__init__.py` | PR D; slice 2a responsibility owner |
 | `quantlab/research_core/adapters/job_process.py` | 325 | application | `quantlab/research_core/adapters/job_process.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/adapters/job_worker.py` | 188 | application | `quantlab/research_core/adapters/job_worker.py` | PR D; slice 2a real owner |
 | `quantlab/research_core/adapters/saved_pool_source.py` | 297 | application | `quantlab/research_core/adapters/saved_pool_source.py` | PR D; slice 2a real owner |
@@ -640,6 +640,8 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `tools/refactor/replay_pr_c_mechanical.py` | 376 | tooling | `tools/refactor/replay_pr_c_mechanical.py` | PR C r5: ordered content and mechanical replay. |
 
 | `tools/refactor/replay_pr_c_inventory.json` | 4 | tooling | `tools/refactor/replay_pr_c_inventory.json` | PR C r5: ordered content and mechanical replay. |
+
+| `tools/refactor/split_core_r4.py` | 376 | tooling | `tools/refactor/split_core_r4.py` | C/D merged source inventory; existing layer assignment. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -1281,7 +1283,7 @@ and ordered validation across modules during this extraction.
 | function | `quantlab/research_core/application/saved_pool_validation.py:48` | `_validate_provider` | 56 | Grew from base `quantlab/saved_candidate_pool.py:1532` (48 lines) by 8 lines from multiline predicate formatting and spacing; the value_bounds import is now absolute. Keep the complete allowlisted provider/limit validation in one operation. |
 | function | `quantlab/research_core/application/saved_pool_validation.py:106` | `validate_admission_snapshot` | 166 | Grew from base `quantlab/saved_candidate_pool.py:1582` (91 lines) by 75 lines: multiline required-field tuples/predicates plus explicit profiles/audited_producer keyword inputs replacing frozen-module globals. Keep atomic snapshot identity, count, event-bound and attempt-chain validation together. |
 | function | `quantlab/research_core/application/saved_pool_validation.py:285` | `_validate_chatgpt_provider` | 113 | Grew from base `quantlab/saved_candidate_pool.py:1845` (63 lines) by 50 lines from multiline descriptor/limit/request literals and predicates plus split research/receipt imports. Keep archived descriptor and request/receipt consistency checks together; no new provider calls. |
-| function | `quantlab/research_core/application/walk_forward_operations.py:150` | `execute_walk_forward` | 55 | Moved from base `desktop_app/features/walk_forward/presenter.py:214` (58 lines); inject dataset_loader instead of the UI inputs object, resolve research_controls in application code, relocate saved-pool import and shorten comments (55 lines now). Keep operation admission and immutable preview/run binding together. |
+| function | `quantlab/research_core/application/walk_forward_operations.py:150` | `execute_walk_forward` | 57 | Moved from base `desktop_app/features/walk_forward/presenter.py:214` (58 lines); inject dataset_loader instead of the UI inputs object, resolve research_controls in application code, relocate saved-pool import and shorten comments; merged inputs-port forwarding restores the caller-supplied controls and dataset (57 lines now). Keep operation admission and immutable preview/run binding together. |
 | function | `quantlab/research_core/domain/receipts.py:9` | `_validated_receipt_snapshot` | 57 | Moved verbatim from base `quantlab/research.py:727` (57 lines). Keep strict receipt-envelope rejection and credential-safe projection together. |
 | file | `quantlab/saved_candidate_pool.py:1` | `<module>` | 1439 | Frozen historical producer/profile blocks retained in the source owner from base `quantlab/saved_candidate_pool.py:1` (2063 lines); source/admission helpers extracted and an explicit current split profile added (1439 lines now). Historical literal bytes stay frozen; the file as a whole changed and remains formatter-excluded. |
 | function | `quantlab/saved_candidate_pool.py:1322` | `admit_saved_campaign_pool` | 65 | Pre-existing definition, verbatim vs base `quantlab/saved_candidate_pool.py:1465` (65 lines). Retain the admission entry operation beside its frozen producer profiles. |

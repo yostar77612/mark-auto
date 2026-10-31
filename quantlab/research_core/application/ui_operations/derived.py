@@ -8,24 +8,16 @@ def _handle_ui_capital_scenario(ports: UiOperationPorts, payload, paths, root, *
 
 
 def _handle_ui_walk_forward_preview(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    return ports.walk_forward.execute_walk_forward(
-        'ui_walk_forward_preview', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=ports.inputs._dataset
-    )
+    return ports.walk_forward.execute_walk_forward('ui_walk_forward_preview', payload, paths, descendants_stopped=descendants_stopped, inputs=ports.inputs)
 
 
 def _handle_ui_walk_forward_read(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    return ports.walk_forward.execute_walk_forward(
-        'ui_walk_forward_read', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=ports.inputs._dataset
-    )
+    return ports.walk_forward.execute_walk_forward('ui_walk_forward_read', payload, paths, descendants_stopped=descendants_stopped, inputs=ports.inputs)
 
 
 def _handle_ui_walk_forward_reconcile(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    return ports.walk_forward.execute_walk_forward(
-        'ui_walk_forward_reconcile', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=ports.inputs._dataset
-    )
+    return ports.walk_forward.execute_walk_forward('ui_walk_forward_reconcile', payload, paths, descendants_stopped=descendants_stopped, inputs=ports.inputs)
 
 
 def _handle_ui_walk_forward_run(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
-    return ports.walk_forward.execute_walk_forward(
-        'ui_walk_forward_run', payload, paths, descendants_stopped=descendants_stopped, dataset_loader=ports.inputs._dataset
-    )
+    return ports.walk_forward.execute_walk_forward('ui_walk_forward_run', payload, paths, descendants_stopped=descendants_stopped, inputs=ports.inputs)
