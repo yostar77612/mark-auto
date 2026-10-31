@@ -646,6 +646,16 @@ The 311-row R0 baseline above stays fixed. These additions record the shared err
 | `tools/refactor/split_core_r8.py` | 33 | tooling | `tools/refactor/split_core_r8.py` | C/D merged source inventory; existing layer assignment. |
 | `tools/refactor/split_core_r10.py` | 58 | tooling | `tools/refactor/split_core_r10.py` | T4-r10 reproducible integration repair; existing tools/ layer assignment. |
 
+PR E shared-component owners (content-only):
+
+| path | lines | layer | target path | note |
+|---|---:|---|---|---|
+| `desktop_app/components/tables.py` | 17 | presentation | `desktop_app/components/tables.py` | T5-E1 section 7 consolidation; no move. |
+| `desktop_app/components/fields.py` | 10 | presentation | `desktop_app/components/fields.py` | T5-E1 section 7 consolidation; no move. |
+| `desktop_app/components/validation_feedback.py` | 46 | presentation | `desktop_app/components/validation_feedback.py` | T5-E1 section 7 consolidation; no move. |
+| `quantlab/shared/time.py` | 11 | shared | `quantlab/shared/time.py` | T5-E1 section 7 consolidation; no move. |
+| `tools/refactor/e_components.py` | 341 | tooling | `tools/refactor/e_components.py` | T5-E1 section 7 consolidation; no move. |
+
 ## 3 跨層匯入違規（GitNexus + AST）
 
 ### 3.1 靜態匯入明細
@@ -999,6 +1009,24 @@ GitNexus 先查詢 table/row/form/chart/async/provider 流程，再讀表列來�
 
 不同 JSON 設定不視為可直接合併：`quantlab/market_history.py:55` 使用 `ensure_ascii=False, allow_nan=False`，`quantlab/chart_drawings.py:103` 的 Unicode 預設不同，`quantlab/market_providers.py:472` 的 cache 編碼設定也不同。它們會影響 bytes／digest，不能只因都呼叫 `json.dumps` 就共用同一預設；G3 的 canonical/hash 更不在抽取範圍。
 
+### 7.1 PR E outcome (T5-E1)
+
+Content-only extraction against main `909fc49`; no files renamed. Counts below are static production call expressions, excluding tests and migration scripts. Caller-specific schemas, ordering, raw/financial roles, privacy, timestamp display zones, precision, validation and lifecycle remain with their existing owners. `tools/refactor/e_components.py` reproduces all mechanical caller/import edits.
+
+| Section 7 candidate | Outcome | Final owner and production call sites / boundary |
+|---|---|---|
+| Table fill / widths | merged | `desktop_app/components/tables.py`: `fill_table` has 3 callers (`components/forms.py`, `components/result_tables.py`, `components/result_widgets.py` under `desktop_app/`); `resize_columns` has 3 (`components/result_tables.py`, `components/result_widgets.py`, `features/backtest/summary.py`). Fills reuse ResultTable filling. Header schemas and exact tooltip/raw-role construction remain in the adapters; the shared fill mechanism installs their items unchanged. |
+| Row amount / missing-value formatting | merged | `desktop_app/components/formatting.py:finite_decimal` unifies bounded finite parsing used by `display_number`, `features/backtest/summary.py:_report_number`, and `components/result_widgets.py` display/sort adapters (3 responsibility owners; 8 call expressions). Missing/undefined/zero/diagnostics_required, report type admission, units, percent and precision remain unchanged in callers. |
+| Form fields | merged | `desktop_app/components/fields.py:named_field`: base `components/forms.py`, `features/data/data.py`, and market `history_dialog.py`, `dashboard.py`, `layout.py`, `indicator_controls.py` (6 caller modules; 36 call expressions). Data file fields retain their unnamed object identity; date/Decimal/choice validation stays local. |
+| Validation feedback | merged | `desktop_app/components/validation_feedback.py`: catalogue and next-step text copied verbatim from `components/error_guidance.py`; `show_feedback` has 4 call sites across 3 modules (`shell/window.py:form_feedback`, `components/error_guidance.py:run_inline`, `features/market/history_dialog.py:add_session` and `accept_import`). Privacy masking precedes rendering, and only the existing inline caller adds guidance/accessibility text. Exception classification, confirmation and highlight timers stay local. |
+| Chart widget | tolerated | Already merged in `desktop_app/components/charts.py:CandlestickChart`, used by `features/market/layout.py` and `features/market/chart_popout.py` (2 hosts). Equity overlay is a distinct responsibility; no new chart abstraction. |
+| Async status | already merged | `desktop_app/components/async_status.py:AsyncStatus` has 4 construction sites: `features/backtest/backtest.py`, `features/settings/log_table.py`, `features/settings/maintenance.py`, `shell/onboarding.py`. Market `watchlist_presenter.py:set_loading` controls refresh-button state/text; strategy job state is already delegated to its presenter and shared job components. Their distinct text/lifecycle remains local, with no new generic state machine. |
+| External market service port | tolerated | `quantlab/market_providers.py`: 2 official daily-source implementations with existing injected transport. No third same-contract source; no HTTP base class or new port. ChatGPT/broker contracts remain distinct. |
+| Aware ISO timestamp conversion | merged | `quantlab/shared/time.py:aware_iso_utc` has 3 callers: `desktop_app/features/backtest/summary.py`, `desktop_app/components/result_widgets.py`, `quantlab/market_history.py`. String ISO/Z parsing normalizes to UTC and rejects naive input. Each caller keeps its previous length/timezone checks, exception handling and final UTC/Taipei formatting. |
+| JSON encoding / canonicalization boundary | tolerated | `quantlab/market_history.py`, `quantlab/chart_drawings.py`, `quantlab/market_providers.py` retain distinct Unicode/allow_nan/cache byte policies. G3 canonical/hash code untouched. |
+
+Existing tests changed only by mechanical imports: `tests/test_accessibility_walk.py`, `tests/test_error_guidance_u7.py`, `tests/test_strict_json_a3.py`; reasons are recorded under slice `T5-E1` in `.tmp-layered/test-edit-reasons.json`. No assertions changed. The requested prohibition on GitNexus/unittest/commits supersedes the older common workflow for this round; controller owns full tests, packaging, CI and commits.
+
 ## 8 死碼候選
 
 本節列「圖上沒有直接呼叫」的候選與實際處置，不將它當成可刪清單。查詢綁定 `C:/Users/Mark/Desktop/Mark auto`，索引 commit／來源基線交叉確認同第 1 節。以 GitNexus `context` 與 upstream `impact` 核對，CLI 重現例：
@@ -1096,16 +1124,16 @@ Measurements include both PR C UI extraction and PR D presentation residues afte
 | `desktop_app/features/backtest/backtest.py:222` | `show_result` | function | 64 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
 | `desktop_app/features/backtest/backtest_summary_card.py:55` | `_set_structure` | function | 61 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
 | `desktop_app/features/backtest/forms.py:14` | `__init__` | function | 59 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
-| `desktop_app/features/backtest/summary.py:52` | `backtest_summary_text` | function | 71 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/backtest/summary.py:51` | `backtest_summary_text` | function | 71 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
 | `desktop_app/features/compare/compare.py:1` | `<module>` | file | 457 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:33` | `ComparePage` | class | 425 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:83` | `_analysis_section` | function | 56 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:308` | `_refresh_recovery_controls` | function | 66 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/features/compare/compare.py:375` | `_analysis_event` | function | 51 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
-| `desktop_app/features/data/data.py:16` | `__init__` | function | 124 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
+| `desktop_app/features/data/data.py:17` | `__init__` | function | 124 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. PR E: line/span refreshed after shared-component extraction; behavior retained. |
 | `desktop_app/features/market/chart_presenter.py:11` | `_render_chart` | function | 66 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
-| `desktop_app/features/market/history_dialog.py:28` | `__init__` | function | 103 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
-| `desktop_app/features/market/indicator_controls.py:26` | `_build_market_indicators` | function | 57 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/features/market/history_dialog.py:31` | `__init__` | function | 103 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
+| `desktop_app/features/market/indicator_controls.py:27` | `_build_market_indicators` | function | 57 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
 | `desktop_app/features/market/indicator_presenter.py:69` | `_apply_indicators` | function | 89 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
 | `desktop_app/features/market/market.py:69` | `load_market_cache` | function | 75 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
 | `desktop_app/features/market/market.py:145` | `bind_result_layers` | function | 83 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
@@ -1126,7 +1154,7 @@ Measurements include both PR C UI extraction and PR D presentation residues afte
 | `desktop_app/features/walk_forward/wf_wizard.py:146` | `__init__` | function | 88 | Existing PR D presentation residue; retained for behavior-preserving C/D integration and documented alongside PR C exceptions. |
 | `desktop_app/research_bootstrap.py:55` | `open` | function | 73 | Retained as one ordered Qt construction sequence; preserves dialog lifetime and signal wiring. |
 | `desktop_app/shell/host.py:143` | `_page_services` | function | 88 | body unchanged in PR C (import-only edit); retained as one ordered Qt construction sequence. |
-| `desktop_app/shell/window.py:95` | `closeEvent` | function | 61 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. |
+| `desktop_app/shell/window.py:96` | `closeEvent` | function | 61 | Retained as one ordered Qt construction or report sequence; preserves field, section and formatting order. PR E: line/span refreshed after shared-component extraction; behavior retained. |
 | `desktop_app/smoke/__init__.py:1` | `<module>` | file | 978 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
 | `desktop_app/smoke/__init__.py:34` | `_auth_smoke_dependencies` | function | 90 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
 | `desktop_app/smoke/__init__.py:162` | `_market_smoke_ui` | function | 118 | body unchanged in PR C (import-only edit); decomposition assigned to PR E per section 10 desktop_smoke row. |
@@ -1258,7 +1286,7 @@ and ordered validation across modules during this extraction.
 | function | `quantlab/assistant/adapters/chatgpt/transport.py:31` | `_response` | 86 | Grew from base `quantlab/assistant/adapters/chatgpt/provider.py:300` (62 lines) by 24 lines solely through formatting/spacing; AST identical (including literals). Keep the bounded HTTP response/close lifecycle together. |
 | file | `quantlab/assistant/application/connection_contracts.py:1` | `<module>` | 420 | Assembled inherited request/event/subscription contracts and allowlisted constants from base `desktop_app/features/assistant/connection.py:1` (1462-line source module; contracts precede ConnectionController at line 427). 420-line Qt-free contract owner keeps payload validation and its schemas together; presentation-dependent mask lookup is an explicit literal here. |
 | function | `quantlab/assistant/application/connection_contracts.py:128` | `official_authorization_url` | 51 | Moved/reformatted from base `desktop_app/features/assistant/connection.py:126` (51 lines); AST identical (including literals), 0 fewer physical lines. Keep the complete allowlisted event/URL validation contract together. |
-| function | `quantlab/assistant/application/connection_contracts.py:248` | `__post_init__` | 66 | Moved from base `desktop_app/features/assistant/connection.py:250` (66 lines); expressions parenthesized and the localized masked-account pattern inlined as its literal to remove a presentation dependency. Keep the complete ConnectionEvent validation contract; no span growth. |
+| function | `quantlab/assistant/application/connection_contracts.py:248` | `__post_init__` | 66 | Moved/reformatted from base `desktop_app/features/assistant/connection.py:344` (53 lines); AST identical (including literals), 1 fewer physical lines. Keep the complete allowlisted event/URL validation contract together. |
 | function | `quantlab/assistant/application/connection_contracts.py:341` | `__post_init__` | 52 | Moved/reformatted from base `desktop_app/features/assistant/connection.py:344` (53 lines); AST identical (including literals), 1 fewer physical lines. Keep the complete allowlisted event/URL validation contract together. |
 | class | `quantlab/assistant/application/connection_controller.py:34` | `ConnectionStateMachine` | 354 | Extracted/renamed from ConnectionController at base `desktop_app/features/assistant/connection.py:427` (397 lines). Qt signals and localized text moved behind emit/present callbacks, leaving a 354-line application state machine. Keep request/quiescence/terminal/account state transitions in one owner. |
 | function | `quantlab/assistant/application/connection_controller.py:91` | `request` | 76 | Moved from base `desktop_app/features/assistant/connection.py:488` (80 lines); text/signal mutations routed through present/emit callbacks and expressions parenthesized (76 lines now). Keep request admission, quiescence and dispatch as one transition. |

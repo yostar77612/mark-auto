@@ -5,6 +5,8 @@ Product rule references do not authenticate local files or dated user calendars.
 No network, trading-core imports, archive extraction, or fabricated minute bars.
 """
 
+from quantlab.shared.time import aware_iso_utc
+
 from dataclasses import dataclass, replace as replace
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -63,7 +65,7 @@ def _stamp(text):
     if not isinstance(text, str) or len(text) > 40:
         _fail('invalid session timestamp')
     try:
-        value = datetime.fromisoformat(text.replace('Z', '+00:00'))
+        value = aware_iso_utc(text)
         if value.tzinfo is None:
             raise ValueError()
         return value.astimezone(UTC)

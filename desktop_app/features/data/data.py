@@ -1,3 +1,4 @@
+from desktop_app.components.fields import named_field
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel, QComboBox, QPlainTextEdit, QCheckBox, QSpinBox, QTabWidget, QVBoxLayout, QFormLayout, QLineEdit, QHBoxLayout
 from desktop_app.strings.catalog import ui_text
@@ -151,8 +152,7 @@ class DataPage(QWidget):
         label = QLabel(title)
         layout.addWidget(label)
         field = QLineEdit()
-        field.setAccessibleName(title)
-        label.setBuddy(field)
+        named_field(field, None, title, caption=label)
         row = QHBoxLayout()
         layout.addLayout(row)
         row.addWidget(field, 1)

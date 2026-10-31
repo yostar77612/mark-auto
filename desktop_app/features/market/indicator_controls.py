@@ -1,7 +1,8 @@
+from desktop_app.components.fields import named_field
 from desktop_app.strings.catalog import ui_text
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QCheckBox, QSpinBox, QDoubleSpinBox, QScrollArea, QTabWidget
 from desktop_app.features.market.indicator_presenter import DEFAULT_INDICATORS
-from desktop_app.features.market.rows import _label, _named
+from desktop_app.features.market.rows import _label
 
 
 def _build_market_trading_status(self, source_row, PanelCard):
@@ -29,7 +30,7 @@ def _build_market_indicators(self, right_scroll, right, right_layout, PanelCard)
     group.content_layout().addLayout(grid)
     row = 0
     for key, config in DEFAULT_INDICATORS.items():
-        check = _named(QCheckBox(key), 'market_indicator_' + key, ui_text('market.init.indicator_name').format(key))
+        check = named_field(QCheckBox(key), 'market_indicator_' + key, ui_text('market.init.indicator_name').format(key))
         check.setChecked(config['enabled'])
         grid.addWidget(check, row, 0, 1, 2)
         row += 1
@@ -47,7 +48,7 @@ def _build_market_indicators(self, right_scroll, right, right_layout, PanelCard)
                 )
                 spin.setValue(number)
                 field = f'{param}_{index}' if isinstance(value, list) else param
-                _named(spin, f'market_{key}_{field}', ui_text('access.indicator_parameter').format(key, field))
+                named_field(spin, f'market_{key}_{field}', ui_text('access.indicator_parameter').format(key, field))
                 grid.addWidget(
                     _label(
                         ui_text('market.init.moving_average').format(str(index + 1))

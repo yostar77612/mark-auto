@@ -278,7 +278,12 @@
     "tools/refactor/replay_pr_c.py": "tooling",
     "tools/refactor/replay_pr_c_content.json": "tooling",
     "tools/refactor/replay_pr_c_mechanical.py": "tooling",
-    "tools/refactor/replay_pr_c_inventory.json": "tooling"
+    "tools/refactor/replay_pr_c_inventory.json": "tooling",
+    "desktop_app/components/tables.py": "presentation",
+    "desktop_app/components/fields.py": "presentation",
+    "desktop_app/components/validation_feedback.py": "presentation",
+    "quantlab/shared/time.py": "shared",
+    "tools/refactor/e_components.py": "tooling"
   },
   "ports": [
     "quantlab/assistant/ports/",

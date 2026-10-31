@@ -1,3 +1,4 @@
+from desktop_app.components.validation_feedback import show_feedback
 from desktop_app.shell import navigation as _navigation
 from desktop_app.shell.theme import set_theme_property
 from desktop_app.strings.catalog import ui_text
@@ -55,7 +56,7 @@ class MainWindow(SharedStateBindings, QMainWindow):
             return None
 
     def form_feedback(self, widget, message):
-        self.status.setText(message)
+        show_feedback(self.status, message)
         scroll = widget.parentWidget()
         while scroll is not None and (not isinstance(scroll, QScrollArea)):
             scroll = scroll.parentWidget()

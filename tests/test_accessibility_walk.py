@@ -122,7 +122,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
 
     def test_next_step_hint_has_catalog_accessible_text(self):
         from desktop_app.components.async_status import AsyncStatus
-        from desktop_app.components.error_guidance import next_step
+        from desktop_app.components.validation_feedback import next_step
 
         status = self.window.findChildren(AsyncStatus)[0]
         status.set_state('error', error_code='validation_failed')

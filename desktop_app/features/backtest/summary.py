@@ -1,9 +1,13 @@
 """desktop_app features backtest summary responsibilities."""
 
+from quantlab.shared.time import aware_iso_utc
+
+from desktop_app.components.tables import resize_columns
+
 from desktop_app.strings.catalog import ui_text
 import desktop_app.components.privacy as _privacy
-from decimal import Decimal, InvalidOperation
-from desktop_app.components.formatting import display_value, display_number
+from decimal import Decimal
+from desktop_app.components.formatting import display_value, display_number, finite_decimal
 from desktop_app.components.result_tables import RESULT_LABELS, ResultTable, SummaryCard
 
 
@@ -39,12 +43,7 @@ def _report_number(value, key=""):
         return ui_text('forms.report_number.not_provided')
     if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
         return ui_text('forms.report_number.diagnostics_required')
-    if len(str(value)) > 128:
-        return ui_text('forms.report_number.diagnostics_required')
-    try:
-        if not Decimal(str(value)).is_finite():
-            return ui_text('forms.report_number.diagnostics_required')
-    except (InvalidOperation, ValueError):
+    if finite_decimal(value) is None:
         return ui_text('forms.report_number.diagnostics_required')
     return display_number(value, key)
 
@@ -175,7 +174,7 @@ class BacktestFillsTable(ResultTable):
             )
             timestamp = row.get('timestamp')
             try:
-                parsed = timestamp if isinstance(timestamp, datetime) else datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                parsed = timestamp if isinstance(timestamp, datetime) else aware_iso_utc(timestamp)
                 if parsed.tzinfo is None:
                     raise ValueError('timezone required')
                 shown['timestamp'] = parsed.astimezone(timezone.utc).isoformat(sep=' ', timespec='seconds').removesuffix('+00:00')
@@ -191,6 +190,4 @@ class BacktestFillsTable(ResultTable):
             for column in range(self.columnCount()):
                 item = self.item(index, column)
                 _privacy.item_tooltip(self, item, str(row.get(self._columns[column], ui_text('forms.set_rows.not_provided'))) + '\n' + detail)
-        self.resizeColumnsToContents()
-        for column in range(self.columnCount()):
-            self.setColumnWidth(column, min(self.columnWidth(column), 340))
+        resize_columns(self)

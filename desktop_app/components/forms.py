@@ -1,5 +1,9 @@
 """desktop_app components forms responsibilities."""
 
+from desktop_app.components.fields import named_field
+
+from desktop_app.components.tables import fill_table
+
 from desktop_app.strings.catalog import ui_text
 from desktop_app.components.timeinput import DateInput, DATE_KEYS, TIME_KEYS, install_date_columns, open_date_editors
 from copy import deepcopy
@@ -46,10 +50,8 @@ class _Form(QWidget):
             widget = QComboBox()
             for caption, data in choices:
                 widget.addItem(caption, data)
-        widget.setObjectName(key)
-        widget.setAccessibleName(label)
         caption = QLabel(label)
-        caption.setBuddy(widget)
+        named_field(widget, key, label, caption=caption)
         self.form.addRow(caption, widget)
         self.fields[key] = widget
         return widget
@@ -129,10 +131,13 @@ class _Rows(QWidget):
     def load(self, rows):
         self.table.setRowCount(len(rows))
         self._original = deepcopy(rows)
-        for i, row in enumerate(rows):
-            for j, (key, _) in enumerate(self.columns):
-                self.table.setItem(i, j, QTableWidgetItem(str(row.get(key, ''))))
-            open_date_editors(self.table, self.columns, i)
+        fill_table(
+            self.table,
+            rows,
+            [key for key, _ in self.columns],
+            lambda row, key: QTableWidgetItem(str(row.get(key, ''))),
+            after_row=lambda i: open_date_editors(self.table, self.columns, i),
+        )
 
     def values(self):
         rows = deepcopy(self._original)

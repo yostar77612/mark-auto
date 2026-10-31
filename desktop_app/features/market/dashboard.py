@@ -1,3 +1,4 @@
+from desktop_app.components.fields import named_field
 from quantlab.market import MarketSeries, MarketValidationError as MarketValidationError
 from desktop_app.shell.theme import apply_market_theme
 from desktop_app.strings.catalog import ui_text
@@ -23,7 +24,7 @@ from desktop_app.features.market.layout import (
 )
 from desktop_app.features.market.preferences import MarketPreferences
 from desktop_app.features.market.watchlist_presenter import MarketPresenter
-from desktop_app.features.market.rows import MarketRows, _named
+from desktop_app.features.market.rows import MarketRows
 
 
 class MarketDashboard(QWidget):
@@ -95,7 +96,7 @@ class MarketDashboard(QWidget):
             'market_orders': ui_text('access.market_orders'),
             'market_fills': ui_text('access.market_fills'),
         }[name]
-        table = _named(QTableWidget(0, len(headers)), name, label)
+        table = named_field(QTableWidget(0, len(headers)), name, label)
         table.setHorizontalHeaderLabels(headers)
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)

@@ -1,3 +1,6 @@
+from desktop_app.components.validation_feedback import show_feedback
+
+from desktop_app.components.fields import named_field
 from desktop_app.strings.catalog import ui_text
 from desktop_app.components.timeinput import DateInput, history_utc_hint
 from copy import deepcopy
@@ -19,7 +22,7 @@ from PySide6.QtWidgets import (
     QTimeEdit,
     QFormLayout,
 )
-from desktop_app.features.market.rows import _label, _named
+from desktop_app.features.market.rows import _label
 
 
 class MarketHistoryDialog(QDialog):
@@ -33,17 +36,17 @@ class MarketHistoryDialog(QDialog):
         self._payload = None
         layout = QVBoxLayout(self)
         layout.addWidget(_label(ui_text('market.init.history_source_hint'), 'history_disclosure'))
-        self.path = _named(QLineEdit(), 'history_path', ui_text('market.init.file_path'))
+        self.path = named_field(QLineEdit(), 'history_path', ui_text('market.init.file_path'))
         self.path.setPlaceholderText(ui_text('market.init.browse_history'))
         file_row = QHBoxLayout()
         file_row.addWidget(self.path)
-        self.browse = _named(QPushButton(ui_text('market.init.browse_file')), 'history_browse', ui_text('market.init.history_file_accessible_name'))
+        self.browse = named_field(QPushButton(ui_text('market.init.browse_file')), 'history_browse', ui_text('market.init.history_file_accessible_name'))
         self.browse.clicked.connect(self.choose_file)
         file_row.addWidget(self.browse)
         layout.addLayout(file_row)
         form = QFormLayout()
         layout.addLayout(form)
-        self.product = _named(QComboBox(), 'history_product', ui_text('market.init.product'))
+        self.product = named_field(QComboBox(), 'history_product', ui_text('market.init.product'))
         for label, value in [
             (ui_text('market.init.index_futures'), 'TX'),
             (ui_text('market.init.mini_futures'), 'MTX'),
@@ -51,32 +54,32 @@ class MarketHistoryDialog(QDialog):
         ]:
             self.product.addItem(label, value)
         form.addRow(ui_text('market.init.product_caption'), self.product)
-        self.month = _named(QLineEdit(), 'history_month', ui_text('market.init.expiry_month'))
+        self.month = named_field(QLineEdit(), 'history_month', ui_text('market.init.expiry_month'))
         self.month.setPlaceholderText(ui_text('market.init.expiry_month_placeholder'))
         form.addRow(ui_text('market.init.expiry_month_required'), self.month)
-        self.expiry_type = _named(QComboBox(), 'history_expiry_type', ui_text('market.init.contract_type'))
+        self.expiry_type = named_field(QComboBox(), 'history_expiry_type', ui_text('market.init.contract_type'))
         self.expiry_type.addItem(ui_text('market.init.monthly_contract'), 'monthly')
         self.expiry_type.addItem(ui_text('market.init.weekly_contract'), 'weekly')
-        self.week = _named(QSpinBox(), 'history_week', ui_text('market.init.expiry_week'))
+        self.week = named_field(QSpinBox(), 'history_week', ui_text('market.init.expiry_week'))
         self.week.setRange(1, 5)
         self.week.setEnabled(False)
         expiry_row = QHBoxLayout()
         expiry_row.addWidget(self.expiry_type)
         expiry_row.addWidget(self.week)
         form.addRow(ui_text('market.init.contract_type_caption'), expiry_row)
-        self.trade_date = _named(DateInput(), 'history_trade_date', ui_text('market.init.trading_day'))
+        self.trade_date = named_field(DateInput(), 'history_trade_date', ui_text('market.init.trading_day'))
         self.trade_date.setPlaceholderText(ui_text('market.init.trading_day_hint'))
         form.addRow(ui_text('market.init.trading_day_required'), self.trade_date)
-        self.session = _named(QComboBox(), 'history_session', ui_text('market.init.session_kind'))
+        self.session = named_field(QComboBox(), 'history_session', ui_text('market.init.session_kind'))
         self.session.addItem(ui_text('market.init.day_session'), 'day')
         self.session.addItem(ui_text('market.init.night_session'), 'night')
         form.addRow(ui_text('market.init.session_caption'), self.session)
-        self.open_date = _named(DateInput(), 'history_open_date', ui_text('market.init.open_date'))
+        self.open_date = named_field(DateInput(), 'history_open_date', ui_text('market.init.open_date'))
         self.open_date.setPlaceholderText('YYYY-MM-DD')
-        self.end_date = _named(DateInput(), 'history_end_date', ui_text('market.init.close_date'))
+        self.end_date = named_field(DateInput(), 'history_end_date', ui_text('market.init.close_date'))
         self.end_date.setPlaceholderText(ui_text('market.init.date_hint'))
-        self.open_time = _named(QTimeEdit(QTime(8, 45)), 'history_open_time', ui_text('market.init.open_time'))
-        self.end_time = _named(QTimeEdit(QTime(13, 45)), 'history_end_time', ui_text('market.init.close_time'))
+        self.open_time = named_field(QTimeEdit(QTime(8, 45)), 'history_open_time', ui_text('market.init.open_time'))
+        self.end_time = named_field(QTimeEdit(QTime(13, 45)), 'history_end_time', ui_text('market.init.close_time'))
         for widget in (self.open_time, self.end_time):
             widget.setDisplayFormat('HH:mm')
         for title, date_widget, time_widget in [
@@ -88,22 +91,22 @@ class MarketHistoryDialog(QDialog):
             row.addWidget(time_widget)
             row.addWidget(history_utc_hint(date_widget, time_widget, self))
             form.addRow(title, row)
-        self.include_end = _named(QCheckBox(ui_text('market.init.include_close')), 'history_include_end', ui_text('market.init.include_close_caption'))
+        self.include_end = named_field(QCheckBox(ui_text('market.init.include_close')), 'history_include_end', ui_text('market.init.include_close_caption'))
         form.addRow(self.include_end)
         self.source = _label('', 'history_product_source')
         layout.addWidget(self.source)
         layout.addWidget(_label(ui_text('market.init.session_defaults_hint'), 'history_policy_disclosure'))
-        self.confirm = _named(QCheckBox(ui_text('market.init.session_consent')), 'history_confirm', ui_text('market.init.confirm_session'))
+        self.confirm = named_field(QCheckBox(ui_text('market.init.session_consent')), 'history_confirm', ui_text('market.init.confirm_session'))
         layout.addWidget(self.confirm)
         row = QHBoxLayout()
-        self.add = _named(QPushButton(ui_text('market.init.add_confirmed_session')), 'history_add_session', ui_text('market.init.add_session'))
+        self.add = named_field(QPushButton(ui_text('market.init.add_confirmed_session')), 'history_add_session', ui_text('market.init.add_session'))
         self.add.clicked.connect(self.add_session)
         row.addWidget(self.add)
-        self.remove = _named(QPushButton(ui_text('market.init.remove_selected_session')), 'history_remove_session', ui_text('market.init.remove_session'))
+        self.remove = named_field(QPushButton(ui_text('market.init.remove_selected_session')), 'history_remove_session', ui_text('market.init.remove_session'))
         self.remove.clicked.connect(self.remove_session)
         row.addWidget(self.remove)
         layout.addLayout(row)
-        self.session_list = _named(QListWidget(), 'history_sessions', ui_text('market.init.confirmed_sessions'))
+        self.session_list = named_field(QListWidget(), 'history_sessions', ui_text('market.init.confirmed_sessions'))
         layout.addWidget(self.session_list)
         self.error = _label('', 'history_error')
         layout.addWidget(self.error)
@@ -222,7 +225,7 @@ class MarketHistoryDialog(QDialog):
             self.confirm.setChecked(False)
             self.error.clear()
         except (ValueError, TypeError, KeyError) as exc:
-            self.error.setText(error_message(exception_code(exc)))
+            show_feedback(self.error, error_message(exception_code(exc)))
 
     def remove_session(self):
         row = self.session_list.currentRow()
@@ -244,7 +247,7 @@ class MarketHistoryDialog(QDialog):
         try:
             self._payload = self.request_payload()
         except ValueError as exc:
-            self.error.setText(error_message(exception_code(exc)))
+            show_feedback(self.error, error_message(exception_code(exc)))
             return
         self.accept()
 

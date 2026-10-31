@@ -43,12 +43,6 @@ def _label(text, name):
     return widget
 
 
-def _named(widget, name, label):
-    widget.setObjectName(name)
-    widget.setAccessibleName(label)
-    return widget
-
-
 def _series_source(item):
     return ui_text('market.sample_label') if item.provenance.source_url == 'sample:synthetic-v1' else _friendly_source(item.instrument)
 
