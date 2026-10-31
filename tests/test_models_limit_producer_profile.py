@@ -1,5 +1,8 @@
 """Exact model-catalog-limit producer identity; offline fixtures, never real OAuth."""
 
+from quantlab.research_core.domain import saved_pool
+
+
 import hashlib
 from pathlib import Path
 import unittest
@@ -17,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class ModelsLimitProducerProfileTests(unittest.TestCase):
     def test_previous_profile_identity_is_kept_and_new_one_is_last(self):
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 29)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 30)
         self.assertEqual(content_hash(PREVIOUS), 'e1262b61e647d3b716ce6451c184921f4d2b3b797317af152de0a2b460ccd492')
         self.assertEqual(pools.SUPPORTED_PRODUCERS[16], PREVIOUS)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[17], PROFILE)
@@ -52,7 +55,7 @@ class ModelsLimitProducerProfileTests(unittest.TestCase):
             for digest in ('f' * 64, other):
                 item = binding(PROFILE, index)
                 item['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = digest
-                with self.assertRaises(pools.SavedCandidatePoolError):
+                with self.assertRaises(saved_pool.SavedCandidatePoolError):
                     pools._select_producer(item)
 
 

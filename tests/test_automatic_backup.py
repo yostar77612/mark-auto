@@ -8,7 +8,8 @@ from unittest.mock import Mock, patch
 import zipfile
 
 from quantlab.automatic_backup import AutomaticBackup, MAX_ARCHIVES
-from quantlab.desktop_runtime import AppPaths, BackupManager, RuntimeSafetyError
+from quantlab.desktop_runtime import AppPaths, RuntimeSafetyError
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
 class AutomaticBackupTests(unittest.TestCase):

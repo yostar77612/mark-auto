@@ -186,6 +186,7 @@ def scan(root: Path, history: bool = False) -> list[str]:
                         "quantlab/assistant/adapters/chatgpt/auth.py",
                         "quantlab/assistant/adapters/chatgpt/provider.py",
                         "quantlab/research_core/adapters/market_layout.py",
+                        "quantlab/assistant/adapters/chatgpt/identity.py",
                     },
                     desktop=name
                     in {
@@ -197,6 +198,7 @@ def scan(root: Path, history: bool = False) -> list[str]:
                         "desktop_app/features/market/workspace.py",
                         "desktop_app/features/walk_forward/presenter.py",
                         "quantlab/assistant/adapters/chatgpt/auth.py",
+                        "quantlab/assistant/adapters/chatgpt/identity.py",
                         "quantlab/assistant/adapters/chatgpt/provider.py",
                         "desktop_app/features/assistant/connection.py",
                         "desktop_app/features/settings/automatic_backup.py",

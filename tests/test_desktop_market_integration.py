@@ -43,7 +43,7 @@ class MarketHostTests(unittest.TestCase):
         with patch.object(QMessageBox, 'question', return_value=QMessageBox.StandardButton.Yes), patch.object(self.window, 'start_job') as start:
             self.window.refresh_market()
             start.assert_called_once_with('ui_market_refresh', {'network_opt_in': True})
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         with self.assertRaises(ValidationError):
             execute_ui_operation('ui_market_refresh', {}, self.paths)
@@ -62,7 +62,7 @@ class MarketHostTests(unittest.TestCase):
             self.window.jobs = old
 
     def test_independent_provider_failure_retains_cache(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from quantlab.market_providers import import_daily, load_cached, MarketLoad
 
         a = import_daily('twse', self.paths.state / 'market_cache', TWSE, received_at=NOW)
@@ -82,7 +82,7 @@ class MarketHostTests(unittest.TestCase):
         self.assertEqual(load_cached('twse', self.paths.state / 'market_cache').series, a.series)
 
     def test_local_file_import_no_network_and_no_research_replacement(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from quantlab.market_providers import load_cached
 
         path = Path(self.tmp.name) / 'source.json'
@@ -142,7 +142,7 @@ class MarketHostTests(unittest.TestCase):
         self.assertIn('未提供', self.window.paper_card.label.text())
 
     def test_manual_export_and_import_use_existing_campaign_without_network(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from tests.test_research import inputs
         from quantlab.core import to_dict, content_hash, Dataset
         from quantlab.reporting import save_dataset

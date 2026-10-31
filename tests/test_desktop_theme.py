@@ -61,7 +61,8 @@ class DesktopThemeTests(unittest.TestCase):
 
     def test_window_roles_and_empty_widget_stylesheets(self):
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
+        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
 
         root = Path(tempfile.gettempdir()) / ('markauto-theme-' + uuid.uuid4().hex)
         root.mkdir()

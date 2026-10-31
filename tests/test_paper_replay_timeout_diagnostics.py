@@ -1,5 +1,8 @@
 """Exact-invocation observation preserves gates, privacy and original failures."""
 
+from quantlab.research_core.adapters import job_worker
+
+
 import io
 import json
 import os
@@ -61,10 +64,9 @@ class OriginalReplayDiagnosticTests(unittest.TestCase):
             self.assertTrue(observation.actions[-1]['returned'])
 
     def test_only_replay_click_installs_worker_and_environment_restores_on_error(self):
-        import quantlab.desktop_runtime as runtime
 
         fixture = self.fixture()
-        original_worker = runtime._job_worker
+        original_worker = job_worker._job_worker
         original_environment = os.environ.get(diagnostic.ENVIRONMENT)
         failure = RuntimeError('click failed')
         with tempfile.TemporaryDirectory() as directory, patch.object(diagnostic, 'qt_resources', return_value={}):
@@ -74,17 +76,17 @@ class OriginalReplayDiagnosticTests(unittest.TestCase):
             def clicked(instance, name):
                 calls.append(name)
                 if name == 'paper_replay':
-                    self.assertIs(runtime._job_worker, diagnostic._gate_worker)
+                    self.assertIs(job_worker._job_worker, diagnostic._gate_worker)
                     self.assertTrue(os.environ[diagnostic.ENVIRONMENT].startswith(directory))
                     raise failure
-                self.assertIs(runtime._job_worker, original_worker)
+                self.assertIs(job_worker._job_worker, original_worker)
 
             observation.click(clicked, fixture, 'create_demo')
             with self.assertRaises(RuntimeError) as raised:
                 observation.click(clicked, fixture, 'paper_replay')
             self.assertIs(raised.exception, failure)
             self.assertEqual(calls, ['create_demo', 'paper_replay'])
-        self.assertIs(runtime._job_worker, original_worker)
+        self.assertIs(job_worker._job_worker, original_worker)
         self.assertEqual(os.environ.get(diagnostic.ENVIRONMENT), original_environment)
 
     def test_worker_forwards_gate_packets_and_restores_instrumentation_without_payload_logging(self):
@@ -184,7 +186,7 @@ class OriginalReplayDiagnosticTests(unittest.TestCase):
 
         gate.wait = blocked
         with (
-            patch.object(diagnostic, '_original_worker', runtime._job_worker),
+            patch.object(diagnostic, '_original_worker', job_worker._job_worker),
             patch.object(runtime.os, 'setsid', create=True, side_effect=lambda: order.append('setsid')),
             patch.object(diagnostic, '_write_json') as write,
             patch.object(diagnostic.threading, 'Thread') as thread,
@@ -199,15 +201,14 @@ class OriginalReplayDiagnosticTests(unittest.TestCase):
         install.assert_not_called()
 
     def test_unwritable_observer_directory_still_clicks_original_once(self):
-        import quantlab.desktop_runtime as runtime
 
         fixture = self.fixture()
-        original_worker = runtime._job_worker
+        original_worker = job_worker._job_worker
         calls = []
 
         def clicked(instance, name):
             calls.append(name)
-            self.assertIs(runtime._job_worker, original_worker)
+            self.assertIs(job_worker._job_worker, original_worker)
             return 'unchanged'
 
         with tempfile.TemporaryDirectory() as directory, patch.object(diagnostic, 'qt_resources', return_value={}):

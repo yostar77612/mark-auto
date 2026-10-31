@@ -189,7 +189,8 @@ class DesktopExpiryTests(unittest.TestCase):
     def test_normal_window_sends_same_expiries_to_backtest_and_campaign(self):
         from desktop_app.shell.window import MainWindow
         from quantlab.core import to_dict, ValidationError
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
+        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
         from quantlab.reporting import demo_config, synthetic_dataset
         from quantlab.research import demo_campaign_config
 

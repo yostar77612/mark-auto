@@ -1,5 +1,11 @@
 """Frozen R1 producer additions, preserving all historical source identities."""
 
+from quantlab import saved_candidate_pool as pool_profiles
+
+from quantlab.research_core.application import saved_pool_validation
+from quantlab.research_core.domain import saved_pool
+
+
 import hashlib
 from pathlib import Path
 import unittest
@@ -56,18 +62,18 @@ class UnknownReconciliationProducerProfileTests(unittest.TestCase):
             self.assertEqual(restored, previous)
 
     def test_new_literal_sources_match_current_engine_and_lf_crlf_provider(self):
-        for profile in (pools.ATOMIC_REPLACE_TRANSPORT_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1):
+        for profile in (pools.CORE_SPLIT_SIWC_PROFILE_V1, pools.CORE_SPLIT_SIWC_PROFILE_V1):
             self.assertEqual(
                 {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in profile['engine_source_hashes']},
                 profile['engine_source_hashes'],
             )
         # R2 re-pin: current provider bytes now match the appended R2 profile; this
         # profile's own literals stay pinned by NEW_HASHES above.
-        latest = pools.ATOMIC_REPLACE_SIWC_PROFILE_V1
+        latest = pools.CORE_SPLIT_SIWC_PROFILE_V1
         for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
-                raw = reviewed_source_bytes(ROOT, name).replace(b'\r\n', b'\n')
-                if index:
+                raw = reviewed_source_bytes(ROOT, name, current=True).replace(b'\r\n', b'\n')
+                if index and name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py'):
                     raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
 
@@ -100,7 +106,7 @@ class UnknownReconciliationProducerProfileTests(unittest.TestCase):
                     item['engine_source_hashes']['research.py'] = value
                 else:
                     item['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = value
-                with self.subTest(field=field, index=index), self.assertRaises(pools.SavedCandidatePoolError):
+                with self.subTest(field=field, index=index), self.assertRaises(saved_pool.SavedCandidatePoolError):
                     pools._select_producer(item)
 
     def test_new_siwc_saved_admission_is_readonly_and_never_accepts_consumed_receipts(self):
@@ -125,7 +131,9 @@ class UnknownReconciliationProducerProfileTests(unittest.TestCase):
                 before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
                 with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admission = pools.admit_saved_campaign_pool(**arguments)
-                pools.validate_admission_snapshot(admission.admission, admission.candidate_pool)
+                saved_pool_validation.validate_admission_snapshot(
+                    admission.admission, admission.candidate_pool, profiles=pool_profiles.SUPPORTED_PRODUCERS, audited_producer=pool_profiles.AUDITED_PRODUCER
+                )
                 self.assertEqual(admission.admission['producer'], SIWC)
                 self.assertEqual(len(admission.candidate_pool), 1)
                 self.assertEqual(admission.admission['real_model_status'], 'not_verified')
@@ -134,7 +142,7 @@ class UnknownReconciliationProducerProfileTests(unittest.TestCase):
                 write_source(folder, state)
                 before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
                 with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
-                    with self.assertRaises(pools.SavedCandidatePoolError) as caught:
+                    with self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                         pools.admit_saved_campaign_pool(**arguments)
                 self.assertEqual(caught.exception.reason_code, 'source_provider_receipt_invalid')
                 self.assertEqual({path: path.read_bytes() for path in root.rglob('*') if path.is_file()}, before)

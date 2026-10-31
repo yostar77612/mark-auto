@@ -17,7 +17,8 @@ from pathlib import Path
 import time
 import uuid
 
-from .desktop_runtime import BackupManager, MAX_BACKUP, _json_bytes, _read_json, atomic_write
+from quantlab.research_core.adapters.workspace_backup import BackupManager
+from quantlab.desktop_runtime import MAX_BACKUP, _json_bytes, _read_json, atomic_write
 from quantlab.shared.runtime_errors import RuntimeSafetyError
 
 

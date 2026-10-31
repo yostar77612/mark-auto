@@ -168,10 +168,10 @@ class StrategyPage(QWidget):
         source = self._walk_forward_saved_source()
         inputs = {'plan': plan, 'source': [stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns]}
         if source is not None:
-            from quantlab.desktop_runtime import validate_walk_forward_request
+            from quantlab.research_core.application.job_requests import validate_walk_forward_request
 
             validate_walk_forward_request(plan, source)
-            from desktop_app.features.walk_forward.presenter import source_campaign_folder
+            from quantlab.research_core.application.walk_forward_operations import source_campaign_folder
 
             folder = source_campaign_folder(self.state.paths, source['campaign_reference'])
             files = (folder / 'campaign.json', folder / 'campaign.sqlite3', Path(source['original_dataset']['path']))
@@ -288,7 +288,8 @@ class StrategyPage(QWidget):
                 self.walk_forward_status.setText(ui_text('ui.walk_forward_event.preview_ready'))
                 self.state.status.setText(ui_text('ui.walk_forward_event.preview_ready_status'))
             else:
-                from desktop_app.features.walk_forward.presenter import result_rows, status_label, preview_text
+                from desktop_app.features.walk_forward.rows import result_rows
+                from desktop_app.features.walk_forward.presenter import status_label, preview_text
 
                 self.walk_forward_advanced.setPlainText(preview_text(result, advanced=True))
                 summary = result.get('summary', {})

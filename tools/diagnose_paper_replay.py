@@ -18,8 +18,10 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from quantlab.research_core.adapters import job_worker
+
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
-from quantlab.desktop_runtime import _job_worker as _original_worker
+from quantlab.research_core.adapters.job_worker import _job_worker as _original_worker
 from quantlab.runtime_support import replace_file
 
 
@@ -441,7 +443,6 @@ def observe(output, *, limit=180):
     deadline = started + limit - 6  # Reserve the existing worker cancellation budget.
     from decimal import Decimal
     from tests.test_desktop_ui import NativeDesktopTests
-    import quantlab.desktop_runtime as runtime
     from quantlab.reporting import read_json
     from quantlab.research_core.application.paper_operations import paper_risk_limits
 
@@ -451,8 +452,8 @@ def observe(output, *, limit=180):
 
     worker_dir = Path(tempfile.mkdtemp(prefix='paper-timing-', dir=output.parent))
     os.environ['MARKAUTO_DIAGNOSTIC_OUTPUT'] = str(worker_dir)
-    original = runtime._job_worker
-    runtime._job_worker = _diagnosed_worker
+    original = job_worker._job_worker
+    job_worker._job_worker = _diagnosed_worker
     report = {
         'observation_only': True,
         'acceptance_timeout_unchanged': 30,
@@ -528,7 +529,7 @@ def observe(output, *, limit=180):
             report['workers_stopped'] = not fixture.jobs.active
             if not cleanup_ok or fixture.jobs.active:
                 report.update(status='cleanup_failed', complete=False)
-        runtime._job_worker = original
+        job_worker._job_worker = original
         report['elapsed_seconds'] = time.monotonic() - started
         report['workers'] = [json.loads(path.read_text(encoding='utf-8')) for path in sorted(worker_dir.glob('*.json')) if not path.name.startswith('probe-')]
         report['broker_probe_details'] = [json.loads(path.read_text(encoding='utf-8')) for path in sorted(worker_dir.glob('probe-*.json'))]

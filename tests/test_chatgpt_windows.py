@@ -3,6 +3,8 @@
 Run with unittest on Windows. A Linux pass explicitly skips native evidence.
 """
 
+import quantlab.assistant.adapters.chatgpt.vault as _auth_vault
+import quantlab.assistant.domain.auth_protocol as _auth_auth_protocol
 import multiprocessing
 import os
 from pathlib import Path
@@ -19,7 +21,7 @@ WAIT_SECONDS = 40  # Preserve the production lock's full 30-second deadline.
 
 
 def _hold_lock(root, pipe):
-    with a.DPAPIVault(root).lock():
+    with _auth_vault.DPAPIVault(root).lock():
         pipe.send('held')
         if pipe.recv() != 'release':
             raise AssertionError('unexpected command')
@@ -29,7 +31,7 @@ def _hold_lock(root, pipe):
 def _contend_lock(root, pipe):
     import msvcrt
 
-    vault = a.DPAPIVault(root)
+    vault = _auth_vault.DPAPIVault(root)
     # Prove contention before asking the production lock to wait; no sleep gate.
     with (vault.directory / 'vault.lock').open('r+b') as stream:
         try:
@@ -186,7 +188,7 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='mark-auto-native-auth-')
         self.addCleanup(self.temp.cleanup)
         self.root = str(Path(self.temp.name).resolve() / 'bootstrap')
-        self.vault = a.DPAPIVault(self.root)
+        self.vault = _auth_vault.DPAPIVault(self.root)
         self.session = a.AuthSession(self.vault)
         self.host = self.session.initialize_host()
 
@@ -212,11 +214,11 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         return process, parent
 
     def test_encrypted_host_reload_private_dacl_and_no_reparse(self):
-        other = a.AuthSession(a.DPAPIVault(self.root))
+        other = a.AuthSession(_auth_vault.DPAPIVault(self.root))
         self.assertEqual(other.initialize_host(), self.host)
         self.assertEqual(other.status_summary(), {'registrations': [], 'active_registration': None, 'state': 'disconnected'})
         raw = self.vault.path.read_bytes()
-        self.assertLessEqual(len(raw), a.MAX_RECORD)
+        self.assertLessEqual(len(raw), _auth_auth_protocol.MAX_RECORD)
         self.assertNotIn(self.host.encode(), raw)
         self.assertNotIn(b'"host_id"', raw)
         with self.vault.lock():
@@ -281,8 +283,8 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.addCleanup(lambda: os.rmdir(junction) if junction.exists() else None)
         self.assertTrue(junction.lstat().st_file_attributes & 0x400)
-        with self.assertRaisesRegex(a.AuthError, 'vault_reparse_point'):
-            a.AuthSession(a.DPAPIVault(str(junction / 'bootstrap'))).initialize_host()
+        with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'vault_reparse_point'):
+            a.AuthSession(_auth_vault.DPAPIVault(str(junction / 'bootstrap'))).initialize_host()
         self.assertEqual(list(target.iterdir()), [])
 
     def test_cross_process_lock_serialization(self):
@@ -316,7 +318,7 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
             access_token='native-fixture-access-NOT-A-CREDENTIAL',
             refresh_token='native-fixture-refresh-NOT-A-CREDENTIAL',
             id_token='native-fixture-id-NOT-A-CREDENTIAL',
-            scopes=a.SCOPES.split(),
+            scopes=_auth_auth_protocol.SCOPES.split(),
             expires_at=time.time() - 1,
             earliest_refresh_at=0,
         )
@@ -324,7 +326,10 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
             record = self.vault.load()
             record['active'] = ref
             record['registrations'][ref] = dict(
-                identity=dict(issuer=a.ISSUER, client_id='fixture-native-client', subject='fixture-native-subject'), tokens=tokens, generation=1, operation=None
+                identity=dict(issuer=_auth_auth_protocol.ISSUER, client_id='fixture-native-client', subject='fixture-native-subject'),
+                tokens=tokens,
+                generation=1,
+                operation=None,
             )
             self.vault.save(record)
         calls = []
@@ -336,12 +341,12 @@ class WindowsAuthAcceptanceTests(unittest.TestCase):
                 self.assertEqual(self.vault.load()['registrations'][ref]['operation'], 'refresh')
                 raise OSError('synthetic transport ambiguity; no network')
 
-        with self.assertRaisesRegex(a.AuthError, 'reauthorization_required'):
+        with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'reauthorization_required'):
             a.AuthSession(self.vault, AmbiguousTransport()).refresh(ref)
-        restarted = a.AuthSession(a.DPAPIVault(self.root), AmbiguousTransport())
+        restarted = a.AuthSession(_auth_vault.DPAPIVault(self.root), AmbiguousTransport())
         self.assertEqual(restarted.status_summary()['state'], 'reauthorization_required')
         for action in (restarted.refresh, restarted.access_token):
-            with self.assertRaisesRegex(a.AuthError, 'reauthorization_required'):
+            with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'reauthorization_required'):
                 action(ref)
         self.assertEqual(len(calls), 1)
         raw = self.vault.path.read_bytes()

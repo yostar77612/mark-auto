@@ -14,7 +14,7 @@ dependencies = ["tzdata==2026.5; sys_platform == 'win32'"]
 include = ["quantlab*", "desktop_app*"]
 exclude = ["archives*", "trader*", "tests*"]
 
-# Keep the eight G3 source/hash inputs explicit and independently testable.
+# Keep all current and historical G3 source/hash inputs explicit and independently testable.
 [tool.ruff]
 target-version = "py311"
 line-length = 160
@@ -31,6 +31,28 @@ exclude = [
     "quantlab/data.py",
     "quantlab/assistant/adapters/chatgpt/auth.py",
     "quantlab/assistant/adapters/chatgpt/provider.py",
+    "quantlab/assistant/adapters/chatgpt/vault.py",
+    "quantlab/assistant/adapters/chatgpt/identity.py",
+    "quantlab/assistant/adapters/chatgpt/loopback.py",
+    "quantlab/assistant/adapters/chatgpt/account_summary.py",
+    "quantlab/assistant/adapters/chatgpt/account_paths.py",
+    "quantlab/assistant/adapters/chatgpt/response_stream.py",
+    "quantlab/assistant/adapters/chatgpt/transport.py",
+    "quantlab/assistant/adapters/chatgpt/provenance.py",
+    "quantlab/assistant/adapters/chatgpt/account_store.py",
+    "quantlab/assistant/adapters/chatgpt/resolution_audit.py",
+    "quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py",
+    "quantlab/assistant/adapters/chatgpt/finished_reconciliation.py",
+    "quantlab/assistant/adapters/chatgpt/campaign_receipts.py",
+    "quantlab/assistant/domain/auth_protocol.py",
+    "quantlab/assistant/domain/auth_tokens.py",
+    "quantlab/assistant/domain/plan_protocol.py",
+    "quantlab/assistant/domain/source_components.py",
+    "quantlab/assistant/ports/auth.py",
+    "quantlab/research_core/domain/receipts.py",
+    "quantlab/assistant/domain/__init__.py",
+    "quantlab/assistant/ports/__init__.py",
+    "quantlab/research_core/domain/__init__.py",
 ]
 extend-exclude = [
     # Frozen producer literals would be reformatted; preserve the whole file.

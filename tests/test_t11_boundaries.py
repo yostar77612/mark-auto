@@ -1,5 +1,9 @@
 """No subprocesses, filesystem fixtures, Qt objects, or environment dependencies."""
 
+from quantlab.research_core.application import job_requests
+from quantlab.research_core.adapters import job_worker
+
+
 import ast
 from contextlib import nullcontext
 from pathlib import Path
@@ -37,7 +41,7 @@ class CoreBoundaryTests(unittest.TestCase):
         from quantlab import __main__ as cli
 
         self.assertIs(runtime.RuntimeSafetyError, runtime_support.RuntimeSafetyError)
-        self.assertIs(runtime.validate_analysis_request, runtime_support.validate_analysis_request)
+        self.assertIs(job_requests.validate_analysis_request, runtime_support.validate_analysis_request)
         self.assertIs(research_analysis.validate_analysis_plan, analysis_contracts.validate_analysis_plan)
         self.assertIs(research_analysis.analysis_request, analysis_contracts.analysis_request)
         self.assertIs(walk_forward._bounded_value, value_bounds._bounded_value)
@@ -46,7 +50,7 @@ class CoreBoundaryTests(unittest.TestCase):
     def test_static_imports_including_function_local_are_rejected(self):
         for source in (
             'import desktop_app.shell.main_window',
-            'from desktop_app.shell.main_window import execute_ui_operation',
+            'from desktop_app.connection_composition import execute_ui_operation',
             'def f():\n    import desktop_app.features.walk_forward.presenter',
             'def f():\n    from desktop_app.shell.main_window import MainWindow',
         ):
@@ -68,18 +72,18 @@ class CoreBoundaryTests(unittest.TestCase):
         self.assertEqual(core_import_findings('from importlib import import_module' + chr(10) + 'import_module(registrar)', 'quantlab/fixture.py'), [])
 
     def test_registry_is_fail_closed_and_identity_idempotent(self):
-        registry = runtime._OperationExecutorRegistry()
-        with patch.object(runtime, '_executor_registry', registry):
+        registry = job_worker._OperationExecutorRegistry()
+        with patch('quantlab.research_core.adapters.job_worker._executor_registry', registry):
             with self.assertRaises(runtime.RuntimeSafetyError):
-                runtime._operation_executor()
+                job_worker._operation_executor()
             executor = lambda *args, **kwargs: None
-            runtime.register_operation_executor(executor)
-            runtime.register_operation_executor(executor)
-            self.assertIs(runtime._operation_executor(), executor)
+            job_worker.register_operation_executor(executor)
+            job_worker.register_operation_executor(executor)
+            self.assertIs(job_worker._operation_executor(), executor)
             for value in (None, lambda: None):
                 with self.assertRaises(runtime.RuntimeSafetyError):
-                    runtime.register_operation_executor(value)
-            self.assertIs(runtime._operation_executor(), executor)
+                    job_worker.register_operation_executor(value)
+            self.assertIs(job_worker._operation_executor(), executor)
 
     def test_worker_resolves_injected_entry_point_before_execution(self):
         executor = lambda *args, **kwargs: 'result'
@@ -87,15 +91,15 @@ class CoreBoundaryTests(unittest.TestCase):
         class Module:
             execute = executor
 
-        with patch.object(runtime.importlib, 'import_module', return_value=Module) as load:
-            resolved = runtime._worker_operation_executor('fixture:execute')
+        with patch.object(job_worker.importlib, 'import_module', return_value=Module) as load:
+            resolved = job_worker._worker_operation_executor('fixture:execute')
             self.assertIs(resolved, executor)
             load.assert_called_once_with('fixture')
         with self.assertRaises(runtime.RuntimeSafetyError):
-            runtime._worker_operation_executor(None)
-        with patch.object(runtime.importlib, 'import_module', return_value=object()):
+            job_worker._worker_operation_executor(None)
+        with patch.object(job_worker.importlib, 'import_module', return_value=object()):
             with self.assertRaises(AttributeError):
-                runtime._worker_operation_executor('fixture:missing')
+                job_worker._worker_operation_executor('fixture:missing')
 
     def test_worker_uses_registered_executor_and_preserves_private_proof(self):
         for admitted in (False, True):
@@ -104,11 +108,11 @@ class CoreBoundaryTests(unittest.TestCase):
             executor = Mock(return_value={'reference': 'fixture'})
             with (
                 patch.object(runtime.os, 'setsid', create=True),
-                patch.object(runtime, 'AppPaths', return_value=object()),
-                patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()),
-                patch.object(runtime, '_worker_operation_executor', return_value=executor),
+                patch.object(job_worker, 'AppPaths', return_value=object()),
+                patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
+                patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=executor),
             ):
-                runtime._job_worker(sender, gate, 'ui_walk_forward_reconcile', {'descendants_stopped': True}, 'unused', None, 'fixture', admitted)
+                job_worker._job_worker(sender, gate, 'ui_walk_forward_reconcile', {'descendants_stopped': True}, 'unused', None, 'fixture', admitted)
             self.assertIs(executor.call_args.kwargs['descendants_stopped'], admitted)
             sender.close.assert_called_once_with()
 
@@ -117,22 +121,22 @@ class CoreBoundaryTests(unittest.TestCase):
         gate.wait.return_value = True
         with (
             patch.object(runtime.os, 'setsid', create=True),
-            patch.object(runtime, 'AppPaths', return_value=object()),
-            patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()),
-            patch.object(runtime.importlib, 'import_module') as load,
+            patch.object(job_worker, 'AppPaths', return_value=object()),
+            patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
+            patch.object(job_worker.importlib, 'import_module') as load,
         ):
-            runtime._job_worker(sender, gate, 'ui_demo', {}, 'unused', None, 'fixture', operation_registrar=None)
+            job_worker._job_worker(sender, gate, 'ui_demo', {}, 'unused', None, 'fixture', operation_registrar=None)
         load.assert_not_called()
         self.assertIn(b'"type": "error"', sender.send_bytes.call_args.args[0])
         self.assertIn(b'"error_type": "RuntimeSafetyError"', sender.send_bytes.call_args.args[0])
 
     def test_registrar_duplicate_policy(self):
-        with patch.object(runtime, '_executor_registrar', None):
-            runtime.register_operation_executor_factory('fixture:execute')
-            runtime.register_operation_executor_factory('fixture:execute')
+        with patch('quantlab.research_core.adapters.job_worker._executor_registrar', None):
+            job_worker.register_operation_executor_factory('fixture:execute')
+            job_worker.register_operation_executor_factory('fixture:execute')
             for target in ('other:execute', '', 'fixture', None):
                 with self.assertRaises(runtime.RuntimeSafetyError):
-                    runtime.register_operation_executor_factory(target)
+                    job_worker.register_operation_executor_factory(target)
 
     def test_new_modules_are_statically_reachable_for_packaging(self):
         expected = {'runtime_support', 'value_bounds', 'analysis_contracts', 'configuration'}

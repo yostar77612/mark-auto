@@ -385,7 +385,7 @@ g.new_owned_tree=attach; g.tree_empty=empty; g.sys.platform='win32'
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             body = (
-                "import subprocess, sys; from quantlab.desktop_runtime import _WindowsProcessTree; "
+                "import subprocess, sys; from quantlab.research_core.adapters.job_process import _WindowsProcessTree; "
                 "child = subprocess.Popen([sys.executable, '-c', 'import sys; sys.stdin.buffer.read(1)'], stdin=subprocess.PIPE); "
                 "tree = _WindowsProcessTree(child.pid); child.stdin.write(b'x'); child.stdin.close(); "
                 "child.wait(timeout=5); tree.stop_and_join(); tree.close(); self.assertEqual(child.returncode, 0)"

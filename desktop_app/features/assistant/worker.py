@@ -14,8 +14,8 @@ import time
 
 from quantlab.agent_read_tools import ReadContext
 from quantlab.agent_tools import _refusal
-from quantlab.desktop_runtime import _WindowsProcessTree
-from desktop_app.features.assistant.assistant_models import context_usage
+from quantlab.research_core.adapters.job_process import _WindowsProcessTree
+from quantlab.assistant.application.context_usage import context_usage
 
 
 def host_context(root):
@@ -58,7 +58,13 @@ def _chatgpt_reply(request, bootstrap, *, transport=None, reference_factory=None
     from quantlab.assistant.adapters.chatgpt.auth import OAuthCredentialReference
 
     # Reuse the existing verified-TLS, no-redirect, bounded transport and parser.
-    from quantlab.assistant.adapters.chatgpt.provider import PlanHTTPTransport, SSEParser, read_account_status
+    from quantlab.assistant.adapters.chatgpt.transport import PlanHTTPTransport
+
+    # Defer the adapter until this operation runs in its owning process.
+    from quantlab.assistant.adapters.chatgpt.response_stream import SSEParser
+
+    # Defer the adapter until this operation runs in its owning process.
+    from quantlab.assistant.adapters.chatgpt.provider import read_account_status
 
     reference = (reference_factory or OAuthCredentialReference)(str(bootstrap), request['registration'])
     if transport is None:

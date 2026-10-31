@@ -12,24 +12,6 @@
     "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   },
   {
-    "path": "desktop_capital_scenario.py",
-    "target": "desktop_pages.job_progress",
-    "rule": "application-to-presentation",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
-  },
-  {
-    "path": "desktop_capital_scenario.py",
-    "target": "desktop_walk_forward",
-    "rule": "application-to-presentation",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
-  },
-  {
-    "path": "desktop_capital_scenario.py",
-    "target": "quantlab.desktop_feedback",
-    "rule": "application-to-presentation",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
-  },
-  {
     "path": "desktop_charts.py",
     "target": "quantlab.chart_drawings",
     "rule": "presentation-to-infrastructure",
@@ -52,18 +34,6 @@
     "target": "quantlab.research_analysis",
     "rule": "infrastructure-to-application",
     "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
-  },
-  {
-    "path": "desktop_chatgpt_ui.py",
-    "target": "desktop_chatgpt_auth",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_chatgpt_ui.py",
-    "target": "desktop_chatgpt_provider",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   },
   {
     "path": "desktop_expiry_inputs.py",
@@ -93,12 +63,6 @@
     "path": "desktop_pages/assistant_runtime.py",
     "target": "desktop_chatgpt_provider",
     "rule": "application-to-infrastructure",
-    "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
-  },
-  {
-    "path": "desktop_pages/assistant_runtime.py",
-    "target": "desktop_pages.assistant_models",
-    "rule": "application-to-presentation",
     "justification": "Existing mixed application responsibility; D/E2 separates adapters and UI callbacks behind ports wired by composition."
   },
   {
@@ -134,18 +98,6 @@
   {
     "path": "desktop_pages/compare.py",
     "target": "quantlab.reporting",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_pages/connection_test.py",
-    "target": "desktop_chatgpt_auth",
-    "rule": "presentation-to-infrastructure",
-    "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "desktop_pages/connection_test.py",
-    "target": "desktop_chatgpt_provider",
     "rule": "presentation-to-infrastructure",
     "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   },

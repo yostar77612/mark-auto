@@ -296,7 +296,7 @@ def validate_worker_reports(parent, assignments, reports, tokens):
 
 
 def new_owned_tree(pid):
-    from quantlab.desktop_runtime import _WindowsProcessTree
+    from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 
     return _WindowsProcessTree(pid)
 

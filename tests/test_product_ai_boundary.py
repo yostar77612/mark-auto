@@ -44,7 +44,7 @@ class ProductAIBoundaryTests(unittest.TestCase):
             paths = AppPaths(Path(temp) / 'workspace').ensure()
             jobs = JobManager(paths)
             before = sorted(str(p.relative_to(paths.root)) for p in paths.root.rglob('*'))
-            with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+            with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
                 for action in ('download', 'install', 'serve', 'probe'):
                     with self.assertRaises(RuntimeSafetyError):
                         jobs.start('ui_local_ai', {'action': action, 'consent': True})

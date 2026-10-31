@@ -1,10 +1,6 @@
 """Native shell composition and stable, Qt-free spawned-worker registrar."""
 
-from quantlab.desktop_runtime import (
-    _is_worker_registrar_import,
-    register_operation_executor,
-    register_operation_executor_factory,
-)
+from quantlab.research_core.adapters.job_worker import _is_worker_registrar_import, register_operation_executor, register_operation_executor_factory
 from desktop_app.bootstrap import create_operation_ports, create_ui_services
 from quantlab.research_core.application.ui_operations.registry import UI_OPERATIONS, _UI_OPERATION_HANDLERS, prepare_operation
 

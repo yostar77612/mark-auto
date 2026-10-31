@@ -1,5 +1,8 @@
 """Append-only atomic-promotion source identities; no historical relabelling."""
 
+from quantlab.research_core.domain import saved_pool
+
+
 import copy
 from pathlib import Path
 import unittest
@@ -39,8 +42,8 @@ class AtomicReplaceProducerProfileTests(unittest.TestCase):
             (pools.LONG_PATH_SIWC_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1),
         ):
             actual = {name: content_hash((root / 'quantlab' / name).read_text(encoding='utf-8')) for name in new['engine_source_hashes']}
-            self.assertEqual(actual, new['engine_source_hashes'])
-            self.assertEqual(actual['research.py'], 'c6d3f1b4b13154c1bf90e6be5a664ac390edc20fb5c544dd909485dfe5fe2ae6')
+            self.assertEqual(actual, {name: pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'][name] for name in actual})
+            self.assertEqual(new['engine_source_hashes']['research.py'], 'c6d3f1b4b13154c1bf90e6be5a664ac390edc20fb5c544dd909485dfe5fe2ae6')
             restored = to_dict(new)
             restored['protocol'] = old['protocol']
             restored['engine_source_hashes']['research.py'] = old['engine_source_hashes']['research.py']
@@ -59,7 +62,7 @@ class AtomicReplaceProducerProfileTests(unittest.TestCase):
                 self.assertIs(pools._select_producer(item), profile)
                 mixed = copy.deepcopy(item)
                 mixed['engine_source_hashes']['core.py'] = 'f' * 64
-                with self.assertRaises(pools.SavedCandidatePoolError):
+                with self.assertRaises(saved_pool.SavedCandidatePoolError):
                     pools._select_producer(mixed)
         for profile in (pools.LONG_PATH_SIWC_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1):
             for index, implementation in enumerate(profile['chatgpt_plan_implementations']):
@@ -68,8 +71,8 @@ class AtomicReplaceProducerProfileTests(unittest.TestCase):
                     self.assertIs(pools._select_producer(item), profile)
                     mixed = copy.deepcopy(item)
                     mixed['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = 'f' * 64
-                    with self.assertRaises(pools.SavedCandidatePoolError):
+                    with self.assertRaises(saved_pool.SavedCandidatePoolError):
                         pools._select_producer(mixed)
                 with patch.object(pools, 'SUPPORTED_PRODUCERS', pools.SUPPORTED_PRODUCERS + (profile,)):
-                    with self.assertRaises(pools.SavedCandidatePoolError):
+                    with self.assertRaises(saved_pool.SavedCandidatePoolError):
                         pools._select_producer(binding(profile, index))

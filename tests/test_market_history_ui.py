@@ -239,7 +239,8 @@ class HistoryHostTests(unittest.TestCase):
         self.assertIn('部分區間完整性尚未確認', self.window.market.message.text())
         # A fresh host reloads only the persisted bounded history cache.
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import JobManager, SettingsStore, BackupManager
+        from quantlab.desktop_runtime import JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
 
         jobs = JobManager(self.paths)
         restarted = MainWindow(

@@ -106,7 +106,7 @@ class WebCampaignProcessTests(unittest.TestCase):
 
     def test_unverified_stop_retains_inputs_and_refuses_new_work(self):
         stop = (
-            patch('quantlab.desktop_runtime._WindowsProcessTree.stop_and_join', side_effect=RuntimeError('Unverified owned stop'))
+            patch('quantlab.research_core.adapters.job_process._WindowsProcessTree.stop_and_join', side_effect=RuntimeError('Unverified owned stop'))
             if sys.platform == 'win32'
             else patch.object(campaign.os, 'killpg', side_effect=PermissionError('Unverified owned stop'))
         )

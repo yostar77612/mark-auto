@@ -25,8 +25,30 @@ class RuffConfigTests(unittest.TestCase):
         tree = ast.parse((ROOT / "quantlab/saved_candidate_pool.py").read_text(encoding="utf-8-sig"))
         # Producer keys are historical identities, independent of current paths.
         moved = {
-            "desktop_chatgpt_auth.py": "quantlab/assistant/adapters/chatgpt/auth.py",
-            "desktop_chatgpt_provider.py": "quantlab/assistant/adapters/chatgpt/provider.py",
+            'assistant_domain_init.py': 'quantlab/assistant/domain/__init__.py',
+            'assistant_ports_init.py': 'quantlab/assistant/ports/__init__.py',
+            'research_domain_init.py': 'quantlab/research_core/domain/__init__.py',
+            'desktop_chatgpt_auth.py': 'quantlab/assistant/adapters/chatgpt/auth.py',
+            'desktop_chatgpt_provider.py': 'quantlab/assistant/adapters/chatgpt/provider.py',
+            'chatgpt_vault.py': 'quantlab/assistant/adapters/chatgpt/vault.py',
+            'chatgpt_identity.py': 'quantlab/assistant/adapters/chatgpt/identity.py',
+            'chatgpt_loopback.py': 'quantlab/assistant/adapters/chatgpt/loopback.py',
+            'chatgpt_account_summary.py': 'quantlab/assistant/adapters/chatgpt/account_summary.py',
+            'chatgpt_account_paths.py': 'quantlab/assistant/adapters/chatgpt/account_paths.py',
+            'chatgpt_response_stream.py': 'quantlab/assistant/adapters/chatgpt/response_stream.py',
+            'chatgpt_transport.py': 'quantlab/assistant/adapters/chatgpt/transport.py',
+            'chatgpt_provenance.py': 'quantlab/assistant/adapters/chatgpt/provenance.py',
+            'chatgpt_account_store.py': 'quantlab/assistant/adapters/chatgpt/account_store.py',
+            'chatgpt_resolution_audit.py': 'quantlab/assistant/adapters/chatgpt/resolution_audit.py',
+            'chatgpt_unknown_reconciliation.py': 'quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py',
+            'chatgpt_finished_reconciliation.py': 'quantlab/assistant/adapters/chatgpt/finished_reconciliation.py',
+            'chatgpt_campaign_receipts.py': 'quantlab/assistant/adapters/chatgpt/campaign_receipts.py',
+            'assistant_auth_protocol.py': 'quantlab/assistant/domain/auth_protocol.py',
+            'assistant_auth_tokens.py': 'quantlab/assistant/domain/auth_tokens.py',
+            'assistant_plan_protocol.py': 'quantlab/assistant/domain/plan_protocol.py',
+            'assistant_source_components.py': 'quantlab/assistant/domain/source_components.py',
+            'assistant_auth_ports.py': 'quantlab/assistant/ports/auth.py',
+            'research_receipts.py': 'quantlab/research_core/domain/receipts.py',
         }
         pinned = set()
         for node in ast.walk(tree):
@@ -41,24 +63,46 @@ class RuffConfigTests(unittest.TestCase):
                         and re.fullmatch(r"[0-9a-f]{64}", value.value)
                     ):
                         pinned.add(moved.get(key.value, "quantlab/" + key.value))
-        self.assertEqual(len(pinned), 8)
+        self.assertEqual(len(pinned), 30)
         self.assertEqual(
             pinned,
             {
-                "quantlab/research.py",
-                "quantlab/provider.py",
-                "quantlab/core.py",
-                "quantlab/strategies.py",
-                "quantlab/backtest.py",
-                "quantlab/data.py",
-                "quantlab/assistant/adapters/chatgpt/auth.py",
-                "quantlab/assistant/adapters/chatgpt/provider.py",
+                'quantlab/strategies.py',
+                'quantlab/backtest.py',
+                'quantlab/research.py',
+                'quantlab/assistant/adapters/chatgpt/vault.py',
+                'quantlab/assistant/domain/source_components.py',
+                'quantlab/assistant/ports/auth.py',
+                'quantlab/assistant/domain/plan_protocol.py',
+                'quantlab/assistant/adapters/chatgpt/auth.py',
+                'quantlab/assistant/adapters/chatgpt/unknown_reconciliation.py',
+                'quantlab/assistant/domain/auth_tokens.py',
+                'quantlab/assistant/ports/__init__.py',
+                'quantlab/assistant/adapters/chatgpt/account_summary.py',
+                'quantlab/provider.py',
+                'quantlab/assistant/adapters/chatgpt/account_paths.py',
+                'quantlab/assistant/adapters/chatgpt/transport.py',
+                'quantlab/assistant/adapters/chatgpt/finished_reconciliation.py',
+                'quantlab/assistant/adapters/chatgpt/identity.py',
+                'quantlab/assistant/adapters/chatgpt/provenance.py',
+                'quantlab/assistant/adapters/chatgpt/provider.py',
+                'quantlab/data.py',
+                'quantlab/assistant/domain/__init__.py',
+                'quantlab/assistant/adapters/chatgpt/campaign_receipts.py',
+                'quantlab/assistant/domain/auth_protocol.py',
+                'quantlab/assistant/adapters/chatgpt/response_stream.py',
+                'quantlab/core.py',
+                'quantlab/research_core/domain/receipts.py',
+                'quantlab/research_core/domain/__init__.py',
+                'quantlab/assistant/adapters/chatgpt/account_store.py',
+                'quantlab/assistant/adapters/chatgpt/resolution_audit.py',
+                'quantlab/assistant/adapters/chatgpt/loopback.py',
             },
         )
         for path in pinned:
             self.assertTrue((ROOT / path).is_file(), path)
         self.assertEqual(set(self.config["exclude"]), pinned)
-        self.assertEqual(len(self.config["exclude"]), 8)
+        self.assertEqual(len(self.config["exclude"]), 30)
 
     def test_format_and_fix_policy(self):
         self.assertIs(self.config["force-exclude"], True)

@@ -1,5 +1,7 @@
 """Cheap in-process worker/UI diagnostics; no subprocesses, disk or real data."""
 
+from quantlab.research_core.adapters import job_worker
+
 from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
 
 from contextlib import nullcontext
@@ -27,10 +29,10 @@ class JobStageTests(unittest.TestCase):
         sender = SimpleNamespace(send_bytes=lambda raw: packets.append(json.loads(raw)), close=Mock())
         with (
             patch.object(runtime.sys, 'platform', 'win32'),
-            patch.object(runtime, '_worker_recovery_guard', side_effect=guard or (lambda *args: nullcontext())),
-            patch.object(runtime, '_worker_operation_executor', return_value=executor),
+            patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', side_effect=guard or (lambda *args: nullcontext())),
+            patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=executor),
         ):
-            runtime._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'offline-job')
+            job_worker._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'offline-job')
         sender.close.assert_called_once_with()
         return packets
 

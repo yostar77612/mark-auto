@@ -1,5 +1,11 @@
 """Frozen headerless-stream producer addition, preserving all historical source identities."""
 
+from quantlab import saved_candidate_pool as pool_profiles
+
+from quantlab.research_core.application import saved_pool_validation
+from quantlab.research_core.domain import saved_pool
+
+
 import hashlib
 from pathlib import Path
 import unittest
@@ -35,16 +41,13 @@ class StreamContentTypeProducerProfileTests(unittest.TestCase):
 
     def test_new_literal_sources_match_current_engine_and_lf_crlf_provider(self):
         self.assertEqual(
-            {
-                name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8'))
-                for name in pools.ATOMIC_REPLACE_SIWC_PROFILE_V1['engine_source_hashes']
-            },
-            pools.ATOMIC_REPLACE_SIWC_PROFILE_V1['engine_source_hashes'],
+            {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']},
+            pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'],
         )
-        for index, implementation in enumerate(pools.ATOMIC_REPLACE_SIWC_PROFILE_V1['chatgpt_plan_implementations']):
+        for index, implementation in enumerate(pools.CORE_SPLIT_SIWC_PROFILE_V1['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
-                raw = reviewed_source_bytes(ROOT, name).replace(b'\r\n', b'\n')
-                if index:
+                raw = reviewed_source_bytes(ROOT, name, current=True).replace(b'\r\n', b'\n')
+                if index and name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py'):
                     raw = raw.replace(b'\n', b'\r\n')
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
 
@@ -59,7 +62,7 @@ class StreamContentTypeProducerProfileTests(unittest.TestCase):
             for value in (SIWC['chatgpt_plan_implementations'][1 - index]['source_sha256']['desktop_chatgpt_provider.py'], 'f' * 64):
                 item = binding(SIWC, index)
                 item['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = value
-                with self.subTest(index=index, value=value[:8]), self.assertRaises(pools.SavedCandidatePoolError):
+                with self.subTest(index=index, value=value[:8]), self.assertRaises(saved_pool.SavedCandidatePoolError):
                     pools._select_producer(item)
 
     def test_new_siwc_saved_admission_is_readonly_and_never_accepts_consumed_receipts(self):
@@ -84,13 +87,15 @@ class StreamContentTypeProducerProfileTests(unittest.TestCase):
                 before = {path: path.read_bytes() for path in root.rglob('*') if path.is_file()}
                 with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
                     admission = pools.admit_saved_campaign_pool(**arguments)
-                pools.validate_admission_snapshot(admission.admission, admission.candidate_pool)
+                saved_pool_validation.validate_admission_snapshot(
+                    admission.admission, admission.candidate_pool, profiles=pool_profiles.SUPPORTED_PRODUCERS, audited_producer=pool_profiles.AUDITED_PRODUCER
+                )
                 self.assertEqual(admission.admission['producer'], SIWC)
                 self.assertEqual({path: path.read_bytes() for path in root.rglob('*') if path.is_file()}, before)
                 state['provider_receipts'][0]['status'] = 'user_confirmed_consumed'
                 write_source(folder, state)
                 with patch.dict(sys.modules, {'quantlab.assistant.adapters.chatgpt.auth': None, 'quantlab.assistant.adapters.chatgpt.provider': None}):
-                    with self.assertRaises(pools.SavedCandidatePoolError) as caught:
+                    with self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                         pools.admit_saved_campaign_pool(**arguments)
                 self.assertEqual(caught.exception.reason_code, 'source_provider_receipt_invalid')
 

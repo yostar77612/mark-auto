@@ -4,6 +4,12 @@ The Windows capability switch is patched for platform-neutral ledger/journal
 integration. No kernel object, original-GUI-death or Windows token claim follows.
 """
 
+from quantlab.research_core.adapters import job_process
+
+from quantlab.research_core.adapters import job_worker
+from quantlab.research_core.adapters import workspace_backup
+
+
 from contextlib import closing
 import json
 from pathlib import Path
@@ -95,7 +101,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
             return a.reconcile_analysis(**args)
 
     def test_new_manager_admission_then_real_local_repair_preserves_provider_controls(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         self.stopped()
         manager = runtime.JobManager(self.paths)
@@ -110,8 +116,8 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         context.Process.return_value = process
         with (
             patch.object(r, 'supports_durable_recovery', return_value=True),
-            patch.object(runtime.mp, 'get_context', return_value=context),
-            patch.object(runtime, '_WindowsProcessTree') as simulated_tree,
+            patch.object(job_process.mp, 'get_context', return_value=context),
+            patch.object(job_process, '_WindowsProcessTree') as simulated_tree,
         ):
             manager.start('ui_analysis_reconcile', payload)
         self.assertEqual(context.Process.call_args.kwargs['args'][3], payload)
@@ -151,11 +157,11 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
     def test_wrong_helper_nonce_cannot_enter_actual_worker_operation(self):
         launch = self.register()
         with self.assertRaises(runtime.RuntimeSafetyError):
-            with runtime._worker_recovery_guard(self.paths, 'ui_analysis_run', launch['job_id'], 'd' * 32):
+            with job_worker._worker_recovery_guard(self.paths, 'ui_analysis_run', launch['job_id'], 'd' * 32):
                 self.fail('Wrong helper generation entered operation')
         r._StopPublisher(self.paths, launch, lambda: 0).publish()
         with self.assertRaises(r.RecoveryError):
-            with runtime._worker_recovery_guard(self.paths, 'ui_analysis_run', launch['job_id'], launch['helper_nonce']):
+            with job_worker._worker_recovery_guard(self.paths, 'ui_analysis_run', launch['job_id'], launch['helper_nonce']):
                 self.fail('Stopped launch reopened')
 
     def test_receipt_rechecked_inside_exclusive_analysis_lock(self):
@@ -202,7 +208,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.assertEqual(self.provider.read_receipts()[0]['status'], 'reserved_unknown')
 
     def test_restore_epoch_changed_after_adapter_precheck_is_rechecked_under_lock(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         self.stopped()
         original = a.reconcile_analysis
@@ -252,7 +258,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         }
         manager = runtime.JobManager(self.paths)
         # Only enter Windows validation; no Win32 API or path operation is run.
-        with patch.object(runtime.sys, 'platform', 'win32'), patch.object(runtime.mp, 'get_context') as spawn:
+        with patch.object(runtime.sys, 'platform', 'win32'), patch.object(job_process.mp, 'get_context') as spawn:
             with self.assertRaises(ValueError):
                 manager.start('ui_analysis_run', payload)
         spawn.assert_not_called()
@@ -260,13 +266,13 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.assertFalse(self.analysis_folder.exists())
 
     def test_linux_durable_route_remains_rejected_at_every_product_boundary(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         self.stopped()
         payload = {'analysis_id': self.plan['analysis_id'], 'registration': 'a' * 32, 'recovery_launch_id': 'b' * 32}
         with patch.object(r, 'supports_durable_recovery', return_value=False):
             manager = runtime.JobManager(self.paths)
-            with patch.object(runtime.mp, 'get_context') as spawn, self.assertRaises(runtime.RuntimeSafetyError):
+            with patch.object(job_process.mp, 'get_context') as spawn, self.assertRaises(runtime.RuntimeSafetyError):
                 manager.start('ui_analysis_reconcile', payload)
             spawn.assert_not_called()
             with self.assertRaises(ValidationError):
@@ -276,7 +282,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
     def test_direct_backup_services_block_unresolved_before_writes(self):
         self.register()
-        backup = runtime.BackupManager(self.paths)
+        backup = workspace_backup.BackupManager(self.paths)
         before = snapshot(self.paths.root)
         backup.recover()  # No artifacts is a real no-op, including no lock writes.
         self.assertEqual(before, snapshot(self.paths.root))
@@ -297,7 +303,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         source_file.write_text('original source bytes')
         self.request['original_dataset']['path'] = str(source_file)
         self.register()
-        backup = runtime.BackupManager(other)
+        backup = workspace_backup.BackupManager(other)
         before = snapshot(other.root)
         with self.assertRaises(r.RecoveryError):
             backup.restore(self.base / 'not-opened.zip')
@@ -311,7 +317,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
     def test_corrupt_analysis_controls_preserve_independent_selection_and_paper_risk_gates(self):
         from datetime import timedelta
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from quantlab.core import to_dict
         from quantlab.reporting import save_dataset, demo_config
         from quantlab.paper import ReconciliationError, LiveBroker, LiveTradingDisabled
@@ -330,7 +336,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         def call(operation, payload):
             # The real service dispatcher admission plus actual paper adapter.
             r.require_operation(self.paths, operation)
-            with runtime._worker_recovery_guard(self.paths, operation, 'f' * 32, None):
+            with job_worker._worker_recovery_guard(self.paths, operation, 'f' * 32, None):
                 return execute_ui_operation(operation, payload, self.paths)
 
         selection = call('ui_select', {'result': str(report)})
@@ -410,7 +416,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
                 r.require_operation(self.paths, operation)
 
     def test_legacy_backup_restore_and_real_restore_epoch_hook(self):
-        backup = runtime.BackupManager(self.paths)
+        backup = workspace_backup.BackupManager(self.paths)
         archive = self.base / 'backup.zip'
         (self.paths.state / 'note.txt').write_text('original')
         backup.create(archive)
@@ -437,7 +443,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
         with patch('desktop_app.shell.main_window.execute_ui_operation', side_effect=slow_operation), patch.object(runtime.os, 'setsid', create=True):
             thread = threading.Thread(
-                target=runtime._job_worker, args=(sender, gate, 'ui_import', {}, str(self.paths.root), str(self.paths.bootstrap), 'f' * 32)
+                target=job_worker._job_worker, args=(sender, gate, 'ui_import', {}, str(self.paths.root), str(self.paths.bootstrap), 'f' * 32)
             )
             thread.start()
             try:

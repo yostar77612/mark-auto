@@ -18,7 +18,7 @@ import uuid
 from unittest.mock import patch
 
 from tools.diagnose_paper_replay import Timings, _instrument_connect, _write_json
-from quantlab.desktop_runtime import _job_worker as _original_worker
+from quantlab.research_core.adapters.job_worker import _job_worker as _original_worker
 
 ACTIONS = frozenset({'create_demo', 'run_backtest', 'select_strategy', 'demo_policy', 'paper_snapshot', 'paper_reconcile', 'paper_replay'})
 STACK_MODULES = frozenset(
@@ -405,14 +405,12 @@ class OriginalReplayObservation:
         # Patch only the spawn triggered by the original paper_replay click.
         # All other UI jobs and the existing startup/cleanup stay untouched.
         if name == 'paper_replay':
-            import quantlab.desktop_runtime as runtime
-
             try:
                 self.prefix.parent.mkdir(parents=True, exist_ok=True)
             except OSError as error:
                 self.evidence['observer_unavailable_error_type'] = type(error).__name__
                 return original(fixture, name)
-            with patch.dict(os.environ, {ENVIRONMENT: str(self.prefix)}), patch.object(runtime, '_job_worker', _gate_worker):
+            with patch.dict(os.environ, {ENVIRONMENT: str(self.prefix)}), patch('quantlab.research_core.adapters.job_worker._job_worker', _gate_worker):
                 result = original(fixture, name)
             if fixture.jobs.job_id is not None:
                 self.worker_ids.append(fixture.jobs.job_id)

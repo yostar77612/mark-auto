@@ -7,36 +7,43 @@ never migrated in place, allowing an older installer to be restored safely.
 from __future__ import annotations
 
 import ctypes
-import hashlib
-import importlib
 import json
-import multiprocessing as mp
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
-import shutil
-import signal
 import stat
 import sys
 import tempfile
 import time
 import uuid
 from dataclasses import dataclass
-from contextlib import contextmanager
-from contextvars import ContextVar
 
 from . import __version__
 from .windows_paths import canonical_path, native_path
-from .job_stages import normalize_stage, stage_from_traceback
 from .runtime_support import (
     WindowsAppMutex as WindowsAppMutex,
     WINDOWS_APP_MUTEX as WINDOWS_APP_MUTEX,
     atomic_write,
     _sync_directory,
-    _durable_replace,
-    validate_analysis_request,
 )
 from quantlab.shared.runtime_errors import RuntimeSafetyError
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from quantlab.research_core.ports.jobs import JobProcessPort, JobStoragePort
+from quantlab.research_core.domain.job_protocol import OPERATIONS, UI_OPERATIONS, ANALYSIS_OPERATIONS, WALK_FORWARD_OPERATIONS
+
+
+def _job_ports(process_port, storage_port):
+    # Composition for legacy direct construction; JobManager uses only ports.
+    from quantlab.research_core.adapters.job_process import DesktopJobProcess
+
+    # Defer the adapter until this operation runs in its owning process.
+    from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+
+    return process_port or DesktopJobProcess(), storage_port or WorkspaceJobStorage()
+
 
 STATE_VERSION = 1
 MAX_JSON = 1024 * 1024
@@ -46,77 +53,6 @@ MAX_FILES = 10000
 # UI-owned worker protocol, retained as the default for legacy JobManager(paths)
 # callers. This is the sole desktop registrar literal in quantlab. Resolution is
 # dynamic so the runtime has no static dependency on a desktop module.
-DEFAULT_OPERATION_REGISTRAR = 'desktop_app.shell.main_window:execute_ui_operation'
-
-
-class _OperationExecutorRegistry:
-    def __init__(self):
-        self._executor = None
-
-    def register(self, executor):
-        if not callable(executor):
-            raise RuntimeSafetyError('Operation executor must be callable')
-        if self._executor is not None and self._executor is not executor:
-            raise RuntimeSafetyError('A different operation executor is already registered')
-        self._executor = executor
-
-    def executor(self):
-        if self._executor is None:
-            raise RuntimeSafetyError('No operation executor is registered')
-        return self._executor
-
-
-_executor_registry = _OperationExecutorRegistry()
-_executor_registrar = None
-_worker_registrar_import = ContextVar("markauto_worker_registrar_import", default=False)
-
-
-def register_operation_executor(executor):
-    """Same callable is idempotent; replacement fails closed."""
-    _executor_registry.register(executor)
-
-
-def _operation_executor():
-    return _executor_registry.executor()
-
-
-def register_operation_executor_factory(registrar):
-    """Register a module:callable entry point resolving the worker executor.
-
-    The callable is the executor itself, rather than an eagerly built UI object.
-    A fresh worker registry is required by multiprocessing spawn. The same entry
-    point is idempotent; changing an established entry point fails closed.
-    """
-    global _executor_registrar
-    if type(registrar) is not str or re.fullmatch(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*', registrar) is None:
-        raise RuntimeSafetyError('Invalid operation executor registrar')
-    if _executor_registrar is not None and _executor_registrar != registrar:
-        raise RuntimeSafetyError('A different operation executor registrar is already registered')
-    _executor_registrar = registrar
-
-
-def _worker_operation_executor(registrar):
-    if not registrar:
-        raise RuntimeSafetyError('No operation executor is registered')
-    module, name = registrar.split(':')
-    registry = _OperationExecutorRegistry()
-    token = _worker_registrar_import.set(True)
-    try:
-        registry.register(getattr(importlib.import_module(module), name))
-    finally:
-        _worker_registrar_import.reset(token)
-    return registry.executor()
-
-
-def _is_worker_registrar_import():
-    """True only while the worker resolves its explicit operation registrar.
-
-    The role is process-local and never conveyed in an untrusted job payload.
-    Ordinary GUI imports keep their full public surface and Qt implementations.
-    """
-    # A direct registrar lookup in the GUI process must not poison its cached
-    # desktop_app.shell.main_window module with the child-only, nonconstructible GUI bases.
-    return _worker_registrar_import.get() and mp.parent_process() is not None
 
 
 def _json_bytes(value):
@@ -203,6 +139,9 @@ def _write_workspace_format(root, value):
     Do not replace an existing marker: retaining its durable directory entry
     avoids relying on rename durability for the compatibility barrier.
     """
+    # Defer the adapter until this operation runs in its owning process.
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
+
     value = _workspace_format(value)
     marker = Path(root) / 'workspace-format.json'
     if marker.exists() or marker.is_symlink():
@@ -268,6 +207,9 @@ class AppPaths:
         return (self.bootstrap or self.root) / 'credentials'
 
     def ensure(self):
+        # Defer the adapter until this operation runs in its owning process.
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
+
         marker = self.root / 'workspace-format.json'
         if marker.exists() or marker.is_symlink():
             BackupManager._check_regular_path(marker)
@@ -323,6 +265,9 @@ class WorkspaceLocator:
         return result
 
     def _validate(self, value, *, probe=False):
+        # Defer the adapter until this operation runs in its owning process.
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
+
         if not isinstance(value, (str, Path)) or not str(value).strip():
             raise RuntimeSafetyError('Workspace path is required')
         text = str(value)
@@ -547,6 +492,9 @@ class RedactedEventLog:
 
     def append(self, operation, event_type, *, error_code=None):
         # Load the optional UI adapter only when this operation is requested.
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
+
+        # Defer the adapter until this operation runs in its owning process.
         from .desktop_errors import ERROR_TABLE
 
         if error_code is not None and (type(error_code) is not str or error_code not in ERROR_TABLE):
@@ -568,6 +516,9 @@ class RedactedEventLog:
             stream.write(_json_bytes(record) + b'\n')
 
     def tail(self, limit=200):
+        # Defer the adapter until this operation runs in its owning process.
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
+
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise RuntimeSafetyError('Log limit must be 1..1000')
         if not self.path.exists():
@@ -623,603 +574,11 @@ class RuntimeGuard:
         self.marker.unlink(missing_ok=True)
 
 
-class BackupManager:
-    """Quiescent-only, bounded, hash-verified state backups; no secret/cache files.
-
-    Fixed-bootstrap credentials and control-v1 audit ledgers are excluded.
-    Restoring research state must never reset spend reservations or the history
-    of examined holdouts; those irreversible controls remain in their original
-    per-user location across workspace switches and backup restoration.
-
-    Restore uses a same-volume staging directory and recovery marker. A crash
-    between the two directory renames is recovered on next startup.
-    """
-
-    def __init__(self, paths, jobs=None):
-        self.paths, self.jobs = paths, jobs
-
-    def _quiescent(self):
-        if self.jobs is not None and self.jobs.active:
-            raise RuntimeSafetyError('Stop active jobs before backup or restore')
-
-    def recover(self):
-        self._quiescent()
-        artifacts = (self.paths.root / 'state-v1.rollback', self.paths.root / 'restore-transaction.json', self.paths.state / '.restore-transaction')
-        if not any(path.exists() or path.is_symlink() for path in artifacts):
-            return  # No mutation, including intact unresolved-analysis startup.
-        # Keep operation-specific dependencies out of module startup.
-        from .analysis_recovery import operation_guard
-
-        with operation_guard(self.paths, 'restore_recovery') as ownership:
-            return self._recover(ownership)
-
-    def _recover(self, ownership):
-        self._quiescent()
-        rollback = self.paths.root / 'state-v1.rollback'
-        journal = self.paths.root / 'restore-transaction.json'
-        token = self.paths.state / '.restore-transaction'
-        transaction = None
-        if journal.exists():
-            try:
-                value = _read_json(journal)
-                if (
-                    isinstance(value, dict)
-                    and value.get('phase') in ('prepared', 'committed')
-                    and isinstance(value.get('id'), str)
-                    and re.fullmatch(r'[a-f0-9]{32}', value['id'])
-                ):
-                    transaction = value
-            except (OSError, ValueError):
-                pass  # Unknown journal is never evidence that rollback is disposable.
-        if transaction:
-            # Keep operation-specific dependencies out of module startup.
-            from .analysis_recovery import advance_restore_epoch
-
-            advance_restore_epoch(self.paths, transaction['id'], admission=ownership)
-        verified_commit = False
-        if transaction and transaction['phase'] == 'committed' and token.is_file():
-            try:
-                verified_commit = _read_json(token) == {'id': transaction['id']}
-            except (OSError, ValueError):
-                pass
-        had_rollback = rollback.exists()
-        if had_rollback:
-            self._check_regular_path(rollback)
-            if verified_commit:
-                # Promotion identity and durable commit marker both agree.
-                shutil.rmtree(rollback)
-            else:
-                if self.paths.state.exists():
-                    self._check_regular_path(self.paths.state)
-                    # Never delete an ambiguous directory, even if another callback
-                    # recreated it during the interrupted two-rename window.
-                    preserved = self.paths.root / ('state-v1.interrupted-' + uuid.uuid4().hex)
-                    _durable_replace(self.paths.state, preserved)
-                _durable_replace(rollback, self.paths.state)
-        # Only a verified promotion can remove a WAL requirement. A real
-        # pre-upgrade snapshot is old-binary compatible again after commit.
-        if transaction and (had_rollback or verified_commit) and 'prior_format' in transaction and 'restored_format' in transaction:
-            selected = transaction['restored_format'] if verified_commit else transaction['prior_format']
-            _write_workspace_format(self.paths.root, _workspace_format(selected))
-        # Retire the promoted token before its journal. A crash in this order
-        # leaves only a harmless journal, never an orphan token in a new backup.
-        token = self.paths.state / '.restore-transaction'
-        if verified_commit and token.exists():
-            token.unlink()
-        if journal.exists():
-            journal.unlink()
-        # Unknown partial staging directories are intentionally preserved for
-        # diagnosis rather than guessed to be disposable user data.
-
-    @staticmethod
-    def _safe_name(name):
-        parts = PurePosixPath(name).parts
-        if (
-            not name
-            or '\\' in name
-            or ':' in name
-            or name.startswith('/')
-            or any(p in ('.', '..') or p.endswith((' ', '.')) for p in parts)
-            or '/'.join(parts) != name
-        ):
-            raise RuntimeSafetyError('Unsafe backup path')
-        if any(re.fullmatch(r'(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?', p, re.I) for p in parts):
-            raise RuntimeSafetyError('Reserved Windows backup path')
-        return name
-
-    @staticmethod
-    def _check_regular_path(path):
-        info = native_path(path).lstat()
-        if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
-            raise RuntimeSafetyError('Symlinks and Windows reparse points cannot be backed up')
-        if stat.S_ISREG(info.st_mode) and info.st_nlink > 1:
-            raise RuntimeSafetyError('Hard-linked files cannot be backed up')
-
-    def create(self, destination):
-        # Keep operation-specific dependencies out of module startup.
-        from .analysis_recovery import operation_guard
-
-        with operation_guard(self.paths, 'ui_backup_create'):
-            return self._create(destination)
-
-    def _create(self, destination):
-        # Archive support is only needed for an explicit backup operation.
-        import zipfile
-
-        self._quiescent()
-        destination = native_path(destination).resolve()
-        # Validate before recovery/ensure: even a rejected destination must not
-        # alter journals, locks, vaults or irreversible accounting controls.
-        # Keep archives outside both the active workspace and fixed bootstrap;
-        # this also protects future internal files without a brittle allowlist.
-        for root in (self.paths.root, self.paths.bootstrap or self.paths.root):
-            if canonical_path(destination).is_relative_to(canonical_path(Path(root).resolve())):
-                raise RuntimeSafetyError('Backup must be outside workspace and application bootstrap directories')
-        self.recover()
-        self.paths.ensure()
-        files, size = [], 0
-        self._check_regular_path(self.paths.state)
-        state_root = self.paths.state.resolve()
-        for folder, directories, filenames in os.walk(self.paths.state, followlinks=False):
-            for name in directories + filenames:
-                path = Path(folder) / name
-                self._check_regular_path(path)
-                if not path.resolve().is_relative_to(state_root):
-                    raise RuntimeSafetyError('Backup entry leaves state directory')
-            for filename in sorted(filenames):
-                path = Path(folder) / filename
-                if not path.is_file():
-                    raise RuntimeSafetyError('Unsupported backup file')
-                name = self._safe_name(path.relative_to(self.paths.state).as_posix())
-                if name == '.restore-transaction':
-                    continue  # Internal control token, including legacy crash orphans.
-                size += path.stat().st_size
-                files.append((name, path))
-                if size > MAX_BACKUP or len(files) > MAX_FILES:
-                    raise RuntimeSafetyError('Backup size limit exceeded')
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=destination.parent, suffix='.zip.tmp')
-        os.close(fd)
-        try:
-            workspace_format = _workspace_format(_read_json(self.paths.root / 'workspace-format.json'))
-            manifest = {'schema_version': STATE_VERSION, 'app_version': __version__, 'files': {}}
-            if {'sqlite_replay', 'sqlite_walk_forward'} & set(workspace_format):
-                manifest.update(schema_version=GUARDED_BACKUP_VERSION, workspace_format=workspace_format)
-            with zipfile.ZipFile(tmp, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
-                for name, path in files:
-                    self._check_regular_path(path)
-                    raw = path.read_bytes()
-                    manifest['files'][name] = {'size': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()}
-                    archive.writestr('state/' + name, raw)
-                archive.writestr('manifest.json', _json_bytes(manifest))
-            os.replace(tmp, destination)
-        finally:
-            Path(tmp).unlink(missing_ok=True)
-        return destination
-
-    def restore(self, source):
-        # Keep operation-specific dependencies out of module startup.
-        from .analysis_recovery import operation_guard
-
-        (self.paths.bootstrap or self.paths.root).mkdir(parents=True, exist_ok=True)
-        with operation_guard(self.paths, 'ui_backup_restore') as ownership:
-            return self._restore(source, ownership)
-
-    def _restore(self, source, ownership):
-        # Archive support is only needed for an explicit restore operation.
-        import zipfile
-
-        self._quiescent()
-        self.paths.root.mkdir(parents=True, exist_ok=True)
-        self.recover()
-        staging = Path(tempfile.mkdtemp(prefix='.restore-', dir=self.paths.root))
-        try:
-            with zipfile.ZipFile(source) as archive:
-                infos = archive.infolist()
-                names = [i.filename for i in infos]
-                if len(infos) > MAX_FILES + 1 or len(set(n.casefold() for n in names)) != len(names) or sum(i.file_size for i in infos) > MAX_BACKUP:
-                    raise RuntimeSafetyError('Backup size or duplicate-entry violation')
-                for info in infos:
-                    self._safe_name(info.filename)
-                    if info.is_dir() or stat.S_ISLNK(info.external_attr >> 16) or info.flag_bits & 1:
-                        raise RuntimeSafetyError('Unsupported archive entry')
-                if 'manifest.json' not in names or archive.getinfo('manifest.json').file_size > MAX_JSON:
-                    raise RuntimeSafetyError('Missing or oversized backup manifest')
-                manifest = json.loads(archive.read('manifest.json'))
-                if (
-                    not isinstance(manifest, dict)
-                    or manifest.get('schema_version') not in (STATE_VERSION, GUARDED_BACKUP_VERSION)
-                    or not isinstance(manifest.get('files'), dict)
-                ):
-                    raise RuntimeSafetyError('Incompatible backup state version')
-                restored_format = WORKSPACE_FORMAT
-                if manifest['schema_version'] == GUARDED_BACKUP_VERSION:
-                    restored_format = _workspace_format(manifest.get('workspace_format'))
-                    _verify_replay_runtime(restored_format)
-                    if not {'sqlite_replay', 'sqlite_walk_forward'} & set(restored_format):
-                        raise RuntimeSafetyError('Guarded backup is missing its runtime requirement')
-                elif 'workspace_format' in manifest:
-                    raise RuntimeSafetyError('Unexpected backup runtime requirement')
-                entries = manifest['files']
-                if set(names) != {'manifest.json'} | {'state/' + n for n in entries}:
-                    raise RuntimeSafetyError('Manifest does not match archive')
-                for name, expected in entries.items():
-                    self._safe_name(name)
-                    if name == '.restore-transaction':
-                        raise RuntimeSafetyError('Backup contains a reserved restore control file')
-                    raw = archive.read('state/' + name)
-                    if not isinstance(expected, dict) or len(raw) != expected.get('size') or hashlib.sha256(raw).hexdigest() != expected.get('sha256'):
-                        raise RuntimeSafetyError('Backup hash mismatch')
-                    target = staging / name
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    atomic_write(target, raw, durable=True)
-            settings = staging / 'settings.json'
-            if settings.exists():
-                BackupManager._check_regular_path(settings)
-                SettingsStore(settings).load()
-            rollback = self.paths.root / 'state-v1.rollback'
-            journal = self.paths.root / 'restore-transaction.json'
-            self.paths.ensure()
-            prior_format = _workspace_format(_read_json(self.paths.root / 'workspace-format.json'))
-            # Keep both data generations protected until verified promotion or
-            # rollback selects its exact format. Never open SQLite during restore.
-            if {'sqlite_replay', 'sqlite_walk_forward'} & set(restored_format):
-                _write_workspace_format(self.paths.root, {**prior_format, **restored_format})
-            transaction_id = uuid.uuid4().hex
-            # Keep operation-specific dependencies out of module startup.
-            from .analysis_recovery import advance_restore_epoch
-
-            advance_restore_epoch(self.paths, transaction_id, admission=ownership)
-            formats = {'prior_format': prior_format, 'restored_format': restored_format}
-            atomic_write(staging / '.restore-transaction', _json_bytes({'id': transaction_id}), durable=True)
-            atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'prepared', **formats}), durable=True)
-            try:
-                if self.paths.state.exists():
-                    _durable_replace(self.paths.state, rollback)
-                _durable_replace(staging, self.paths.state)
-                atomic_write(journal, _json_bytes({'id': transaction_id, 'phase': 'committed', **formats}), durable=True)
-            except BaseException:
-                self.recover()
-                raise
-            self.recover()
-        finally:
-            if staging.exists():
-                shutil.rmtree(staging)
-
-
-UI_OPERATIONS = frozenset(
-    {
-        'ui_demo',
-        'ui_import',
-        'ui_refresh',
-        'ui_market_refresh',
-        'ui_chatgpt_auth',
-        'ui_chatgpt_usage',
-        'ui_chatgpt_reconcile',
-        'ui_backtest',
-        'ui_campaign',
-        'ui_walk_forward_preview',
-        'ui_walk_forward_run',
-        'ui_walk_forward_read',
-        'ui_walk_forward_reconcile',
-        'ui_analysis_preview',
-        'ui_analysis_run',
-        'ui_analysis_read',
-        'ui_analysis_reconcile',
-        'ui_compare',
-        'ui_select',
-        'ui_disable',
-        'ui_paper_snapshot',
-        'ui_paper_reconcile',
-        'ui_paper_kill',
-        'ui_paper_replay',
-        'ui_paper_submit',
-        'ui_paper_cancel',
-        'ui_paper_cancel_all',
-        'ui_capital_scenario',
-        'ui_idea_research',
-        'ui_idea_adopt',
-        'ui_backup_create',
-        'ui_backup_restore',
-    }
-)
-OPERATIONS = UI_OPERATIONS | {'demo', 'backtest', 'campaign'}
-ANALYSIS_OPERATIONS = frozenset({'ui_analysis_preview', 'ui_analysis_run', 'ui_analysis_read', 'ui_analysis_reconcile'})
-WALK_FORWARD_OPERATIONS = frozenset(
-    {
-        'ui_walk_forward_preview',
-        'ui_walk_forward_run',
-        'ui_walk_forward_read',
-        'ui_walk_forward_reconcile',
-    }
-)
-
-
-def _validate_idea_research_payload(payload):
-    """Explicit per-run network and plan-usage consent; only bounded identity fields."""
-    retry = 'retry_task_id' in payload
-    if set(payload) != ({'retry_task_id', 'consent', 'registration', 'model'} if retry else {'request', 'registration', 'model'}):
-        raise RuntimeSafetyError('Invalid idea research request')
-    consent = payload['consent'] if retry else payload['request'].get('consent') if isinstance(payload['request'], dict) else None
-    if consent != {'network': True, 'plan_usage': True}:
-        raise RuntimeSafetyError('Explicit network and plan-usage consent required')
-    if retry and (type(payload['retry_task_id']) is not str or not re.fullmatch(r'idea-[0-9a-f]{32}', payload['retry_task_id'])):
-        raise RuntimeSafetyError('Invalid idea research request')
-    if type(payload['model']) is not str or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', payload['model']):
-        raise RuntimeSafetyError('Invalid idea research request')
-    if type(payload['registration']) is not str or not re.fullmatch(r'[a-f0-9]{32}', payload['registration']):
-        raise RuntimeSafetyError('Invalid idea research request')
-
-
-@contextmanager
-def _worker_recovery_guard(paths, operation, job_id, helper_nonce):
-    # Keep operation-specific dependencies out of module startup.
-    from .analysis_recovery import admission, operation_guard, read_launch, SOURCE_WRITERS, ANALYSIS_STARTS, WORKSPACE_MUTATIONS
-
-    if operation == 'ui_analysis_run' and helper_nonce is not None:
-        with admission(paths):
-            launch = read_launch(paths, job_id, for_admission=True)
-            if launch['helper_nonce'] != helper_nonce:
-                raise RuntimeSafetyError('Original analysis helper generation differs')
-            yield
-    elif operation in SOURCE_WRITERS | ANALYSIS_STARTS | WORKSPACE_MUTATIONS or operation == 'ui_analysis_reconcile':
-        with operation_guard(paths, operation):
-            yield
-    else:
-        yield
-
-
-def _job_worker(
-    sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, helper_nonce=None, operation_registrar=DEFAULT_OPERATION_REGISTRAR
-):
-    if sys.platform != 'win32':
-        os.setsid()
-    if not gate.wait(15):
-        return
-
-    failure_stage = 'prepare_operation'
-
-    def emit(kind, **values):
-        nonlocal failure_stage
-        if 'stage' in values:
-            failure_stage = normalize_stage(values['stage'])
-            values['stage'] = failure_stage
-        sender.send_bytes(_json_bytes({'job_id': job_id, 'type': kind, **values}))
-
-    try:
-        emit('progress', message='Working', progress=0)
-        paths = AppPaths(Path(root), Path(bootstrap) if bootstrap else None)
-        with _worker_recovery_guard(paths, operation, job_id, helper_nonce):
-            if operation in UI_OPERATIONS:
-                executor = _worker_operation_executor(operation_registrar)
-                failure_stage = 'run_operation'
-                result = executor(
-                    operation,
-                    payload,
-                    paths,
-                    emit=emit,
-                    descendants_stopped=reconciliation_admitted is True
-                    and operation in ('ui_chatgpt_reconcile', 'ui_walk_forward_reconcile', 'ui_analysis_reconcile'),
-                )
-            else:
-                # Keep operation-specific dependencies out of module startup.
-                from argparse import Namespace
-
-                # Keep operation-specific dependencies out of module startup.
-                from .__main__ import execute
-
-                stage = paths.state / 'runs' / (job_id + '.partial')
-                stage.mkdir(parents=True, exist_ok=False)
-                args = {'command': operation, 'output': stage, **payload}
-                if 'dataset' in args:
-                    args['dataset'] = Path(args['dataset'])
-                args.setdefault('config', None)
-                args.setdefault('family', 'trend')
-                args.setdefault('bars', 240)
-                failure_stage = 'run_campaign' if operation == 'campaign' else 'run_operation'
-                execute(Namespace(**args))
-                failure_stage = 'write_result'
-                final = stage.with_suffix('')
-                os.replace(stage, final)
-                result = {'output': str(final)}
-        # Keep operation-specific dependencies out of module startup.
-        from .core import to_dict
-
-        failure_stage = 'write_result'
-        result = to_dict(result)
-        try:
-            _json_bytes(result)
-        except RuntimeSafetyError:
-            result = {'output': str(paths.state), 'summary': 'Completed; detailed results exceed the IPC display limit and remain on disk'}
-        emit('result', result=result, message='Completed', progress=100)
-    except BaseException as exc:
-        # Do not echo exception text: providers/files may include credentials.
-        # Fixed presentation metadata only; never expose exception prose.
-        from .desktop_errors import exception_code
-
-        categories = {
-            'ValidationError': '輸入驗證失敗，請檢查資料、設定與紙上帳戶對帳',
-            'FileNotFoundError': '找不到所需檔案，請重新選取資料',
-            'PermissionError': '檔案存取遭拒，請檢查路徑及檔案是否被占用',
-            'RuntimeSafetyError': '安全檢查未通過，請檢查備份版本或作業狀態',
-        }
-        emit(
-            'error',
-            message=categories.get(type(exc).__name__, '作業失敗；既有資料已保留，請檢查輸入後重試'),
-            error_type=type(exc).__name__,
-            error_code=exception_code(exc),
-            stage=stage_from_traceback(exc.__traceback__, failure_stage),
-        )
-    finally:
-        sender.close()
-
-
-class _WindowsProcessTree:
-    """Kill-on-close job object. Child waits until assigned; grandchildren inherit."""
-
-    def __init__(self, pid):
-        # Load this platform-specific API only on its supported execution path.
-        from ctypes import wintypes as w
-
-        class Basic(ctypes.Structure):
-            _fields_ = [
-                ('PerProcessUserTimeLimit', ctypes.c_int64),
-                ('PerJobUserTimeLimit', ctypes.c_int64),
-                ('LimitFlags', w.DWORD),
-                ('MinimumWorkingSetSize', ctypes.c_size_t),
-                ('MaximumWorkingSetSize', ctypes.c_size_t),
-                ('ActiveProcessLimit', w.DWORD),
-                ('Affinity', ctypes.c_size_t),
-                ('PriorityClass', w.DWORD),
-                ('SchedulingClass', w.DWORD),
-            ]
-
-        class Counters(ctypes.Structure):
-            _fields_ = [
-                (name, ctypes.c_uint64)
-                for name in (
-                    'ReadOperationCount',
-                    'WriteOperationCount',
-                    'OtherOperationCount',
-                    'ReadTransferCount',
-                    'WriteTransferCount',
-                    'OtherTransferCount',
-                )
-            ]
-
-        class Extended(ctypes.Structure):
-            _fields_ = [
-                ('BasicLimitInformation', Basic),
-                ('IoInfo', Counters),
-                ('ProcessMemoryLimit', ctypes.c_size_t),
-                ('JobMemoryLimit', ctypes.c_size_t),
-                ('PeakProcessMemoryUsed', ctypes.c_size_t),
-                ('PeakJobMemoryUsed', ctypes.c_size_t),
-            ]
-
-        self.kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-        k = self.kernel
-        k.CreateJobObjectW.argtypes, k.CreateJobObjectW.restype = [ctypes.c_void_p, w.LPCWSTR], w.HANDLE
-        k.SetInformationJobObject.argtypes = [w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD]
-        k.AssignProcessToJobObject.argtypes = [w.HANDLE, w.HANDLE]
-        k.OpenProcess.argtypes, k.OpenProcess.restype = [w.DWORD, w.BOOL, w.DWORD], w.HANDLE
-        k.CloseHandle.argtypes = [w.HANDLE]
-        self.handle = k.CreateJobObjectW(None, None)
-        if not self.handle:
-            raise RuntimeSafetyError('Cannot create worker isolation job')
-        limits = Extended()
-        limits.BasicLimitInformation.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE
-        child = k.OpenProcess(0x0100 | 0x0001, False, pid)
-        try:
-            if (
-                not child
-                or not k.SetInformationJobObject(self.handle, 9, ctypes.byref(limits), ctypes.sizeof(limits))
-                or not k.AssignProcessToJobObject(self.handle, child)
-            ):
-                self.close()
-                raise RuntimeSafetyError('Cannot isolate worker process tree')
-        finally:
-            if child:
-                k.CloseHandle(child)
-
-    def stop_and_join(self, *, deadline=None):
-        """Keep the Job handle; an earlier caller deadline shares the six-second reserve."""
-        # Keep operation-specific dependencies out of module startup.
-        import math
-
-        now = time.monotonic()
-        if deadline is None:
-            deadline = now + 6
-        elif type(deadline) not in (int, float) or not math.isfinite(deadline):
-            raise RuntimeSafetyError('Invalid worker cleanup deadline')
-        else:
-            deadline = min(deadline, now + 6)
-        # Load this platform-specific API only on its supported execution path.
-        from ctypes import wintypes as w
-
-        class Accounting(ctypes.Structure):
-            _fields_ = [(name, ctypes.c_int64) for name in ('TotalUserTime', 'TotalKernelTime', 'ThisPeriodTotalUserTime', 'ThisPeriodTotalKernelTime')] + [
-                (name, w.DWORD) for name in ('TotalPageFaultCount', 'TotalProcesses', 'ActiveProcesses', 'TotalTerminatedProcesses')
-            ]
-
-        k = self.kernel
-        k.TerminateJobObject.argtypes = [w.HANDLE, w.UINT]
-        k.QueryInformationJobObject.argtypes = [w.HANDLE, ctypes.c_int, ctypes.c_void_p, w.DWORD, ctypes.c_void_p]
-        if not self.handle or not k.TerminateJobObject(self.handle, 1):
-            raise RuntimeSafetyError('Cannot stop worker process tree')
-        while True:
-            info = Accounting()
-            if not k.QueryInformationJobObject(self.handle, 1, ctypes.byref(info), ctypes.sizeof(info), None):
-                raise RuntimeSafetyError('Cannot verify worker process tree')
-            if time.monotonic() > deadline:
-                raise RuntimeSafetyError('Worker cleanup exceeded unchanged deadline')
-            if info.ActiveProcesses == 0:
-                return
-            if time.monotonic() >= deadline:
-                raise RuntimeSafetyError('Worker descendants still active')
-            time.sleep(0.02)
-
-    def close(self):
-        if self.handle:
-            self.kernel.CloseHandle(self.handle)
-            self.handle = None
-
-
-def validate_walk_forward_request(plan_payload, saved_source=None):
-    """Read-only desktop grammar; an unadmitted saved plan cannot carry DSL.
-
-    The temporary builtin plan checks only chronology, costs and resource types.
-    Its one-slot budget is never used to run an experiment or displayed as consent.
-    The worker restores the explicit saved budget after authoritative admission.
-    """
-    # Keep operation-specific dependencies out of module startup.
-    from .core import ValidationError
-
-    # Keep operation-specific dependencies out of module startup.
-    from .walk_forward import walk_forward_plan_from_dict
-
-    if not isinstance(plan_payload, dict):
-        raise ValidationError('Explicit walk-forward plan required')
-    saved = plan_payload.get('pool_origin', 'exact_builtin_pool') == 'saved_campaign_pool'
-    if not saved:
-        if saved_source is not None:
-            raise ValidationError('Built-in and saved pools cannot be mixed')
-        return walk_forward_plan_from_dict(plan_payload)
-    if 'candidate_pool' in plan_payload or 'pool_admission' in plan_payload:
-        raise ValidationError('Saved candidates must be admitted from local source records')
-    if (
-        not isinstance(saved_source, dict)
-        or set(saved_source) != {'campaign_reference', 'original_dataset'}
-        or type(saved_source['campaign_reference']) is not str
-        or not re.fullmatch(r'[0-9a-f]{64}', saved_source['campaign_reference'])
-    ):
-        raise ValidationError('Explicit immutable source campaign reference required')
-    original = saved_source['original_dataset']
-    if not isinstance(original, dict) or set(original) != {'kind', 'path'} or original['kind'] != 'local_dataset_file':
-        raise ValidationError('Explicit local original dataset file reference required')
-    path = original['path']
-    if (
-        type(path) is not str
-        or not path
-        or len(path) > 4096
-        or '\0' in path
-        or '://' in path
-        or path.startswith(('//', '\\\\'))
-        or not Path(path).is_absolute()
-        or '..' in Path(path).parts
-    ):
-        raise ValidationError('Original dataset must be an explicitly selected local absolute file path')
-    budget = plan_payload.get('max_evaluations')
-    if type(budget) is not int or not 1 <= budget <= 620:
-        raise ValidationError('Saved-pool evaluation budget must be explicitly set within 1..620')
-    template = {**plan_payload, 'pool_origin': 'exact_builtin_pool', 'max_evaluations': 1}
-    return walk_forward_plan_from_dict(template)
-
-
 class JobManager:
     """One spawned bounded-IPC task at a time; no arbitrary callable execution."""
 
-    def __init__(self, paths):
+    def __init__(self, paths, *, process_port: JobProcessPort | None = None, storage_port: JobStoragePort | None = None):
+        self.process_port, self.storage_port = _job_ports(process_port, storage_port)
         self.paths = paths.ensure()
         self.process = self.receiver = self.tree = None
         self.job_id = None
@@ -1268,7 +627,7 @@ class JobManager:
         folder = self.paths.state / 'walk_forward' / reference
         for path in (self.paths.state, folder.parent, folder):
             if path.exists() or path.is_symlink():
-                BackupManager._check_regular_path(path)
+                self.storage_port.check_regular_path(path)
                 if not path.is_dir():
                     raise RuntimeSafetyError('Invalid walk-forward state directory')
         return folder / '.desktop-run-owner.json'
@@ -1296,7 +655,7 @@ class JobManager:
     def _check_walk_forward_owner(self, job_id, reference):
         owner = self._walk_forward_owner_path(reference)
         try:
-            BackupManager._check_regular_path(owner)
+            self.storage_port.check_regular_path(owner)
             value = _read_json(owner)
         except (OSError, RuntimeSafetyError) as exc:
             raise RuntimeSafetyError('Walk-forward original run ownership cannot be verified') from exc
@@ -1323,252 +682,35 @@ class JobManager:
                 raise RuntimeSafetyError('Demo bars must be 20..10000')
 
     def _prepare_walk_forward_job(self, operation, payload):
-        deadline = None
-        walk_forward_reference = None
-        walk_forward_result_reference = None
-        reconciliation_admitted = False
-        allowed = {
-            'ui_walk_forward_preview': {'plan'},
-            'ui_walk_forward_run': {'plan', 'preview_identity'},
-            'ui_walk_forward_read': {'reference'},
-            'ui_walk_forward_reconcile': {'reference', 'stopped_job_id'},
-        }[operation]
-        if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run') and 'saved_source' in payload:
-            if not isinstance(payload.get('plan'), dict) or payload['plan'].get('pool_origin') != 'saved_campaign_pool':
-                raise RuntimeSafetyError('Built-in and saved pools cannot be mixed')
-            allowed = allowed | {'saved_source'}
-        if set(payload) != allowed:
-            raise RuntimeSafetyError('Unsupported walk-forward job parameters')
-        if operation in ('ui_walk_forward_preview', 'ui_walk_forward_run'):
-            if not isinstance(payload['plan'], dict):
-                raise RuntimeSafetyError('Explicit walk-forward plan required')
-            # Keep operation-specific dependencies out of module startup.
-            from .core import ValidationError
+        # Defer the adapter until this operation runs in its owning process.
+        from quantlab.research_core.application import job_requests
 
-            try:
-                plan = validate_walk_forward_request(payload['plan'], payload.get('saved_source'))
-            except (ValidationError, TypeError, KeyError) as exc:
-                raise RuntimeSafetyError('Invalid bounded walk-forward plan') from exc
-            if operation == 'ui_walk_forward_run':
-                walk_forward_reference = payload['preview_identity']
-                walk_forward_result_reference = walk_forward_reference
-                deadline = time.monotonic() + plan.max_runtime_seconds + 10
-        else:
-            walk_forward_result_reference = payload['reference']
-        if operation != 'ui_walk_forward_preview':
-            if not isinstance(walk_forward_result_reference, str) or not re.fullmatch(r'[0-9a-f]{64}', walk_forward_result_reference):
-                raise RuntimeSafetyError('Invalid walk-forward reference')
-        if operation == 'ui_walk_forward_run':
-            journal = self.paths.state / 'walk_forward' / walk_forward_reference / 'walk_forward.sqlite3'
-            if journal.exists() or journal.is_symlink():
-                # A new reader's process stop is not proof about an older
-                # journal writer. Never mint recovery authority by reopening.
-                raise RuntimeSafetyError('Existing walk-forward journals are read-only; use read')
-        if operation == 'ui_walk_forward_reconcile':
-            if not self._quiesced_walk_forward or (payload['stopped_job_id'], payload['reference']) != self._quiesced_walk_forward:
-                raise RuntimeSafetyError('Matching walk-forward subtree stop proof required')
-            self._check_walk_forward_owner(payload['stopped_job_id'], payload['reference'])
-            reconciliation_admitted = True
-        if deadline is None:
-            deadline = time.monotonic() + 60
-        return deadline, walk_forward_reference, walk_forward_result_reference, reconciliation_admitted
+        return job_requests._prepare_walk_forward_job(self, operation, payload)
 
     def _prepare_analysis_job(self, operation, payload):
-        analysis_job_identity = None
-        analysis_result_reference = None
-        approved_analysis_plan = None
-        helper_nonce = None
-        reconciliation_admitted = False
-        request = None
-        allowed = {
-            'ui_analysis_preview': {'request'},
-            'ui_analysis_run': {'request', 'expected_analysis_id', 'expected_plan_hash', 'user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed'},
-            'ui_analysis_read': {'analysis_id'},
-            'ui_analysis_reconcile': {'analysis_id', 'registration', 'stopped_job_id'},
-        }[operation]
-        if operation == 'ui_analysis_run' and 'approved_plan' in payload:
-            allowed = allowed | {'approved_plan'}
-        if operation == 'ui_analysis_reconcile' and 'recovery_launch_id' in payload:
-            allowed = {'analysis_id', 'registration', 'recovery_launch_id'}
-        if set(payload) != allowed:
-            raise RuntimeSafetyError('Invalid analysis job fields')
-        if operation in ('ui_analysis_preview', 'ui_analysis_run'):
-            request = validate_analysis_request(payload['request'])
-            deadline = time.monotonic() + 120 + 10 + (request['timeout_seconds'] if operation == 'ui_analysis_run' else 0)
-        else:
-            deadline = time.monotonic() + 60
-        if operation != 'ui_analysis_preview':
-            reference = payload['expected_analysis_id'] if operation == 'ui_analysis_run' else payload['analysis_id']
-            if type(reference) is not str or not re.fullmatch('[a-f0-9]{64}', reference):
-                raise RuntimeSafetyError('Invalid analysis identity')
-            analysis_result_reference = reference
-        if operation == 'ui_analysis_run':
-            if type(payload['expected_plan_hash']) is not str or not re.fullmatch('[a-f0-9]{64}', payload['expected_plan_hash']):
-                raise RuntimeSafetyError('Invalid immutable analysis plan hash')
-            if any(payload[key] is not True for key in ('user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed')):
-                raise RuntimeSafetyError('Explicit one-call analysis consent required')
-            analysis_job_identity = (reference, request['registration'])
-            if 'approved_plan' in payload or sys.platform == 'win32':
-                # Keep operation-specific dependencies out of module startup.
-                from .analysis_recovery import plan_bindings
+        # Defer the adapter until this operation runs in its owning process.
+        from quantlab.research_core.application import job_requests
 
-                # Keep operation-specific dependencies out of module startup.
-                from .core import content_hash as content_hash
-
-                approved_analysis_plan = payload.get('approved_plan')
-                bindings = plan_bindings(approved_analysis_plan)
-                if (
-                    bindings['analysis_id'] != reference
-                    or bindings['plan_hash'] != payload['expected_plan_hash']
-                    or any(bindings[key] != request[key] for key in ('registration', 'model', 'timeout_seconds'))
-                ):
-                    raise RuntimeSafetyError('Original approved analysis plan differs')
-            if sys.platform == 'win32':
-                helper_nonce = uuid.uuid4().hex
-        if operation == 'ui_analysis_reconcile':
-            if 'recovery_launch_id' in payload:
-                # Keep operation-specific dependencies out of module startup.
-                from .analysis_recovery import validate_stop_receipt, supports_durable_recovery
-
-                if not supports_durable_recovery():
-                    raise RuntimeSafetyError('Durable analysis recovery requires Windows')
-                launch = validate_stop_receipt(self.paths, payload['recovery_launch_id'])
-                if launch['analysis_id'] != reference or launch['registration'] != payload['registration']:
-                    raise RuntimeSafetyError('Original durable analysis binding differs')
-            else:
-                if self._quiesced_analysis != (payload['stopped_job_id'], reference, payload['registration']):
-                    raise RuntimeSafetyError('Matching analysis subtree stop proof required')
-                reconciliation_admitted = True
-        return (deadline, analysis_job_identity, analysis_result_reference, approved_analysis_plan, helper_nonce, reconciliation_admitted, request)
+        return job_requests._prepare_analysis_job(self, operation, payload)
 
     def _prepare_other_job(self, operation, payload):
-        deadline = None
-        auth_request_id = None
-        reconciliation_admitted = False
-        if operation == 'ui_chatgpt_auth':
-            request = payload.get('request')
-            if set(payload) != {'request'} or not isinstance(request, dict):
-                raise RuntimeSafetyError('Invalid authentication request')
-            allowed = {'request_id', 'action', 'registration', 'max_runtime_seconds', 'user_confirmed'}
-            # ConnectionRequest always serializes the connection-test model (None for other actions).
-            if (
-                not allowed <= set(request) <= allowed | {'model', 'acknowledgement_version', 'expected_sequence', 'expected_calls', 'expected_outcome'}
-                or request.get('model') is not None
-                and (type(request['model']) is not str or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', request['model']))
-                or type(request['request_id']) is not int
-                or request['request_id'] < 1
-                or type(request['max_runtime_seconds']) is not int
-                or not 1 <= request['max_runtime_seconds'] <= 600
-            ):
-                raise RuntimeSafetyError('Invalid bounded authentication request')
-            version = request.get('acknowledgement_version')
-            if request.get('action') in ('resolve_unknown', 'resolve_finished_unknown'):
-                if type(version) is not int or version != 1 or request.get('user_confirmed') is not True:
-                    raise RuntimeSafetyError('Invalid resolution acknowledgement')
-            elif version is not None:
-                raise RuntimeSafetyError('Unexpected resolution acknowledgement')
-            expected = tuple(request.get(key) for key in ('expected_sequence', 'expected_calls', 'expected_outcome'))
-            if request.get('action') == 'resolve_finished_unknown':
-                if (
-                    any(type(value) is not int or not 1 <= value <= 100 for value in expected[:2])
-                    or type(expected[2]) is not str
-                    or not re.fullmatch(r'[a-z_]{1,64}', expected[2])
-                ):
-                    raise RuntimeSafetyError('Invalid finished resolution target')
-            elif expected != (None, None, None):
-                raise RuntimeSafetyError('Unexpected finished resolution target')
-            if request.get('action') in ('inspect_unknown', 'resolve_unknown', 'resolve_finished_unknown') and (
-                type(request.get('registration')) is not str or not re.fullmatch(r'[a-f0-9]{32}', request['registration'])
-            ):
-                raise RuntimeSafetyError('Invalid reconciliation registration')
-            auth_request_id = request['request_id']
-            deadline = time.monotonic() + request['max_runtime_seconds'] + 5
-        elif operation in ('ui_chatgpt_usage', 'ui_chatgpt_reconcile'):
-            if operation == 'ui_chatgpt_reconcile' and (not self._quiesced_subscription_id or payload.get('stopped_job_id') != self._quiesced_subscription_id):
-                raise RuntimeSafetyError('Subscription subtree stop proof required')
-            reconciliation_admitted = operation == 'ui_chatgpt_reconcile'
-            deadline = time.monotonic() + 60
-        elif operation == 'ui_idea_research':
-            _validate_idea_research_payload(payload)
-            # 150 s research budget plus the same 10 s worker margin as other plan calls.
-            deadline = time.monotonic() + 150 + 10
-        elif operation == 'ui_idea_adopt':
-            if set(payload) != {'task_id', 'candidate_id', 'config'} or not isinstance(payload['config'], dict):
-                raise RuntimeSafetyError('Invalid idea adoption request')
-            if type(payload['task_id']) is not str or not re.fullmatch(r'idea-[0-9a-f]{32}', payload['task_id']):
-                raise RuntimeSafetyError('Invalid idea adoption request')
-            if type(payload['candidate_id']) is not str or not re.fullmatch(r'c[1-3]', payload['candidate_id']):
-                raise RuntimeSafetyError('Invalid idea adoption request')
-        elif operation == 'ui_campaign' and payload.get('provider', {}).get('mode') == 'chatgpt_plan':
-            seconds = payload.get('config', {}).get('max_runtime_seconds')
-            if type(seconds) is not int or not 1 <= seconds <= 7200:
-                raise RuntimeSafetyError('Explicit bounded subscription campaign required')
-            deadline = time.monotonic() + seconds + 10
-        return deadline, auth_request_id, reconciliation_admitted
+        # Defer the adapter until this operation runs in its owning process.
+        from quantlab.research_core.application import job_requests
+
+        return job_requests._prepare_other_job(self, operation, payload)
 
     def _launch_job_process(self, operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request):
-        context = mp.get_context('spawn')
-        receiver, sender = context.Pipe(duplex=False)
-        gate = context.Event()
-        self._gate = gate
-        self.job_id = job_id
-        self._terminal = False
-        self._pipe_eof = False
-        self._deferred = []
-        worker_args = (
-            sender,
-            gate,
-            operation,
-            payload,
-            str(self.paths.root),
-            str(self.paths.bootstrap) if self.paths.bootstrap else None,
-            self.job_id,
-            reconciliation_admitted,
-        )
-        if helper_nonce is not None:
-            worker_args += (helper_nonce,)
-        if _executor_registrar not in (None, DEFAULT_OPERATION_REGISTRAR):
-            if helper_nonce is None:
-                worker_args += (None,)
-            worker_args += (_executor_registrar,)
-        self.process = context.Process(target=_job_worker, args=worker_args)
-        self.receiver = receiver
-        try:
-            self.process.start()
-            sender.close()
-            if helper_nonce is not None:
-                # Keep operation-specific dependencies out of module startup.
-                from .analysis_recovery import admission, register_launch, plan_bindings
+        # Characterization callers may construct the lifecycle with __new__.
+        if not hasattr(self, 'process_port'):
+            self.process_port, self.storage_port = _job_ports(None, None)
+        return self.process_port.launch(self, operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request)
 
-                # Keep operation-specific dependencies out of module startup.
-                from .analysis_recovery_windows import WindowsAnalysisRecoveryTree
+    def _join_descendants(self, pid):
+        # Defer the adapter until this operation runs in its owning process.
+        from quantlab.research_core.adapters.job_process import DesktopJobProcess
 
-                # Keep operation-specific dependencies out of module startup.
-                from .core import content_hash
-
-                anticipated = {
-                    'job_id': job_id,
-                    'helper_nonce': helper_nonce,
-                    **plan_bindings(approved_analysis_plan),
-                    'source_request_hash': content_hash(request),
-                }
-                self.tree = WindowsAnalysisRecoveryTree(self.process, gate, self.paths, max(0.0, self._deadline - time.monotonic()), anticipated=anticipated)
-                with admission(self.paths) as ownership:
-                    launch = register_launch(
-                        self.paths, job_id=job_id, helper_nonce=helper_nonce, approved_plan=approved_analysis_plan, request=request, admission=ownership
-                    )
-                self.tree.activate(launch)
-            else:
-                if sys.platform == 'win32':
-                    self.tree = _WindowsProcessTree(self.process.pid)
-                gate.set()
-            self._log('started')
-        except BaseException as exc:
-            sender.close()
-            if self.tree is None and getattr(exc, 'recovery_tree', None) is not None:
-                self.tree = exc.recovery_tree  # Retain exact ownership after incomplete helper cleanup.
-            self.cancel()
-            raise
+        port = getattr(self, 'process_port', None) or DesktopJobProcess()
+        return port.join_descendants(self, pid)
 
     def start(self, operation, payload):
         if self.active:
@@ -1625,73 +767,8 @@ class JobManager:
         if not self.active:
             return events
 
-        def drain():
-            for _ in range(16):
-                # The protocol ends at its terminal packet. Windows PeekNamedPipe
-                # raises ERROR_BROKEN_PIPE after sender close, unlike POSIX poll.
-                if self._terminal or self._pipe_eof:
-                    return
-                try:
-                    if not self.receiver.poll():
-                        return
-                    raw = self.receiver.recv_bytes(MAX_JSON)
-                except EOFError:
-                    self._pipe_eof = True
-                    return
-                except OSError as exc:
-                    if getattr(exc, 'winerror', None) == 109:  # ERROR_BROKEN_PIPE
-                        self._pipe_eof = True
-                        return
-                    raise  # Invalid handles, oversized packets, etc. fail closed.
-                event = json.loads(raw)
-                if (
-                    not isinstance(event, dict)
-                    or event.get('job_id') != self.job_id
-                    or event.get('type') not in {'progress', 'result', 'error', 'auth_progress'}
-                ):
-                    raise RuntimeSafetyError('Invalid worker response')
-                if event['type'] == 'result' and self._walk_forward_result_reference is not None:
-                    result = event.get('result')
-                    if not isinstance(result, dict) or result.get('reference') != self._walk_forward_result_reference:
-                        raise RuntimeSafetyError('Walk-forward worker reference mismatch')
-                if event['type'] == 'result' and self._analysis_result_reference is not None:
-                    result = event.get('result')
-                    if not isinstance(result, dict) or result.get('analysis_id') != self._analysis_result_reference:
-                        raise RuntimeSafetyError('Analysis worker reference mismatch')
-                if event['type'] == 'auth_progress':
-                    auth_event = event.get('auth_event')
-                    allowed = {
-                        'request_id',
-                        'kind',
-                        'state',
-                        'registrations',
-                        'active_registration',
-                        'authorization_url',
-                        'error_code',
-                        'revocation_confirmed',
-                        'models',
-                        'model_labels',
-                        'account_labels',
-                    }
-                    if (
-                        self._operation != 'ui_chatgpt_auth'
-                        or not isinstance(auth_event, dict)
-                        or set(auth_event) - allowed
-                        or auth_event.get('request_id') != self._auth_request_id
-                        or auth_event.get('kind') not in ('authorization', 'progress')
-                    ):
-                        raise RuntimeSafetyError('Invalid private authentication event')
-                    # Transient OAuth query data must never enter persistent logs.
-                else:
-                    self._log(event['type'], error_code=event.get('error_code') if event['type'] == 'error' else None)
-                if event['type'] in {'result', 'error'}:
-                    self._terminal = True
-                    self._deferred.append(event)
-                else:
-                    events.append(event)
-
         try:
-            drain()
+            self.process_port.drain(self, events)
             exited = not self.process.is_alive()
             if not exited and self._deadline is not None and time.monotonic() >= self._deadline:
                 terminal = self._terminal
@@ -1712,7 +789,7 @@ class JobManager:
                 self.process.join()
                 # The child can send and exit between initial poll and liveness
                 # check. Drain once more before classifying an incomplete stream.
-                drain()
+                self.process_port.drain(self, events)
         except (OSError, ValueError):
             self.cancel()
             events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker response rejected'})
@@ -1757,72 +834,15 @@ class JobManager:
         if self._walk_forward_reference is not None and self._tree_quiesced and ownership_error is None:
             self._quiesced_walk_forward = (self.job_id, self._walk_forward_reference)
         if self._operation == 'ui_backup_restore':
-            BackupManager(self.paths).recover()
+            self.storage_port.recover(self.paths)
         if ownership_error is not None:
             raise ownership_error
-
-    def _join_descendants(self, pid):
-        if self.tree:
-            self.tree.stop_and_join()
-            return
-        if not pid or sys.platform == 'win32':
-            if self._operation in WALK_FORWARD_OPERATIONS or self._operation in ANALYSIS_OPERATIONS:
-                raise RuntimeSafetyError('Cannot prove managed subtree stopped; reconciliation blocked')
-            return
-        try:
-            os.killpg(pid, signal.SIGKILL)
-        except ProcessLookupError:
-            return
-        deadline = time.monotonic() + 6
-        while True:
-            try:
-                os.killpg(pid, 0)
-            except ProcessLookupError:
-                return
-            # A reparented zombie cannot perform I/O. Linux may retain it until
-            # its new parent reaps it; prove every remaining group member is Z.
-            if sys.platform.startswith('linux'):
-                live = False
-                for item in Path('/proc').iterdir():
-                    if not item.name.isdigit():
-                        continue
-                    try:
-                        fields = (item / 'stat').read_text().rsplit(')', 1)[1].split()
-                    except (FileNotFoundError, ProcessLookupError):
-                        continue
-                    if int(fields[2]) == pid and fields[0] != 'Z':
-                        live = True
-                        break
-                if not live:
-                    return
-            if time.monotonic() >= deadline:
-                raise RuntimeSafetyError('Worker descendants still active; reconciliation blocked')
-            time.sleep(0.02)
 
     def cancel(self):
         if not self.active:
             return
         proc = self.process
-        if self.tree:
-            if self._requires_tree_quiescence:
-                self.tree.stop_and_join()
-            else:
-                self.tree.close()
-        elif proc.pid and proc.is_alive():
-            if sys.platform != 'win32':
-                try:
-                    os.killpg(proc.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    proc.terminate()
-            else:
-                proc.terminate()
-        if proc.pid:
-            proc.join(3)
-            if proc.is_alive():
-                proc.kill()
-                proc.join(3)
-            if proc.is_alive():
-                raise RuntimeSafetyError('Worker did not stop; do not restore or close')
+        self.process_port.stop(self)
         if self._requires_tree_quiescence:
             self._join_descendants(proc.pid)
             self._tree_quiesced = True

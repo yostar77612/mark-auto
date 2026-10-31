@@ -25,7 +25,7 @@ REF = 'a' * 32
 
 def _offline_analysis_job_worker(*args):
     """Spawn-safe wrapper around the real worker; no provider can be constructed."""
-    from quantlab.desktop_runtime import _job_worker
+    from quantlab.research_core.adapters.job_worker import _job_worker
 
     with (
         patch(
@@ -90,7 +90,7 @@ class AnalysisRequestTests(unittest.TestCase):
         for mutate in mutations:
             request = copy.deepcopy(self.request)
             mutate(request)
-            with self.subTest(request=request), patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+            with self.subTest(request=request), patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
                 with self.assertRaises(RuntimeSafetyError):
                     self.jobs.start('ui_analysis_preview', {'request': request})
                 spawn.assert_not_called()
@@ -105,7 +105,7 @@ class AnalysisRequestTests(unittest.TestCase):
             'included_usage_policy_confirmed': True,
         }
         for field in ('user_confirmed', 'network_opt_in', 'included_usage_policy_confirmed'):
-            with self.subTest(field=field), patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+            with self.subTest(field=field), patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
                 with self.assertRaises(RuntimeSafetyError):
                     self.jobs.start('ui_analysis_run', {**payload, field: False})
                 spawn.assert_not_called()
@@ -114,7 +114,7 @@ class AnalysisRequestTests(unittest.TestCase):
         good = {'analysis_id': 'd' * 64, 'registration': REF, 'stopped_job_id': 'real-owned-job'}
         for proof in (None, ('other-job', 'd' * 64, REF), ('real-owned-job', 'e' * 64, REF), ('real-owned-job', 'd' * 64, 'f' * 32)):
             self.jobs._quiesced_analysis = proof
-            with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+            with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
                 with self.assertRaises(RuntimeSafetyError):
                     self.jobs.start('ui_analysis_reconcile', good)
                 spawn.assert_not_called()
@@ -166,7 +166,7 @@ class AnalysisWorkerTests(unittest.TestCase):
         AnalysisWire.mutate = None
 
     def call(self, operation, payload, **kw):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         return execute_ui_operation(operation, payload, self.paths, **kw)
 
@@ -334,7 +334,6 @@ class SpawnedAnalysisTests(unittest.TestCase):
         # spawning. Deny provider construction inside the real spawned worker so
         # even delayed cancellation cannot create a request or provider ledger.
         from quantlab.research_core.application.analysis_operations import analysis_plan
-        import quantlab.desktop_runtime as runtime
 
         plan = analysis_plan(_c_create_operation_ports(), self.paths, self.request)
         payload = {
@@ -346,7 +345,7 @@ class SpawnedAnalysisTests(unittest.TestCase):
             'network_opt_in': True,
             'included_usage_policy_confirmed': True,
         }
-        with patch.object(runtime, '_job_worker', _offline_analysis_job_worker):
+        with patch('quantlab.research_core.adapters.job_worker._job_worker', _offline_analysis_job_worker):
             job_id = self.jobs.start('ui_analysis_run', payload)
             self.jobs.cancel()
         self.assertFalse(self.jobs.active)
@@ -384,7 +383,7 @@ class AnalysisWidgetTests(unittest.TestCase):
             patch.object(provider, 'implementation_provenance', return_value=PROVENANCE),
             patch.object(analysis, '_run_bounded', side_effect=lambda f, args, **kw: {'value': f(*args)}),
         ):
-            from desktop_app.shell.main_window import execute_ui_operation
+            from desktop_app.connection_composition import execute_ui_operation
 
             preview = execute_ui_operation('ui_analysis_preview', {'request': request}, self.paths)
         w._analysis_request_key = content_hash(w._analysis_request(request['task']))

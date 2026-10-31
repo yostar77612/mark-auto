@@ -123,7 +123,7 @@ class JobPresenter:
         _notifications.record_event(self.view, event)
         recovery_changed = recovery_changed or event.get('type') in ('result', 'error', 'failed', 'cancelled', 'canceled')
         self.view.automatic_backup_panel.handle_job_event(event)
-        import desktop_app.features.capital_scenario.worker as _capital
+        import desktop_app.features.capital_scenario.presenter as _capital
 
         if _capital.event(self.view, event):
             return recovery_changed

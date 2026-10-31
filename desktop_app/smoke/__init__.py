@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import quantlab.assistant.adapters.chatgpt.identity as _auth_identity
+import quantlab.assistant.domain.auth_protocol as _auth_auth_protocol
 from pathlib import Path
 import sys
 
@@ -40,8 +42,7 @@ def _auth_smoke_dependencies():
     import cryptography
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.backends.openssl.backend import backend
-    import quantlab.assistant.adapters.chatgpt.auth as auth
-    from quantlab.assistant.adapters.chatgpt.provider import implementation_provenance
+    from quantlab.assistant.adapters.chatgpt.provenance import implementation_provenance
 
     def deny_network(*args, **kwargs):
         raise RuntimeError('Network forbidden in synthetic auth packaging smoke')
@@ -63,34 +64,41 @@ def _auth_smoke_dependencies():
             raise ValueError('Parser or native CFFI packaging failed')
         key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         jwk = dict(json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key())), kid='packaging-fixture', alg='RS256', use='sig')
-        claims = dict(iss=auth.ISSUER, sub='packaging-fixture', aud='fixture-client', nonce='fixture-nonce', iat=int(time.time()), exp=int(time.time()) + 60)
+        claims = dict(
+            iss=_auth_auth_protocol.ISSUER,
+            sub='packaging-fixture',
+            aud='fixture-client',
+            nonce='fixture-nonce',
+            iat=int(time.time()),
+            exp=int(time.time()) + 60,
+        )
         token = jwt.encode(claims, key, algorithm='RS256', headers={'kid': 'packaging-fixture'})
 
         class FixtureTransport:
             def request(self, method, url, *, form=None):
                 if method != 'GET' or form is not None:
                     raise ValueError('Unexpected synthetic auth operation')
-                if url == auth.DISCOVERY:
-                    value = dict(auth.PINNED_DISCOVERY, id_token_signing_alg_values_supported=['RS256'])
-                elif url == auth.JWKS:
+                if url == _auth_auth_protocol.DISCOVERY:
+                    value = dict(_auth_auth_protocol.PINNED_DISCOVERY, id_token_signing_alg_values_supported=['RS256'])
+                elif url == _auth_auth_protocol.JWKS:
                     value = {'keys': [jwk]}
                 else:
                     raise ValueError('Unexpected synthetic auth endpoint')
-                return auth.HttpResponse(200, json.dumps(value).encode('utf-8'))
+                return _auth_auth_protocol.HttpResponse(200, json.dumps(value).encode('utf-8'))
 
-        validator = auth.IdentityValidator(FixtureTransport())
+        validator = _auth_identity.IdentityValidator(FixtureTransport())
         identity = validator.verify(token, 'fixture-client', 'fixture-nonce')
         if identity.get('subject') != 'packaging-fixture':
             raise ValueError('Synthetic identity validation failed')
         for client, nonce in [('different-client', 'fixture-nonce'), ('fixture-client', 'wrong-nonce')]:
             try:
                 validator.verify(token, client, nonce)
-            except auth.AuthError:
+            except _auth_auth_protocol.AuthError:
                 pass
             else:
                 raise ValueError('Identity binding failure accepted')
         try:
-            jwt.decode(token, jwt.PyJWK.from_dict(jwk), algorithms=['HS256'], issuer=auth.ISSUER, audience='fixture-client')
+            jwt.decode(token, jwt.PyJWK.from_dict(jwk), algorithms=['HS256'], issuer=_auth_auth_protocol.ISSUER, audience='fixture-client')
         except jwt.InvalidAlgorithmError:
             pass
         else:
@@ -302,8 +310,8 @@ def _check_market_worker_result(phase, result, export_path):
     from quantlab import research
 
     expected = {
-        name: content_hash(Path(research.__file__).with_name(name).read_text(encoding='utf-8'))
-        for name in ('research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py')
+        name: content_hash((Path(research.__file__).parent / name).read_text(encoding='utf-8'))
+        for name in ('research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py', 'research_core/domain/receipts.py')
     }
     if (
         result.get('status') != 'completed'
@@ -562,7 +570,8 @@ def _check_walk_forward_smoke_result(operation, result, paths, payload, report):
     from quantlab.core import content_hash
     from quantlab.reporting import load_dataset
     from quantlab.walk_forward import read_walk_forward_state
-    from desktop_app.features.walk_forward.presenter import compact_walk_forward, preview_walk_forward
+    from desktop_app.features.walk_forward.presenter import compact_walk_forward
+    from quantlab.research_core.application.walk_forward_operations import preview_walk_forward
 
     if type(result) is not dict or len(json.dumps(result, allow_nan=False).encode('utf-8')) > 65536:
         raise ValueError('Walk-forward smoke result exceeds compact reply bound')

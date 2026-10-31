@@ -1,5 +1,8 @@
 """The shared runtime rejection type remains unique across real service boundaries."""
 
+from quantlab.research_core.adapters import job_worker
+
+
 import ast
 from pathlib import Path
 import pickle
@@ -22,7 +25,7 @@ class SharedRuntimeErrorTests(unittest.TestCase):
         self.assertEqual(restored.args, original.args)
 
     def test_actual_registry_rejections_keep_exact_type_and_messages(self):
-        registry = desktop_runtime._OperationExecutorRegistry()
+        registry = job_worker._OperationExecutorRegistry()
         for action, expected in (
             (registry.executor, 'No operation executor is registered'),
             (lambda: registry.register(None), 'Operation executor must be callable'),

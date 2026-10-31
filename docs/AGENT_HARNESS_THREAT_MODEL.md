@@ -80,7 +80,7 @@ scoped to the model boundary above, not the authorized authentication transport.
 The locked auth source is cited read only; no credential store is opened by
 these tests. Synthetic credentials/tokens never appear in any tool output.
 
-- `quantlab/assistant/adapters/chatgpt/auth.py::DPAPIVault`
+- `quantlab/assistant/adapters/chatgpt/vault.py::DPAPIVault`
 - `quantlab/agent_tools.py::Registry.call`
 - `tests/test_agent_harness_d1.py::AgentHarnessD1Tests.test_every_registered_read_tool_and_all_pages_are_sentinel_safe`
 - `tests/test_agent_harness_d1.py::AgentHarnessD1Tests.test_invalid_return_and_exception_do_not_echo_raw_content`

@@ -127,9 +127,10 @@ class WalkForwardPlan:
                 raise ValidationError('Only the exact five version-bound built-in candidates are supported')
         else:
             # Keep operation-specific dependencies out of module startup.
-            from .saved_candidate_pool import validate_admission_snapshot
+            from quantlab.research_core.application.saved_pool_validation import validate_admission_snapshot
+            from .saved_candidate_pool import SUPPORTED_PRODUCERS, AUDITED_PRODUCER  # Operation-specific profiles.
 
-            validate_admission_snapshot(self.pool_admission, self.candidate_pool)
+            validate_admission_snapshot(self.pool_admission, self.candidate_pool, profiles=SUPPORTED_PRODUCERS, audited_producer=AUDITED_PRODUCER)
             if self.max_evaluations > len(self.folds) * (2 * len(self.candidate_pool) + 1):
                 raise ValidationError('Saved pool evaluation budget exceeds exact planned candidate-count bound')
             object.__setattr__(self, 'pool_admission', freeze(self.pool_admission))
@@ -371,9 +372,12 @@ def _validate_state(state):
                 raise ValidationError('Invalid persisted builtin pool')
         elif origin == 'saved_campaign_pool':
             # Keep operation-specific dependencies out of module startup.
-            from .saved_candidate_pool import validate_admission_snapshot
+            from quantlab.research_core.application.saved_pool_validation import validate_admission_snapshot
+            from .saved_candidate_pool import SUPPORTED_PRODUCERS, AUDITED_PRODUCER  # Operation-specific profiles.
 
-            validate_admission_snapshot(plan.get('pool_admission'), tuple(validate_dsl(spec) for spec in pool))
+            validate_admission_snapshot(
+                plan.get('pool_admission'), tuple(validate_dsl(spec) for spec in pool), profiles=SUPPORTED_PRODUCERS, audited_producer=AUDITED_PRODUCER
+            )
             if plan['max_evaluations'] > min(620, len(plan['folds']) * (2 * len(pool) + 1)):
                 raise ValidationError('Invalid persisted saved pool evaluation bound')
         else:

@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from quantlab.assistant.adapters.chatgpt.provider import PlanError
+from quantlab.assistant.domain.plan_protocol import PlanError
 import desktop_app.shell.main_window as ui
 from quantlab.research_core.application.research_operations import _handle_ui_backtest as _c_ui__handle_ui_backtest
 from quantlab.research_core.application.ui_operations.idea import _handle_ui_idea_research as _c_ui__handle_ui_idea_research

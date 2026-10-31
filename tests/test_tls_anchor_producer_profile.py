@@ -1,5 +1,8 @@
 """Exact TLS trust-anchor producer identity; offline fixtures, never real OAuth."""
 
+from quantlab.research_core.domain import saved_pool
+
+
 import hashlib
 from pathlib import Path
 import unittest
@@ -17,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class TlsAnchorProducerProfileTests(unittest.TestCase):
     def test_previous_profile_identity_is_kept_and_new_one_is_last(self):
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 29)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 30)
         self.assertEqual(content_hash(PREVIOUS), 'ae17850d264a810ba51e499a50e28c72cc4f907a9f43c92ca07c282d1f11c632')
         self.assertEqual(pools.SUPPORTED_PRODUCERS[15], PREVIOUS)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[16], PROFILE)
@@ -52,7 +55,7 @@ class TlsAnchorProducerProfileTests(unittest.TestCase):
             item['provider']['descriptor']['source_sha256']['desktop_chatgpt_auth.py'] = PREVIOUS['chatgpt_plan_implementations'][index]['source_sha256'][
                 'desktop_chatgpt_auth.py'
             ]
-            with self.assertRaises(pools.SavedCandidatePoolError):
+            with self.assertRaises(saved_pool.SavedCandidatePoolError):
                 pools._select_producer(item)
 
 

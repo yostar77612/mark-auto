@@ -1,5 +1,7 @@
 """Portable observer regressions; these do not certify native Windows recovery."""
 
+from quantlab.research_core.adapters import job_process
+
 import ast
 from contextlib import closing
 import json
@@ -75,7 +77,6 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
 
     def test_actual_helper_preserves_primary_failure_before_cleanup_failure(self):
         # Exercise the actual helper body without invoking any native API.
-        from quantlab import desktop_runtime
 
         primary, secondary = OSError(5, 'SECRET primary'), RuntimeError('SECRET cleanup')
         kernel = Mock()
@@ -87,7 +88,7 @@ class WindowsRecoveryDiagnosticTests(unittest.TestCase):
         with (
             patch.object(fixture, '_kernel', return_value=kernel),
             patch.object(fixture, '_state', return_value=fixture.WAIT_TIMEOUT),
-            patch.object(desktop_runtime, '_WindowsProcessTree', return_value=tree),
+            patch.object(job_process, '_WindowsProcessTree', return_value=tree),
             patch.object(fixture, '_wait_file', side_effect=primary),
             self.assertRaises(RuntimeError) as raised,
         ):

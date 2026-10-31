@@ -1041,9 +1041,9 @@
       "patch_sensitive": false
     },
     {
+      "attribute": "contract",
       "name": "contract",
       "page": "data_page",
-      "attribute": "contract",
       "patch_sensitive": false
     },
     {
@@ -1473,9 +1473,9 @@
       "patch_sensitive": false
     },
     {
+      "attribute": "run_backtest",
       "name": "run_backtest",
       "page": "backtest_page",
-      "attribute": "run_backtest",
       "patch_sensitive": false
     },
     {
@@ -2156,70 +2156,70 @@
   "patch_points": [
     {
       "file": "tests/r7_characterization.py",
-      "line": 233,
+      "line": 234,
       "name": "_quiesce_and_recover",
       "kind": "patch.object",
       "receiver": "window.paper_page"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 251,
+      "line": 252,
       "name": "_refresh_analysis_saved",
       "kind": "patch.object",
       "receiver": "coordinator"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 251,
+      "line": 252,
       "name": "_refresh_recovery_controls",
       "kind": "patch.object",
       "receiver": "coordinator"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 251,
+      "line": 252,
       "name": "_refresh_walk_forward_references",
       "kind": "patch.object",
       "receiver": "coordinator"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 251,
+      "line": 252,
       "name": "inspect_candidate",
       "kind": "patch.object",
       "receiver": "coordinator"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 251,
+      "line": 252,
       "name": "load_market_cache",
       "kind": "patch.object",
       "receiver": "coordinator"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 251,
+      "line": 252,
       "name": "show_result",
       "kind": "patch.object",
       "receiver": "coordinator"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 267,
+      "line": 268,
       "name": "_refresh_analysis_saved",
       "kind": "patch.object",
       "receiver": "coordinator"
     },
     {
       "file": "tests/r7_characterization.py",
-      "line": 272,
+      "line": 273,
       "name": "load_dataset",
       "kind": "patch.dict",
       "receiver": "window.page_host.callbacks"
     },
     {
       "file": "tests/test_analysis_recovery_ui.py",
-      "line": 137,
+      "line": 138,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
@@ -2254,56 +2254,56 @@
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 42,
+      "line": 43,
       "name": "market",
       "kind": "assignment",
       "receiver": "w"
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 46,
+      "line": 47,
       "name": "cancel_job",
       "kind": "assignment",
       "receiver": "w"
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 48,
+      "line": 49,
       "name": "_safe",
       "kind": "assignment",
       "receiver": "w"
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 162,
+      "line": 163,
       "name": "read_logs",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 162,
+      "line": 163,
       "name": "refresh_market",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 162,
+      "line": 163,
       "name": "refresh_views",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 249,
+      "line": 250,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_command_palette_c7.py",
-      "line": 250,
+      "line": 251,
       "name": "_confirm_button",
       "kind": "patch.object",
       "receiver": "window.widgets_page"
@@ -2366,84 +2366,84 @@
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 425,
+      "line": 424,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 468,
+      "line": 467,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 479,
+      "line": 478,
       "name": "start_job",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_analysis.py",
+      "line": 494,
+      "name": "_quiesce_and_recover",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
       "line": 495,
-      "name": "_quiesce_and_recover",
+      "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 496,
-      "name": "start_job",
+      "line": 514,
+      "name": "_quiesce_and_recover",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
       "line": 515,
-      "name": "_quiesce_and_recover",
-      "kind": "patch.object",
-      "receiver": "w"
-    },
-    {
-      "file": "tests/test_desktop_analysis.py",
-      "line": 516,
       "name": "poll_jobs",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 518,
+      "line": 517,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 552,
+      "line": 551,
       "name": "_quiesce_and_recover",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 553,
+      "line": 552,
       "name": "poll_jobs",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 555,
+      "line": 554,
       "name": "_chatgpt_dispatch",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis.py",
-      "line": 581,
+      "line": 580,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
@@ -2471,42 +2471,42 @@
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
-      "line": 246,
+      "line": 248,
       "name": "saved_analysis_entries",
       "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
-      "line": 246,
+      "line": 249,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
-      "line": 266,
+      "line": 270,
       "name": "analysis_record_text",
       "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
-      "line": 266,
+      "line": 270,
       "name": "record_event",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
-      "line": 281,
+      "line": 285,
       "name": "analysis_record_text",
       "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_analysis_discovery.py",
-      "line": 281,
+      "line": 285,
       "name": "record_event",
       "kind": "patch.object",
       "receiver": "w"
@@ -2527,77 +2527,77 @@
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 131,
-      "name": "_quiesce_and_recover",
-      "kind": "patch.object",
-      "receiver": "w"
-    },
-    {
-      "file": "tests/test_desktop_chatgpt_integration.py",
       "line": 132,
-      "name": "poll_jobs",
+      "name": "_quiesce_and_recover",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
       "line": 133,
+      "name": "poll_jobs",
+      "kind": "patch.object",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_chatgpt_integration.py",
+      "line": 134,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 141,
+      "line": 142,
       "name": "_quiesce_and_recover",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 141,
+      "line": 142,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 172,
+      "line": 173,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 289,
+      "line": 293,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 304,
+      "line": 308,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 406,
+      "line": 411,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_chatgpt_integration.py",
-      "line": 417,
+      "line": 422,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_expiries.py",
-      "line": 202,
+      "line": 203,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "window"
@@ -2625,147 +2625,147 @@
     },
     {
       "file": "tests/test_desktop_pages.py",
-      "line": 156,
-      "name": "start_job",
       "kind": "patch.object",
-      "receiver": "w"
-    },
-    {
-      "file": "tests/test_desktop_pages.py",
       "line": 167,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "w.page_host"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 197,
       "name": "start_job",
+      "receiver": "w"
+    },
+    {
+      "file": "tests/test_desktop_pages.py",
+      "line": 199,
+      "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 222,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "w.page_host"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 237,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "w.page_host"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 260,
       "name": "_quiesce_and_recover",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 261,
       "name": "poll_jobs",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 275,
       "name": "refresh_views",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 276,
       "name": "notify_local",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch",
       "line": 283,
       "name": "saved_analysis_entries",
-      "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 295,
       "name": "_analysis_request",
-      "kind": "patch.object",
       "receiver": "w.compare_page"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch",
       "line": 297,
       "name": "analysis_preview_text",
-      "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_pages.py",
+      "kind": "patch.object",
       "line": 303,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "w.page_host"
     },
     {
       "file": "tests/test_desktop_paper_exports.py",
-      "line": 117,
+      "line": 118,
       "name": "write_json",
       "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_paper_exports.py",
-      "line": 167,
+      "line": 168,
       "name": "write_json",
       "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_ui.py",
-      "line": 295,
+      "line": 296,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_desktop_ui_polish_b.py",
-      "line": 142,
+      "line": 143,
       "name": "load_result",
       "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_ui_polish_b.py",
-      "line": 143,
+      "line": 144,
       "name": "show_result",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_desktop_ui_polish_b.py",
-      "line": 144,
+      "line": 145,
       "name": "result_name",
       "kind": "patch",
       "receiver": "desktop_app.shell.main_window"
     },
     {
       "file": "tests/test_desktop_walk_forward.py",
-      "line": 340,
+      "line": 343,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_desktop_walk_forward.py",
-      "line": 358,
+      "line": 361,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "w"
@@ -2807,56 +2807,56 @@
     },
     {
       "file": "tests/test_notifications_c8.py",
-      "line": 126,
+      "line": 127,
       "name": "_notification_link",
       "kind": "assignment",
       "receiver": "center.host"
     },
     {
       "file": "tests/test_notifications_f4.py",
-      "line": 172,
+      "line": 185,
       "name": "_analysis_event",
       "kind": "assignment",
       "receiver": "host"
     },
     {
       "file": "tests/test_notifications_f4.py",
-      "line": 172,
+      "line": 185,
       "name": "_chatgpt_event",
       "kind": "assignment",
       "receiver": "host"
     },
     {
       "file": "tests/test_notifications_f4.py",
-      "line": 172,
+      "line": 185,
       "name": "_walk_forward_event",
       "kind": "assignment",
       "receiver": "host"
     },
     {
       "file": "tests/test_notifications_f4.py",
-      "line": 174,
+      "line": 187,
       "name": "record_event",
       "kind": "assignment",
       "receiver": "host"
     },
     {
       "file": "tests/test_notifications_f4.py",
-      "line": 177,
+      "line": 190,
       "name": "notify_local",
       "kind": "assignment",
       "receiver": "host"
     },
     {
       "file": "tests/test_notifications_f4.py",
-      "line": 178,
+      "line": 191,
       "name": "freeze_paper",
       "kind": "assignment",
       "receiver": "host"
     },
     {
       "file": "tests/test_notifications_f4.py",
-      "line": 216,
+      "line": 229,
       "name": "_notification_link",
       "kind": "assignment",
       "receiver": "host"
@@ -2870,98 +2870,98 @@
     },
     {
       "file": "tests/test_page_identity_r4.py",
-      "line": 90,
-      "name": "_safe",
-      "kind": "patch.object",
-      "receiver": "window"
-    },
-    {
-      "file": "tests/test_page_identity_r4.py",
       "line": 91,
-      "name": "read_logs",
+      "name": "_safe",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_page_identity_r4.py",
       "line": 92,
-      "name": "refresh_market",
+      "name": "read_logs",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_page_identity_r4.py",
       "line": 93,
+      "name": "refresh_market",
+      "kind": "patch.object",
+      "receiver": "window"
+    },
+    {
+      "file": "tests/test_page_identity_r4.py",
+      "line": 94,
       "name": "refresh_views",
       "kind": "patch.object",
       "receiver": "window"
     },
     {
       "file": "tests/test_page_services_r1.py",
+      "kind": "assignment",
       "line": 84,
       "name": "_safe",
-      "kind": "assignment",
       "receiver": "typed"
     },
     {
       "file": "tests/test_page_services_r1.py",
+      "kind": "patch.object",
       "line": 221,
       "name": "_safe",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_page_services_r1.py",
+      "kind": "patch.object",
       "line": 224,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_page_services_r1.py",
+      "kind": "patch.object",
       "line": 227,
       "name": "freeze_paper",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_page_services_r1.py",
+      "kind": "patch.object",
       "line": 230,
       "name": "_button",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_page_services_r1.py",
+      "kind": "patch.object",
       "line": 233,
       "name": "_busy",
-      "kind": "patch.object",
       "receiver": "w"
     },
     {
       "file": "tests/test_panel_card_c3.py",
-      "line": 106,
+      "line": 107,
       "name": "_advanced",
       "kind": "setattr",
       "receiver": "host"
     },
     {
       "file": "tests/test_panel_card_c3.py",
-      "line": 106,
+      "line": 107,
       "name": "_button",
       "kind": "setattr",
       "receiver": "host"
     },
     {
       "file": "tests/test_panel_card_c3.py",
-      "line": 106,
+      "line": 107,
       "name": "_remember",
       "kind": "setattr",
       "receiver": "host"
     },
     {
       "file": "tests/test_panel_card_c3.py",
-      "line": 106,
+      "line": 107,
       "name": "_text",
       "kind": "setattr",
       "receiver": "host"
@@ -3073,63 +3073,63 @@
     },
     {
       "file": "tests/test_product_ai_boundary.py",
-      "line": 86,
+      "line": 87,
       "name": "run_campaign",
       "kind": "patch.object",
       "receiver": "validate_real_ai"
     },
     {
       "file": "tests/test_quick_start_u3.py",
-      "line": 131,
+      "line": 132,
       "name": "result_choice",
       "kind": "assignment",
       "receiver": "self.host"
     },
     {
       "file": "tests/test_quick_start_u3.py",
-      "line": 195,
+      "line": 199,
       "name": "result_choice",
       "kind": "assignment",
       "receiver": "self.host"
     },
     {
       "file": "tests/test_r7_characterization.py",
+      "kind": "setattr",
       "line": 67,
       "name": "_busy",
-      "kind": "setattr",
       "receiver": "shell"
     },
     {
       "file": "tests/test_r7_characterization.py",
+      "kind": "setattr",
       "line": 67,
       "name": "_safe",
-      "kind": "setattr",
       "receiver": "shell"
     },
     {
       "file": "tests/test_replay_b13.py",
-      "line": 200,
+      "line": 201,
       "name": "_dataset",
       "kind": "patch.object",
       "receiver": "ui"
     },
     {
       "file": "tests/test_replay_b13.py",
-      "line": 231,
+      "line": 232,
       "name": "start_job",
       "kind": "assignment",
       "receiver": "self.page"
     },
     {
       "file": "tests/test_replay_b13.py",
-      "line": 325,
+      "line": 326,
       "name": "paper_job",
       "kind": "patch.object",
       "receiver": "page"
     },
     {
       "file": "tests/test_replay_b13.py",
-      "line": 333,
+      "line": 334,
       "name": "start_job",
       "kind": "patch.object",
       "receiver": "page"
@@ -3241,23 +3241,23 @@
     },
     {
       "file": "tests/test_ui_redesign_data_results.py",
+      "kind": "patch.object",
       "line": 148,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_ui_redesign_data_results.py",
+      "kind": "patch.object",
       "line": 182,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "self.window"
     },
     {
       "file": "tests/test_ui_redesign_data_results.py",
+      "kind": "patch.object",
       "line": 279,
       "name": "start_job",
-      "kind": "patch.object",
       "receiver": "window"
     },
     {
@@ -3318,21 +3318,21 @@
     },
     {
       "file": "tests/test_workspace_wal_guard.py",
-      "line": 507,
+      "line": 500,
       "name": "_dataset",
       "kind": "assignment",
       "receiver": "fake_ui"
     },
     {
       "file": "tests/test_workspace_wal_guard.py",
-      "line": 516,
+      "line": 509,
       "name": "preview_walk_forward",
       "kind": "patch.object",
       "receiver": "adapter"
     },
     {
       "file": "tests/test_workspace_wal_guard.py",
-      "line": 517,
+      "line": 510,
       "name": "run_walk_forward",
       "kind": "patch.object",
       "receiver": "adapter"

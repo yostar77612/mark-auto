@@ -1,13 +1,14 @@
 """Invented token responses and in-memory accounts; no real OAuth or network."""
 
+import quantlab.assistant.domain.auth_protocol as _auth_auth_protocol
 from copy import deepcopy
 import json
 import unittest
 from urllib.parse import parse_qs, urlsplit
 from unittest.mock import patch
 
-import quantlab.assistant.adapters.chatgpt.auth as auth
-from desktop_app.features.assistant.connection import ConnectionRequest, run_connection_request
+from quantlab.assistant.application.connection_contracts import ConnectionRequest
+from quantlab.assistant.adapters.chatgpt.connection_worker import run_connection_request
 from tests import test_chatgpt_auth as auth_fixtures
 
 
@@ -45,15 +46,15 @@ class TokenFormatAndStageTests(unittest.TestCase):
             return url
 
         def transport(method, endpoint, *, form=None):
-            if endpoint == auth.TOKEN:
+            if endpoint == _auth_auth_protocol.TOKEN:
                 exchanges.append(True)
                 if stage == 'exchange':
                     raise RuntimeError('FIXTURE_PRIVATE_WIRE_DETAIL')
                 if stage == 'cancel_exchange':
                     owner.session.cancel()
             response = original_transport(method, endpoint, form=form)
-            if endpoint == auth.TOKEN and changes:
-                response = auth.HttpResponse(response.status, json.dumps(json.loads(response.body) | changes).encode())
+            if endpoint == _auth_auth_protocol.TOKEN and changes:
+                response = _auth_auth_protocol.HttpResponse(response.status, json.dumps(json.loads(response.body) | changes).encode())
             return response
 
         def verify(*args, **kwargs):
@@ -68,8 +69,8 @@ class TokenFormatAndStageTests(unittest.TestCase):
 
         def poll(timeout):
             try:
-                owner.callback(scope=auth.SCOPES)
-            except auth.AuthError:
+                owner.callback(scope=_auth_auth_protocol.SCOPES)
+            except _auth_auth_protocol.AuthError:
                 pass  # The existing listener catches rejected callbacks.
 
         owner.session.begin = begin
@@ -194,7 +195,7 @@ class TokenFormatAndStageTests(unittest.TestCase):
                 changes = {'expires_in': True} if stage == 'tokens' else None
                 result, owner, before = self.attempt(changes, stage=stage, existing=True)
                 count = len(owner.transport.calls)
-                with self.assertRaisesRegex(auth.AuthError, '^no_pending_authorization$'):
+                with self.assertRaisesRegex(_auth_auth_protocol.AuthError, '^no_pending_authorization$'):
                     owner.callback()
                 self.assertEqual(len(owner.transport.calls), count)
                 self.assertTrue(owner.vault.record == before)

@@ -25,7 +25,8 @@ class NativeDesktopTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
+        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
         from desktop_app.shell.window import MainWindow
 
         self.tmp = tempfile.TemporaryDirectory()
@@ -380,7 +381,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'active_candidate.json').exists())
 
     def test_generated_unqualified_candidate_research_only(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         self.demo()
         self.campaign('100000000')
@@ -670,7 +671,7 @@ class NativeDesktopTests(unittest.TestCase):
             self.window.jobs = original
 
     def test_service_rejects_unknown_code_and_network_without_consent(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         for op, payload in [('exec', {'code': '1+1'}), ('ui_refresh', {})]:
             with self.assertRaises(ValueError):

@@ -13,14 +13,14 @@ from quantlab.saved_candidate_pool import (
     FAIL_CLOSED_TRANSPORT_PROFILE_V1,
     FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1,
     DEADLINE_TRANSPORT_PROFILE_V1,
-    ATOMIC_REPLACE_TRANSPORT_PROFILE_V1,
+    CORE_SPLIT_SIWC_PROFILE_V1,
     DEADLINE_SIWC_ANALYSIS_PROFILE_V1,
     CURRENT_PRODUCER,
     TRANSPORT_VERIFIER_PRODUCER,
     TRANSPORT_VERIFIER_CHATGPT_PROFILE_V2,
     SUPPORTED_PRODUCERS,
-    SavedCandidatePoolError,
 )
+from quantlab.research_core.domain.saved_pool import SavedCandidatePoolError
 from tests.saved_pool_fixtures import make_saved_source, make_chatgpt_source
 from tests import test_saved_candidate_pool as saved_tests
 
@@ -32,7 +32,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
 
     def test_current_literal_sources_and_only_reviewed_changes(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertEqual(len(SUPPORTED_PRODUCERS), 29)
+        self.assertEqual(len(SUPPORTED_PRODUCERS), 30)
         self.assertEqual(SUPPORTED_PRODUCERS[11:13], (FAIL_CLOSED_TRANSPORT_PROFILE_V1, FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1))
         for old, new in (
             (CLEANUP_TRANSPORT_PROFILE_V1, FAIL_CLOSED_TRANSPORT_PROFILE_V1),
@@ -41,7 +41,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
             # Historical research pins remain covered by the all-thirteen hash
             # check; this current-checkout assertion includes the newly reviewed pin.
             expected_sources = dict(new['engine_source_hashes'])
-            expected_sources['research.py'] = ATOMIC_REPLACE_TRANSPORT_PROFILE_V1['engine_source_hashes']['research.py']
+            expected_sources['research.py'] = CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']['research.py']
             self.assertEqual(
                 {name: content_hash((root / 'quantlab' / name).read_text(encoding='utf-8')) for name in new['engine_source_hashes']}, expected_sources
             )
@@ -241,7 +241,7 @@ class DeadlineProducerProfileTests(unittest.TestCase):
         ):
             self.assertEqual(
                 {name: content_hash((root / 'quantlab' / name).read_text(encoding='utf-8')) for name in new['engine_source_hashes']},
-                ATOMIC_REPLACE_TRANSPORT_PROFILE_V1['engine_source_hashes'],
+                {name: CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'][name] for name in new['engine_source_hashes']},
             )
             restored = to_dict(new)
             self.assertNotEqual(new['protocol'], old['protocol'])

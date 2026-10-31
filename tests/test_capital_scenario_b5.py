@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 from quantlab import capital_scenario as capital
 from quantlab.core import ValidationError, canonical_json
 import desktop_app.features.capital_scenario.worker as adapter
+from desktop_app.features.capital_scenario import presenter as scenario_presenter
 
 D = Decimal
 ROOT = Path(__file__).resolve().parents[1]
@@ -289,7 +290,7 @@ class WidgetTests(unittest.TestCase):
     def test_deadline_event_clears_statistics(self):
         panel = SimpleNamespace(set_scenario=Mock())
         shell = SimpleNamespace(last_operation='ui_capital_scenario', strategy_page=SimpleNamespace(result_panel=panel))
-        self.assertTrue(adapter.event(shell, {'type': 'error', 'error_type': 'DeadlineExceeded'}))
+        self.assertTrue(scenario_presenter.event(shell, {'type': 'error', 'error_type': 'DeadlineExceeded'}))
         result = panel.set_scenario.call_args.args[0]
         self.assertEqual(result['status'], 'timed_out')
         self.assertIsNone(result['percentiles'])
@@ -311,7 +312,7 @@ class WidgetTests(unittest.TestCase):
 
     def test_scenario_event_owns_presentation_without_strategy_refresh(self):
         shell = SimpleNamespace(last_operation='ui_capital_scenario', record_event=Mock(), notify_local=Mock(), status=Mock(), views_page=Mock())
-        self.assertTrue(adapter.event(shell, {'type': 'result', 'result': run()}))
+        self.assertTrue(scenario_presenter.event(shell, {'type': 'result', 'result': run()}))
         shell.notify_local.assert_called_once()
         shell.views_page.render_result.assert_not_called()
 

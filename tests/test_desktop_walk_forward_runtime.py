@@ -18,7 +18,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from quantlab.core import to_dict
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, UI_OPERATIONS, WALK_FORWARD_OPERATIONS, _job_worker
+from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, UI_OPERATIONS, WALK_FORWARD_OPERATIONS
+from quantlab.research_core.adapters.job_worker import _job_worker
 from quantlab.reporting import demo_config
 from quantlab.walk_forward import build_walk_forward_plan
 
@@ -86,8 +87,8 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         context.Pipe.return_value = self.receiver, Mock()
         context.Process.return_value = self.process
         with (
-            patch('quantlab.desktop_runtime.mp.get_context', return_value=context),
-            patch('quantlab.desktop_runtime._WindowsProcessTree', return_value=self.tree),
+            patch('quantlab.research_core.adapters.job_process.mp.get_context', return_value=context),
+            patch('quantlab.research_core.adapters.job_process._WindowsProcessTree', return_value=self.tree),
         ):
             job_id = self.manager.start(operation, payload)
         # Use the same isolated-tree protocol on all test host platforms.
@@ -107,7 +108,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         self.assertTrue(WALK_FORWARD_OPERATIONS <= UI_OPERATIONS)
         self.assertFalse(self.manager.active)
         self.assertIsNone(self.manager._quiesced_walk_forward)
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             for operation in ('ui_walk_forward_retry', 'ui_walk_forward_resume', 'exec'):
                 with self.subTest(operation=operation), self.assertRaises(RuntimeSafetyError):
                     self.manager.start(operation, {})
@@ -126,14 +127,14 @@ class WalkForwardRuntimeTests(unittest.TestCase):
             ('ui_walk_forward_read', {'reference': OTHER_REFERENCE[:-1]}),
             ('ui_walk_forward_reconcile', {'reference': REFERENCE}),
         ]
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             for operation, payload in invalid:
                 with self.subTest(operation=operation, keys=set(payload)), self.assertRaises(RuntimeSafetyError):
                     self.manager.start(operation, payload)
         spawn.assert_not_called()
 
     def test_run_requires_typed_bounded_plan(self):
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             for value in (True, None, 0, -1, 7201, '300'):
                 plan = {**self.plan, 'max_runtime_seconds': value}
                 with self.subTest(seconds=value), self.assertRaises(RuntimeSafetyError):
@@ -159,13 +160,13 @@ class WalkForwardRuntimeTests(unittest.TestCase):
 
     def test_reconcile_rejects_missing_forged_and_restarted_proof(self):
         payload = {'reference': REFERENCE, 'stopped_job_id': 'guessed'}
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'stop proof'):
                 self.manager.start('ui_walk_forward_reconcile', payload)
         spawn.assert_not_called()
         job_id = self.start_fake()
         self.stop()
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             for value in ({'reference': OTHER_REFERENCE, 'stopped_job_id': job_id}, {'reference': REFERENCE, 'stopped_job_id': 'forged'}):
                 with self.subTest(value=value), self.assertRaises(RuntimeSafetyError):
                     self.manager.start('ui_walk_forward_reconcile', value)
@@ -206,7 +207,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         journal = self.paths.state / 'walk_forward' / REFERENCE / 'walk_forward.sqlite3'
         journal.parent.mkdir(parents=True)
         journal.write_bytes(b'existing journal must remain untouched')
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'read-only'):
                 self.manager.start('ui_walk_forward_run', {'plan': self.plan, 'preview_identity': REFERENCE})
         spawn.assert_not_called()
@@ -219,7 +220,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         self.assertEqual(json.loads(owner.read_text(encoding='utf-8'))['job_id'], job_id)
         self.assertFalse(owner.with_name('walk_forward.sqlite3').exists())
         other = JobManager(self.paths)
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'already claimed'):
                 other.start('ui_walk_forward_run', {'plan': self.plan, 'preview_identity': REFERENCE})
         spawn.assert_not_called()
@@ -235,21 +236,21 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         owner = self.paths.state / 'walk_forward' / REFERENCE / '.desktop-run-owner.json'
         value = json.loads(owner.read_text(encoding='utf-8'))
         owner.write_text(json.dumps({**value, 'job_id': 'forged'}), encoding='utf-8')
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'ownership mismatch'):
                 self.manager.start('ui_walk_forward_reconcile', {'reference': REFERENCE, 'stopped_job_id': job_id})
         spawn.assert_not_called()
 
     def test_failed_spawn_setup_keeps_owner_and_cannot_be_retried(self):
         payload = {'plan': self.plan, 'preview_identity': REFERENCE}
-        with patch('quantlab.desktop_runtime.mp.get_context', side_effect=OSError('Spawn unavailable')):
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context', side_effect=OSError('Spawn unavailable')):
             with self.assertRaises(OSError):
                 self.manager.start('ui_walk_forward_run', payload)
         owner = self.paths.state / 'walk_forward' / REFERENCE / '.desktop-run-owner.json'
         self.assertTrue(owner.is_file())
         self.assertFalse(self.manager.active)
         self.assertIsNone(self.manager._quiesced_walk_forward)
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'already claimed'):
                 self.manager.start('ui_walk_forward_run', payload)
         spawn.assert_not_called()
@@ -263,7 +264,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
             folder.symlink_to(outside, target_is_directory=True)
         except (OSError, NotImplementedError):
             self.skipTest('Host cannot create a test symlink')
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaises(RuntimeSafetyError):
                 self.manager.start('ui_walk_forward_run', {'plan': self.plan, 'preview_identity': REFERENCE})
         spawn.assert_not_called()
@@ -449,7 +450,7 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
         context = multiprocessing.get_context('spawn')
         evaluation_started, evaluation_release = context.Event(), context.Event()
         worker = partial(_cancellable_walk_forward_worker, evaluation_started=evaluation_started, evaluation_release=evaluation_release)
-        with patch('quantlab.desktop_runtime._job_worker', worker):
+        with patch('quantlab.research_core.adapters.job_worker._job_worker', worker):
             job_id = self.manager.start('ui_walk_forward_run', {'plan': self.plan, 'preview_identity': reference})
         journal = self.paths.state / 'walk_forward' / reference / 'walk_forward.sqlite3'
         observed = None

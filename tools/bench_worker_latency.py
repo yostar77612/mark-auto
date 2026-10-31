@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 import argparse
 import json
 import os
@@ -25,8 +26,9 @@ def summary(values):
 
 
 def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *args):
+    from quantlab.research_core.adapters import job_worker
+
     entered = time.perf_counter()
-    import quantlab.desktop_runtime as runtime
 
     imported = time.perf_counter()
     totals = {'runtime_import': imported - entered, 'worker_entered': entered}
@@ -53,7 +55,7 @@ def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *
 
     sys.setprofile(profile)
     try:
-        runtime._job_worker(Sender(), gate, operation, payload, root, bootstrap, job_id, *args)
+        job_worker._job_worker(Sender(), gate, operation, payload, root, bootstrap, job_id, *args)
     finally:
         sys.setprofile(None)
         totals['qt_loaded'] = any(name.startswith('PySide6') for name in sys.modules)
@@ -62,13 +64,14 @@ def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *
 
 def job_sample(paths):
     import quantlab.desktop_runtime as runtime
+    from quantlab.research_core.adapters import job_worker
     from quantlab.core import to_dict
     from quantlab.reporting import demo_config
 
     manager = runtime.JobManager(paths)
     try:
         started = time.perf_counter()
-        with patch.object(runtime, '_job_worker', measured_worker):
+        with patch.object(job_worker, '_job_worker', measured_worker):
             job_id = manager.start('ui_backtest', {'family': 'trend', 'config': to_dict(demo_config())})
         launched = time.perf_counter()
         events = []

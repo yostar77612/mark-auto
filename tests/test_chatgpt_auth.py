@@ -1,5 +1,9 @@
 """Frozen A1–A6 contract. Offline fixture keys, fake transport/vault/listener only."""
 
+import quantlab.assistant.adapters.chatgpt.identity as _auth_identity
+import quantlab.assistant.adapters.chatgpt.loopback as _auth_loopback
+import quantlab.assistant.adapters.chatgpt.vault as _auth_vault
+import quantlab.assistant.domain.auth_protocol as _auth_auth_protocol
 import base64
 import copy
 import json
@@ -68,23 +72,23 @@ class FakeTransport:
 
     def request(self, method, url, *, form=None):
         self.calls.append((method, url, copy.deepcopy(form)))
-        if url == a.DISCOVERY:
-            value = dict(a.PINNED_DISCOVERY, id_token_signing_alg_values_supported=['RS256'])
-        elif url == a.JWKS:
+        if url == _auth_auth_protocol.DISCOVERY:
+            value = dict(_auth_auth_protocol.PINNED_DISCOVERY, id_token_signing_alg_values_supported=['RS256'])
+        elif url == _auth_auth_protocol.JWKS:
             self.jwks_calls += 1
             value = {'keys': [self.owner.jwk]}
-        elif url == a.REVOCATION:
-            return a.HttpResponse(self.revocation_status, b'')
-        elif url == a.TOKEN:
+        elif url == _auth_auth_protocol.REVOCATION:
+            return _auth_auth_protocol.HttpResponse(self.revocation_status, b'')
+        elif url == _auth_auth_protocol.TOKEN:
             if form['grant_type'] == 'refresh_token' and self.refresh_error:
                 if isinstance(self.refresh_error, Exception):
                     raise self.refresh_error
-                return a.HttpResponse(*self.refresh_error)
+                return _auth_auth_protocol.HttpResponse(*self.refresh_error)
             self.owner.rotation += form['grant_type'] == 'refresh_token'
             value = self.owner.tokens(form['client_id'])
         else:
             raise AssertionError('Unexpected endpoint')
-        return a.HttpResponse(200, json.dumps(value).encode())
+        return _auth_auth_protocol.HttpResponse(200, json.dumps(value).encode())
 
 
 @unittest.skipUnless(OPTIONAL_AUTH_DEPS, 'optional desktop auth dependencies: PyJWT[crypto] required')
@@ -99,7 +103,7 @@ class AuthTests(unittest.TestCase):
         self.transport = FakeTransport(self)
         self.rotation = 0
         self.claim_changes = {}
-        self.scope = a.SCOPES
+        self.scope = _auth_auth_protocol.SCOPES
         self.session = self.new_session()
 
     def new_session(self):
@@ -107,7 +111,7 @@ class AuthTests(unittest.TestCase):
 
     def tokens(self, client):
         claims = dict(
-            iss=a.ISSUER,
+            iss=_auth_auth_protocol.ISSUER,
             sub='fixture-user',
             aud=client,
             exp=int(time.time()) + 3600,
@@ -144,7 +148,7 @@ class AuthTests(unittest.TestCase):
         return self.session.active_registration
 
     def test_a1_pkce_vector_and_inert_constructor(self):
-        self.assertEqual(a.pkce_challenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'), 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM')
+        self.assertEqual(_auth_auth_protocol.pkce_challenge('dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'), 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM')
         self.assertEqual(self.transport.calls, [])
         self.assertIsNone(self.vault.record)
         self.begin()
@@ -156,11 +160,11 @@ class AuthTests(unittest.TestCase):
 
     def test_a2_reject_wrong_state_without_exchange(self):
         self.begin()
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback(state='wrong')
         self.assertEqual(self.transport.calls, [])
         self.callback()
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback()
 
     def test_a2_callback_adversarial_matrix(self):
@@ -175,42 +179,42 @@ class AuthTests(unittest.TestCase):
             with self.subTest(path=path, method=method, host=host, peer=peer):
                 self.session.cancel()
                 self.begin()
-                with self.assertRaises(a.AuthError):
+                with self.assertRaises(_auth_auth_protocol.AuthError):
                     self.session.accept_callback(method, path, host, peer)
         self.assertEqual(self.transport.calls, [])
 
     def test_a2_cancel_expiry_denial_double_click_bind_failure(self):
         self.begin()
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.session.begin()
         self.session.cancel()
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback()
         self.begin()
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback(error='access_denied', code=None)
         self.assertEqual(self.session.state, 'cancelled')
         self.begin()
         self.session._pending.deadline = 0
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback()
         self.assertEqual(self.session.state, 'timeout')
         self.assertEqual(self.transport.calls, [])
         with patch.object(self.session, '_listener_factory', side_effect=OSError('bind')):
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 self.session.begin()
         self.assertIsNone(self.session._pending)
 
     def test_a3_initial_and_returning_registration(self):
         self.begin()
-        for client in (None, a.DYNAMIC_CLIENT, 'bad client'):
-            with self.assertRaises(a.AuthError):
+        for client in (None, _auth_auth_protocol.DYNAMIC_CLIENT, 'bad client'):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 self.callback(client_id=client)
         self.callback()
         registration = self.session.active_registration
         self.begin(registration)
         self.assertNotIn('agent_name_hint', self.query)
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback(client_id='other')
         self.callback(client_id=None)
         self.assertEqual(registration, self.session.active_registration)
@@ -220,12 +224,12 @@ class AuthTests(unittest.TestCase):
         original = self.transport.request
 
         def fail_exchange(method, url, **kwargs):
-            if url == a.TOKEN:
-                return a.HttpResponse(400, b'{"error":"invalid_grant"}')
+            if url == _auth_auth_protocol.TOKEN:
+                return _auth_auth_protocol.HttpResponse(400, b'{"error":"invalid_grant"}')
             return original(method, url, **kwargs)
 
         with patch.object(self.transport, 'request', side_effect=fail_exchange):
-            with self.assertRaisesRegex(a.AuthError, 'registration_retry_required'):
+            with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'registration_retry_required'):
                 self.callback(client_id=client)
         return next(ref for ref, row in self.vault.record['registration_retries'].items() if row['client_id'] == client)
 
@@ -235,7 +239,7 @@ class AuthTests(unittest.TestCase):
         old['schema'] = 1
         old.pop('registration_retries')
         self.vault.record = copy.deepcopy(old)
-        migrated = a._validate_record(old)
+        migrated = _auth_auth_protocol._validate_record(old)
         self.assertEqual(migrated['schema'], 2)
         self.assertEqual(migrated['registration_retries'], {})
         self.assertEqual(migrated['registrations'], old['registrations'])
@@ -259,7 +263,7 @@ class AuthTests(unittest.TestCase):
         self.assertEqual(summary['registrations'], [{'registration': ref, 'state': 'registration_retry_required'}])
         self.assertNotIn('retry-client', json.dumps(summary))
         for action in (self.session.select, self.session.access_token, self.session.refresh, self.session.sign_out):
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 action(ref)
         self.assertEqual(self.vault.record, record)
         before = len(self.transport.calls)
@@ -282,11 +286,11 @@ class AuthTests(unittest.TestCase):
         self.assertEqual(self.vault.record['registrations'][active], original)
         self.session = self.new_session()
         self.begin(retry)
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback(client_id='changed-client')
         self.assertEqual(self.session.state, 'authorizing')
         self.claim_changes = {'aud': 'wrong-audience'}
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback(client_id=None)
         self.assertIn(retry, self.vault.record['registration_retries'])
         self.assertNotIn(retry, self.vault.record['registrations'])
@@ -299,21 +303,21 @@ class AuthTests(unittest.TestCase):
         for extra in ({'tokens': {}}, {'identity': {}}, {'scopes': ['chatgpt.tokens.use.direct']}):
             bad = copy.deepcopy(base)
             bad['registration_retries'][ref].update(extra)
-            with self.assertRaises(a.AuthError):
-                a._validate_record(bad)
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                _auth_auth_protocol._validate_record(bad)
         bad = copy.deepcopy(base)
         bad['active'] = ref
-        with self.assertRaises(a.AuthError):
-            a._validate_record(bad)
+        with self.assertRaises(_auth_auth_protocol.AuthError):
+            _auth_auth_protocol._validate_record(bad)
         bad = copy.deepcopy(base)
         bad['registration_retries']['f' * 32] = {'client_id': 'retry-client'}
-        with self.assertRaises(a.AuthError):
-            a._validate_record(bad)
+        with self.assertRaises(_auth_auth_protocol.AuthError):
+            _auth_auth_protocol._validate_record(bad)
         bad = copy.deepcopy(base)
-        bad['registration_retries'][ref] = {'client_id': a.DYNAMIC_CLIENT}
-        with self.assertRaises(a.AuthError):
-            a._validate_record(bad)
-        with self.assertRaises(a.AuthError):
+        bad['registration_retries'][ref] = {'client_id': _auth_auth_protocol.DYNAMIC_CLIENT}
+        with self.assertRaises(_auth_auth_protocol.AuthError):
+            _auth_auth_protocol._validate_record(bad)
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.session.begin(ref, enable_plan=True)
 
     def test_cancelled_or_failed_retry_persistence_does_not_create_identity(self):
@@ -321,33 +325,33 @@ class AuthTests(unittest.TestCase):
         original = self.transport.request
 
         def cancelled_exchange(method, url, **kwargs):
-            if url == a.TOKEN:
+            if url == _auth_auth_protocol.TOKEN:
                 self.session._cancel.set()
-                return a.HttpResponse(400, b'{"error":"invalid_grant"}')
+                return _auth_auth_protocol.HttpResponse(400, b'{"error":"invalid_grant"}')
             return original(method, url, **kwargs)
 
         with patch.object(self.transport, 'request', side_effect=cancelled_exchange):
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 self.callback(client_id='retry-client')
         self.assertEqual(self.vault.record['registration_retries'], {})
         self.assertEqual(self.vault.record['registrations'], {})
         self.session = self.new_session()
         self.begin()
         self.vault.fail_at = self.vault.writes + 1
-        with patch.object(self.transport, 'request', return_value=a.HttpResponse(400, b'{"error":"invalid_grant"}')):
-            with self.assertRaises(a.AuthError):
+        with patch.object(self.transport, 'request', return_value=_auth_auth_protocol.HttpResponse(400, b'{"error":"invalid_grant"}')):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 self.callback(client_id='retry-client')
         self.assertEqual(self.vault.record['registration_retries'], {})
         self.assertEqual(self.vault.record['registrations'], {})
 
     def test_first_use_initializer_requires_guard_and_never_recreates_existing_host(self):
-        with self.assertRaisesRegex(a.AuthError, 'first_use_check_unavailable'):
+        with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'first_use_check_unavailable'):
             self.session.initialize_host(first_use_only=True)
         self.assertIsNone(self.vault.record)
         self.vault.assert_first_use = lambda: None
         host = self.session.initialize_host(first_use_only=True)
         saved = copy.deepcopy(self.vault.record)
-        with self.assertRaisesRegex(a.AuthError, 'explicit_host_recovery_required'):
+        with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'explicit_host_recovery_required'):
             self.session.initialize_host(first_use_only=True)
         self.assertEqual(self.vault.record, saved)
         self.assertEqual(self.vault.record['host_id'], host)
@@ -362,25 +366,25 @@ class AuthTests(unittest.TestCase):
             'credentials/chatgpt-oauth-v1/accounts.dpapi.bak',
         ):
             with self.subTest(evidence=evidence), tempfile.TemporaryDirectory() as tmp:
-                vault = a.DPAPIVault(str(Path(tmp)))
+                vault = _auth_vault.DPAPIVault(str(Path(tmp)))
                 vault.directory.mkdir(parents=True)
                 (vault.directory / 'vault.lock').write_bytes(b'0')
                 vault.assert_first_use()
                 target = Path(tmp) / evidence
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(b'fixture')
-                with self.assertRaisesRegex(a.AuthError, 'explicit_host_recovery_required'):
+                with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'explicit_host_recovery_required'):
                     vault.assert_first_use()
         with tempfile.TemporaryDirectory() as tmp:
-            vault = a.DPAPIVault(str(Path(tmp)))
+            vault = _auth_vault.DPAPIVault(str(Path(tmp)))
             vault.host_marker.symlink_to(Path(tmp) / 'missing')
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 vault.assert_first_use()
 
     def test_first_use_guard_rejects_surviving_analysis_ledger_without_other_host_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            vault = a.DPAPIVault(str(root))
+            vault = _auth_vault.DPAPIVault(str(root))
             controls = root / 'control-v1'
             controls.mkdir()
             unrelated = controls / 'other-feature.sqlite3'
@@ -389,7 +393,7 @@ class AuthTests(unittest.TestCase):
             ledger = controls / ('chatgpt-analysis-' + 'a' * 64 + '.sqlite3')
             ledger.write_bytes(b'prior-analysis-fixture')
             before = {path.name: path.read_bytes() for path in controls.iterdir()}
-            with self.assertRaisesRegex(a.AuthError, 'explicit_host_recovery_required'):
+            with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'explicit_host_recovery_required'):
                 vault.assert_first_use()
             self.assertFalse(vault.path.exists())
             self.assertFalse(vault.host_marker.exists())
@@ -400,13 +404,13 @@ class AuthTests(unittest.TestCase):
         self.session.initialize_host()
         record = copy.deepcopy(self.vault.record)
         with tempfile.TemporaryDirectory() as tmp:
-            vault = a.DPAPIVault(str(Path(tmp)))
+            vault = _auth_vault.DPAPIVault(str(Path(tmp)))
             vault.directory.mkdir(parents=True)
             with patch.object(vault, '_windows'), patch('quantlab.desktop_runtime.CredentialVault._crypt', return_value=b'fixture-encrypted'):
                 vault.save(record)
             self.assertEqual(vault.host_marker.read_bytes(), b'markauto-chatgpt-host-v1\n')
             vault.path.unlink()
-            with self.assertRaisesRegex(a.AuthError, 'explicit_host_recovery_required'):
+            with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'explicit_host_recovery_required'):
                 vault.assert_first_use()
             self.assertNotIn(record['host_id'].encode(), vault.host_marker.read_bytes())
 
@@ -426,7 +430,7 @@ class AuthTests(unittest.TestCase):
         self.assertNotIn('force_reconsent', query)
         self.session.cancel()
         for registration, value in ((None, True), (registration, 'yes')):
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 self.session.begin(registration, enable_plan=value)
 
     def test_a4_invalid_signed_claim_matrix_preserves_account(self):
@@ -446,30 +450,30 @@ class AuthTests(unittest.TestCase):
             with self.subTest(changes=changes):
                 self.claim_changes = changes
                 self.begin(registration)
-                with self.assertRaises(a.AuthError):
+                with self.assertRaises(_auth_auth_protocol.AuthError):
                     self.callback()
                 self.assertEqual(self.session.active_registration, registration)
 
     def test_a4_multiple_aud_and_unknown_kid_bounded(self):
         self.claim_changes = dict(aud=['fixture-client', 'other'], azp='fixture-client')
         self.connect()
-        validator = a.IdentityValidator(self.transport)
+        validator = _auth_identity.IdentityValidator(self.transport)
         self.begin()
         token = jwt.encode(
-            dict(iss=a.ISSUER, sub='s', aud='fixture-client', exp=int(time.time()) + 60, iat=int(time.time()), nonce='n'),
+            dict(iss=_auth_auth_protocol.ISSUER, sub='s', aud='fixture-client', exp=int(time.time()) + 60, iat=int(time.time()), nonce='n'),
             self.key,
             algorithm='RS256',
             headers={'kid': 'unknown'},
         )
         before = self.transport.jwks_calls
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             validator.verify(token, 'fixture-client', 'n')
         self.assertLessEqual(self.transport.jwks_calls - before, 2)
 
     def test_a4_duplicate_claims_none_hs_bad_signature(self):
-        validator = a.IdentityValidator(self.transport)
+        validator = _auth_identity.IdentityValidator(self.transport)
         self.begin()
-        claims = dict(iss=a.ISSUER, sub='s', aud='fixture-client', exp=int(time.time()) + 60, iat=int(time.time()), nonce='n')
+        claims = dict(iss=_auth_auth_protocol.ISSUER, sub='s', aud='fixture-client', exp=int(time.time()) + 60, iat=int(time.time()), nonce='n')
         other = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         bad = [
             jwt.encode(claims, other, algorithm='RS256', headers={'kid': 'fixture'}),
@@ -479,7 +483,7 @@ class AuthTests(unittest.TestCase):
         raw = json.dumps(claims)[:-1] + ',"sub":"duplicate"}'
         bad.append(jwt.api_jws.encode(raw.encode(), self.key, algorithm='RS256', headers={'kid': 'fixture'}))
         for token in bad:
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 validator.verify(token, 'fixture-client', 'n')
 
     def test_a5_identity_only_and_host_retained(self):
@@ -487,7 +491,7 @@ class AuthTests(unittest.TestCase):
         registration = self.connect()
         host = self.vault.record['host_id']
         self.assertEqual(self.session.state, 'identity_only')
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.session.access_token(registration)
         self.session.sign_out(registration)
         self.assertEqual(self.vault.record['host_id'], host)
@@ -523,11 +527,11 @@ class AuthTests(unittest.TestCase):
         registration = self.connect()
         self.vault.record['registrations'][registration]['tokens']['expires_at'] = 0
         self.vault.fail_at = self.vault.writes + 2
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.session.refresh(registration)
         self.vault.fail_at = None
         before = len(self.transport.calls)
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.new_session().refresh(registration)
         self.assertEqual(len(self.transport.calls), before)
 
@@ -535,11 +539,11 @@ class AuthTests(unittest.TestCase):
         registration = self.connect()
         self.vault.record['registrations'][registration]['tokens']['expires_at'] = 0
         self.transport.refresh_error = (503, b'{}')
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.session.refresh(registration)
         self.assertIsNotNone(self.vault.record['registrations'][registration]['tokens'])
         self.transport.refresh_error = (400, b'{"error":"invalid_grant"}')
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.session.refresh(registration)
         self.assertIsNone(self.vault.record['registrations'][registration]['tokens'])
         self.transport.refresh_error = None
@@ -555,13 +559,13 @@ class AuthTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             pickle.dumps(self.session)
         self.assertNotIn('fixture-access', repr(self.session))
-        with patch.object(a.sys, 'platform', 'linux'):
-            vault = a.DPAPIVault(str(Path(tempfile.gettempdir()) / 'fixture-bootstrap'))
-            with self.assertRaises(a.AuthError):
+        with patch.object(_auth_vault.sys, 'platform', 'linux'):
+            vault = _auth_vault.DPAPIVault(str(Path(tempfile.gettempdir()) / 'fixture-bootstrap'))
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 vault.load()
 
     def test_a1_host_loss_requires_explicit_recovery(self):
-        with self.assertRaisesRegex(a.AuthError, 'host_initialization_required'):
+        with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'host_initialization_required'):
             self.session.begin()
         self.assertIsNone(self.vault.record)
         self.assertEqual(self.transport.calls, [])
@@ -578,7 +582,7 @@ class AuthTests(unittest.TestCase):
             'state=' + state + '&code=' + ('x' * 8200),
         ):
             with self.subTest(query=query[:35]):
-                with self.assertRaises(a.AuthError):
+                with self.assertRaises(_auth_auth_protocol.AuthError):
                     self.session.accept_callback('GET', '/auth/callback?' + query, '127.0.0.1:1455', '127.0.0.1')
         self.assertEqual(self.transport.calls, [])
 
@@ -589,7 +593,7 @@ class AuthTests(unittest.TestCase):
         original = self.transport.request
 
         def delayed(*args, **kwargs):
-            if args[1] == a.TOKEN:
+            if args[1] == _auth_auth_protocol.TOKEN:
                 entered.set()
                 resume.wait(3)
             return original(*args, **kwargs)
@@ -600,7 +604,7 @@ class AuthTests(unittest.TestCase):
         def callback():
             try:
                 self.callback()
-            except a.AuthError:
+            except _auth_auth_protocol.AuthError:
                 failures.append(True)
 
         thread = threading.Thread(target=callback)
@@ -621,41 +625,43 @@ class AuthTests(unittest.TestCase):
         for changed in [
             dict(issuer='https://evil.invalid'),
             dict(jwks_uri='https://evil.invalid/key'),
-            dict(token_endpoint=a.TOKEN + '?evil'),
+            dict(token_endpoint=_auth_auth_protocol.TOKEN + '?evil'),
             dict(id_token_signing_alg_values_supported=['HS256']),
         ]:
 
             def request(method, url, **kwargs):
-                if url == a.DISCOVERY:
-                    return a.HttpResponse(200, json.dumps(dict(a.PINNED_DISCOVERY, id_token_signing_alg_values_supported=['RS256'], **{}) | changed).encode())
+                if url == _auth_auth_protocol.DISCOVERY:
+                    return _auth_auth_protocol.HttpResponse(
+                        200, json.dumps(dict(_auth_auth_protocol.PINNED_DISCOVERY, id_token_signing_alg_values_supported=['RS256'], **{}) | changed).encode()
+                    )
                 return original(method, url, **kwargs)
 
             self.transport.request = request
-            with self.assertRaises(a.AuthError):
-                a.IdentityValidator(self.transport).discovery()
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                _auth_identity.IdentityValidator(self.transport).discovery()
         self.transport.request = original
         duplicate = dict(self.jwk)
 
         def request(method, url, **kwargs):
-            if url == a.JWKS:
-                return a.HttpResponse(200, json.dumps({'keys': [duplicate, duplicate]}).encode())
+            if url == _auth_auth_protocol.JWKS:
+                return _auth_auth_protocol.HttpResponse(200, json.dumps({'keys': [duplicate, duplicate]}).encode())
             return original(method, url, **kwargs)
 
         self.transport.request = request
-        with self.assertRaises(a.AuthError):
-            a.IdentityValidator(self.transport).verify(self.tokens('fixture-client')['id_token'], 'fixture-client', self.query['nonce'][0])
+        with self.assertRaises(_auth_auth_protocol.AuthError):
+            _auth_identity.IdentityValidator(self.transport).verify(self.tokens('fixture-client')['id_token'], 'fixture-client', self.query['nonce'][0])
 
     def test_a4_header_key_urls_and_duplicate_header_rejected(self):
         self.begin()
-        validator = a.IdentityValidator(self.transport)
-        claims = dict(iss=a.ISSUER, sub='s', aud='fixture-client', exp=int(time.time()) + 60, iat=int(time.time()), nonce='n')
+        validator = _auth_identity.IdentityValidator(self.transport)
+        claims = dict(iss=_auth_auth_protocol.ISSUER, sub='s', aud='fixture-client', exp=int(time.time()) + 60, iat=int(time.time()), nonce='n')
         for field in ('jku', 'x5u', 'jwk', 'crit'):
             token = jwt.encode(claims, self.key, algorithm='RS256', headers={'kid': 'fixture', field: 'https://evil.invalid'})
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 validator.verify(token, 'fixture-client', 'n')
         for header in (b'{"alg":"RS256","kid":"fixture","kid":"fixture"}', b'{"alg":"RS256","kid":"fixture","b64":true}'):
             altered = base64.urlsafe_b64encode(header).rstrip(b'=').decode() + '.' + token.split('.', 1)[1]
-            with self.assertRaises(a.AuthError):
+            with self.assertRaises(_auth_auth_protocol.AuthError):
                 validator.verify(altered, 'fixture-client', 'n')
         self.assertEqual(self.transport.calls, [])
 
@@ -674,7 +680,7 @@ class AuthTests(unittest.TestCase):
         prior = copy.deepcopy(self.vault.record)
         self.claim_changes = {'sub': 'other-user'}
         self.begin(first)
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.callback()
         self.assertEqual(self.vault.record, prior)
 
@@ -693,19 +699,19 @@ class AuthTests(unittest.TestCase):
             dict(access_token='x' * 16385),
         ]:
             with self.subTest(changes=list(changes)):
-                with self.assertRaises(a.AuthError):
+                with self.assertRaises(_auth_auth_protocol.AuthError):
                     self.session._tokens(data | changes)
 
     def test_a6_refresh_network_ambiguity_persisted_across_restart(self):
         ref = self.connect()
         self.vault.record['registrations'][ref]['tokens']['expires_at'] = 0
         self.transport.refresh_error = OSError('fixture timeout')
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.session.refresh(ref)
         self.assertEqual(self.vault.record['registrations'][ref]['operation'], 'refresh')
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.new_session().access_token(ref)
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.new_session().refresh(ref)
         self.assertEqual(self.rotation, 0)
 
@@ -730,27 +736,27 @@ class AuthTests(unittest.TestCase):
             self.assertNotIn(secret, raw)
         oversized = copy.deepcopy(self.vault.record)
         oversized['padding'] = 'x' * 65536
-        with self.assertRaises(a.AuthError):
-            a._validate_record(oversized)
+        with self.assertRaises(_auth_auth_protocol.AuthError):
+            _auth_auth_protocol._validate_record(oversized)
         for raw in (b'{"x":1,"x":2}', b'{"x":NaN}', b'[]', b'x' * 65537):
-            with self.assertRaises(a.AuthError):
-                a._json(raw)
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                _auth_auth_protocol._json(raw)
 
     def test_transport_pins_origins_methods_and_does_not_follow_redirects(self):
-        transport = a.OfficialTransport()
-        with patch.object(a.http.client, 'HTTPSConnection') as constructor:
-            for url in ('https://evil.invalid/token', a.TOKEN + '?x=1', 'http://auth.openai.com/api/accounts/oauth/token'):
-                with self.assertRaises(a.AuthError):
+        transport = _auth_identity.OfficialTransport()
+        with patch.object(_auth_identity.http.client, 'HTTPSConnection') as constructor:
+            for url in ('https://evil.invalid/token', _auth_auth_protocol.TOKEN + '?x=1', 'http://auth.openai.com/api/accounts/oauth/token'):
+                with self.assertRaises(_auth_auth_protocol.AuthError):
                     transport.request('POST', url, form={})
-            with self.assertRaises(a.AuthError):
-                transport.request('GET', a.TOKEN)
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                transport.request('GET', _auth_auth_protocol.TOKEN)
             constructor.assert_not_called()
             connection = constructor.return_value
             response = connection.getresponse.return_value
             response.status = 302
             response.getheader.return_value = 'identity'
             response.read1.return_value = b''
-            result = transport.request('POST', a.TOKEN, form={'grant_type': 'fixture'})
+            result = transport.request('POST', _auth_auth_protocol.TOKEN, form={'grant_type': 'fixture'})
             self.assertEqual(result.status, 302)
             self.assertEqual(connection.request.call_count, 1)
             self.assertEqual(connection.request.call_args.args[:2], ('POST', '/api/accounts/oauth/token'))
@@ -760,16 +766,16 @@ class AuthTests(unittest.TestCase):
             connection.close.assert_called_once()
 
     def test_transport_size_and_compression_are_bounded(self):
-        with patch.object(a.http.client, 'HTTPSConnection') as constructor:
+        with patch.object(_auth_identity.http.client, 'HTTPSConnection') as constructor:
             response = constructor.return_value.getresponse.return_value
             response.status = 200
             response.getheader.return_value = 'gzip'
-            with self.assertRaises(a.AuthError):
-                a.OfficialTransport().request('GET', a.JWKS)
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                _auth_identity.OfficialTransport().request('GET', _auth_auth_protocol.JWKS)
             response.getheader.return_value = 'identity'
             response.read1.return_value = b'x' * 65537
-            with self.assertRaises(a.AuthError):
-                a.OfficialTransport().request('GET', a.JWKS)
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                _auth_identity.OfficialTransport().request('GET', _auth_auth_protocol.JWKS)
 
     def test_listener_parser_with_fake_sockets_no_bind_or_network(self):
         from unittest.mock import MagicMock
@@ -782,7 +788,7 @@ class AuthTests(unittest.TestCase):
             (b'GET /auth/callback?state=x HTTP/1.1\r\nHost: a\r\n\r\nxx', False),
         ]:
             with self.subTest(expected=expected):
-                listener = a.LoopbackListener.__new__(a.LoopbackListener)
+                listener = _auth_loopback.LoopbackListener.__new__(_auth_loopback.LoopbackListener)
                 listener.socket = MagicMock()
                 listener.callback = MagicMock()
                 connection = MagicMock()
@@ -799,11 +805,12 @@ class AuthTests(unittest.TestCase):
         import tempfile
         import zipfile
         from pathlib import Path
-        from quantlab.desktop_runtime import AppPaths, BackupManager
+        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
 
         with tempfile.TemporaryDirectory() as temporary:
             paths = AppPaths(Path(temporary) / 'bootstrap').ensure()
-            vault = a.DPAPIVault(str(paths.root))
+            vault = _auth_vault.DPAPIVault(str(paths.root))
             vault.directory.mkdir(parents=True)
             vault.path.write_bytes(b'fixture-encrypted-host-and-account')
             (paths.state / 'fixture.json').write_text('{}')
@@ -831,7 +838,7 @@ class AuthTests(unittest.TestCase):
         def callback():
             try:
                 self.callback()
-            except a.AuthError:
+            except _auth_auth_protocol.AuthError:
                 failures.append(True)
 
         thread = threading.Thread(target=callback)
@@ -855,12 +862,12 @@ class AuthTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             dangling = Path(temporary) / 'dangling'
             dangling.symlink_to(Path(temporary) / 'missing', target_is_directory=True)
-            with self.assertRaises(a.AuthError):
-                a.DPAPIVault._check_path(dangling)
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                _auth_vault.DPAPIVault._check_path(dangling)
         junction = MagicMock()
         junction.lstat.return_value = SimpleNamespace(st_mode=0o40700, st_file_attributes=0x400)
-        with self.assertRaises(a.AuthError):
-            a.DPAPIVault._check_path(junction)
+        with self.assertRaises(_auth_auth_protocol.AuthError):
+            _auth_vault.DPAPIVault._check_path(junction)
         junction.stat.assert_not_called()
 
     def test_absolute_deadline_watchdog_interrupts_header_read(self):
@@ -873,7 +880,7 @@ class AuthTests(unittest.TestCase):
             watchdog.append(callback)
             return MagicMock()
 
-        with patch.object(a.threading, 'Timer', side_effect=timer), patch.object(a.http.client, 'HTTPSConnection') as constructor:
+        with patch.object(a.threading, 'Timer', side_effect=timer), patch.object(_auth_identity.http.client, 'HTTPSConnection') as constructor:
             connection = constructor.return_value
             response = MagicMock()
             response.status = 200
@@ -887,9 +894,9 @@ class AuthTests(unittest.TestCase):
                 return response
 
             connection.getresponse.side_effect = drip_headers
-            with self.assertRaisesRegex(a.AuthError, 'transport_timeout'):
-                a.OfficialTransport().request('GET', a.JWKS)
-            connection.sock.shutdown.assert_called_with(a.socket.SHUT_RDWR)
+            with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'transport_timeout'):
+                _auth_identity.OfficialTransport().request('GET', _auth_auth_protocol.JWKS)
+            connection.sock.shutdown.assert_called_with(_auth_identity.socket.SHUT_RDWR)
 
     def test_cancel_after_commit_boundary_reports_connected_state(self):
         self.begin()
@@ -961,5 +968,5 @@ class AuthTests(unittest.TestCase):
         self.assertEqual(summary['state'], 'disconnected')
         self.assertIsNone(summary['active_registration'])
         self.vault.record['active'] = 'unknown-ref'
-        with self.assertRaises(a.AuthError):
+        with self.assertRaises(_auth_auth_protocol.AuthError):
             self.new_session().status_summary()

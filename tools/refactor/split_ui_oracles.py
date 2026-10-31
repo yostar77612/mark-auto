@@ -16,7 +16,8 @@ def capture(root, state):
     sys.path.insert(0, str(root))
     from PySide6.QtCore import QTimer
     from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QWidget
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager, RuntimeGuard
+    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, RuntimeGuard
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
     from desktop_app.shell.main_window import create_window
 
     app = QApplication.instance() or QApplication([])

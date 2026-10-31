@@ -18,7 +18,8 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QLabel
 from desktop_app.components.formatting import display_number, display_status, result_name
 from desktop_app.components.result_tables import SummaryCard, ResultTable
 from desktop_app.shell.window import MainWindow
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
+from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 from tests.snapshot_cache import default_metrics
 
 

@@ -4,7 +4,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 235,
+        "line": 234,
         "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "window.paper_page"
@@ -20,7 +20,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 253,
+        "line": 252,
         "name": "_refresh_analysis_saved",
         "kind": "patch.object",
         "receiver": "coordinator"
@@ -36,7 +36,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 253,
+        "line": 252,
         "name": "_refresh_recovery_controls",
         "kind": "patch.object",
         "receiver": "coordinator"
@@ -52,7 +52,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 253,
+        "line": 252,
         "name": "_refresh_walk_forward_references",
         "kind": "patch.object",
         "receiver": "coordinator"
@@ -68,7 +68,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 253,
+        "line": 252,
         "name": "inspect_candidate",
         "kind": "patch.object",
         "receiver": "coordinator"
@@ -84,7 +84,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 253,
+        "line": 252,
         "name": "load_market_cache",
         "kind": "patch.object",
         "receiver": "coordinator"
@@ -100,7 +100,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 253,
+        "line": 252,
         "name": "show_result",
         "kind": "patch.object",
         "receiver": "coordinator"
@@ -116,7 +116,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 269,
+        "line": 268,
         "name": "_refresh_analysis_saved",
         "kind": "patch.object",
         "receiver": "coordinator"
@@ -132,7 +132,7 @@
     {
       "original": {
         "file": "tests/r7_characterization.py",
-        "line": 274,
+        "line": 273,
         "name": "load_dataset",
         "kind": "patch.dict",
         "receiver": "window.page_host.callbacks"
@@ -148,14 +148,14 @@
     {
       "original": {
         "file": "tests/test_analysis_recovery_ui.py",
-        "line": 137,
+        "line": 138,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "self.window"
       },
       "current": {
         "file": "tests/test_analysis_recovery_ui.py",
-        "line": 141,
+        "line": 142,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "self.window"
@@ -420,14 +420,14 @@
     {
       "original": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 425,
+        "line": 424,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 430,
+        "line": 429,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -436,14 +436,14 @@
     {
       "original": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 468,
+        "line": 467,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 473,
+        "line": 472,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -452,15 +452,31 @@
     {
       "original": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 479,
+        "line": 478,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 484,
+        "line": 483,
         "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 494,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 499,
+        "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
       }
@@ -469,14 +485,14 @@
       "original": {
         "file": "tests/test_desktop_analysis.py",
         "line": 495,
-        "name": "_quiesce_and_recover",
+        "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
         "line": 500,
-        "name": "_quiesce_and_recover",
+        "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       }
@@ -484,15 +500,15 @@
     {
       "original": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 496,
-        "name": "start_job",
+        "line": 514,
+        "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 501,
-        "name": "start_job",
+        "line": 519,
+        "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
       }
@@ -501,46 +517,46 @@
       "original": {
         "file": "tests/test_desktop_analysis.py",
         "line": 515,
-        "name": "_quiesce_and_recover",
+        "name": "poll_jobs",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
         "line": 520,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 517,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 522,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 551,
         "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
-      }
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis.py",
-        "line": 516,
-        "name": "poll_jobs",
-        "kind": "patch.object",
-        "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 521,
-        "name": "poll_jobs",
-        "kind": "patch.object",
-        "receiver": "w"
-      }
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis.py",
-        "line": 518,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current": {
-        "file": "tests/test_desktop_analysis.py",
-        "line": 523,
-        "name": "start_job",
+        "line": 556,
+        "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
       }
@@ -549,29 +565,13 @@
       "original": {
         "file": "tests/test_desktop_analysis.py",
         "line": 552,
-        "name": "_quiesce_and_recover",
+        "name": "poll_jobs",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
         "line": 557,
-        "name": "_quiesce_and_recover",
-        "kind": "patch.object",
-        "receiver": "w"
-      }
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_analysis.py",
-        "line": 553,
-        "name": "poll_jobs",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current": {
-        "file": "tests/test_desktop_analysis.py",
-        "line": 558,
         "name": "poll_jobs",
         "kind": "patch.object",
         "receiver": "w"
@@ -580,14 +580,14 @@
     {
       "original": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 555,
+        "line": 554,
         "name": "_chatgpt_dispatch",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 560,
+        "line": 559,
         "name": "_chatgpt_dispatch",
         "kind": "patch.object",
         "receiver": "w"
@@ -596,14 +596,14 @@
     {
       "original": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 581,
+        "line": 580,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_analysis.py",
-        "line": 586,
+        "line": 585,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -788,7 +788,7 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 131,
+        "line": 132,
         "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
@@ -804,7 +804,7 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 132,
+        "line": 133,
         "name": "poll_jobs",
         "kind": "patch.object",
         "receiver": "w"
@@ -820,7 +820,7 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 133,
+        "line": 134,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -836,7 +836,7 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 141,
+        "line": 142,
         "name": "_quiesce_and_recover",
         "kind": "patch.object",
         "receiver": "w"
@@ -852,7 +852,7 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 141,
+        "line": 142,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -868,7 +868,7 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 172,
+        "line": 173,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -884,14 +884,14 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 291,
+        "line": 293,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 306,
+        "line": 307,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -900,14 +900,14 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 306,
+        "line": 308,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 321,
+        "line": 322,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -916,14 +916,14 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 408,
+        "line": 411,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 427,
+        "line": 429,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -932,14 +932,14 @@
     {
       "original": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 419,
+        "line": 422,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_chatgpt_integration.py",
-        "line": 438,
+        "line": 440,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -948,14 +948,14 @@
     {
       "original": {
         "file": "tests/test_desktop_expiries.py",
-        "line": 202,
+        "line": 203,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "window"
       },
       "current": {
         "file": "tests/test_desktop_expiries.py",
-        "line": 210,
+        "line": 211,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "window"
@@ -1012,22 +1012,6 @@
     {
       "original": {
         "file": "tests/test_desktop_pages.py",
-        "line": 157,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      },
-      "current": {
-        "file": "tests/test_desktop_pages.py",
-        "line": 159,
-        "name": "start_job",
-        "kind": "patch.object",
-        "receiver": "w"
-      }
-    },
-    {
-      "original": {
-        "file": "tests/test_desktop_pages.py",
         "kind": "patch.object",
         "line": 169,
         "name": "start_job",
@@ -1045,8 +1029,24 @@
       "original": {
         "file": "tests/test_desktop_pages.py",
         "kind": "patch.object",
+        "line": 157,
+        "name": "start_job",
+        "receiver": "w"
+      },
+      "current": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 159,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
         "line": 199,
         "name": "start_job",
+        "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
@@ -1220,7 +1220,7 @@
     {
       "original": {
         "file": "tests/test_desktop_paper_exports.py",
-        "line": 117,
+        "line": 118,
         "name": "write_json",
         "kind": "patch",
         "receiver": "desktop_app.shell.main_window"
@@ -1236,7 +1236,7 @@
     {
       "original": {
         "file": "tests/test_desktop_paper_exports.py",
-        "line": 167,
+        "line": 168,
         "name": "write_json",
         "kind": "patch",
         "receiver": "desktop_app.shell.main_window"
@@ -1252,14 +1252,14 @@
     {
       "original": {
         "file": "tests/test_desktop_ui.py",
-        "line": 295,
+        "line": 296,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "self.window"
       },
       "current": {
         "file": "tests/test_desktop_ui.py",
-        "line": 303,
+        "line": 304,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "self.window"
@@ -1268,14 +1268,14 @@
     {
       "original": {
         "file": "tests/test_desktop_ui_polish_b.py",
-        "line": 142,
+        "line": 143,
         "name": "load_result",
         "kind": "patch",
         "receiver": "desktop_app.shell.main_window"
       },
       "current": {
         "file": "tests/test_desktop_ui_polish_b.py",
-        "line": 144,
+        "line": 145,
         "name": "load_result",
         "kind": "patch",
         "receiver": "quantlab.reporting"
@@ -1284,14 +1284,14 @@
     {
       "original": {
         "file": "tests/test_desktop_ui_polish_b.py",
-        "line": 143,
+        "line": 144,
         "name": "show_result",
         "kind": "patch.object",
         "receiver": "window"
       },
       "current": {
         "file": "tests/test_desktop_ui_polish_b.py",
-        "line": 145,
+        "line": 146,
         "name": "show_result",
         "kind": "patch.object",
         "receiver": "window"
@@ -1300,14 +1300,14 @@
     {
       "original": {
         "file": "tests/test_desktop_ui_polish_b.py",
-        "line": 144,
+        "line": 145,
         "name": "result_name",
         "kind": "patch",
         "receiver": "desktop_app.shell.main_window"
       },
       "current": {
         "file": "tests/test_desktop_ui_polish_b.py",
-        "line": 146,
+        "line": 147,
         "name": "result_name",
         "kind": "patch",
         "receiver": "desktop_app.components.formatting"
@@ -1316,14 +1316,14 @@
     {
       "original": {
         "file": "tests/test_desktop_walk_forward.py",
-        "line": 341,
+        "line": 343,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_walk_forward.py",
-        "line": 343,
+        "line": 346,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -1332,14 +1332,14 @@
     {
       "original": {
         "file": "tests/test_desktop_walk_forward.py",
-        "line": 359,
+        "line": 361,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
       },
       "current": {
         "file": "tests/test_desktop_walk_forward.py",
-        "line": 361,
+        "line": 364,
         "name": "start_job",
         "kind": "patch.object",
         "receiver": "w"
@@ -1924,7 +1924,7 @@
     {
       "original": {
         "file": "tests/test_product_ai_boundary.py",
-        "line": 86,
+        "line": 87,
         "name": "run_campaign",
         "kind": "patch.object",
         "receiver": "validate_real_ai"
@@ -1967,6 +1967,38 @@
         "name": "result_choice",
         "kind": "assignment",
         "receiver": "self.host"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_r7_characterization.py",
+        "kind": "setattr",
+        "line": 70,
+        "name": "_busy",
+        "receiver": "shell"
+      },
+      "current": {
+        "file": "tests/test_r7_characterization.py",
+        "line": 72,
+        "name": "_busy",
+        "kind": "setattr",
+        "receiver": "shell"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_r7_characterization.py",
+        "kind": "setattr",
+        "line": 70,
+        "name": "_safe",
+        "receiver": "shell"
+      },
+      "current": {
+        "file": "tests/test_r7_characterization.py",
+        "line": 72,
+        "name": "_safe",
+        "kind": "setattr",
+        "receiver": "shell"
       }
     },
     {
@@ -2099,6 +2131,38 @@
     },
     {
       "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 181,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "current": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 184,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      }
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 220,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "current": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 223,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      }
+    },
+    {
+      "original": {
         "file": "tests/test_ui_redesign_data_results.py",
         "line": 123,
         "name": "start_job",
@@ -2164,14 +2228,14 @@
     {
       "original": {
         "file": "tests/test_workspace_wal_guard.py",
-        "line": 507,
+        "line": 500,
         "name": "_dataset",
         "kind": "assignment",
         "receiver": "fake_ui"
       },
       "current": {
         "file": "tests/test_workspace_wal_guard.py",
-        "line": 498,
+        "line": 491,
         "name": "_dataset",
         "kind": "assignment",
         "receiver": "fake_ui"
@@ -2180,14 +2244,14 @@
     {
       "original": {
         "file": "tests/test_workspace_wal_guard.py",
-        "line": 516,
+        "line": 509,
         "name": "preview_walk_forward",
         "kind": "patch.object",
         "receiver": "adapter"
       },
       "current": {
         "file": "tests/test_workspace_wal_guard.py",
-        "line": 507,
+        "line": 500,
         "name": "preview_walk_forward",
         "kind": "patch.object",
         "receiver": "adapter"
@@ -2196,14 +2260,14 @@
     {
       "original": {
         "file": "tests/test_workspace_wal_guard.py",
-        "line": 517,
+        "line": 510,
         "name": "run_walk_forward",
         "kind": "patch.object",
         "receiver": "adapter"
       },
       "current": {
         "file": "tests/test_workspace_wal_guard.py",
-        "line": 508,
+        "line": 501,
         "name": "run_walk_forward",
         "kind": "patch.object",
         "receiver": "adapter"
@@ -2220,7 +2284,7 @@
     },
     {
       "file": "tests/test_workspace_wal_guard.py",
-      "line": 207,
+      "line": 200,
       "name": "_paper",
       "kind": "patch.object",
       "receiver": "paper_operations"

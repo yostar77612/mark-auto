@@ -15,7 +15,8 @@ from unittest.mock import patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from quantlab.desktop_errors import ERROR_TABLE, error_message, exception_code, startup_error_code
-from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore, RuntimeSafetyError, RedactedEventLog
+from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, RuntimeSafetyError, RedactedEventLog
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
 class CorrectnessTests(unittest.TestCase):
@@ -125,14 +126,9 @@ class CorrectnessTests(unittest.TestCase):
         self.assertIn('error_message(startup_error_code(exc))', source)
 
     def test_restore_and_cleanup_failures_record_fixed_stage_and_restore_signin(self):
-        from desktop_app.features.assistant.connection import (
-            ConnectionRequest,
-            ConnectionController,
-            ChatGPTConnectionPanel,
-            run_connection_request,
-            LOCAL_ACTIONS,
-            STARTUP_ACTIONS,
-        )
+        from quantlab.assistant.application.connection_contracts import ConnectionRequest, LOCAL_ACTIONS, STARTUP_ACTIONS
+        from desktop_app.features.assistant.connection import ConnectionController, ChatGPTConnectionPanel
+        from quantlab.assistant.adapters.chatgpt.connection_worker import run_connection_request
         from tests.test_desktop_chatgpt_ui import FixtureSession, REF
 
         self.assertNotIn('restore', LOCAL_ACTIONS)

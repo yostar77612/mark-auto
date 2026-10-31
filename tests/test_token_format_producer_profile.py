@@ -1,5 +1,11 @@
 """Exact new auth provenance; generated offline receipts, never real OAuth."""
 
+from quantlab import saved_candidate_pool as pool_profiles
+
+from quantlab.research_core.application import saved_pool_validation
+from quantlab.research_core.domain import saved_pool
+
+
 from datetime import timedelta
 from pathlib import Path
 import sys
@@ -89,12 +95,12 @@ class TokenFormatProducerProfileTests(unittest.TestCase):
                 item['provider']['descriptor'][key] = value
                 bad.append(item)
             for item in bad:
-                with self.subTest(variant=index), self.assertRaises(pools.SavedCandidatePoolError) as caught:
+                with self.subTest(variant=index), self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                     pools._select_producer(item)
                 self.assertEqual(caught.exception.reason_code, 'source_provider_provenance_invalid')
             item = binding(PROFILE, index)
             item['engine_source_hashes']['research.py'] = 'f' * 64
-            with self.assertRaises(pools.SavedCandidatePoolError) as caught:
+            with self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                 pools._select_producer(item)
             self.assertEqual(caught.exception.reason_code, 'source_producer_unsupported')
 
@@ -114,7 +120,12 @@ class TokenFormatProducerProfileTests(unittest.TestCase):
                             first_training_timestamp=max(b.end for b in original.bars) + timedelta(days=1),
                             authoritative_registry_path=root / 'source-registry.sqlite3',
                         )
-                    pools.validate_admission_snapshot(admission.admission, admission.candidate_pool)
+                    saved_pool_validation.validate_admission_snapshot(
+                        admission.admission,
+                        admission.candidate_pool,
+                        profiles=pool_profiles.SUPPORTED_PRODUCERS,
+                        audited_producer=pool_profiles.AUDITED_PRODUCER,
+                    )
                     self.assertEqual(admission.admission['producer'], profile)
                     self.assertEqual(admission.admission['real_model_status'], 'not_verified')
                     self.assertEqual(len(admission.candidate_pool), 1)

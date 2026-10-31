@@ -13,19 +13,13 @@ import tempfile
 from pathlib import Path
 from quantlab.assistant.adapters.chatgpt.auth import OAuthCredentialReference
 from quantlab.core import ValidationError
-from quantlab.assistant.adapters.chatgpt.provider import (
-    ChatGPTPlanProvider,
-    PlanError,
-    SSEParser,
-    parse_models,
-    parse_completed,
-    ERROR_STATES,
-    RESPONSES_URL,
-    PlanHTTPTransport as RealTransport,
-    clear_account_pause,
-    read_account_status,
-    discover_models,
-)
+from quantlab.assistant.adapters.chatgpt.provider import ChatGPTPlanProvider, parse_completed
+from quantlab.assistant.domain.plan_protocol import PlanError, parse_models, ERROR_STATES, RESPONSES_URL
+from quantlab.assistant.adapters.chatgpt.resolution_audit import _resolution_registration
+from quantlab.assistant.adapters.chatgpt.response_stream import SSEParser
+from quantlab.assistant.adapters.chatgpt.transport import PlanHTTPTransport as RealTransport
+from quantlab.assistant.adapters.chatgpt.provider import discover_models
+from quantlab.assistant.adapters.chatgpt.provider import clear_account_pause, read_account_status
 
 CANDIDATE = {'strategy_id': 'mock_trend', 'family': 'trend', 'parameters': {'fast': 5, 'slow': 20}, 'rules': {}}
 
@@ -196,7 +190,7 @@ class PlanTests(unittest.TestCase):
 
     # P2b: the pre-inference catalog check uses the catalog cap, never the inference cap.
     def test_p2_campaign_catalog_uses_catalog_limit(self):
-        from quantlab.assistant.adapters.chatgpt.provider import MODELS_MAX_RESPONSE_BYTES
+        from quantlab.assistant.domain.plan_protocol import MODELS_MAX_RESPONSE_BYTES
 
         seen = []
 
@@ -343,7 +337,7 @@ class PlanTests(unittest.TestCase):
                 assert len(MockTransport.requests) == 1
 
     def test_admission_diagnostics_do_not_interpret_or_retain_detail_text(self):
-        from quantlab.assistant.adapters.chatgpt.provider import _remote_error
+        from quantlab.assistant.domain.plan_protocol import _remote_error
 
         for value, status, expected, remote in (
             ({'detail': 'subscription_sharing_user_not_eligible'}, 403, 'grant_blocked', None),
@@ -1109,7 +1103,8 @@ class PlanTests(unittest.TestCase):
 
 def competing_unknown_resolution(path, ready, release, results):
     """Two fresh workers contend for one synthetic, already-aged receipt."""
-    from quantlab.assistant.adapters.chatgpt.provider import ACKNOWLEDGEMENT_VERSION, resolve_unknown_request
+    from quantlab.assistant.domain.plan_protocol import ACKNOWLEDGEMENT_VERSION
+    from quantlab.assistant.adapters.chatgpt.provider import resolve_unknown_request
 
     root = Path(path)
     reference = OAuthCredentialReference(str(root / 'auth'), 'a' * 32)
@@ -1816,7 +1811,7 @@ class FinishedRequestResolutionTests(unittest.TestCase):
         import sqlite3
 
         with closing(sqlite3.connect(p.account_path)) as db:
-            return self.module._resolution_registration(db, 'main', p.path.name, self.rows(p.path, 'SELECT * FROM plan_calls')[0])
+            return _resolution_registration(db, 'main', p.path.name, self.rows(p.path, 'SELECT * FROM plan_calls')[0])
 
     def add_r1_audit(self, p):
         import sqlite3
@@ -1894,7 +1889,7 @@ class FinishedRequestResolutionTests(unittest.TestCase):
     def test_literal_statuses_equal_the_research_allowlist_minus_known_outcomes(self):
         import ast
 
-        source = (Path(__file__).resolve().parents[1] / 'quantlab/research.py').read_text(encoding='utf-8')
+        source = (Path(__file__).resolve().parents[1] / 'quantlab/research_core/domain/receipts.py').read_text(encoding='utf-8')
         sets = [
             node.value
             for node in ast.walk(ast.parse(source))

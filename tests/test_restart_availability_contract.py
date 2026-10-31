@@ -28,7 +28,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HAS_QT = importlib.util.find_spec('PySide6') is not None
 
-from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, RuntimeSafetyError, SettingsStore, WorkspaceLocator
+from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, SettingsStore, WorkspaceLocator
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
 def _destroy_owned_window(case, window):
@@ -47,7 +48,7 @@ def _destroy_owned_window(case, window):
 
 def _offline_worker(*args, **kwargs):
     """Spawn-safe wrapper around the unchanged real worker, with network denied."""
-    from quantlab.desktop_runtime import _job_worker
+    from quantlab.research_core.adapters.job_worker import _job_worker
 
     with (
         patch('socket.create_connection', side_effect=AssertionError('TEST_ONLY: no network')),
@@ -160,7 +161,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
             'quantlab.research_core.application.analysis_operations.analysis_provider_for',
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('TEST_ONLY forbidden: ' + target)))
-        self.stack.enter_context(patch('quantlab.desktop_runtime._job_worker', _offline_worker))
+        self.stack.enter_context(patch('quantlab.research_core.adapters.job_worker._job_worker', _offline_worker))
         self.jobs = JobManager(self.paths)
         self.backups = BackupManager(self.paths, self.jobs)
         self.policy = _TestOnlyConflictPolicy(self.jobs, self.backups)
@@ -345,7 +346,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         (self.pending_folder / 'analysis.sqlite3').unlink()
         self.policy.observe_zero_for_contract_only()
         self.assertIsNone(self.jobs._quiesced_analysis)
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'subtree stop proof'):
                 self.jobs.start('ui_analysis_reconcile', {'analysis_id': self.pending_id, 'registration': 'a' * 32, 'stopped_job_id': 'not-an-original-job'})
             spawn.assert_not_called()

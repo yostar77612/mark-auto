@@ -4,6 +4,9 @@ Analysis documents keep their own schema. All sources and receipts here are
 manufactured offline fixtures; no inference, identity, or profit claim is made.
 """
 
+from quantlab.research_core.domain import saved_pool
+
+
 import copy
 from datetime import timedelta
 from pathlib import Path
@@ -86,7 +89,7 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
         value['provider']['descriptor']['source_sha256']['desktop_chatgpt_provider.py'] = 'f' * 64
         bad.append(value)
         for index, value in enumerate(bad):
-            with self.subTest(index=index), self.assertRaises(pools.SavedCandidatePoolError) as caught:
+            with self.subTest(index=index), self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                 pools._select_producer(value)
             self.assertEqual(caught.exception.reason_code, 'source_provider_provenance_invalid')
 
@@ -121,7 +124,7 @@ class AnalysisCapableProducerProfileTests(unittest.TestCase):
             changed['provider_receipts'][0].update(request_hash=content_hash(request), request_bytes=len(canonical_json(request).encode('utf-8')))
             write_source(folder, changed)
             before = {path: path.read_bytes() for path in folder.parent.rglob('*') if path.is_file()}
-            with self.assertRaises(pools.SavedCandidatePoolError) as caught:
+            with self.assertRaises(saved_pool.SavedCandidatePoolError) as caught:
                 self.admit(folder, reference, original)
             self.assertEqual(caught.exception.reason_code, 'source_provider_receipt_invalid')
             self.assertEqual(before, {path: path.read_bytes() for path in folder.parent.rglob('*') if path.is_file()})

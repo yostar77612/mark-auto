@@ -1,5 +1,7 @@
 """T16 fixed-code presentation and progress with in-memory workers only."""
 
+from quantlab.research_core.adapters import job_worker
+
 from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
 
 from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
@@ -20,7 +22,8 @@ from PySide6.QtWidgets import QApplication, QLabel
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QWidget
 from desktop_app.features.assistant.states import outcome_state, outcome_presentation, outcome_message, campaign_outcome
-from desktop_app.features.assistant.connection import ConnectionController, ConnectionEvent, ChatGPTConnectionPanel
+from desktop_app.features.assistant.connection import ConnectionController, ChatGPTConnectionPanel
+from quantlab.assistant.application.connection_contracts import ConnectionEvent
 from desktop_app.components.job_progress import JobProgress, JobFeedback
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.window import MainWindow
@@ -73,10 +76,10 @@ class FixedCodeTests(unittest.TestCase):
             sender = SimpleNamespace(send_bytes=lambda raw: packets.append(json.loads(raw)), close=Mock())
             with (
                 patch.object(runtime.sys, 'platform', 'win32'),
-                patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()),
-                patch.object(runtime, '_worker_operation_executor', return_value=Mock(side_effect=exc)),
+                patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
+                patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=Mock(side_effect=exc)),
             ):
-                runtime._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'fake')
+                job_worker._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'fake')
             self.assertEqual(packets[-1]['error_code'], expected)
             self.assertNotIn(SECRET, json.dumps(packets))
             sender.close.assert_called_once()

@@ -12,7 +12,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HAS_QT = importlib.util.find_spec('PySide6') is not None
 from quantlab.core import ValidationError, to_dict
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, validate_walk_forward_request
+from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
+from quantlab.research_core.application.job_requests import validate_walk_forward_request
 from quantlab.reporting import demo_config, save_dataset
 from tests.test_walk_forward import inputs
 
@@ -97,7 +98,7 @@ class SavedPoolDesktopGrammarTests(unittest.TestCase):
             'https://provider.example/original.json',
             'C:/Temp/bad' + chr(0) + '.json',
         )
-        with patch('quantlab.desktop_runtime.Path', PureWindowsPath):
+        with patch('quantlab.research_core.application.job_requests.Path', PureWindowsPath):
             for name in accepted:
                 source = local_source(name)
                 source_before = copy.deepcopy(source)
@@ -122,7 +123,7 @@ class SavedPoolDesktopGrammarTests(unittest.TestCase):
                 {'plan': {**saved, 'candidate_pool': to_dict(builtin)['candidate_pool']}, 'saved_source': source},
                 {'plan': saved, 'saved_source': source, 'provider': {'mode': 'fixture'}},
             ]
-            with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+            with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
                 for payload in invalid:
                     with self.assertRaises(RuntimeSafetyError):
                         manager.start('ui_walk_forward_preview', payload)
@@ -151,12 +152,13 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.payload = {'plan': self.plan, 'saved_source': self.source}
 
     def operation(self, name, payload=None):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         return execute_ui_operation('ui_walk_forward_' + name, payload or self.payload, self.paths)
 
     def test_every_candidate_and_attempt_preserved_without_scores_or_model_calls(self):
-        from desktop_app.features.walk_forward.presenter import preview_text, result_rows
+        from desktop_app.features.walk_forward.presenter import preview_text
+        from desktop_app.features.walk_forward.rows import result_rows
         from quantlab.core import canonical_json
         from tests.test_walk_forward import fake_worker
 
@@ -199,7 +201,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
             self.assertIn('completed', preview_text(result, advanced=True))
             self.assertEqual(result['status'], 'completed')
             self.assertEqual(result['folds'][0]['candidates'][0]['train']['status'], 'evaluated')
-            with patch('desktop_app.features.walk_forward.presenter.run_walk_forward', side_effect=AssertionError('No rerun')):
+            with patch('quantlab.research_core.application.walk_forward_operations.run_walk_forward', side_effect=AssertionError('No rerun')):
                 self.assertEqual(self.operation('read', {'reference': result['reference']}), result)
                 self.assertEqual(self.operation('run', {**self.payload, 'preview_identity': preview['preview_identity']}), result)
         self.assertEqual(self.original_path.read_bytes(), original_bytes)
@@ -241,7 +243,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.assertFalse((self.paths.state / 'walk_forward').exists())
 
     def test_relocated_workspace_cannot_silently_switch_to_fresh_registry(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from desktop_app.features.walk_forward.presenter import preview_text
 
         other = AppPaths(self.paths.root, Path(self.tmp.name) / 'different-bootstrap').ensure()
@@ -295,7 +297,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
         self.assertIn('未通過結構驗證', preview_text(preview))
 
     def test_same_cosmetic_name_preserves_distinct_candidates_and_exact_oos_attribution(self):
-        from desktop_app.features.walk_forward.presenter import result_rows
+        from desktop_app.features.walk_forward.rows import result_rows
         from quantlab.core import content_hash
         from quantlab.__main__ import config_from_json
         from quantlab.research import _campaign_config, validate_dsl
@@ -361,7 +363,7 @@ class SavedPoolAdapterTests(unittest.TestCase):
 
     def test_duplicate_rejection_is_plain_and_does_not_repeat_untrusted_text(self):
         from desktop_app.features.walk_forward.presenter import preview_text
-        from quantlab.saved_candidate_pool import SavedCandidatePoolError
+        from quantlab.research_core.domain.saved_pool import SavedCandidatePoolError
 
         with patch(
             'quantlab.saved_candidate_pool.admit_saved_campaign_pool', side_effect=SavedCandidatePoolError('untrusted body', 'source_duplicate_structure')
@@ -511,7 +513,7 @@ class SavedPoolHostTests(unittest.TestCase):
         self.assertIn('預覽已失效', w.walk_forward_status.text())
 
     def test_preview_local_status_and_rows_follow_pending_ready_rejected_and_stale(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         w, _ = self.prepare_source()
         w.walk_forward_results.set_rows([{'先前結果': '只屬於先前計畫'}])
@@ -574,7 +576,7 @@ class SavedPoolHostTests(unittest.TestCase):
         self.assertEqual(result['pool_admission']['real_model_status'], 'not_verified')
 
     def test_default_preview_hides_internal_binding_until_advanced_opened(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         w, _ = self.prepare_source()
         with patch.object(w.jobs, 'start', return_value='preview-job'):
@@ -600,7 +602,7 @@ class SavedPoolHostTests(unittest.TestCase):
         self.assertFalse(w.walk_forward_advanced.isHidden())
 
     def test_advanced_preview_round_trips_windows_backslashes_and_unicode(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from desktop_app.features.walk_forward.presenter import preview_text
         from quantlab.core import canonical_json
 
@@ -664,7 +666,8 @@ class SavedPoolSpawnSmokeTests(unittest.TestCase):
 
 class SavedPoolDesktopStaticTests(unittest.TestCase):
     def test_legacy_compact_report_defaults_missing_pool_fields(self):
-        from desktop_app.features.walk_forward.presenter import compact_walk_forward, result_rows
+        from desktop_app.features.walk_forward.presenter import compact_walk_forward
+        from desktop_app.features.walk_forward.rows import result_rows
         from quantlab.walk_forward import run_walk_forward
         from tests.test_walk_forward import fake_worker
 

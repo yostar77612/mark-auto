@@ -10,15 +10,8 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from quantlab.desktop_runtime import (
-    AppPaths,
-    BackupManager,
-    RuntimeSafetyError,
-    WorkspaceLocator,
-    WORKSPACE_FORMAT,
-    REPLAY_REQUIREMENT,
-    _write_workspace_format,
-)
+from quantlab.desktop_runtime import AppPaths, RuntimeSafetyError, WorkspaceLocator, WORKSPACE_FORMAT, REPLAY_REQUIREMENT, _write_workspace_format
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 GUARDED = {**WORKSPACE_FORMAT, 'sqlite_replay': REPLAY_REQUIREMENT}
 
@@ -464,7 +457,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
         with (
             patch('quantlab.desktop_runtime.os.fsync', side_effect=OSError('flush failed')),
             patch.object(manager, '_claim_walk_forward') as claim,
-            patch('quantlab.desktop_runtime.mp.get_context') as spawn,
+            patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn,
         ):
             with self.assertRaisesRegex(OSError, 'flush failed'):
                 manager.start('ui_walk_forward_run', payload)
@@ -489,7 +482,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
 
     def test_direct_adapter_guards_only_new_journal_before_core_call(self):
         import sys
-        import desktop_app.features.walk_forward.presenter as adapter
+        import quantlab.research_core.application.walk_forward_operations as adapter
         from tests.test_desktop_walk_forward_runtime import plan_payload
 
         identity = 'b' * 64
@@ -508,7 +501,9 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
             patch.object(adapter, 'run_walk_forward', side_effect=run),
         ):
             with self.assertRaisesRegex(RuntimeError, 'reached core'):
-                adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths, inputs=fake_ui)
+                adapter.execute_walk_forward(
+                    'ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths, dataset_loader=fake_ui._dataset
+                )
             folder = self.paths.state / 'walk_forward' / identity
             folder.mkdir(parents=True, exist_ok=True)
             (folder / 'walk_forward.sqlite3').write_bytes(b'old data')
@@ -520,7 +515,9 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
                 patch.object(adapter, 'compact_walk_forward', return_value={'old': True}),
             ):
                 self.assertEqual(
-                    adapter.execute_walk_forward('ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths, inputs=fake_ui),
+                    adapter.execute_walk_forward(
+                        'ui_walk_forward_run', {'plan': preview['plan'], 'preview_identity': identity}, self.paths, dataset_loader=fake_ui._dataset
+                    ),
                     {'old': True},
                 )
                 require.assert_not_called()

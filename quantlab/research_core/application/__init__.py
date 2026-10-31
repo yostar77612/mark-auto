@@ -1,0 +1,1 @@
+"""Research core application."""

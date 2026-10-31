@@ -13,7 +13,9 @@ import time
 import uuid
 from types import SimpleNamespace
 
-from quantlab.desktop_runtime import JobManager, RuntimeSafetyError, _WindowsProcessTree, _job_worker as _original_job_worker
+from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
+from quantlab.research_core.adapters.job_process import _WindowsProcessTree
+from quantlab.research_core.adapters.job_worker import _job_worker as _original_job_worker
 
 PREFIX = 'SMOKE_DIAGNOSTIC '
 STATUSES = {'passed', 'failed', 'completed', 'running', 'cancelled'}
@@ -161,14 +163,14 @@ def instrument_walk_forward(timings):
             setattr(owner, name, original)
 
 
-def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False):
+def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options):
     """Spawnable test-only observer; no changes to the real worker or its jobs."""
     if operation in {'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'}:
         from tests.generic_smoke_phase_diagnostics import diagnosed_generic_worker
 
-        return diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
+        return diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     if operation != 'ui_walk_forward_run':
-        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
+        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     # Preserve Job Object admission before importing or instrumenting work.
     if not gate.wait(15):
         return
@@ -187,7 +189,7 @@ def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, jo
     reporter.start()
     try:
         with timings.measure('worker.body'), instrument_walk_forward(timings):
-            return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
+            return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     finally:
         stop.set()
         reporter.join()

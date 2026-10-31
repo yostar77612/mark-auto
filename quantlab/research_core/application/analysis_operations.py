@@ -6,14 +6,14 @@ from quantlab.core import ValidationError, canonical_json, content_hash
 
 
 def analysis_plan(ports: UiOperationPorts, paths, request, *, emit=None):
-    from quantlab.desktop_runtime import validate_analysis_request
+    from quantlab.research_core.application.job_requests import validate_analysis_request
     from quantlab.research_analysis import build_analysis_packet, make_analysis_plan
 
     validate_analysis_request(request)
     ports.inputs.research_controls(paths)
     if emit:
         emit('progress', message=ports.text('ui.analysis_plan.recomputing_training_evidence'))
-    from quantlab.saved_candidate_pool import load_original_dataset
+    from quantlab.research_core.adapters.saved_pool_source import load_original_dataset
 
     data = load_original_dataset(Path(request['original_dataset']['path']))
     packet = build_analysis_packet(

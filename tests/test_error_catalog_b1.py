@@ -1,5 +1,8 @@
 """B1 catalogue and worker/log contract; no Qt windows or child processes."""
 
+from quantlab.research_core.adapters import job_worker
+
+
 import ast
 from contextlib import contextmanager, nullcontext
 import hashlib
@@ -233,10 +236,10 @@ class WorkerLogTests(unittest.TestCase):
                 sender = SimpleNamespace(send_bytes=lambda raw: packets.append(json.loads(raw)), close=Mock())
                 with (
                     patch.object(runtime.sys, 'platform', 'win32'),
-                    patch.object(runtime, '_worker_recovery_guard', return_value=nullcontext()),
-                    patch.object(runtime, '_worker_operation_executor', return_value=Mock(side_effect=exc)),
+                    patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
+                    patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=Mock(side_effect=exc)),
                 ):
-                    runtime._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'b1-offline')
+                    job_worker._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'b1-offline')
                 self.assertEqual(packets[-1]['error_code'], expected)
                 manager = self.manager(directory, packets)
                 manager.poll()

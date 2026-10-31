@@ -25,7 +25,7 @@ def sandbox_ui():
     def inherited(path, mode=0o777, *args, **kwargs):
         return mkdir(path, 0o777 if os.name == 'nt' else mode, *args, **kwargs)
 
-    with patch('os.mkdir', side_effect=inherited), patch('quantlab.assistant.adapters.chatgpt.auth.DPAPIVault._prepare'):
+    with patch('os.mkdir', side_effect=inherited), patch('quantlab.assistant.adapters.chatgpt.vault.DPAPIVault._prepare'):
         yield
 
 
@@ -93,7 +93,7 @@ class OnboardingTests(unittest.TestCase):
         self.assertFalse(self.settings.load()['onboarding_dismissed'])
 
     def test_progress_from_real_worker_outputs_and_selection(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         w = self.window
         execute_ui_operation('ui_demo', {'bars': 100}, self.paths)

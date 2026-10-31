@@ -414,7 +414,7 @@ diagnostics.diagnosed_generic_worker(None, gate, 'ui_campaign', {}, None, None, 
         arguments, options = launch.call_args
         self.assertEqual(options['timeout'], 40)
         code = arguments[0][2]
-        self.assertIn('runtime._job_worker = diagnosed_smoke_worker', code)
+        self.assertIn('job_worker._job_worker = diagnosed_smoke_worker', code)
         self.assertIn('tempfile.TemporaryDirectory.cleanup = fail_final', code)
         source = Path(__file__).with_name('test_desktop_smoke_terminal.py').read_text(encoding='utf-8')
         self.assertIn('self.assertLess(time.monotonic() - started, 40)', source)

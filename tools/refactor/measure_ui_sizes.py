@@ -14,7 +14,7 @@ INVENTORY = 'docs/analysis/08_REFACTOR_INVENTORY.md'
 
 def measure(root):
     paths = subprocess.check_output(
-        ['git', 'diff', '--name-only', '--diff-filter=AM', '6b78239', 'HEAD', '--', 'desktop_app/'],
+        ['git', 'diff', '--name-only', '--diff-filter=AM', '6b78239', '--', 'desktop_app/'],
         cwd=root,
         text=True,
         encoding='utf-8',

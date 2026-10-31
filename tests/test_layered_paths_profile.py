@@ -1,5 +1,8 @@
 """Exact reviewed mechanical-path profile; no credential or model operation."""
 
+from quantlab.research_core.domain import saved_pool
+
+
 import copy
 import hashlib
 import io
@@ -10,6 +13,7 @@ import unittest
 
 from quantlab import saved_candidate_pool as pools
 from quantlab.core import content_hash, to_dict
+from tests.core_split_source_fixtures import layered_source_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = pools.LAYERED_PATHS_SIWC_PROFILE_V1
@@ -52,13 +56,13 @@ class LayeredPathsProfileTests(unittest.TestCase):
         for current, old in zip(restored['chatgpt_plan_implementations'], previous['chatgpt_plan_implementations']):
             current['source_sha256'] = to_dict(old['source_sha256'])
         self.assertEqual(restored, previous)
-        self.assertIs(pools.SUPPORTED_PRODUCERS[-1], PROFILE)
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 29)
+        self.assertIs(pools.SUPPORTED_PRODUCERS[-2], PROFILE)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 30)
 
     def test_exact_current_lf_crlf_sources_and_original_manifest(self):
         for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):
             for name, path in SOURCES.items():
-                raw = (ROOT / path).read_bytes().replace(b'\r\n', b'\n')
+                raw = layered_source_bytes(path).replace(b'\r\n', b'\n')
                 raw = raw.replace(b'\n', b'\r\n') if index else raw
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), implementation['source_sha256'][name])
             raw = (ROOT / 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json').read_bytes().replace(b'\r\n', b'\n')
@@ -71,7 +75,7 @@ class LayeredPathsProfileTests(unittest.TestCase):
 
     def test_current_engine_text_identity_is_newline_independent(self):
         for name, expected in PROFILE['engine_source_hashes'].items():
-            raw = (ROOT / 'quantlab' / name).read_bytes().replace(b'\r\n', b'\n')
+            raw = layered_source_bytes('quantlab/' + name).replace(b'\r\n', b'\n')
             for source in (raw, raw.replace(b'\n', b'\r\n')):
                 with io.TextIOWrapper(io.BytesIO(source), encoding='utf-8') as stream:
                     self.assertEqual(content_hash(stream.read()), expected, name)
@@ -79,7 +83,9 @@ class LayeredPathsProfileTests(unittest.TestCase):
     def test_actual_raw_sources_select_only_the_exact_host_target(self):
         value = binding()
         descriptor = value['provider']['descriptor']
-        descriptor['source_sha256'] = {name: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for name, path in SOURCES.items()}
+        manifest = (ROOT / 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json').read_bytes()
+        eol = b'\r\n' if b'\r\n' in manifest else b'\n'
+        descriptor['source_sha256'] = {name: hashlib.sha256(layered_source_bytes(path).replace(b'\n', eol)).hexdigest() for name, path in SOURCES.items()}
         descriptor['dependency_manifest_sha256'] = hashlib.sha256(
             (ROOT / 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json').read_bytes()
         ).hexdigest()
@@ -91,7 +97,7 @@ class LayeredPathsProfileTests(unittest.TestCase):
         if target in supported:
             self.assertIs(pools._select_producer(value), PROFILE)
         else:
-            with self.assertRaises(pools.SavedCandidatePoolError):
+            with self.assertRaises(saved_pool.SavedCandidatePoolError):
                 pools._select_producer(value)
 
     def test_original_g3_checkout_and_linux_crlf_restrictions_remain(self):
@@ -101,7 +107,7 @@ class LayeredPathsProfileTests(unittest.TestCase):
         for target in ('linux-cp311-x86_64', 'linux-cp312-x86_64'):
             value = binding(1)
             value['provider']['descriptor']['dependency_target'] = target
-            with self.assertRaises(pools.SavedCandidatePoolError):
+            with self.assertRaises(saved_pool.SavedCandidatePoolError):
                 pools._select_producer(value)
 
     def test_unknown_tampered_mixed_and_unsupported_tuples_fail_closed(self):
@@ -126,7 +132,7 @@ class LayeredPathsProfileTests(unittest.TestCase):
             variants.append(changed)
             for changed in variants:
                 with self.subTest(index=index, descriptor=changed['provider']['descriptor']):
-                    with self.assertRaises(pools.SavedCandidatePoolError):
+                    with self.assertRaises(saved_pool.SavedCandidatePoolError):
                         pools._select_producer(changed)
         with self.assertRaises(TypeError):
             PROFILE['chatgpt_plan_implementations'][0]['source_sha256']['desktop_chatgpt_provider.py'] = 'f' * 64

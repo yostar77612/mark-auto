@@ -21,7 +21,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HAS_QT = importlib.util.find_spec('PySide6') is not None
 
-from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore, WorkspaceLocator
+from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, WorkspaceLocator
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 from quantlab import analysis_recovery as recovery
 from tests import test_restart_availability_contract as contract
 from tests.test_restart_availability_contract import _offline_worker, _snapshot
@@ -68,7 +69,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
             'quantlab.research_core.application.analysis_operations.analysis_provider_for',
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('No recovery UI network/provider')))
-        self.stack.enter_context(patch('quantlab.desktop_runtime._job_worker', _offline_worker))
+        self.stack.enter_context(patch('quantlab.research_core.adapters.job_worker._job_worker', _offline_worker))
         self.jobs = JobManager(self.paths)
         self.backups = BackupManager(self.paths, self.jobs)
         self.window = MainWindow(
@@ -146,7 +147,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         self.assertEqual(self.panel.scheduler.path.read_bytes(), before)
         self.assertFalse(self.panel.paused, 'Expected quarantine is a deferral, not a failed attempt')
         self.assertEqual(self._protected(), self.protected)
-        with patch('quantlab.desktop_runtime.mp.get_context') as spawn:
+        with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             for operation in recovery.SOURCE_WRITERS | recovery.ANALYSIS_STARTS | recovery.WORKSPACE_MUTATIONS:
                 if operation.startswith('ui_'):
                     with self.subTest(operation=operation), self.assertRaises(recovery.RecoveryError):

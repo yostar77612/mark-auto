@@ -24,14 +24,14 @@ class WizardTests(unittest.TestCase):
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
     def wizard(self, bars=960):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         execute_ui_operation('ui_demo', {'bars': bars}, self.paths)
         self.window.refresh_views()
         return self.window.strategy_page.wf_wizard
 
     def preview(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
 
         page = self.window.strategy_page
         with patch.object(page.host, 'start_job', return_value='preview-job'):
@@ -179,13 +179,13 @@ class WizardTests(unittest.TestCase):
 
         rows = [{'贏家': '第 4 個', '最大回撤': None}]
         result = {'folds': [{'winner_pool_index': 3}]}
-        with patch('desktop_app.features.walk_forward.presenter.result_rows', return_value=rows):
+        with patch('desktop_app.features.walk_forward.rows.result_rows', return_value=rows):
             displayed = display_result_rows(result)
         self.assertEqual(displayed[0]['贏家'], '候選 4')
         self.assertIsNone(displayed[0]['最大回撤'])
 
     def test_reopening_consumed_plan_never_retries_oos(self):
-        from desktop_app.shell.main_window import execute_ui_operation
+        from desktop_app.connection_composition import execute_ui_operation
         from tests.test_desktop_walk_forward import fake_worker
 
         wizard = self.wizard(240)

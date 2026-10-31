@@ -35,6 +35,11 @@ from desktop_app.smoke import (
 )
 
 
+from desktop_app.connection_composition import configure as configure_connection
+
+configure_connection()
+
+
 def _prepare_startup_workspace(paths, backups):
     """Serialize startup recovery; an unresolved analysis is not a global lockout."""
     from quantlab.analysis_recovery import admission, inspect_recovery, recover_control_journal, RecoveryError
@@ -145,7 +150,8 @@ def acquire_instance_lock(locator, smoke_startup_directory=None):
 
 
 def prepare_workspace(state):
-    from quantlab.desktop_runtime import BackupManager, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
+    from quantlab.desktop_runtime import JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex
 
     state.installation_guard = WindowsAppMutex()
     state.paths = state.locator.load(probe=False)
@@ -179,17 +185,8 @@ def run_gui(args):
     from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer
     from PySide6.QtWidgets import QApplication, QMessageBox
     from quantlab import __version__
-    from quantlab.desktop_runtime import (
-        AppPaths,
-        BackupManager,
-        JobManager,
-        RuntimeGuard,
-        SettingsStore,
-        WorkspaceLocator,
-        WindowsAppMutex,
-        atomic_write,
-        _json_bytes,
-    )
+    from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex, atomic_write, _json_bytes
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
 
     # Keep existing dependency imports in place; measure only GUI initialization.
     from quantlab.startup_timing import StartupTiming

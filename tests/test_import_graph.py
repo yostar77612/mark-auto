@@ -275,8 +275,8 @@ class ImportGraphTests(unittest.TestCase):
         self.assertIs(cli.config_from_json, configuration.config_from_json)
         for module, name in (
             (runtime, 'WindowsAppMutex'),
-            (runtime, '_job_worker'),
-            (runtime, '_worker_recovery_guard'),
+            (importlib.import_module('quantlab.research_core.adapters.job_worker'), '_job_worker'),
+            (importlib.import_module('quantlab.research_core.adapters.job_worker'), '_worker_recovery_guard'),
             (recovery, 'WindowsAnalysisRecoveryTree'),
         ):
             with self.subTest(name=name):

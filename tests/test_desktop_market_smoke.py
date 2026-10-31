@@ -161,7 +161,14 @@ class MarketSmokeWidgetTests(unittest.TestCase):
             self.assertEqual(market['status'], 'passed')
             self.assertEqual([row['operation'] for row in market['steps']], ['manual_export', 'manual_import'])
             self.assertTrue(all(row['passed'] for row in market['steps']))
-            self.assertEqual(len(market['engine_source_hashes']), 5)
+            self.assertEqual(
+                set(market['engine_source_hashes']),
+                {'research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py', 'research_core/domain/receipts.py'},
+            )
+            from quantlab.core import to_dict
+            from quantlab.saved_candidate_pool import CORE_SPLIT_SIWC_PROFILE_V1
+
+            self.assertEqual(market['engine_source_hashes'], to_dict(CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']))
             self.assertEqual(market['real_model_status'], 'not_verified')
             self.assertEqual(market['source_type'], 'synthetic')
             history = value['history_smoke']

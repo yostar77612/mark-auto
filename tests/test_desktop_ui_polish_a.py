@@ -13,7 +13,8 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QLabel, QMessageBox, QHeaderView
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
+from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 from desktop_app.shell.window import MainWindow
 from tests.snapshot_cache import default_metrics
 

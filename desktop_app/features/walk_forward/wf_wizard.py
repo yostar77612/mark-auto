@@ -35,7 +35,7 @@ def duration_estimate_text(evaluations, per_evaluation_seconds=MEASURED_EVALUATI
 
 def display_result_rows(result):
     """Readable candidate identity without changing the journal projection."""
-    from desktop_app.features.walk_forward.presenter import result_rows
+    from desktop_app.features.walk_forward.rows import result_rows
 
     rows = result_rows(result)
     winner_key = ui_text('walk_forward.result_rows.winner')
@@ -276,7 +276,7 @@ class WalkForwardWizard(QWidget):
                 _, plan = page._walk_forward_input_key()
                 count = self.bar_count()
                 from quantlab.walk_forward import _validate_source
-                from quantlab.desktop_runtime import validate_walk_forward_request
+                from quantlab.research_core.application.job_requests import validate_walk_forward_request
 
                 chronology = validate_walk_forward_request(plan, page._walk_forward_saved_source())
                 _validate_source(page.host.dataset(page.state.root, {}), chronology)

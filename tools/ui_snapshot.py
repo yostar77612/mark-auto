@@ -212,7 +212,8 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
     from PySide6.QtCore import QCoreApplication, QEvent, QLocale, QTimer
     from PySide6.QtGui import QFont, QFontDatabase
     from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QScrollArea
-    from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
+    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
     from desktop_app.shell.main_window import create_window
 
     out = Path(out)

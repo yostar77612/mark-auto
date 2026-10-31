@@ -1,11 +1,10 @@
 """Local discovered-catalog controls; never discover, probe or infer capabilities."""
 
+from quantlab.assistant.application.context_usage import context_usage
 import re
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QLabel
-
-from desktop_app.features.assistant.connection import MODEL
+from quantlab.assistant.application.connection_contracts import MODEL
 from desktop_app.strings.catalog import ui_text
 
 
@@ -15,20 +14,9 @@ def advertised_efforts(controller, slug):
     values = row.get('reasoning_efforts', ()) if type(row) is dict else ()
     if type(values) not in (list, tuple) or len(values) > 16:
         return ()
-    if any(type(v) is not str or re.fullmatch(r'[a-z][a-z0-9_-]{0,31}', v) is None for v in values):
+    if any((type(v) is not str or re.fullmatch('[a-z][a-z0-9_-]{0,31}', v) is None for v in values)):
         return ()
     return tuple(dict.fromkeys(values))
-
-
-def context_usage(usage):
-    """Only explicit provider context counters; token totals aren't a limit."""
-    if type(usage) is not dict or set(usage) != {'used', 'limit'}:
-        return None
-    used, limit = usage['used'], usage['limit']
-    if type(used) is not int or type(limit) is not int or not -(2**53) <= used <= 2**53 or not 1 <= limit <= 2**53:
-        return None
-    percent = max(0, min(100, (used * 200 + limit) // (2 * limit)))
-    return used, limit, percent
 
 
 class ModelControls:
@@ -74,7 +62,7 @@ class ModelControls:
         if linked is not None and linked.currentData() in models:
             chosen = linked.currentData()
         preference = None
-        if models and not self.restored:
+        if models and (not self.restored):
             self.restored = True
             try:
                 saved = self.settings.load() if callable(getattr(self.settings, 'load', None)) else {}
@@ -131,19 +119,18 @@ class ModelControls:
         if linked is not None:
             index = linked.findData(self.model.currentData())
             if index >= 0 and linked.currentIndex() != index:
-                # Reuse D9 invalidation and campaign-usage invalidation signals.
                 linked.setCurrentIndex(index)
         self.binding = None
         self.refresh()
         self.persist()
 
     def validate(self):
-        slug, effort = self.model.currentData(), self.effort.currentData()
+        slug, effort = (self.model.currentData(), self.effort.currentData())
         if type(slug) is not str or re.fullmatch(MODEL, slug) is None or slug not in getattr(self.controller, 'models', ()):
             raise ValueError('agent_tool_refused')
         if effort is not None and effort not in advertised_efforts(self.controller, slug):
             raise ValueError('agent_tool_refused')
-        return slug, effort
+        return (slug, effort)
 
     def persist(self, *_):
         try:

@@ -51,7 +51,8 @@ def summarize(session, *, ok, error=None, http_status=None, elapsed, include_see
 
 def _reference(registration, bootstrap):
     """The active (or given) sign-in reference and its local readiness; never a token."""
-    from quantlab.assistant.adapters.chatgpt.auth import AuthSession, DPAPIVault, OAuthCredentialReference
+    from quantlab.assistant.adapters.chatgpt.auth import AuthSession, OAuthCredentialReference
+    from quantlab.assistant.adapters.chatgpt.vault import DPAPIVault
     from quantlab.assistant.adapters.chatgpt.provider import read_account_status
     from quantlab.desktop_runtime import AppPaths
 
@@ -74,7 +75,8 @@ def _reference(registration, bootstrap):
 
 def list_models(*, registration=None, bootstrap=None, reference=None, discover=None):
     """One model-catalog read, as the settings page does: no web search and no inference."""
-    from quantlab.assistant.adapters.chatgpt.provider import PlanError, discover_models
+    from quantlab.assistant.domain.plan_protocol import PlanError
+    from quantlab.assistant.adapters.chatgpt.provider import discover_models
 
     if reference is None:
         reference, error = _reference(registration, bootstrap)
@@ -95,7 +97,9 @@ def list_models(*, registration=None, bootstrap=None, reference=None, discover=N
 
 
 def run(model, *, registration=None, bootstrap=None, transport=None, reference=None, clock=time.monotonic):
-    from quantlab.assistant.adapters.chatgpt.provider import PlanError, SSEParser, PlanHTTPTransport
+    from quantlab.assistant.domain.plan_protocol import PlanError
+    from quantlab.assistant.adapters.chatgpt.response_stream import SSEParser
+    from quantlab.assistant.adapters.chatgpt.transport import PlanHTTPTransport
 
     if reference is None:
         reference, error = _reference(registration, bootstrap)

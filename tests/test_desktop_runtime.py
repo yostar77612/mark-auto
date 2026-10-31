@@ -8,17 +8,8 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from quantlab.desktop_runtime import (
-    AppPaths,
-    BackupManager,
-    CredentialVault,
-    JobManager,
-    RuntimeGuard,
-    RuntimeSafetyError,
-    SettingsStore,
-    WorkspaceLocator,
-    RedactedEventLog,
-)
+from quantlab.desktop_runtime import AppPaths, CredentialVault, JobManager, RuntimeGuard, RuntimeSafetyError, SettingsStore, WorkspaceLocator, RedactedEventLog
+from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
 class RuntimeTests(unittest.TestCase):
@@ -174,7 +165,7 @@ class RuntimeTests(unittest.TestCase):
     def test_restore_rolls_back_failed_promotion(self):
         (self.paths.state / 'keep').write_text('safe')
         archive = self._archive('new')
-        from quantlab.desktop_runtime import _durable_replace
+        from quantlab.runtime_support import _durable_replace
 
         real_replace = _durable_replace
 
@@ -183,7 +174,7 @@ class RuntimeTests(unittest.TestCase):
                 raise OSError('injected failure')
             return real_replace(source, dest)
 
-        with patch('quantlab.desktop_runtime._durable_replace', side_effect=fail_promotion):
+        with patch('quantlab.research_core.adapters.workspace_backup._durable_replace', side_effect=fail_promotion):
             with self.assertRaises(OSError):
                 self.backups.restore(archive)
         self.assertEqual((self.paths.state / 'keep').read_text(), 'safe')
@@ -666,7 +657,7 @@ class WindowsRuntimeTests(unittest.TestCase):
         supervisor = "\n".join(
             [
                 'import subprocess,sys,time',
-                'from quantlab.desktop_runtime import _WindowsProcessTree',
+                'from quantlab.research_core.adapters.job_process import _WindowsProcessTree',
                 f'p=subprocess.Popen([sys.executable,"-c",{worker!r}],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)',
                 'tree=_WindowsProcessTree(p.pid)',
                 'p.stdin.write("start\\n"); p.stdin.flush()',

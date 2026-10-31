@@ -7,7 +7,7 @@ import unittest
 import unittest.mock
 from unittest.mock import patch
 
-from quantlab.assistant.adapters.chatgpt.provider import PlanError
+from quantlab.assistant.domain.plan_protocol import PlanError
 from quantlab.idea_research import new_task
 from quantlab.idea_search import (
     AccountPaused,
@@ -220,7 +220,7 @@ class AccountStatusTests(unittest.TestCase):
         status = {'state': 'reserved_unknown', 'pending': True}
         with (
             patch('quantlab.assistant.adapters.chatgpt.auth.AuthSession') as session,
-            patch('quantlab.assistant.adapters.chatgpt.auth.DPAPIVault'),
+            patch('quantlab.assistant.adapters.chatgpt.vault.DPAPIVault'),
             patch('quantlab.assistant.adapters.chatgpt.provider.read_account_status', return_value=status),
             patch('quantlab.assistant.adapters.chatgpt.provider.discover_models', side_effect=AssertionError('no network')),
             patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('no network')),

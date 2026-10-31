@@ -22,7 +22,7 @@ class DesktopOperationPorts:
 
     @property
     def backups(self):
-        import quantlab.desktop_runtime as implementation
+        import quantlab.research_core.adapters.workspace_backup as implementation
 
         return implementation
 
@@ -34,9 +34,18 @@ class DesktopOperationPorts:
 
     @property
     def connection(self):
-        import desktop_app.features.assistant.connection as implementation
+        from types import SimpleNamespace
+        from quantlab.assistant.application import connection_contracts
+        from quantlab.assistant.adapters.chatgpt.connection_worker import run_connection_request
 
-        return implementation
+        return SimpleNamespace(
+            ConnectionEvent=connection_contracts.ConnectionEvent,
+            ConnectionRequest=connection_contracts.ConnectionRequest,
+            ReconciliationEvent=connection_contracts.ReconciliationEvent,
+            SubscriptionOptions=connection_contracts.SubscriptionOptions,
+            TestConnectionEvent=connection_contracts.TestConnectionEvent,
+            run_connection_request=run_connection_request,
+        )
 
     @property
     def data_import(self):

@@ -8,7 +8,7 @@ import threading
 import time
 from unittest.mock import patch
 
-from quantlab.desktop_runtime import _job_worker as _original_job_worker
+from quantlab.research_core.adapters.job_worker import _job_worker as _original_job_worker
 from tests.smoke_timeout_diagnostics import PREFIX, WorkerTimings, instrument_walk_forward
 
 OPERATIONS = frozenset({'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'})
@@ -94,10 +94,10 @@ def instrument_generic_operations(timings):
         yield
 
 
-def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False):
+def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options):
     """Keep the actual ownership gate and worker; retain its failure-time phases."""
     if operation not in OPERATIONS:
-        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted)
+        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     timings = GenericTimings(operation)
     stop = threading.Event()
     stack = ExitStack()
@@ -143,7 +143,7 @@ def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, 
 
     try:
         with timings.measure('worker.body'):
-            return _original_job_worker(sender, Gate(), operation, payload, root, bootstrap, job_id, reconciliation_admitted)
+            return _original_job_worker(sender, Gate(), operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     finally:
         try:
             restore()

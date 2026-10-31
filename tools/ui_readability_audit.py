@@ -124,7 +124,8 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
 
     import desktop_app.shell.theme
     from desktop_app.shell.main_window import create_window
-    from quantlab.desktop_runtime import AppPaths, BackupManager, JobManager, SettingsStore
+    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+    from quantlab.research_core.adapters.workspace_backup import BackupManager
 
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)

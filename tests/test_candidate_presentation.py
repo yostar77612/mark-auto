@@ -135,7 +135,8 @@ class CandidatePresentationHostTests(unittest.TestCase):
 
     def test_actual_verified_candidate_keeps_full_advanced_provenance(self):
         from tests.saved_pool_fixtures import make_saved_source
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, BackupManager
+        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_backup import BackupManager
         from quantlab.reporting import save_dataset
         from desktop_app.shell.window import MainWindow
         from quantlab.research_core.application.ui_operations.data import candidate_record

@@ -1,5 +1,8 @@
 """Literal scalar-dispatch provenance; synthetic receipts only, no model calls."""
 
+from quantlab.research_core.domain import saved_pool
+
+
 import hashlib
 from datetime import timedelta
 from pathlib import Path
@@ -87,20 +90,20 @@ class ScalarProducerProfileTests(unittest.TestCase):
             bad['provider']['descriptor']['source_sha256'] = to_dict(
                 pools.SIWC_SUBSCRIPTION_SAFETY_PROFILE_V1['chatgpt_plan_implementations'][index]['source_sha256']
             )
-            with self.assertRaises(pools.SavedCandidatePoolError):
+            with self.assertRaises(saved_pool.SavedCandidatePoolError):
                 pools._select_producer(bad)
             for name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py'):
                 bad = binding(CHATGPT, index)
                 bad['provider']['descriptor']['source_sha256'][name] = CHATGPT['chatgpt_plan_implementations'][1 - index]['source_sha256'][name]
-                with self.assertRaises(pools.SavedCandidatePoolError):
+                with self.assertRaises(saved_pool.SavedCandidatePoolError):
                     pools._select_producer(bad)
         for index, target in [(0, 'windows-cp314-amd64'), (1, 'linux-cp312-x86_64')]:
-            with self.assertRaises(pools.SavedCandidatePoolError):
+            with self.assertRaises(saved_pool.SavedCandidatePoolError):
                 pools._select_producer(binding(CHATGPT, index, target))
         for name in TRANSPORT['engine_source_hashes']:
             bad = binding(CHATGPT)
             bad['engine_source_hashes'][name] = 'f' * 64
-            with self.assertRaises(pools.SavedCandidatePoolError):
+            with self.assertRaises(saved_pool.SavedCandidatePoolError):
                 pools._select_producer(bad)
 
     def test_full_new_profiles_admit_exact_results_without_rewrite(self):
@@ -150,5 +153,5 @@ class ScalarProducerProfileTests(unittest.TestCase):
                     root = Path(temporary) / f"{base['protocol']}-{index}"
                     make = make_chatgpt_source if base is CHATGPT else make_saved_source
                     folder, ref, original, _ = make(root, producer=profile, candidates=1)
-                    with self.assertRaises(pools.SavedCandidatePoolError):
+                    with self.assertRaises(saved_pool.SavedCandidatePoolError):
                         self.admit(folder, ref, original)

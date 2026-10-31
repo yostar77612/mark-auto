@@ -413,7 +413,7 @@ class ExpiryInputTests(unittest.TestCase):
 
         with (
             patch('os.mkdir', side_effect=inherited),
-            patch('quantlab.assistant.adapters.chatgpt.auth.DPAPIVault._prepare'),
+            patch('quantlab.assistant.adapters.chatgpt.vault.DPAPIVault._prepare'),
             tempfile.TemporaryDirectory(prefix='t9-widgets-') as folder,
         ):
             paths = AppPaths(Path(folder) / 'workspace').ensure()
