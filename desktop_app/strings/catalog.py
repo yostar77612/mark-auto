@@ -64,7 +64,6 @@ ZH_TW.update(_ZH_TW_CHUNKS[13])
 ZH_TW.update(_ZH_TW_CHUNKS[14])
 
 ZH_TW.update(_ZH_TW_CHUNKS[15])
-ZH_TW.update(_ZH_TW_CHUNKS[57])
 
 LOCALES = {DEFAULT_LOCALE: ZH_TW}
 
@@ -201,9 +200,17 @@ ZH_TW.update(_ZH_TW_CHUNKS[54])
 
 # Lane LM1 dashboard
 ZH_TW.update(_ZH_TW_CHUNKS[55])
+
+# Lane M1-U: reviewed presentation corrections.
+ZH_TW.update(_ZH_TW_CHUNKS[60])
+
+# Lane M1-1: independent market connection.
+ZH_TW.update(_ZH_TW_CHUNKS[57])
+
+# Lane M1-2: market terminal.
 ZH_TW.update(_ZH_TW_CHUNKS[56])
 
-# M1 alert controls
+# Lane M1-3: typed alert controls.
 ZH_TW.update(_ZH_TW_CHUNKS[58])
 
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')

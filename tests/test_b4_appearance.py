@@ -53,7 +53,7 @@ class AppearanceTests(unittest.TestCase):
     # focus rules. Keep an exact new app pin and the unchanged market pin.
     def test_default_stylesheets_match_reviewed_ui_bytes(self):
         for builder, digest in (
-            (theme.build_app_stylesheet, 'f4bc1159f8d0113902449efb3a34e7340ba40a422037bbd379d82109cd053b2e'),
+            (theme.build_app_stylesheet, '3a7bd18cc5c230d1fe212512a28c4e6d6430b80301ac53174054df979c054676'),
             (theme.build_market_stylesheet, '7ce3a6cb5bc9c2c0eab3fdffc4fc4139327db3a3e9c546661f1b0ef5cde205cf'),
         ):
             self.assertEqual(hashlib.sha256(builder().encode()).hexdigest(), digest)

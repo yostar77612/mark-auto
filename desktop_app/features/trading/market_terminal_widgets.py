@@ -73,7 +73,7 @@ def chart_panel(host):
     ):
         item = button('watch_period_' + period, text)
         item.setCheckable(True)
-        item.setStyleSheet('QPushButton:checked {background:#dceaff;border-color:#185db8;}')
+        item.setProperty('terminalPeriod', True)
         item.clicked.connect(lambda checked=False, selected=period: host.select_period(selected))
         host.period_buttons[period] = item
         controls.addWidget(item)

@@ -1,0 +1,434 @@
+{
+  "scope": "M1-U only: native advanced disclosures, passive header badge, comparison empty state and reviewed captions. Historical R7 data, painter counts, pixels, call order, errors and eight result snapshots remain exact.",
+  "widget_names_added": [
+    "saved_results_empty"
+  ],
+  "focus": {
+    "removed": [
+      {
+        "row": [
+          "onboarding_go_backtest",
+          "回測 · 待完成",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "onboarding_go_data",
+          "資料 · 待完成",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "onboarding_go_strategy",
+          "策略 · 待完成",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "qt_spinbox_lineedit",
+          "歷史重播長度",
+          ""
+        ],
+        "count": 1
+      }
+    ],
+    "added": [
+      {
+        "row": [
+          "onboarding_go_backtest",
+          "回測結果 · 待完成",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "onboarding_go_data",
+          "資料 · 進行中",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "onboarding_go_strategy",
+          "策略中心 · 待完成",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "qt_spinbox_lineedit",
+          "本次重播 K 棒數",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "saved_results_empty",
+          "尚無保存的回測結果，先到回測頁執行",
+          ""
+        ],
+        "count": 1
+      }
+    ]
+  },
+  "refresh_states": [
+    {
+      "removed": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ▸",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ],
+      "added": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ›",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測結果 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 進行中",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略中心 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "saved_results_empty",
+            "尚無保存的回測結果，先到回測頁執行",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ▸",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ],
+      "added": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ›",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測結果 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 進行中",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略中心 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "saved_results_empty",
+            "尚無保存的回測結果，先到回測頁執行",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ▸",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測 · 已完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ],
+      "added": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ›",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測結果 · 已完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 進行中",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略中心 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "saved_results_empty",
+            "尚無保存的回測結果，先到回測頁執行",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ▸",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測 · 已完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ],
+      "added": [
+        {
+          "row": [
+            "market_diagnostics_toggle",
+            "進階・資料來源與診斷 ›",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_backtest",
+            "回測結果 · 已完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_data",
+            "資料 · 進行中",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "onboarding_go_strategy",
+            "策略中心 · 待完成",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "saved_results_empty",
+            "尚無保存的回測結果，先到回測頁執行",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

@@ -47,7 +47,7 @@ COLORS = {
     'danger': '#ff8282',
 }
 FONT_SIZES = {'body': 14, 'hint': 12, 'page_title': 22, 'market_title': 20}
-NUMERIC_FONT_FAMILY = 'monospace'
+NUMERIC_FONT_FAMILY = 'Microsoft JhengHei UI'
 SPACING = {'label': 3, 'input': 7, 'button_vertical': 9, 'button_horizontal': 14}
 STATUS_COLORS = {state: COLORS[state] for state in ('success', 'warning', 'danger', 'neutral')}
 
@@ -284,7 +284,7 @@ QMainWindow, QScrollArea, QStackedWidget { background: @background@; }
 QWidget { background: @background@; font-family: "Microsoft JhengHei UI", "Noto Sans CJK TC", sans-serif; font-size: @font_body@px; color: @text@; }
 QScrollArea { border: none; }
 QWidget#app_header { border-bottom: 1px solid @table_grid@; padding-bottom: 6px; }
-QLabel#header_live_disabled { color: @hint_text@; border: 1px solid @table_grid@; border-radius: 5px; padding: 5px 9px; }
+QLabel#header_live_disabled { color: @hint_text@; border:0; padding:2px 6px; font-weight:600; }
 QLabel#header_job_state, QLabel#status { color: @hint_text@; }
 QFrame[designCard="true"] { background: @input_background@; border: 1px solid @table_grid@; border-radius: 10px; }
 QFrame[designCard="true"] QLabel { background: transparent; }
@@ -296,12 +296,16 @@ QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 5px; }
 QLabel { padding: @space_label@px 0; }
 QWidget[resultCard="true"] { background: @input_background@; border: 1px solid @input_border@; border-radius: 6px; }
 QLabel[kpiValue="true"] { font-size: 18px; font-weight: bold; }
-QListWidget { background: @navigation_background@; color: @navigation_text@; border: none; border-radius: 9px; padding: 9px; }
+QListWidget { background: @navigation_background@; color: @navigation_text@; border: none; border-radius: 9px; padding: 9px; outline:0; }
+QListWidget:focus { border:1px solid @focus_border@; }
+QListWidget::item:focus { outline:0; border:0; }
 QListWidget::item { padding: 12px 8px; border-radius: 5px; }
 QListWidget::item:selected { background: @navigation_selection@; color: white; }
 QPushButton { background: transparent; color: @text@; border: 1px solid @button_border@; border-radius: 6px; padding: @space_button_vertical@px @space_button_horizontal@px; min-height: 20px; }
 QPushButton[role="primary"] { background: @primary@; color: white; border: 1px solid @primary@; }
-QPushButton[role="taskChoice"]:checked { background: @primary@; color: white; border: 1px solid @primary@; }
+QPushButton[role="taskChoice"]:checked { background:@tab_selection@; color:@text@; border:0; border-bottom:3px solid @focus_border@; }
+QPushButton[themePart="strategyTab"] { border:0; border-radius:0; border-bottom:3px solid transparent; background:transparent; }
+QPushButton[themePart="strategyTab"]:checked { background:@tab_selection@; color:@text@; border-bottom:3px solid @focus_border@; }
 QPushButton[role="danger"] { background: @danger_background@; color: white; border: 1px solid @danger_border@; }
 QLabel[prerequisite="true"] { color: @hint_text@; font-size: @font_hint@px; }
 QPushButton:hover { background: @button_hover@; }
@@ -328,9 +332,13 @@ QProgressBar::chunk { background: @primary@; }
 QPushButton[role="secondary"] { background: transparent; color: @text@; border: 1px solid @button_border@; }
 QPushButton[role="secondary"]:hover { background: @button_hover@; }
 QPushButton[role="secondary"]:disabled { background: @muted_background@; color: @disabled_text@; }
+QPushButton[themePart="strategyTab"] { border:0; border-radius:0; border-bottom:3px solid transparent; background:transparent; }
+QPushButton[themePart="strategyTab"]:checked { background:@tab_selection@; color:@text@; border-bottom:3px solid @focus_border@; }
 QPushButton[role="onboardingChip"], QPushButton#onboarding_dismiss { padding:2px 8px; min-height:20px; }
 QPushButton[role="onboardingChip"][state="done"] { color:@success@; border-color:@success@; }
 QPushButton[role="onboardingChip"][state="pending"] { color:@text@; border-color:@button_border@; }
+QPushButton[role="onboardingChip"][state="progress"] { color:@warning@; border-color:@warning@; }
+QPushButton[role="onboardingChip"][current="true"] { border-bottom:3px solid @focus_border@; }
 QWidget[role="asyncStatus"][state="error"] QLabel { color:@danger@; }
 QWidget[role="asyncStatus"][state="stale"] QLabel { color:@warning@; }
 QWidget[role="asyncStatus"][state="loading"] QLabel { color:@hint_text@; }
@@ -405,6 +413,8 @@ def apply_theme(target=None):
                 set_theme_property(widget, 'themePart', widget.property('themePart'))
             if widget.objectName() == 'market_dashboard':
                 apply_market_theme(widget)
+            if widget.objectName() == 'market_terminal':
+                _apply_terminal_theme(widget)
             if isinstance(widget, QLabel) and widget.property('financialSign') is not None:
                 _refresh_financial_label(widget)
             if isinstance(widget, QTableWidget):
@@ -439,3 +449,40 @@ def set_status(widget, state):
 def status_for_color(color):
     """Bridge the existing stop_presentation colour contract without changing it."""
     return next(state for state, value in STATUS_COLORS.items() if value == color)
+
+
+_TERMINAL_QSS = """
+QWidget#market_terminal QPushButton[terminalPeriod="true"]:checked { background:@tab_selection@; border-color:@focus_border@; }
+QWidget#market_terminal QLabel#terminal_freshness { color:@disabled_text@; }
+QWidget#market_terminal QLabel#terminal_freshness[terminalFreshness="LIVE"] { color:@success@; }
+QWidget#market_terminal QLabel#terminal_freshness[terminalFreshness="DELAYED"] { color:@warning@; }
+QWidget#market_terminal QLabel#terminal_chart_title[terminalDirection="UP"], QWidget#market_terminal QPushButton#terminal_index_title[terminalDirection="UP"] { color:@terminal_rise@; }
+QWidget#market_terminal QLabel#terminal_chart_title[terminalDirection="DOWN"], QWidget#market_terminal QPushButton#terminal_index_title[terminalDirection="DOWN"] { color:@terminal_fall@; }
+QWidget#market_terminal QLabel#terminal_chart_title[terminalDirection="FLAT"], QWidget#market_terminal QPushButton#terminal_index_title[terminalDirection="FLAT"] { color:@terminal_flat@; }
+"""
+
+
+def _build_terminal_stylesheet(theme, convention, colours, flat):
+    """New terminal selectors stay separate from the reviewed legacy QSS bytes."""
+    return (
+        _expand(_TERMINAL_QSS, theme, convention)
+        .replace('@terminal_rise@', QColor(colours[0]).name())
+        .replace('@terminal_fall@', QColor(colours[1]).name())
+        .replace('@terminal_flat@', QColor(flat).name())
+    )
+
+
+def _apply_terminal_theme(widget):
+    """Apply only the terminal's selectors and refresh changed semantic properties."""
+    stylesheet = _build_terminal_stylesheet(*appearance(widget), widget.colours(widget), widget.palette().text().color())
+    if widget.styleSheet() != stylesheet:
+        widget.setStyleSheet(stylesheet)
+    for target, property_name in ((widget.title, 'terminalDirection'), (widget.index_title, 'terminalDirection'), (widget.freshness, 'terminalFreshness')):
+        set_theme_property(target, property_name, target.property(property_name))
+    for table in (widget.table, widget.index_table):
+        for row in range(table.rowCount()):
+            view = widget._view(table.item(row, 0).data(Qt.ItemDataRole.UserRole))
+            for column in (2, 3, 4):
+                item = table.item(row, column)
+                if item.text() != ui_text('watch.unknown'):
+                    item.setForeground(widget._colour(view))

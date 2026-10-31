@@ -62,7 +62,7 @@ def _run_window(
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
     from desktop_app.features.market.workspace import WorkspacePanel
-    from desktop_app.shell.theme import up_down_colors, appearance
+    from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme
 
     # Share the installed product icon without starting its legacy runtime.
     from desktop_app.components.icon import application_icon
@@ -117,6 +117,7 @@ def _run_window(
         panel_factory=WorkspacePanel,
         colours=lambda widget: up_down_colors(appearance(widget)[1]),
         alerts_panel=alerts.panel,
+        style_terminal=_apply_terminal_theme,
     )
     window = TradingWindow(facade, initial, market_watch=terminal)
     from desktop_app.research_session import ResearchSession, UnifiedResearch

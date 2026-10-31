@@ -17,6 +17,7 @@ from desktop_app.components.equity import EquityPlot
 from desktop_app.components.result_widgets import KpiCards, TaipeiFillsTable
 from desktop_app.components.design import card, section
 from desktop_app.shell.palette_commands import page_index
+from desktop_app.features.strategy.forms import FAMILY_LABELS
 
 
 class BacktestPage(QWidget):
@@ -173,7 +174,7 @@ class BacktestPage(QWidget):
         strategy = (
             ui_text('redesign.backtest.candidate').format(str(candidate.get('strategy_hash', ''))[:12])
             if candidate
-            else family.currentText()
+            else FAMILY_LABELS.get(family.currentData() or family.currentText(), family.currentText())
             if family is not None
             else ui_text('ui.backtest_page.strategy_hint')
         )

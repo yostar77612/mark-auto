@@ -83,6 +83,7 @@ def _build_window_chrome(window):
     window.status = QLabel(ui_text('ui.init.ready'))
     window.status.setObjectName('status')
     window.status.setWordWrap(True)
+    window.status.hide()
     outer.addWidget(window.status)
     _notifications.install_notifications(window, outer)
     _job_progress.install_progress(window, outer)
