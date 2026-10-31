@@ -331,4 +331,4 @@ class WorkspaceJobStorage:
     def configure_workspace(paths, destination):
         from .workspace_store import WorkspaceLocator
 
-        return WorkspaceLocator(paths.bootstrap or paths.root).configure(destination)
+        return WorkspaceLocator(getattr(paths, 'bootstrap', None) or paths.root).configure(destination)

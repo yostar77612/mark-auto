@@ -74,18 +74,18 @@ class JobManager:
         return self.process is not None
 
     def _walk_forward_owner_path(self, reference):
-        return self.storage_port._walk_forward_owner_path(self.paths, reference)
+        return self._job_port('storage_port')._walk_forward_owner_path(self.paths, reference)
 
     def _claim_walk_forward(self, reference, job_id):
-        return self.storage_port._claim_walk_forward(self.paths, reference, job_id)
+        return self._job_port('storage_port')._claim_walk_forward(self.paths, reference, job_id)
 
     def _check_walk_forward_owner(self, job_id, reference):
-        return self.storage_port._check_walk_forward_owner(self.paths, job_id, reference)
+        return self._job_port('storage_port')._check_walk_forward_owner(self.paths, job_id, reference)
 
     def _validate_job_request(self, operation, payload):
         if operation not in OPERATIONS or not isinstance(payload, dict):
             raise RuntimeSafetyError('Unsupported operation')
-        self.storage_port.validate_payload(payload)
+        self._job_port('storage_port').validate_payload(payload)
         # Keep operation-specific dependencies out of module startup.
         from quantlab.analysis_recovery import require_operation
 
@@ -119,15 +119,19 @@ class JobManager:
 
         return job_requests._prepare_other_job(self, operation, payload)
 
+    def _job_port(self, name):
+        port = getattr(self, name, None)
+        if port is None:
+            module, factory = DEFAULT_JOB_PORT_FACTORY.split(':')
+            defaults = getattr(importlib.import_module(module), factory)()
+            port = defaults[0 if name == 'process_port' else 1]
+        return port
+
     def _launch_job_process(self, operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request):
-        return self.process_port.launch(self, operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request)
+        return self._job_port('process_port').launch(self, operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request)
 
     def _join_descendants(self, pid):
-        port = getattr(self, 'process_port', None)
-        if port is None:
-            module, name = DEFAULT_JOB_PORT_FACTORY.split(':')
-            port = getattr(importlib.import_module(module), name)()[0]
-        return port.join_descendants(self, pid)
+        return self._job_port('process_port').join_descendants(self, pid)
 
     def start(self, operation, payload):
         if self.active:
@@ -185,7 +189,7 @@ class JobManager:
             return events
 
         try:
-            self.process_port.drain(self, events)
+            self._job_port('process_port').drain(self, events)
             exited = not self.process.is_alive()
             if not exited and self._deadline is not None and time.monotonic() >= self._deadline:
                 terminal = self._terminal
@@ -206,7 +210,7 @@ class JobManager:
                 self.process.join()
                 # The child can send and exit between initial poll and liveness
                 # check. Drain once more before classifying an incomplete stream.
-                self.process_port.drain(self, events)
+                self._job_port('process_port').drain(self, events)
         except (OSError, ValueError):
             self.cancel()
             events.append({'job_id': self.job_id, 'type': 'error', 'message': 'Worker response rejected'})
@@ -251,7 +255,7 @@ class JobManager:
         if self._walk_forward_reference is not None and self._tree_quiesced and ownership_error is None:
             self._quiesced_walk_forward = (self.job_id, self._walk_forward_reference)
         if self._operation == 'ui_backup_restore':
-            self.storage_port.recover(self.paths)
+            self._job_port('storage_port').recover(self.paths)
         if ownership_error is not None:
             raise ownership_error
 
@@ -259,7 +263,7 @@ class JobManager:
         if not self.active:
             return
         proc = self.process
-        self.process_port.stop(self)
+        self._job_port('process_port').stop(self)
         if self._requires_tree_quiescence:
             self._join_descendants(proc.pid)
             self._tree_quiesced = True

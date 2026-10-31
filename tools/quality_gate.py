@@ -140,10 +140,6 @@ def scan(root: Path, history: bool = False) -> list[str]:
     for name in filter(None, names):
         path = root / name
         if not path.is_file():
-            # PR E retires this tree; unstaged removals are allowed during handoff.
-            # Existing/reintroduced archive files still receive all legacy scans.
-            if name.startswith("archives/legacy_autotrading/"):
-                continue
             findings.append(f"{name}: tracked file missing")
             continue
         raw = path.read_bytes()

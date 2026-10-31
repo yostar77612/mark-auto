@@ -1,7 +1,6 @@
 """In-memory characterization captured before the Part C extractions."""
 
 from quantlab.research_core.application import job_manager
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
 
 
 from quantlab.research_core.application.job_manager import JobManager
@@ -44,8 +43,6 @@ def runtime_oracle():
             manager = JobManager.__new__(JobManager)
             manager.paths, manager.process, manager.tree = paths, None, None
             manager._log = Mock()
-            manager.process_port = job_process.DesktopJobProcess()
-            manager.storage_port = WorkspaceJobStorage()
             context = Mock()
             context.Pipe.return_value = (Mock(), Mock())
             with (

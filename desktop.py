@@ -137,7 +137,6 @@ def acquire_instance_lock(locator, smoke_startup_directory=None):
 
 def prepare_workspace(state):
     from quantlab.research_core.adapters.workspace_backup import BackupManager
-    from quantlab.research_core.application.job_manager import JobManager
     from desktop_app.research_bootstrap import create_job_manager
     from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
     from quantlab.research_core.adapters.settings_store import SettingsStore
@@ -177,7 +176,6 @@ def run_gui(args):
     from PySide6.QtWidgets import QApplication, QMessageBox
     from quantlab import __version__
     from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
-    from quantlab.research_core.application.job_manager import JobManager
     from desktop_app.research_bootstrap import create_job_manager
     from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
     from quantlab.research_core.adapters.settings_store import SettingsStore
