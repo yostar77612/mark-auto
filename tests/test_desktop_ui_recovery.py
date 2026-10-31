@@ -17,7 +17,10 @@ if HAS_QT:
     from PySide6.QtGui import QMouseEvent
     from PySide6.QtWidgets import QApplication
     from desktop_app.shell.window import MainWindow
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, CredentialVault
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.settings_store import SettingsStore
+    from quantlab.desktop_runtime import CredentialVault
     from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
@@ -40,7 +43,7 @@ class UiRecoveryTests(unittest.TestCase):
         self.secrets.start()
         self.addCleanup(self.secrets.stop)
         self.paths = AppPaths(Path(self.tmp.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.store = SettingsStore(self.paths.state / 'settings.json')
         self.windows = []
         self.addCleanup(self.close_windows)

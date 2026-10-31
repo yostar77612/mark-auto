@@ -1,5 +1,9 @@
 """T16 fixed-code presentation and progress with in-memory workers only."""
 
+from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+
+from quantlab.research_core.adapters.workspace_store import AppPaths
+
 from quantlab.research_core.adapters import job_worker
 
 from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
@@ -79,7 +83,9 @@ class FixedCodeTests(unittest.TestCase):
                 patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
                 patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=Mock(side_effect=exc)),
             ):
-                job_worker._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'fake')
+                job_worker._job_worker(
+                    sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'fake', storage_port=WorkspaceJobStorage()
+                )
             self.assertEqual(packets[-1]['error_code'], expected)
             self.assertNotIn(SECRET, json.dumps(packets))
             sender.close.assert_called_once()
@@ -153,7 +159,7 @@ class PresentationWidgetTests(unittest.TestCase):
 
     def test_real_window_mount_preserves_names_and_uses_shared_progress_for_all_jobs(self):
         with sandbox_ui(), tempfile.TemporaryDirectory(prefix='t16-host-') as temp:
-            paths = runtime.AppPaths(Path(temp) / 'workspace').ensure()
+            paths = AppPaths(Path(temp) / 'workspace').ensure()
             jobs = SimpleNamespace(active=False, poll=lambda: [], start=Mock(), close=Mock())
             window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:

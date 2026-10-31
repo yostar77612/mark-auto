@@ -219,3 +219,14 @@ Shioaji 載入限制、pickle/eval／動態執行禁令、live／credential／TL
 搬檔、import、字串 patch target 與私有呼叫的機械修改須以 `tools/refactor/` 中的腳本重現。
 不留 re-export shim、模組別名或 `sys.modules` 相容層。
 See [architecture](analysis/01_PROJECT_ARCHITECTURE.md) and [inventory](analysis/08_REFACTOR_INVENTORY.md).
+
+
+PR E runtime ownership: `quantlab/research_core/adapters/workspace_store.py`,
+`settings_store.py`, `state_json.py`, `runtime_safety.py`, `event_log.py` and
+`walk_forward_owner.py` own workspace and runtime IO. The lifecycle coordinator is
+`quantlab/research_core/application/job_manager.py`; its process, storage and log
+contracts live in `quantlab/research_core/ports/jobs.py`. Default adapters are
+composed by `desktop_app/research_bootstrap.py` without importing Qt; the Qt
+session lives in `desktop_app/research_session.py`. CredentialVault,
+DesktopCredentialReference and the atomic_write binding remain in
+`quantlab/desktop_runtime.py`. Historical producer profiles and G3 locks are unchanged.

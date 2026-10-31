@@ -18,12 +18,6 @@
     "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
   },
   {
-    "path": "desktop_chatgpt_auth.py",
-    "target": "quantlab.desktop_runtime",
-    "rule": "infrastructure-to-application",
-    "justification": "G3 body is frozen at its current path (08 section 5); retain this existing dependency until an owner-approved change."
-  },
-  {
     "path": "desktop_chatgpt_provider.py",
     "target": "quantlab.research",
     "rule": "infrastructure-to-application",
@@ -226,18 +220,6 @@
     "target": "quantlab.research",
     "rule": "domain-to-application",
     "justification": "Existing UI directly invokes adapter or launcher helpers; C/D/E2 routes these operations through application services and composition."
-  },
-  {
-    "path": "quantlab/automatic_backup.py",
-    "target": "quantlab.desktop_runtime",
-    "rule": "infrastructure-to-application",
-    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
-  },
-  {
-    "path": "quantlab/backup_inspection.py",
-    "target": "quantlab.desktop_runtime",
-    "rule": "infrastructure-to-application",
-    "justification": "Existing adapter imports service values/behavior; E2 extracts an application port or domain value instead of importing the service."
   },
   {
     "path": "quantlab/data_gap_report.py",

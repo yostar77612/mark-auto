@@ -30,7 +30,9 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
 
         cls.started = perf_counter()
         cls.app = QApplication.instance() or QApplication([])
@@ -44,7 +46,7 @@ class CompleteOffscreenWalkTests(unittest.TestCase):
         cls.folder = tempfile.TemporaryDirectory(prefix='u10-access-')
         cls.addClassCleanup(cls.folder.cleanup)
         paths = AppPaths(Path(cls.folder.name) / 'workspace').ensure()
-        cls.jobs = JobManager(paths)
+        cls.jobs = create_job_manager(paths)
         cls.addClassCleanup(cls.jobs.close)
         guard = patch.object(cls.jobs, 'start', side_effect=AssertionError('The accessibility walk must not start jobs.'))
         guard.start()

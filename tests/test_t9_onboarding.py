@@ -14,7 +14,9 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QPushButton, QComboBox
 from desktop_app.strings.catalog import GLOSSARY, FORBIDDEN_DEFAULT_TERMS
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 
 
 @contextmanager
@@ -45,7 +47,7 @@ class OnboardingTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix='t9-onboarding-')
         self.addCleanup(self.temp.cleanup)
         self.paths = AppPaths(Path(self.temp.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.addCleanup(self.jobs.close)
         self.settings = SettingsStore(self.paths.state / 'settings.json')
         self.open_window()

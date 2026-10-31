@@ -21,7 +21,8 @@ class AutomaticBackupPanelTests(unittest.TestCase):
 
     def setUp(self):
         from PySide6.QtWidgets import QWidget
-        from quantlab.desktop_runtime import AppPaths, JobManager
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
         from desktop_app.features.settings.automatic_backup import AutomaticBackupPanel
 
         self.tmp = tempfile.TemporaryDirectory()
@@ -29,7 +30,7 @@ class AutomaticBackupPanelTests(unittest.TestCase):
         self.window = QWidget()
         w = self.window
         w.paths = AppPaths(Path(self.tmp.name) / 'workspace').ensure()
-        w.jobs = JobManager(w.paths)
+        w.jobs = create_job_manager(w.paths)
         w.start_job = lambda operation, payload: w.jobs.start(operation, payload)
         w.chatgpt_controller = SimpleNamespace(busy=False)
         w.chatgpt_panel = SimpleNamespace(primary_sign_in_pending=False)
@@ -137,14 +138,16 @@ class AutomaticBackupPanelTests(unittest.TestCase):
 class IntegratedAutomaticBackupTests(unittest.TestCase):
     def test_main_window_defers_all_real_managers_then_archives(self):
         from PySide6.QtWidgets import QApplication
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
         from desktop_app.shell.window import MainWindow
 
         app = QApplication.instance() or QApplication([])
         with tempfile.TemporaryDirectory() as temp:
             paths = AppPaths(Path(temp) / 'workspace').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = MainWindow(
                 paths,
                 jobs,

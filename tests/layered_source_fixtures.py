@@ -97,7 +97,7 @@ CURRENT_PATHS = {
     'desktop_presentation.py': 'desktop_app/components/formatting.py',
     'desktop_privacy.py': 'desktop_app/components/privacy.py',
     'desktop_recovery_smoke.py': 'desktop_app/smoke/recovery.py',
-    'desktop_research_runtime.py': 'desktop_app/research_bootstrap.py',
+    'desktop_research_runtime.py': 'desktop_app/research_session.py',
     'desktop_smoke/__init__.py': 'desktop_app/smoke/__init__.py',
     'desktop_strings.py': 'desktop_app/strings/catalog.py',
     'desktop_theme.py': 'desktop_app/shell/theme.py',

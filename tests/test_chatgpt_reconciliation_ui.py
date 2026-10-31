@@ -24,7 +24,8 @@ import shiboken6
 
 import desktop_app.features.assistant.connection as ui
 from quantlab.research_core.application.ui_operations.assistant import connection_event_from_payload
-from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.desktop_runtime import RuntimeSafetyError
 
 REF = 'a' * 32
 OTHER = 'b' * 32

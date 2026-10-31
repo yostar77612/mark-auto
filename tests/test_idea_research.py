@@ -13,7 +13,9 @@ import desktop_app.shell.main_window as ui
 from quantlab.research_core.application.research_operations import _handle_ui_backtest as _c_ui__handle_ui_backtest
 from quantlab.research_core.application.ui_operations.idea import _handle_ui_idea_research as _c_ui__handle_ui_idea_research
 from quantlab.core import ValidationError, content_hash, to_dict
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.desktop_runtime import RuntimeSafetyError
 from quantlab.idea_research import IdeaResearch, IdeaStore, adoption_candidate, new_task, verify_candidates
 from quantlab.reporting import demo_config, read_json, save_dataset, synthetic_dataset
 from tests.idea_fixtures import FakeSite, FakeTransport, candidate, caller, extraction_response, page, search_response, sse

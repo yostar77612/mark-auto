@@ -61,14 +61,16 @@ class DesktopThemeTests(unittest.TestCase):
 
     def test_window_roles_and_empty_widget_stylesheets(self):
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
 
         root = Path(tempfile.gettempdir()) / ('markauto-theme-' + uuid.uuid4().hex)
         root.mkdir()
         self.addCleanup(shutil.rmtree, root)
         paths = AppPaths(root).ensure()
-        jobs = JobManager(paths)
+        jobs = create_job_manager(paths)
         self.addCleanup(jobs.close)
         window = MainWindow(
             paths, jobs, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, jobs), services=_c_create_ui_services(_c_create_operation_ports())

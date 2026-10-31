@@ -8,7 +8,7 @@ from unittest.mock import patch
 from desktop_app.shell.main_window import execute_ui_operation
 from quantlab.research_core.application.paper_operations import paper_risk_limits
 from quantlab.core import Instrument, content_hash, to_dict
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 from quantlab.paper import PaperBroker
 from quantlab.reporting import demo_config, read_json, save_dataset, synthetic_dataset, write_json
 from quantlab.strategies import builtin_strategies

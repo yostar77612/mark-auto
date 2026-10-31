@@ -140,7 +140,9 @@ class WindowDisclosurePersistenceTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
 
         sandbox = sandbox_ui()
         sandbox.__enter__()
@@ -148,7 +150,7 @@ class WindowDisclosurePersistenceTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory(prefix='redesign-shell-preferences-')
         self.addCleanup(self.directory.cleanup)
         self.paths = AppPaths(Path(self.directory.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.addCleanup(self.jobs.close)
         self.store = SettingsStore(self.paths.state / 'settings.json')
 

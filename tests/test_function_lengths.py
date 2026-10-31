@@ -10,7 +10,7 @@ from tests.core_split_source_fixtures import before_core_split
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
     'quantlab/saved_candidate_pool.py': 'admit_saved_campaign_pool',
-    'quantlab/desktop_runtime.py': 'JobManager.start',
+    'quantlab/research_core/application/job_manager.py': 'JobManager.start',
     'quantlab/walk_forward.py': 'run_walk_forward',
     'quantlab/paper.py': '_reduce',
     'quantlab/chart_data.py': 'aggregate_bars',

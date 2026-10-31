@@ -27,7 +27,9 @@ def isolate(root):
 def build_window(root, *, populated=True):
     from PySide6.QtCore import QEvent, QObject, QTimer
     from quantlab.core import ValidationError
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from quantlab.research_core.application.job_manager import JobManager
+    from quantlab.research_core.adapters.settings_store import SettingsStore
     from quantlab.research_core.adapters.workspace_backup import BackupManager
     from desktop_app.strings.catalog import ui_text
     from desktop_app.shell.window import MainWindow

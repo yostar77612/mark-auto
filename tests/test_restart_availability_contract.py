@@ -11,6 +11,7 @@ Run with the prepared cloud Qt interpreter, QT_QPA_PLATFORM=offscreen, and a
 """
 
 from __future__ import annotations
+from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
 
 from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
 
@@ -28,7 +29,10 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HAS_QT = importlib.util.find_spec('PySide6') is not None
 
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, SettingsStore, WorkspaceLocator
+from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.desktop_runtime import RuntimeSafetyError
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 
@@ -56,7 +60,7 @@ def _offline_worker(*args, **kwargs):
         patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('TEST_ONLY: no provider')),
         patch('quantlab.research_core.application.analysis_operations.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')),
     ):
-        return _job_worker(*args, **kwargs)
+        return _job_worker(*args, **dict(kwargs, storage_port=kwargs.get('storage_port') or WorkspaceJobStorage()))
 
 
 def _snapshot(root):
@@ -162,7 +166,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('TEST_ONLY forbidden: ' + target)))
         self.stack.enter_context(patch('quantlab.research_core.adapters.job_worker._job_worker', _offline_worker))
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.backups = BackupManager(self.paths, self.jobs)
         self.policy = _TestOnlyConflictPolicy(self.jobs, self.backups)
         self.stack.enter_context(patch.object(self.jobs, 'start', self.policy.start))
@@ -393,7 +397,7 @@ class RestartAvailabilityContractTests(unittest.TestCase):
         self.assertEqual(other.controls, self.paths.controls)
         self.assertEqual(other.credentials, self.paths.credentials)
         save_dataset(self.data, other.state / 'dataset.json')
-        jobs = JobManager(other)
+        jobs = create_job_manager(other)
         window = MainWindow(
             other, jobs, SettingsStore(other.state / 'settings.json'), BackupManager(other, jobs), services=_c_create_ui_services(_c_create_operation_ports())
         )

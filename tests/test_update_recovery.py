@@ -81,7 +81,7 @@ class UpdateRecoveryTests(unittest.TestCase):
         self.assertNotIn('DelTree(', script)
 
     def test_actual_settings_fixture_matches_existing_store_schema(self):
-        from quantlab.desktop_runtime import SettingsStore
+        from quantlab.research_core.adapters.settings_store import SettingsStore
 
         script = (ROOT / 'packaging/test_update_recovery.ps1').read_text()
         fixture = re.search(r"\$settingsFixture = '([^']+)'", script).group(1)

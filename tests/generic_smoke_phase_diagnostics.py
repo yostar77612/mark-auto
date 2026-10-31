@@ -1,5 +1,7 @@
 """Original synthetic smoke observation only; no gate, SQL or workload changes."""
 
+from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+
 from contextlib import ExitStack, contextmanager
 import json
 from pathlib import Path
@@ -94,10 +96,12 @@ def instrument_generic_operations(timings):
         yield
 
 
-def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options):
+def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *worker_options, **runtime_options):
     """Keep the actual ownership gate and worker; retain its failure-time phases."""
     if operation not in OPERATIONS:
-        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
+        return _original_job_worker(
+            sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options, storage_port=WorkspaceJobStorage()
+        )
     timings = GenericTimings(operation)
     stop = threading.Event()
     stack = ExitStack()
@@ -143,7 +147,9 @@ def diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, 
 
     try:
         with timings.measure('worker.body'):
-            return _original_job_worker(sender, Gate(), operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
+            return _original_job_worker(
+                sender, Gate(), operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options, storage_port=WorkspaceJobStorage()
+            )
     finally:
         try:
             restore()

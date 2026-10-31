@@ -194,7 +194,9 @@ def window_capture():
     from desktop_app.shell.window import MainWindow
 
     # Keep this dependency local to the stage that uses it.
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.settings_store import SettingsStore
 
     # Keep this dependency local to the stage that uses it.
     from quantlab.reporting import save_dataset, export_report
@@ -211,7 +213,7 @@ def window_capture():
         tempfile.TemporaryDirectory(prefix='r7-capture-') as folder,
     ):
         paths = AppPaths(Path(folder) / 'workspace').ensure()
-        jobs = JobManager(paths)
+        jobs = create_job_manager(paths)
         window = MainWindow(paths, jobs, SettingsStore(paths.state / 'settings.json'), services=_c_create_ui_services(_c_create_operation_ports()))
         try:
             for timer in window.findChildren(QTimer):

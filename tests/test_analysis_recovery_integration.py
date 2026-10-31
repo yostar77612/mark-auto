@@ -4,6 +4,9 @@ The Windows capability switch is patched for platform-neutral ledger/journal
 integration. No kernel object, original-GUI-death or Windows token claim follows.
 """
 
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+
 from quantlab.research_core.adapters import job_process
 
 from quantlab.research_core.adapters import job_worker
@@ -37,7 +40,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.base = Path(self.tmp.name)
-        self.paths = runtime.AppPaths(self.base / 'workspace', self.base / 'bootstrap').ensure()
+        self.paths = AppPaths(self.base / 'workspace', self.base / 'bootstrap').ensure()
         self.data, self.state, self.folder = source(self.paths.state / 'campaigns')
         self.plan = a.make_analysis_plan(
             prepare(self.folder, self.data, self.state), model='fixture-model', registration='a' * 32, provider_implementation=PROVENANCE
@@ -104,7 +107,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         from desktop_app.connection_composition import execute_ui_operation
 
         self.stopped()
-        manager = runtime.JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         self.assertIsNone(manager._quiesced_analysis)
         payload = {'analysis_id': self.plan['analysis_id'], 'registration': 'a' * 32, 'recovery_launch_id': 'b' * 32}
         process, sender, receiver, gate = Mock(), Mock(), Mock(), Mock()
@@ -229,7 +232,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
 
     def test_unrelated_root_invalid_journal_and_original_provider_checks_survive(self):
         self.stopped()
-        other = runtime.AppPaths(self.base / 'other', self.paths.bootstrap).ensure()
+        other = AppPaths(self.base / 'other', self.paths.bootstrap).ensure()
         with self.assertRaises(ValidationError):
             self.reconcile(recovery=(other, 'b' * 32))
         original = (self.analysis_folder / 'analysis.sqlite3').read_bytes()
@@ -256,7 +259,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
             'network_opt_in': True,
             'included_usage_policy_confirmed': True,
         }
-        manager = runtime.JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         # Only enter Windows validation; no Win32 API or path operation is run.
         with patch.object(runtime.sys, 'platform', 'win32'), patch.object(job_process.mp, 'get_context') as spawn:
             with self.assertRaises(ValueError):
@@ -271,7 +274,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.stopped()
         payload = {'analysis_id': self.plan['analysis_id'], 'registration': 'a' * 32, 'recovery_launch_id': 'b' * 32}
         with patch.object(r, 'supports_durable_recovery', return_value=False):
-            manager = runtime.JobManager(self.paths)
+            manager = create_job_manager(self.paths)
             with patch.object(job_process.mp, 'get_context') as spawn, self.assertRaises(runtime.RuntimeSafetyError):
                 manager.start('ui_analysis_reconcile', payload)
             spawn.assert_not_called()
@@ -298,7 +301,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
         self.assertEqual(before, snapshot(self.paths.root))
 
     def test_alternate_workspace_restore_cannot_replace_original_external_source(self):
-        other = runtime.AppPaths(self.base / 'source-workspace', self.paths.bootstrap).ensure()
+        other = AppPaths(self.base / 'source-workspace', self.paths.bootstrap).ensure()
         source_file = other.state / 'dataset.json'
         source_file.write_text('original source bytes')
         self.request['original_dataset']['path'] = str(source_file)
@@ -441,7 +444,7 @@ class DurableRecoveryIntegrationTests(unittest.TestCase):
             self.assertTrue(finish.wait(5))
             return {}
 
-        with patch('desktop_app.shell.main_window.execute_ui_operation', side_effect=slow_operation), patch.object(runtime.os, 'setsid', create=True):
+        with patch('desktop_app.shell.main_window.execute_ui_operation', side_effect=slow_operation), patch.object(job_worker.os, 'setsid', create=True):
             thread = threading.Thread(
                 target=job_worker._job_worker, args=(sender, gate, 'ui_import', {}, str(self.paths.root), str(self.paths.bootstrap), 'f' * 32)
             )

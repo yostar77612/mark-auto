@@ -67,6 +67,16 @@ analysis = Analysis(
           + [entry for name in ('PyJWT', 'cryptography', 'cffi', 'pycparser')
              for entry in copy_metadata(name)],
     hiddenimports=['PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets',
+                   'quantlab.research_core.adapters.workspace_store',
+                   'quantlab.research_core.adapters.settings_store',
+                   'quantlab.research_core.adapters.state_json',
+                   'quantlab.research_core.adapters.runtime_safety',
+                   'quantlab.research_core.adapters.event_log',
+                   'quantlab.research_core.adapters.walk_forward_owner',
+                   'quantlab.research_core.application.job_manager',
+                   'desktop_app.research_bootstrap',
+                   'desktop_app.research_session',
+
                    # Lazy JWT import must be visible to native upstream hooks.
                    'jwt', 'cryptography', 'cryptography.hazmat.bindings._rust',
                    'cffi', '_cffi_backend', 'pycparser'],

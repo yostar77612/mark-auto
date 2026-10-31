@@ -212,7 +212,9 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
     from PySide6.QtCore import QCoreApplication, QEvent, QLocale, QTimer
     from PySide6.QtGui import QFont, QFontDatabase
     from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QScrollArea
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.settings_store import SettingsStore
     from quantlab.research_core.adapters.workspace_backup import BackupManager
     from desktop_app.shell.main_window import create_window
 
@@ -241,7 +243,7 @@ def capture(out, size=(1366, 768), scale=1.0, images=True, *, window=None):
     try:
         with tempfile.TemporaryDirectory(prefix='markauto-ui-snapshot-') as temporary:
             paths = AppPaths(Path(temporary) / 'workspace').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = None
             try:
                 import desktop_app.shell.app_header as _header

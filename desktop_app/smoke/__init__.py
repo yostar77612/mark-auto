@@ -718,7 +718,8 @@ def _retain_smoke_directory(directory):
 def run_smoke(state):
     from PySide6.QtCore import QTimer
     from quantlab import __version__
-    from quantlab.desktop_runtime import AppPaths, JobManager
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from desktop_app.research_bootstrap import create_job_manager
     import tempfile
     import time
     from desktop_app.smoke.recovery import run_recovery_smoke
@@ -726,7 +727,7 @@ def run_smoke(state):
     # Exercise the real frozen multiprocessing bootstrap in disposable
     # cache state, never replacing the user's research dataset.
     state.smoke_directory = tempfile.TemporaryDirectory(prefix='smoke-', dir=state.paths.cache)
-    state.smoke_jobs = JobManager(AppPaths(Path(state.smoke_directory.name)))
+    state.smoke_jobs = create_job_manager(AppPaths(Path(state.smoke_directory.name)))
     smoke_deadline = time.monotonic() + 120
     auth_report = _auth_smoke_dependencies()
     market_report, manual_config, manual_candidate = _market_smoke_ui(state.app)
@@ -851,7 +852,7 @@ def run_smoke(state):
             try:
                 if next_operation == 'ui_walk_forward_preview':
                     state.smoke_jobs.close()
-                    state.smoke_jobs = JobManager(walk_forward_paths)
+                    state.smoke_jobs = create_job_manager(walk_forward_paths)
                 elif next_operation == 'ui_walk_forward_run':
                     payload = {**walk_forward_payload, 'preview_identity': walk_forward_report['reference']}
                 elif next_operation == 'ui_walk_forward_read':

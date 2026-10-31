@@ -23,7 +23,8 @@ from desktop_app.shell.window import MainWindow
 from desktop_app.shell.main_window import execute_ui_operation
 from desktop_app.smoke import _smoke_steps
 from quantlab.core import ValidationError, canonical_json, to_dict
-from quantlab.desktop_runtime import AppPaths, JobManager
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
 from quantlab.reporting import export_report, save_dataset, synthetic_dataset, write_json, read_json
 from quantlab.paper import PaperBroker
 from tests.test_result_reference_layers import fixture
@@ -67,7 +68,7 @@ class DataResultWorkflowTests(unittest.TestCase):
         self.environment = patch.dict(os.environ, {'PYTHONUTF8': '1', 'LOCALAPPDATA': str(root / 'local'), 'APPDATA': str(root / 'roaming')})
         self.environment.start()
         self.paths = AppPaths(root / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.window = MainWindow(self.paths, self.jobs, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in self.window.findChildren(QTimer):
             timer.stop()

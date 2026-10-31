@@ -11,6 +11,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = 'docs/analysis/08_REFACTOR_INVENTORY.md'
 DEFAULT_BASE = '3429f2c'
+PR_E_BASE = '909fc49'
 
 
 def changed_paths(root, base):
@@ -56,7 +57,7 @@ def check_inventory(root, items):
     overlay = re.search(r'^### 10\.4 PR E size exceptions\n(.*?)(?=^## |^### |\Z)', source, re.M | re.S)
     if overlay is not None:
         rows = re.findall(pattern, overlay[1], re.M)
-        replaced = {path for kind, path, line, name, size, reason in rows if reason.strip()}
+        replaced = {path for kind, path, line, name, size, reason in rows if reason.strip()} | set(changed_paths(root, PR_E_BASE))
         listed = Counter({row: count for row, count in listed.items() if row[0] not in replaced})
         listed.update((path, int(line), name, kind, int(size)) for kind, path, line, name, size, reason in rows if reason.strip())
     measured = Counter((r['path'], r['line'], r['name'], r['kind'], r['lines']) for r in items)

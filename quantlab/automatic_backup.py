@@ -18,7 +18,9 @@ import time
 import uuid
 
 from quantlab.research_core.adapters.workspace_backup import BackupManager
-from quantlab.desktop_runtime import MAX_BACKUP, _json_bytes, _read_json, atomic_write
+from quantlab.research_core.adapters.workspace_store import MAX_BACKUP
+from quantlab.research_core.adapters.state_json import _json_bytes, _read_json
+from quantlab.desktop_runtime import atomic_write
 from quantlab.shared.runtime_errors import RuntimeSafetyError
 
 

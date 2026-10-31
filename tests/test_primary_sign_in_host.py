@@ -97,7 +97,7 @@ class PrimarySignInHostTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         self.window.backup(True)
                 else:
-                    with patch('quantlab.desktop_runtime.WorkspaceLocator.configure', return_value=self.paths.root):
+                    with patch('quantlab.research_core.adapters.workspace_store.WorkspaceLocator.configure', return_value=self.paths.root):
                         self.window.configure_workspace()
                 self.app.processEvents()
                 self.assertEqual(launch.call_count, 1)

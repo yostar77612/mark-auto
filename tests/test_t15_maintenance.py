@@ -253,10 +253,11 @@ class MaintenanceUITests(OfflineTest):
 
     def test_page_and_window_construction_never_checks(self):
         from desktop_app.shell.window import MainWindow  # Exercise the actual settings mounting path.
-        from quantlab.desktop_runtime import AppPaths, JobManager  # Disposable workspace only.
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
 
         paths = AppPaths(self.temp() / 'workspace').ensure()
-        jobs = JobManager(paths)
+        jobs = create_job_manager(paths)
         self.addCleanup(jobs.close)
         with patch('desktop_app.features.settings.maintenance.check_for_update') as checked:
             panel = self.panel()

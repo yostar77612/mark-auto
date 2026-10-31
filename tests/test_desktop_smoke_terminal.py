@@ -19,7 +19,9 @@ from unittest.mock import Mock
 from tests.smoke_timeout_diagnostics import output_summary, run_smoke_process
 
 from desktop import _close_smoke_worker
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.desktop_runtime import RuntimeSafetyError
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -70,7 +72,7 @@ def process_can_run(pid, *, linux_states=None):
 class GenericCleanupProofTests(unittest.TestCase):
     def test_unproved_join_retains_slot_and_handles_until_real_cleanup_succeeds(self):
         with tempfile.TemporaryDirectory() as temporary:
-            manager = JobManager(AppPaths(Path(temporary).resolve()))
+            manager = create_job_manager(AppPaths(Path(temporary).resolve()))
             process = Mock(pid=424242)
             process.is_alive.return_value = False
             manager.process = process
@@ -103,7 +105,10 @@ import quantlab.desktop_runtime as runtime
 from quantlab.research_core.adapters import job_worker
 from tests.smoke_timeout_diagnostics import diagnosed_smoke_worker
 job_worker._job_worker = diagnosed_smoke_worker
-from quantlab.desktop_runtime import JobManager, AppPaths, RuntimeSafetyError
+from quantlab.research_core.application.job_manager import JobManager
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from quantlab.desktop_runtime import RuntimeSafetyError
 if sys.platform == 'win32':
  AppPaths.discover = classmethod(lambda cls: cls(Path(os.environ['LOCALAPPDATA']) / 'MarkAuto'))
 from PySide6.QtWidgets import QMessageBox
@@ -293,13 +298,7 @@ tempfile.TemporaryDirectory.cleanup = fail_final
         for error in ('KeyboardInterrupt', 'SystemExit'):
             with self.subTest(error=error):
                 self.smoke(
-                    """from quantlab.desktop_runtime import RuntimeGuard
-original = RuntimeGuard.finish
-calls = 0
-def interrupt(self):
- global calls
- calls += 1
- if calls == 2: raise """
+                    'from quantlab.research_core.adapters.runtime_safety import RuntimeGuard\noriginal = RuntimeGuard.finish\ncalls = 0\ndef interrupt(self):\n global calls\n calls += 1\n if calls == 2: raise '
                     + error
                     + """('private exception interrupted shutdown')
  return original(self)

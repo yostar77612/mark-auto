@@ -1,5 +1,7 @@
 """Offline desktop critique integration. No grant, model service or held-out evaluation."""
 
+from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+
 from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
 
 import copy
@@ -14,7 +16,9 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from quantlab.core import content_hash
 from quantlab.reporting import save_dataset, synthetic_dataset
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.desktop_runtime import RuntimeSafetyError
 from tests import test_desktop_ui as ui_support
 from tests.test_research_analysis import source, PROVENANCE, AnalysisWire
 import quantlab.research_analysis as analysis
@@ -23,7 +27,7 @@ import quantlab.assistant.adapters.chatgpt.provider as provider
 REF = 'a' * 32
 
 
-def _offline_analysis_job_worker(*args):
+def _offline_analysis_job_worker(*args, **runtime_options):
     """Spawn-safe wrapper around the real worker; no provider can be constructed."""
     from quantlab.research_core.adapters.job_worker import _job_worker
 
@@ -36,7 +40,7 @@ def _offline_analysis_job_worker(*args):
         patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('No provider transport')),
         patch('http.client.HTTPSConnection', side_effect=AssertionError('No network')),
     ):
-        _job_worker(*args)
+        _job_worker(*args, storage_port=WorkspaceJobStorage())
 
 
 def request_for(paths, data, state, folder, compare=False):
@@ -58,7 +62,7 @@ class AnalysisRequestTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.paths = AppPaths(Path(self.tmp.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.addCleanup(self.jobs.close)
         self.request = {
             'campaign_reference': 'b' * 64,
@@ -72,7 +76,7 @@ class AnalysisRequestTests(unittest.TestCase):
 
     def test_runtime_and_ui_operation_sets_match(self):
         from quantlab.research_core.application.ui_operations.registry import UI_OPERATIONS
-        from quantlab.desktop_runtime import UI_OPERATIONS as runtime
+        from quantlab.research_core.domain.job_protocol import UI_OPERATIONS as runtime
 
         self.assertEqual(UI_OPERATIONS, runtime)
 
@@ -305,7 +309,7 @@ class SpawnedAnalysisTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.paths = AppPaths(Path(self.tmp.name) / 'workspace').ensure()
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.addCleanup(self.jobs.close)
         data, state, folder = source(self.paths.state / 'campaigns')
         self.request = request_for(self.paths, data, state, folder)
@@ -350,7 +354,7 @@ class SpawnedAnalysisTests(unittest.TestCase):
             self.jobs.cancel()
         self.assertFalse(self.jobs.active)
         self.assertEqual(self.jobs._quiesced_analysis, (job_id, plan['analysis_id'], REF))
-        other = JobManager(self.paths)
+        other = create_job_manager(self.paths)
         self.addCleanup(other.close)
         with self.assertRaises(RuntimeSafetyError):
             other.start('ui_analysis_reconcile', {'analysis_id': plan['analysis_id'], 'registration': REF, 'stopped_job_id': job_id})

@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QVBoxLayou
 from desktop_app.shell.onboarding import GettingStarted, WORKFLOW_ORDER
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import build_app_stylesheet
-from quantlab.desktop_runtime import SettingsStore
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests import test_paper as paper_fixtures
 

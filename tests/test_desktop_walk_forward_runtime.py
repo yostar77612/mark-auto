@@ -3,6 +3,8 @@
 Mock process/Job Object checks are protocol tests, not native Windows evidence.
 """
 
+from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+
 import copy
 from contextlib import closing
 from functools import partial
@@ -18,7 +20,10 @@ import unittest
 from unittest.mock import Mock, patch
 
 from quantlab.core import to_dict
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError, UI_OPERATIONS, WALK_FORWARD_OPERATIONS
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.desktop_runtime import RuntimeSafetyError
+from quantlab.research_core.domain.job_protocol import UI_OPERATIONS, WALK_FORWARD_OPERATIONS
 from quantlab.research_core.adapters.job_worker import _job_worker
 from quantlab.reporting import demo_config
 from quantlab.walk_forward import build_walk_forward_plan
@@ -45,14 +50,14 @@ def _held_walk_forward_evaluation(dataset, spec, config, started, release):
     return _evaluate_split(dataset, spec, config)
 
 
-def _cancellable_walk_forward_worker(*args, evaluation_started, evaluation_release):
+def _cancellable_walk_forward_worker(*args, evaluation_started, evaluation_release, **runtime_options):
     from quantlab.walk_forward import _run_bounded
 
     def held_evaluation(function, arguments, **kwargs):
         return _run_bounded(_held_walk_forward_evaluation, (*arguments, evaluation_started, evaluation_release), **kwargs)
 
     with patch('quantlab.walk_forward._run_bounded', side_effect=held_evaluation):
-        _job_worker(*args)
+        _job_worker(*args, storage_port=WorkspaceJobStorage())
 
 
 class WalkForwardRuntimeTests(unittest.TestCase):
@@ -60,7 +65,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.paths = AppPaths(Path(self.temp.name) / 'app').ensure()
-        self.manager = JobManager(self.paths)
+        self.manager = create_job_manager(self.paths)
         self.plan = plan_payload()
         self.trace = []
 
@@ -151,7 +156,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
                 plan['max_runtime_seconds'] = 17
             else:
                 plan.pop('max_runtime_seconds')
-            with patch('quantlab.desktop_runtime.time.monotonic', return_value=100):
+            with patch('quantlab.research_core.application.job_manager.time.monotonic', return_value=100):
                 self.start_fake(payload={'plan': plan, 'preview_identity': REFERENCE if explicit else OTHER_REFERENCE})
             self.assertEqual(self.manager._deadline, 100 + (17 if explicit else 300) + 10)
             self.assertTrue(self.manager._requires_tree_quiescence)
@@ -170,7 +175,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
             for value in ({'reference': OTHER_REFERENCE, 'stopped_job_id': job_id}, {'reference': REFERENCE, 'stopped_job_id': 'forged'}):
                 with self.subTest(value=value), self.assertRaises(RuntimeSafetyError):
                     self.manager.start('ui_walk_forward_reconcile', value)
-            restarted = JobManager(self.paths)
+            restarted = create_job_manager(self.paths)
             with self.assertRaises(RuntimeSafetyError):
                 restarted.start('ui_walk_forward_reconcile', {'reference': REFERENCE, 'stopped_job_id': job_id})
         spawn.assert_not_called()
@@ -219,7 +224,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
         owner = self.paths.state / 'walk_forward' / REFERENCE / '.desktop-run-owner.json'
         self.assertEqual(json.loads(owner.read_text(encoding='utf-8'))['job_id'], job_id)
         self.assertFalse(owner.with_name('walk_forward.sqlite3').exists())
-        other = JobManager(self.paths)
+        other = create_job_manager(self.paths)
         with patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn:
             with self.assertRaisesRegex(RuntimeSafetyError, 'already claimed'):
                 other.start('ui_walk_forward_run', {'plan': self.plan, 'preview_identity': REFERENCE})
@@ -375,7 +380,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
             gate.wait.return_value = True
             execute = Mock(return_value={'reference': REFERENCE})
             with (
-                patch('quantlab.desktop_runtime.os.setsid', create=True),
+                patch('quantlab.research_core.adapters.job_worker.os.setsid', create=True),
                 patch.dict('sys.modules', {'desktop_app.shell.main_window': SimpleNamespace(execute_ui_operation=execute)}),
             ):
                 _job_worker(
@@ -387,6 +392,7 @@ class WalkForwardRuntimeTests(unittest.TestCase):
                     None,
                     'worker-fixture',
                     admitted,
+                    storage_port=WorkspaceJobStorage(),
                 )
             self.assertIs(execute.call_args.kwargs['descendants_stopped'], admitted)
             sender.close.assert_called_once()
@@ -406,7 +412,7 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
         data, plan = inputs(process_start_method='spawn', max_runtime_seconds=60)
         self.plan = to_dict(plan)
         save_dataset(data, self.paths.state / 'dataset.json')
-        self.manager = JobManager(self.paths)
+        self.manager = create_job_manager(self.paths)
         self.addCleanup(self.manager.close)
 
     def finish(self):
@@ -509,7 +515,7 @@ class WalkForwardSpawnSmokeTests(unittest.TestCase):
         stopped = read_walk_forward_state(journal.parent)
         reserved_count = len(stopped['evaluations'])
         self.assertEqual(stopped['status'], 'running')
-        restarted = JobManager(self.paths)
+        restarted = create_job_manager(self.paths)
         with self.assertRaises(RuntimeSafetyError):
             restarted.start('ui_walk_forward_reconcile', {'reference': reference, 'stopped_job_id': job_id})
         self.manager.start('ui_walk_forward_reconcile', {'reference': reference, 'stopped_job_id': job_id})

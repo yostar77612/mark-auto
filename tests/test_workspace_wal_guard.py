@@ -10,7 +10,8 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
-from quantlab.desktop_runtime import AppPaths, RuntimeSafetyError, WorkspaceLocator, WORKSPACE_FORMAT, REPLAY_REQUIREMENT, _write_workspace_format
+from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator, WORKSPACE_FORMAT, REPLAY_REQUIREMENT, _write_workspace_format
+from quantlab.desktop_runtime import RuntimeSafetyError
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 
 GUARDED = {**WORKSPACE_FORMAT, 'sqlite_replay': REPLAY_REQUIREMENT}
@@ -22,7 +23,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.paths = AppPaths(self.root / 'workspace').ensure()
-        self.runtime = patch('quantlab.desktop_runtime._verify_replay_runtime')
+        self.runtime = patch('quantlab.research_core.adapters.workspace_store._verify_replay_runtime')
         self.runtime.start()
         self.addCleanup(self.runtime.stop)
 
@@ -66,7 +67,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
 
     def test_fsync_failure_aborts_before_caller_can_open_wal(self):
         opened = []
-        with patch('quantlab.desktop_runtime.os.fsync', side_effect=OSError('flush failed')):
+        with patch('quantlab.research_core.adapters.workspace_store.os.fsync', side_effect=OSError('flush failed')):
             with self.assertRaises(OSError):
                 self.paths.require_replay_wal()
                 opened.append(True)
@@ -75,7 +76,7 @@ class WorkspaceWALGuardTests(unittest.TestCase):
     def test_guard_inplace_retains_inode_and_flushes_file_then_directory(self):
         marker = self.paths.root / 'workspace-format.json'
         inode = marker.stat().st_ino
-        with patch('quantlab.desktop_runtime.os.fsync', wraps=__import__('os').fsync) as flush:
+        with patch('quantlab.research_core.adapters.workspace_store.os.fsync', wraps=__import__('os').fsync) as flush:
             self.paths.require_replay_wal()
         self.assertEqual(marker.stat().st_ino, inode)
         self.assertGreaterEqual(flush.call_count, 1)
@@ -262,13 +263,13 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
     released_module = WorkspaceWALGuardTests.released_module
 
     def formats(self):
-        from quantlab.desktop_runtime import WALK_FORWARD_REQUIREMENT
+        from quantlab.research_core.adapters.workspace_store import WALK_FORWARD_REQUIREMENT
 
         wfo = {**WORKSPACE_FORMAT, 'sqlite_walk_forward': WALK_FORWARD_REQUIREMENT}
         return WORKSPACE_FORMAT, GUARDED, wfo, {**GUARDED, **wfo}
 
     def test_exact_composed_formats_and_both_setter_orders(self):
-        from quantlab.desktop_runtime import _workspace_format
+        from quantlab.research_core.adapters.workspace_store import _workspace_format
 
         base, replay, wfo, both = self.formats()
         for value in (base, replay, wfo, both):
@@ -440,10 +441,10 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
                         self.assertEqual(json.loads((paths.root / 'workspace-format.json').read_text()), incoming if committed else prior)
 
     def test_new_host_run_guards_before_owner_and_fsync_failure_prevents_claim(self):
-        from quantlab.desktop_runtime import JobManager
+        from desktop_app.research_bootstrap import create_job_manager
         from tests.test_desktop_walk_forward_runtime import plan_payload
 
-        manager = JobManager(self.paths)
+        manager = create_job_manager(self.paths)
         payload = {'plan': plan_payload(), 'preview_identity': 'a' * 64}
 
         def claimed(*args):
@@ -455,7 +456,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
                 manager.start('ui_walk_forward_run', payload)
         _write_workspace_format(self.paths.root, WORKSPACE_FORMAT)
         with (
-            patch('quantlab.desktop_runtime.os.fsync', side_effect=OSError('flush failed')),
+            patch('quantlab.research_core.adapters.workspace_store.os.fsync', side_effect=OSError('flush failed')),
             patch.object(manager, '_claim_walk_forward') as claim,
             patch('quantlab.research_core.adapters.job_process.mp.get_context') as spawn,
         ):
@@ -465,7 +466,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
             spawn.assert_not_called()
 
     def test_existing_host_journal_is_rejected_without_marker_mutation(self):
-        from quantlab.desktop_runtime import JobManager
+        from desktop_app.research_bootstrap import create_job_manager
         from tests.test_desktop_walk_forward_runtime import plan_payload
 
         folder = self.paths.state / 'walk_forward' / ('a' * 64)
@@ -475,7 +476,7 @@ class WalkForwardWorkspaceGuardTests(unittest.TestCase):
         before = marker.read_bytes()
         with patch.object(AppPaths, 'require_walk_forward_wal') as require:
             with self.assertRaisesRegex(RuntimeSafetyError, 'read-only'):
-                JobManager(self.paths).start('ui_walk_forward_run', {'plan': plan_payload(), 'preview_identity': 'a' * 64})
+                create_job_manager(self.paths).start('ui_walk_forward_run', {'plan': plan_payload(), 'preview_identity': 'a' * 64})
             require.assert_not_called()
         self.assertEqual(marker.read_bytes(), before)
         self.assertEqual((folder / 'walk_forward.sqlite3').read_bytes(), b'original database')

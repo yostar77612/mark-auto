@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 from desktop_app.features.settings.diagnostics import DiagnosticsPanel, snapshot_for_state
 from desktop_app.components.job_progress import JobFeedback
 from quantlab import __version__
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 from quantlab.diagnostics import LOG_BYTES, MAX_BYTES, MAX_ERRORS, TRUNCATION_MARKER, build_diagnostics, copy_diagnostics, read_error_records
 from quantlab.errors import ERROR_TABLE
 from quantlab.paper import LiveBroker, LiveTradingDisabled

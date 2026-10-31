@@ -79,7 +79,9 @@ import quantlab.desktop_runtime as runtime
 from quantlab.research_core.adapters import job_worker
 from tests.smoke_timeout_diagnostics import diagnosed_smoke_worker
 job_worker._job_worker = diagnosed_smoke_worker
-from quantlab.desktop_runtime import JobManager, AppPaths, RuntimeSafetyError
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from quantlab.desktop_runtime import RuntimeSafetyError
 if sys.platform == 'win32':
  AppPaths.discover = classmethod(lambda cls: cls(Path(os.environ['LOCALAPPDATA']) / 'MarkAuto'))
 from PySide6.QtWidgets import QMessageBox

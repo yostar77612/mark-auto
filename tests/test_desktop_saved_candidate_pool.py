@@ -12,7 +12,9 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HAS_QT = importlib.util.find_spec('PySide6') is not None
 from quantlab.core import ValidationError, to_dict
-from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeSafetyError
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.desktop_runtime import RuntimeSafetyError
 from quantlab.research_core.application.job_requests import validate_walk_forward_request
 from quantlab.reporting import demo_config, save_dataset
 from tests.test_walk_forward import inputs
@@ -112,7 +114,7 @@ class SavedPoolDesktopGrammarTests(unittest.TestCase):
     def test_runtime_rejects_mixed_or_forged_requests_before_spawn(self):
         with tempfile.TemporaryDirectory() as temporary:
             paths = AppPaths(Path(temporary) / 'app').ensure()
-            manager = JobManager(paths)
+            manager = create_job_manager(paths)
             _, builtin = inputs()
             saved = pending_saved_plan()
             source = local_source(Path(temporary) / 'original.json')
@@ -637,7 +639,7 @@ class SavedPoolSpawnSmokeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             paths = AppPaths(root / 'app').ensure()
-            self.manager = JobManager(paths)
+            self.manager = create_job_manager(paths)
             self.addCleanup(self.manager.close)
             data, _ = inputs(process_start_method='spawn')
             save_dataset(data, paths.state / 'dataset.json')
@@ -692,6 +694,13 @@ class SavedPoolDesktopStaticTests(unittest.TestCase):
             'desktop_app/shell/main_window.py',
             'desktop_app/features/walk_forward/presenter.py',
             'quantlab/desktop_runtime.py',
+            'quantlab/research_core/adapters/workspace_store.py',
+            'quantlab/research_core/adapters/settings_store.py',
+            'quantlab/research_core/adapters/state_json.py',
+            'quantlab/research_core/adapters/runtime_safety.py',
+            'quantlab/research_core/adapters/event_log.py',
+            'quantlab/research_core/application/job_manager.py',
+            'quantlab/research_core/adapters/walk_forward_owner.py',
         ):
             source = (root / name).read_text(encoding='utf-8')
             self.assertEqual(python_findings(source, name, research=name.startswith('quantlab/'), desktop=not name.startswith('quantlab/')), [])

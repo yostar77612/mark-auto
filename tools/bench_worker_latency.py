@@ -1,6 +1,8 @@
 """Opt-in real spawn-worker benchmark; stdlib harness, no default-suite timing tests."""
 
 from __future__ import annotations
+from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+from desktop_app.research_bootstrap import create_job_manager
 
 
 import argparse
@@ -25,7 +27,7 @@ def summary(values):
     return dict(median=statistics.median(values), min=min(values), max=max(values))
 
 
-def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *args):
+def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *args, **runtime_options):
     from quantlab.research_core.adapters import job_worker
 
     entered = time.perf_counter()
@@ -55,7 +57,7 @@ def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *
 
     sys.setprofile(profile)
     try:
-        job_worker._job_worker(Sender(), gate, operation, payload, root, bootstrap, job_id, *args)
+        job_worker._job_worker(Sender(), gate, operation, payload, root, bootstrap, job_id, *args, storage_port=WorkspaceJobStorage())
     finally:
         sys.setprofile(None)
         totals['qt_loaded'] = any(name.startswith('PySide6') for name in sys.modules)
@@ -63,12 +65,11 @@ def measured_worker(sender, gate, operation, payload, root, bootstrap, job_id, *
 
 
 def job_sample(paths):
-    import quantlab.desktop_runtime as runtime
     from quantlab.research_core.adapters import job_worker
     from quantlab.core import to_dict
     from quantlab.reporting import demo_config
 
-    manager = runtime.JobManager(paths)
+    manager = create_job_manager(paths)
     try:
         started = time.perf_counter()
         with patch.object(job_worker, '_job_worker', measured_worker):
@@ -120,7 +121,7 @@ def main():
     if options.repeats < 5:
         parser.error('--repeats must be at least 5')
     os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
-    from quantlab.desktop_runtime import AppPaths
+    from quantlab.research_core.adapters.workspace_store import AppPaths
     from quantlab.reporting import synthetic_dataset, save_dataset, demo_config
     from quantlab.strategies import builtin_strategies
     from quantlab.research import _run_bounded, _evaluate_split

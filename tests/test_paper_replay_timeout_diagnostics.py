@@ -170,7 +170,6 @@ class OriginalReplayDiagnosticTests(unittest.TestCase):
         self.assertIs(NativeDesktopTests.wait_job, original_wait)
 
     def test_blocked_original_gate_has_no_observer_io_thread_or_sql_installation(self):
-        import quantlab.desktop_runtime as runtime
 
         waits = []
         gate = SimpleNamespace(wait=lambda seconds: waits.append(seconds) or False)
@@ -187,7 +186,7 @@ class OriginalReplayDiagnosticTests(unittest.TestCase):
         gate.wait = blocked
         with (
             patch.object(diagnostic, '_original_worker', job_worker._job_worker),
-            patch.object(runtime.os, 'setsid', create=True, side_effect=lambda: order.append('setsid')),
+            patch.object(job_worker.os, 'setsid', create=True, side_effect=lambda: order.append('setsid')),
             patch.object(diagnostic, '_write_json') as write,
             patch.object(diagnostic.threading, 'Thread') as thread,
             patch.object(diagnostic, '_instrument_connect') as install,

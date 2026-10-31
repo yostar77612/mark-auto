@@ -12,7 +12,10 @@ from PySide6.QtWidgets import QApplication, QCheckBox
 from tests.test_t9_onboarding import sandbox_ui
 from desktop_app.features.settings.log_table import LogTable
 from desktop_app.strings.catalog import LOG_OPERATION_NAMES, LOG_EVENT_NAMES, ui_text
-from quantlab.desktop_runtime import RedactedEventLog, OPERATIONS, UI_OPERATIONS, RuntimeSafetyError
+from quantlab.research_core.adapters.event_log import RedactedEventLog
+from desktop_app.research_bootstrap import create_event_log
+from quantlab.research_core.domain.job_protocol import OPERATIONS, UI_OPERATIONS
+from quantlab.desktop_runtime import RuntimeSafetyError
 
 
 class LogTableTests(unittest.TestCase):
@@ -26,12 +29,12 @@ class LogTableTests(unittest.TestCase):
         self.addCleanup(self.context.__exit__, None, None, None)
         self.temp = tempfile.TemporaryDirectory(prefix='t10-logs-')
         self.addCleanup(self.temp.cleanup)
-        self.log = RedactedEventLog(Path(self.temp.name) / 'events.jsonl')
+        self.log = create_event_log(Path(self.temp.name) / 'events.jsonl')
         self.table = LogTable()
         self.addCleanup(self.table.deleteLater)
 
     def seed(self):
-        with patch('quantlab.desktop_runtime.time.time', return_value=1704067200):
+        with patch('quantlab.research_core.adapters.event_log.time.time', return_value=1704067200):
             for event in ('started', 'progress', 'result', 'error', 'cancelled'):
                 self.log.append('ui_demo', event)
         self.table.load(self.log.tail())

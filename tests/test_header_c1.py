@@ -22,7 +22,9 @@ from desktop_app.shell.window import MainWindow
 from quantlab.research_core.application.paper_operations import paper_risk_limits
 from tests.test_desktop_ui_polish_b import disposable_directory
 from tests.test_t9_onboarding import sandbox_ui
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 
 
 NOW = datetime(2026, 10, 20, 3, 4, 5, tzinfo=timezone.utc)
@@ -175,7 +177,7 @@ class HeaderTests(unittest.TestCase):
         with disposable_directory() as folder, sandbox_ui(), patch('desktop_app.shell.app_header.datetime', wraps=datetime) as fake_datetime:
             fake_datetime.now.return_value = NOW
             paths = AppPaths(Path(folder) / 'workspace').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             self.addCleanup(jobs.close)
             window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:

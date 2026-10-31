@@ -240,7 +240,10 @@ class ChatGPTHostTests(unittest.TestCase):
                 manager.process = proc
                 manager.receiver = Mock()
                 manager.receiver.poll.return_value = False
-                with patch('quantlab.desktop_runtime.sys.platform', platform), patch('quantlab.desktop_runtime.os.killpg', create=True) as kill:
+                with (
+                    patch('quantlab.desktop_runtime.sys.platform', platform),
+                    patch('quantlab.research_core.adapters.job_process.os.killpg', create=True) as kill,
+                ):
                     events = manager.poll()
                 if platform == 'linux':
                     kill.assert_called_once()
@@ -465,10 +468,11 @@ class DescendantQuiescenceTests(unittest.TestCase):
     def test_term_ignoring_descendant_cannot_survive_cancel(self):
         import multiprocessing, tempfile
         from pathlib import Path
-        from quantlab.desktop_runtime import AppPaths, JobManager
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
 
         with tempfile.TemporaryDirectory() as tmp:
-            manager = JobManager(AppPaths(Path(tmp) / 'app').ensure())
+            manager = create_job_manager(AppPaths(Path(tmp) / 'app').ensure())
             context = multiprocessing.get_context('spawn')
             receiver, sender = context.Pipe(False)
             ready_receiver, ready_sender = context.Pipe(False)
@@ -512,7 +516,7 @@ class WindowsTreeProtocolFixtureTests(unittest.TestCase):
             return True
 
         tree.kernel.QueryInformationJobObject.side_effect = query
-        with patch('quantlab.desktop_runtime.time.sleep'):
+        with patch('quantlab.research_core.application.job_manager.time.sleep'):
             tree.stop_and_join()
         tree.kernel.TerminateJobObject.assert_called_once_with(123, 1)
         self.assertEqual(tree.kernel.QueryInformationJobObject.call_count, 2)

@@ -54,7 +54,7 @@ def _reference(registration, bootstrap):
     from quantlab.assistant.adapters.chatgpt.auth import AuthSession, OAuthCredentialReference
     from quantlab.assistant.adapters.chatgpt.vault import DPAPIVault
     from quantlab.assistant.adapters.chatgpt.provider import read_account_status
-    from quantlab.desktop_runtime import AppPaths
+    from quantlab.research_core.adapters.workspace_store import AppPaths
 
     root = Path(bootstrap) if bootstrap else AppPaths.discover().root
     registration = registration or AuthSession(DPAPIVault(str(root))).status_summary()['active_registration']

@@ -16,7 +16,10 @@ def capture(root, state):
     sys.path.insert(0, str(root))
     from PySide6.QtCore import QTimer
     from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QWidget
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, RuntimeGuard
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.settings_store import SettingsStore
+    from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
     from quantlab.research_core.adapters.workspace_backup import BackupManager
     from desktop_app.shell.main_window import create_window
 
@@ -26,7 +29,7 @@ def capture(root, state):
     stamp = datetime(2026, 1, 5, 4, 0, tzinfo=timezone.utc)
     with patch.dict(os.environ, env), patch('desktop_app.shell.app_header.CLOCK_OVERRIDE', lambda: stamp):
         paths = AppPaths(state / 'workspace', state / 'bootstrap').ensure()
-        manager = JobManager(paths)
+        manager = create_job_manager(paths)
         window = create_window(paths, manager, SettingsStore(paths.state / 'settings.json'), BackupManager(paths, manager), RuntimeGuard(paths))
         for timer in window.findChildren(QTimer):
             timer.stop()

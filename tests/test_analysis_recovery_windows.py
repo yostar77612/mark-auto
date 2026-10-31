@@ -15,7 +15,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from quantlab import analysis_recovery_windows as recovery
-from quantlab.desktop_runtime import AppPaths, RuntimeSafetyError
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from quantlab.desktop_runtime import RuntimeSafetyError
 
 
 def _anticipated():

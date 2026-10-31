@@ -124,7 +124,9 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
 
     import desktop_app.shell.theme
     from desktop_app.shell.main_window import create_window
-    from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+    from quantlab.research_core.adapters.workspace_store import AppPaths
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.settings_store import SettingsStore
     from quantlab.research_core.adapters.workspace_backup import BackupManager
 
     out = Path(out)
@@ -142,7 +144,7 @@ def run(out, styles, themes, threshold=4.5, size=(1366, 768)):
         for theme in themes:
             with tempfile.TemporaryDirectory(prefix='markauto-readability-') as temporary:
                 paths = AppPaths(Path(temporary) / 'workspace', Path(temporary) / 'bootstrap').ensure()
-                jobs = JobManager(paths)
+                jobs = create_job_manager(paths)
                 window = create_window(
                     paths,
                     jobs,

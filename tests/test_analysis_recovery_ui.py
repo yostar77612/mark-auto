@@ -21,7 +21,9 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HAS_QT = importlib.util.find_spec('PySide6') is not None
 
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore, WorkspaceLocator
+from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.research_core.adapters.workspace_backup import BackupManager
 from quantlab import analysis_recovery as recovery
 from tests import test_restart_availability_contract as contract
@@ -70,7 +72,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         ):
             self.stack.enter_context(patch(target, side_effect=AssertionError('No recovery UI network/provider')))
         self.stack.enter_context(patch('quantlab.research_core.adapters.job_worker._job_worker', _offline_worker))
-        self.jobs = JobManager(self.paths)
+        self.jobs = create_job_manager(self.paths)
         self.backups = BackupManager(self.paths, self.jobs)
         self.window = MainWindow(
             self.paths, self.jobs, SettingsStore(self.paths.state / 'settings.json'), self.backups, services=_c_create_ui_services(_c_create_operation_ports())
@@ -287,7 +289,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         locator.configure(self.base / 'other-workspace')
         other = locator.load(probe=False).ensure()
         save_dataset(self.data, other.state / 'dataset.json')
-        jobs = JobManager(other)
+        jobs = create_job_manager(other)
         window = MainWindow(
             other, jobs, SettingsStore(other.state / 'settings.json'), BackupManager(other, jobs), services=_c_create_ui_services(_c_create_operation_ports())
         )
@@ -386,7 +388,7 @@ class AnalysisRecoveryUITests(unittest.TestCase):
         backups = BackupManager(clean)
         self.assertTrue(_prepare_startup_workspace(clean, backups).legacy)
         self.assertFalse((clean.controls / 'analysis-recovery-v1.sqlite3').exists())
-        jobs = JobManager(clean)
+        jobs = create_job_manager(clean)
         window = MainWindow(clean, jobs, SettingsStore(clean.state / 'settings.json'), backups, services=_c_create_ui_services(_c_create_operation_ports()))
         window.timer.stop()
         window.automatic_backup_panel.timer.stop()

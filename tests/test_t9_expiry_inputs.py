@@ -404,7 +404,8 @@ class ExpiryInputTests(unittest.TestCase):
         from PySide6.QtCore import QTimer
         from PySide6.QtWidgets import QWidget
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths, JobManager
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
 
         mkdir = os.mkdir
 
@@ -417,7 +418,7 @@ class ExpiryInputTests(unittest.TestCase):
             tempfile.TemporaryDirectory(prefix='t9-widgets-') as folder,
         ):
             paths = AppPaths(Path(folder) / 'workspace').ensure()
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             window = MainWindow(paths, jobs, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in window.findChildren(QTimer):

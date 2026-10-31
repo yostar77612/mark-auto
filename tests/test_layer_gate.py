@@ -370,6 +370,13 @@ class LayerGateTests(unittest.TestCase):
                 'quantlab/research_core/application/saved_pool_attempts.py': 'quantlab/saved_candidate_pool.py',
                 'quantlab/research_core/application/saved_pool_validation.py': 'quantlab/saved_candidate_pool.py',
                 'desktop_app/features/capital_scenario/presenter.py': 'desktop_capital_scenario.py',
+                'quantlab/research_core/adapters/workspace_store.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/settings_store.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/state_json.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/runtime_safety.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/event_log.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/adapters/walk_forward_owner.py': 'quantlab/desktop_runtime.py',
+                'quantlab/research_core/application/job_manager.py': 'quantlab/desktop_runtime.py',
             },
         )
         entry = dict(

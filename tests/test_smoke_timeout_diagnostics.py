@@ -15,7 +15,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from quantlab.desktop_runtime import JobManager, RuntimeSafetyError
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.desktop_runtime import RuntimeSafetyError
 
 from tests.smoke_timeout_diagnostics import (
     WorkerTimings,
@@ -601,7 +602,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
         tree.kernel = kernel
         with (
             patch('tests.smoke_timeout_diagnostics.time.monotonic', side_effect=lambda: clock[0]),
-            patch('quantlab.desktop_runtime.time.monotonic', side_effect=lambda: clock[0]),
+            patch('quantlab.research_core.application.job_manager.time.monotonic', side_effect=lambda: clock[0]),
         ):
             _stop_windows_smoke_workers(tree, SimpleNamespace(_handle=100), [123], kernel=kernel)
         kernel.TerminateJobObject.assert_called_once_with(300, 1)
@@ -623,7 +624,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
         tree.kernel = kernel
         with (
             patch('tests.smoke_timeout_diagnostics.time.monotonic', side_effect=lambda: clock[0]),
-            patch('quantlab.desktop_runtime.time.monotonic', side_effect=lambda: clock[0]),
+            patch('quantlab.research_core.application.job_manager.time.monotonic', side_effect=lambda: clock[0]),
         ):
             with self.assertRaisesRegex(RuntimeSafetyError, 'unchanged reserve') as failure:
                 _stop_windows_smoke_workers(tree, SimpleNamespace(_handle=100), [123], kernel=kernel)
@@ -646,7 +647,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
         tree.kernel = kernel
         with (
             patch('tests.smoke_timeout_diagnostics.time.monotonic', side_effect=lambda: clock[0]),
-            patch('quantlab.desktop_runtime.time.monotonic', side_effect=lambda: clock[0]),
+            patch('quantlab.research_core.application.job_manager.time.monotonic', side_effect=lambda: clock[0]),
         ):
             with self.assertRaisesRegex(RuntimeSafetyError, 'unchanged reserve') as failure:
                 _stop_windows_smoke_workers(tree, SimpleNamespace(_handle=100), [123], kernel=kernel)
@@ -667,7 +668,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
         tree.kernel = kernel
         with (
             patch('tests.smoke_timeout_diagnostics.time.monotonic', side_effect=lambda: clock[0]),
-            patch('quantlab.desktop_runtime.time.monotonic', side_effect=lambda: clock[0]),
+            patch('quantlab.research_core.application.job_manager.time.monotonic', side_effect=lambda: clock[0]),
         ):
             with self.assertRaisesRegex(RuntimeSafetyError, 'unchanged reserve') as failure:
                 _stop_windows_smoke_workers(tree, SimpleNamespace(_handle=100), [123], kernel=kernel)
@@ -681,7 +682,7 @@ class WindowsSmokeWorkerWaitTests(unittest.TestCase):
         tree = object.__new__(_WindowsProcessTree)
         tree.handle = 300
         tree.kernel = kernel
-        with patch('quantlab.desktop_runtime.time.monotonic', side_effect=lambda: clock[0]):
+        with patch('quantlab.research_core.application.job_manager.time.monotonic', side_effect=lambda: clock[0]):
             with self.assertRaisesRegex(RuntimeSafetyError, 'unchanged deadline'):
                 tree.stop_and_join(deadline=10000)
         kernel.TerminateJobObject.assert_called_once_with(300, 1)
@@ -868,7 +869,7 @@ class ProcDisappearanceTests(unittest.TestCase):
         for error in (PermissionError(errno.EACCES, 'denied'), OSError(errno.EIO, 'unknown I/O failure')):
             with (
                 self.subTest(error=type(error).__name__),
-                patch('quantlab.desktop_runtime.os.killpg'),
+                patch('quantlab.research_core.adapters.job_process.os.killpg'),
                 patch('tests.test_desktop_smoke_terminal.os.kill'),
                 patch.object(Path, 'iterdir', return_value=iter([Path('/proc/123')])),
                 patch.object(Path, 'read_text', side_effect=error),

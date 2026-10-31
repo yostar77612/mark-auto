@@ -13,7 +13,7 @@ from unittest.mock import patch
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 HAS_QT = importlib.util.find_spec('PySide6') is not None
 from quantlab.core import Dataset, ValidationError, content_hash, to_dict
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 from quantlab.reporting import demo_config, save_dataset
 from quantlab.walk_forward import read_walk_forward_state
 from tests.test_walk_forward import inputs, fake_worker, alter_prices

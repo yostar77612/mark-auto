@@ -30,7 +30,7 @@ def snapshot(root):
 
 class ReadOnlyWorkspaceTests(unittest.TestCase):
     def test_read_only_default_does_not_create_user_directories(self):
-        from quantlab.desktop_runtime import WorkspaceLocator
+        from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / 'absent-bootstrap'
@@ -38,7 +38,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
             self.assertFalse(root.exists())
 
     def test_read_only_redirect_validates_without_mkdir_or_probe(self):
-        from quantlab.desktop_runtime import AppPaths, WorkspaceLocator
+        from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             bootstrap = Path(temporary).resolve() / 'bootstrap'
@@ -47,15 +47,16 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
             pointer = bootstrap / 'workspace-location.json'
             pointer.write_text(json.dumps({'schema_version': 1, 'root': str(workspace)}))
             locator = WorkspaceLocator(bootstrap)
-            with patch('quantlab.desktop_runtime.tempfile.mkstemp', side_effect=AssertionError('Write probe forbidden')):
+            with patch('quantlab.research_core.adapters.workspace_store.tempfile.mkstemp', side_effect=AssertionError('Write probe forbidden')):
                 self.assertEqual(locator.load(probe=False), AppPaths(workspace, bootstrap))
             self.assertFalse(workspace.exists())
-            with patch('quantlab.desktop_runtime.tempfile.mkstemp', side_effect=AssertionError('Normal startup still probes')):
+            with patch('quantlab.research_core.adapters.workspace_store.tempfile.mkstemp', side_effect=AssertionError('Normal startup still probes')):
                 with self.assertRaisesRegex(AssertionError, 'still probes'):
                     locator.load()
 
     def test_read_only_redirect_rejects_invalid_paths(self):
-        from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
+        from quantlab.desktop_runtime import RuntimeSafetyError
+        from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -73,7 +74,8 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
                     locator.load(probe=False)
 
     def test_read_only_redirect_rejects_symlink_when_supported(self):
-        from quantlab.desktop_runtime import RuntimeSafetyError, WorkspaceLocator
+        from quantlab.desktop_runtime import RuntimeSafetyError
+        from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -98,7 +100,7 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
     def smoke(self, *, redirected=False, injected='', expected_status='passed', seeded=True, isolated=False, long_temp=False):
         from desktop import _smoke_steps
         from quantlab.research_core.application.paper_operations import _paper
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
 
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve()
@@ -156,7 +158,7 @@ class SmokeUserStateIsolationTests(unittest.TestCase):
     raise AssertionError('Smoke attempted a user-state write')
 sys.addaudithook(audit)
 import desktop
-from quantlab.desktop_runtime import AppPaths
+from quantlab.research_core.adapters.workspace_store import AppPaths
 # SHGetFolderPathW uses the registered profile, not necessarily LOCALAPPDATA.
 # Pin only discovery in this test subprocess; no runner profile is inspected.
 # The real Qt startup, Windows mutex, workers and application paths still run.

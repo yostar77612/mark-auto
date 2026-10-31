@@ -44,13 +44,15 @@ class PopoutTests(unittest.TestCase):
 
     def test_real_main_close_and_atomic_settings_layout_isolation(self):
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
 
         with sandbox_ui():
             paths = AppPaths(self.temporary()).ensure()
             store = SettingsStore(paths.state / 'settings.json')
             store.save({'legacy': {'keep': True}})
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             w = MainWindow(paths, jobs, store, services=_c_create_ui_services(_c_create_operation_ports()))
             try:
                 for timer in w.findChildren(QTimer):

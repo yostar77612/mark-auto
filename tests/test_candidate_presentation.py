@@ -135,7 +135,9 @@ class CandidatePresentationHostTests(unittest.TestCase):
 
     def test_actual_verified_candidate_keeps_full_advanced_provenance(self):
         from tests.saved_pool_fixtures import make_saved_source
-        from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
+        from quantlab.research_core.adapters.settings_store import SettingsStore
         from quantlab.research_core.adapters.workspace_backup import BackupManager
         from quantlab.reporting import save_dataset
         from desktop_app.shell.window import MainWindow
@@ -145,7 +147,7 @@ class CandidatePresentationHostTests(unittest.TestCase):
             paths = AppPaths(Path(tmp) / 'workspace', Path(tmp) / 'bootstrap').ensure()
             folder, ref, data, state = make_saved_source(paths.state / 'campaigns', candidates=1, registry_path=paths.controls / 'holdout-registry.sqlite3')
             save_dataset(data, paths.state / 'dataset.json')
-            jobs = JobManager(paths)
+            jobs = create_job_manager(paths)
             w = MainWindow(
                 paths,
                 jobs,

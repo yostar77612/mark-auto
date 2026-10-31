@@ -151,7 +151,12 @@ def acquire_instance_lock(locator, smoke_startup_directory=None):
 
 def prepare_workspace(state):
     from quantlab.research_core.adapters.workspace_backup import BackupManager
-    from quantlab.desktop_runtime import JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex
+    from quantlab.research_core.application.job_manager import JobManager
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
+    from quantlab.research_core.adapters.settings_store import SettingsStore
+    from quantlab.research_core.adapters.workspace_store import WorkspaceLocator
+    from quantlab.desktop_runtime import WindowsAppMutex
 
     state.installation_guard = WindowsAppMutex()
     state.paths = state.locator.load(probe=False)
@@ -173,7 +178,7 @@ def prepare_workspace(state):
     state.validated_settings = state.settings.load()  # Fail closed on incompatible/corrupt state.
     if state.args.smoke_test:
         state.settings = _SmokeSettingsView(state.validated_settings)  # Smoke must preserve saved user bytes.
-    state.jobs = JobManager(state.paths)
+    state.jobs = create_job_manager(state.paths)
     state.backups.jobs = state.jobs
     return True
 
@@ -185,7 +190,13 @@ def run_gui(args):
     from PySide6.QtCore import QAbstractNativeEventFilter, QLockFile, QTimer
     from PySide6.QtWidgets import QApplication, QMessageBox
     from quantlab import __version__
-    from quantlab.desktop_runtime import AppPaths, JobManager, RuntimeGuard, SettingsStore, WorkspaceLocator, WindowsAppMutex, atomic_write, _json_bytes
+    from quantlab.research_core.adapters.workspace_store import AppPaths, WorkspaceLocator
+    from quantlab.research_core.application.job_manager import JobManager
+    from desktop_app.research_bootstrap import create_job_manager
+    from quantlab.research_core.adapters.runtime_safety import RuntimeGuard
+    from quantlab.research_core.adapters.settings_store import SettingsStore
+    from quantlab.desktop_runtime import WindowsAppMutex, atomic_write
+    from quantlab.research_core.adapters.state_json import _json_bytes
     from quantlab.research_core.adapters.workspace_backup import BackupManager
 
     # Keep existing dependency imports in place; measure only GUI initialization.

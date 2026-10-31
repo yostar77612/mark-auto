@@ -113,7 +113,7 @@ class MarketEmptyTests(unittest.TestCase):
     def test_completion_success_arms_timer_and_fade_hides_without_waiting(self):
         from PySide6.QtCore import QTimer
         from desktop_app.shell.window import MainWindow
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
         from tests.test_t9_onboarding import sandbox_ui
 
         with sandbox_ui(), tempfile.TemporaryDirectory(prefix='t16-notice-') as temporary:

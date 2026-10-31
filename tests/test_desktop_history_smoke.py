@@ -70,7 +70,7 @@ class HistorySmokeResultTests(unittest.TestCase):
     def setUp(self):
         from desktop import _history_smoke_fixture
         from desktop_app.connection_composition import execute_ui_operation
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
 
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

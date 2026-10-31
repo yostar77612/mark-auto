@@ -22,7 +22,9 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.window import MainWindow
 from quantlab.backtest import run_backtest
 from quantlab.core import content_hash
-from quantlab.desktop_runtime import AppPaths, JobManager, SettingsStore
+from quantlab.research_core.adapters.workspace_store import AppPaths
+from desktop_app.research_bootstrap import create_job_manager
+from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.reporting import demo_config, export_report, synthetic_dataset, write_json
 from quantlab.strategies import builtin_strategies
 from tests.test_t9_onboarding import sandbox_ui
@@ -81,7 +83,7 @@ class PrivacyWindowTests(unittest.TestCase):
         cls.context.__enter__()
         cls.temp = tempfile.TemporaryDirectory(prefix='b11-privacy-')
         cls.paths = AppPaths(Path(cls.temp.name) / 'workspace').ensure()
-        cls.jobs = JobManager(cls.paths)
+        cls.jobs = create_job_manager(cls.paths)
         cls.store = SettingsStore(cls.paths.state / 'settings.json')
         cls.window = MainWindow(cls.paths, cls.jobs, cls.store, services=_c_create_ui_services(_c_create_operation_ports()))
         for timer in cls.window.findChildren(QTimer):

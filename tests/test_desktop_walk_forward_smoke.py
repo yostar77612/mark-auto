@@ -43,7 +43,7 @@ class WalkForwardSmokeFixtureTests(unittest.TestCase):
     def test_fixed_two_fold_five_builtin_plan_and_explicit_nonacceptance(self):
         from desktop import _walk_forward_smoke_fixture, _smoke_steps
         from quantlab.core import to_dict
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
         from quantlab.reporting import load_dataset
         from quantlab.strategies import builtin_strategies
         from quantlab.walk_forward import walk_forward_plan_from_dict, _validate_source
@@ -86,7 +86,7 @@ class WalkForwardSmokeFixtureTests(unittest.TestCase):
 
     def test_omitted_core_module_cannot_prepare_smoke(self):
         from desktop import _walk_forward_smoke_fixture
-        from quantlab.desktop_runtime import AppPaths
+        from quantlab.research_core.adapters.workspace_store import AppPaths
 
         with tempfile.TemporaryDirectory() as temporary, patch.dict(sys.modules, {'quantlab.walk_forward': None}):
             with self.assertRaises(ImportError):
@@ -98,13 +98,14 @@ class WalkForwardSmokeResultTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from desktop import _walk_forward_smoke_fixture, _check_walk_forward_smoke_result
-        from quantlab.desktop_runtime import AppPaths, JobManager
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
 
         cls.temporary = tempfile.TemporaryDirectory()
         cls.addClassCleanup(cls.temporary.cleanup)
         cls.paths = AppPaths(Path(cls.temporary.name))
         cls.report, cls.payload = _walk_forward_smoke_fixture(cls.paths)
-        with closing(JobManager(cls.paths)) as manager:
+        with closing(create_job_manager(cls.paths)) as manager:
             preview = run_job(manager, OPERATIONS[0], cls.payload)
             cls.report.update(_check_walk_forward_smoke_result(OPERATIONS[0], preview, cls.paths, cls.payload, cls.report))
             cls.result = run_job(manager, OPERATIONS[1], {**cls.payload, 'preview_identity': cls.report['reference']})
@@ -205,13 +206,14 @@ class WalkForwardSmokeResultTests(unittest.TestCase):
 
     def test_real_no_winner_decision_cannot_satisfy_smoke_by_skipping_oos(self):
         from desktop import _walk_forward_smoke_fixture, _check_walk_forward_smoke_result
-        from quantlab.desktop_runtime import AppPaths, JobManager
+        from quantlab.research_core.adapters.workspace_store import AppPaths
+        from desktop_app.research_bootstrap import create_job_manager
 
         with tempfile.TemporaryDirectory() as temporary:
             paths = AppPaths(Path(temporary))
             report, payload = _walk_forward_smoke_fixture(paths)
             payload['plan']['ranking']['minimum'] = '1000000'
-            with closing(JobManager(paths)) as manager:
+            with closing(create_job_manager(paths)) as manager:
                 preview = run_job(manager, OPERATIONS[0], payload)
                 report.update(_check_walk_forward_smoke_result(OPERATIONS[0], preview, paths, payload, report))
                 result = run_job(manager, OPERATIONS[1], {**payload, 'preview_identity': report['reference']})
@@ -296,7 +298,7 @@ class WalkForwardSmokeProcessTests(unittest.TestCase):
             'bad_result': "original = desktop._check_walk_forward_smoke_result\ndef bad(op, result, *args):\n if op == 'ui_walk_forward_run': result = dict(result, summary={})\n return original(op, result, *args)\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
             'bad_reference': "original = desktop._check_walk_forward_smoke_result\ndef bad(op, result, *args):\n if op == 'ui_walk_forward_read': result = dict(result, reference='../outside')\n return original(op, result, *args)\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
             'worker_failure': "original = desktop._check_walk_forward_smoke_result\ndef bad(op, result, paths, *args):\n evidence = original(op, result, paths, *args)\n if op == 'ui_walk_forward_preview': (paths.state / 'dataset.json').unlink()\n return evidence\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
-            'launch_failure': "from quantlab.desktop_runtime import JobManager\noriginal = JobManager.start\ndef bad(self, op, payload):\n if op == 'ui_walk_forward_run': raise RuntimeError('Injected launch failure')\n return original(self, op, payload)\nJobManager.start = bad\n",
+            'launch_failure': "from quantlab.research_core.application.job_manager import JobManager\noriginal = JobManager.start\ndef bad(self, op, payload):\n if op == 'ui_walk_forward_run': raise RuntimeError('Injected launch failure')\n return original(self, op, payload)\nJobManager.start = bad\n",
         }
         for name, injected in variants.items():
             with self.subTest(failure=name):
