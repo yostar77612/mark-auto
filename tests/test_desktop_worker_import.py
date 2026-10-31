@@ -1,7 +1,5 @@
 """Real source-worker imports preserve parent GUI and operation isolation."""
 
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
-
 from quantlab.research_core.adapters.workspace_store import AppPaths
 from desktop_app.research_bootstrap import create_job_manager
 
@@ -30,7 +28,7 @@ ORIGINAL_WORKER = job_worker._job_worker
 def observed_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted=False, *extra, **runtime_options):
     """Observe the real one-job worker without substituting any operation."""
     try:
-        ORIGINAL_WORKER(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *extra, storage_port=WorkspaceJobStorage())
+        ORIGINAL_WORKER(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *extra)
     finally:
         # Observe the already-resolved registrar module in the actual child.
         import desktop_app.shell.main_window
@@ -73,9 +71,9 @@ class SourceWorkerImportTests(unittest.TestCase):
         code = '''from pathlib import Path
 import sys
 from quantlab.research_core.adapters.job_worker import _worker_operation_executor, _is_worker_registrar_import; from quantlab.research_core.adapters.workspace_store import AppPaths
- from quantlab.research_core.application.job_manager import JobManager
- from quantlab.research_core.adapters.settings_store import SettingsStore
- from quantlab.research_core.adapters.runtime_safety import RuntimeGuard; from quantlab.research_core.adapters.workspace_backup import BackupManager
+from quantlab.research_core.application.job_manager import JobManager
+from quantlab.research_core.adapters.settings_store import SettingsStore
+from quantlab.research_core.adapters.runtime_safety import RuntimeGuard; from quantlab.research_core.adapters.workspace_backup import BackupManager
 from desktop_app.research_bootstrap import create_job_manager
 executor = _worker_operation_executor('desktop_app.shell.main_window:execute_ui_operation')
 assert not _is_worker_registrar_import()

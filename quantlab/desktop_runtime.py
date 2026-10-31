@@ -113,6 +113,7 @@ class DesktopCredentialReference:
             raise RuntimeSafetyError('Invalid credential name')
 
     def __call__(self):
+        # Resolve the credential path only inside the HTTP child.
         from quantlab.research_core.adapters.workspace_store import AppPaths
 
         return CredentialVault(AppPaths(Path(self.root))).load(self.name)

@@ -1,7 +1,5 @@
 """Offline desktop critique integration. No grant, model service or held-out evaluation."""
 
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
-
 from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports
 
 import copy
@@ -40,7 +38,7 @@ def _offline_analysis_job_worker(*args, **runtime_options):
         patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('No provider transport')),
         patch('http.client.HTTPSConnection', side_effect=AssertionError('No network')),
     ):
-        _job_worker(*args, storage_port=WorkspaceJobStorage())
+        _job_worker(*args)
 
 
 def request_for(paths, data, state, folder, compare=False):

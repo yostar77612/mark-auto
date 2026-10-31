@@ -3,8 +3,6 @@
 Mock process/Job Object checks are protocol tests, not native Windows evidence.
 """
 
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
-
 import copy
 from contextlib import closing
 from functools import partial
@@ -57,7 +55,7 @@ def _cancellable_walk_forward_worker(*args, evaluation_started, evaluation_relea
         return _run_bounded(_held_walk_forward_evaluation, (*arguments, evaluation_started, evaluation_release), **kwargs)
 
     with patch('quantlab.walk_forward._run_bounded', side_effect=held_evaluation):
-        _job_worker(*args, storage_port=WorkspaceJobStorage())
+        _job_worker(*args)
 
 
 class WalkForwardRuntimeTests(unittest.TestCase):
@@ -392,7 +390,6 @@ class WalkForwardRuntimeTests(unittest.TestCase):
                     None,
                     'worker-fixture',
                     admitted,
-                    storage_port=WorkspaceJobStorage(),
                 )
             self.assertIs(execute.call_args.kwargs['descendants_stopped'], admitted)
             sender.close.assert_called_once()

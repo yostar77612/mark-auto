@@ -1,7 +1,5 @@
 """T16 fixed-code presentation and progress with in-memory workers only."""
 
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
-
 from quantlab.research_core.adapters.workspace_store import AppPaths
 
 from quantlab.research_core.adapters import job_worker
@@ -83,9 +81,7 @@ class FixedCodeTests(unittest.TestCase):
                 patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
                 patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=Mock(side_effect=exc)),
             ):
-                job_worker._job_worker(
-                    sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'fake', storage_port=WorkspaceJobStorage()
-                )
+                job_worker._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'fake')
             self.assertEqual(packets[-1]['error_code'], expected)
             self.assertNotIn(SECRET, json.dumps(packets))
             sender.close.assert_called_once()

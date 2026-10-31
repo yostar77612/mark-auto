@@ -152,7 +152,7 @@ def _launch_job_process(self, operation, payload, job_id, reconciliation_admitte
         if helper_nonce is None:
             worker_args += (None,)
         worker_args += (job_worker._executor_registrar,)
-    self.process = context.Process(target=job_worker._job_worker, args=worker_args, kwargs={'storage_port': self.storage_port})
+    self.process = context.Process(target=job_worker._job_worker, args=worker_args)
     self.receiver = receiver
     try:
         self.process.start()

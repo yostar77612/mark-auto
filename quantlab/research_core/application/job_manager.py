@@ -2,19 +2,34 @@
 
 from __future__ import annotations
 
+import importlib
 import time
 import uuid
 from quantlab.shared.runtime_errors import RuntimeSafetyError
 from quantlab.research_core.ports.jobs import JobProcessPort, JobStoragePort, JobEventLogPort
-from quantlab.research_core.domain.job_protocol import OPERATIONS, UI_OPERATIONS, ANALYSIS_OPERATIONS, WALK_FORWARD_OPERATIONS
+from quantlab.research_core.domain.job_protocol import DEFAULT_JOB_PORT_FACTORY, OPERATIONS, UI_OPERATIONS, ANALYSIS_OPERATIONS, WALK_FORWARD_OPERATIONS
 
 
 class JobManager:
     """One spawned bounded-IPC task at a time; no arbitrary callable execution."""
 
-    def __init__(self, paths, *, process_port: JobProcessPort, storage_port: JobStoragePort, event_log: JobEventLogPort):
-        self.process_port, self.storage_port = process_port, storage_port
+    def __init__(
+        self,
+        paths,
+        *,
+        process_port: JobProcessPort | None = None,
+        storage_port: JobStoragePort | None = None,
+        event_log: JobEventLogPort | None = None,
+        default_factory=DEFAULT_JOB_PORT_FACTORY,
+    ):
         self.paths = paths.ensure()
+        if process_port is None or storage_port is None or event_log is None:
+            module, name = default_factory.split(':')
+            defaults = getattr(importlib.import_module(module), name)(self.paths)
+            process_port = defaults[0] if process_port is None else process_port
+            storage_port = defaults[1] if storage_port is None else storage_port
+            event_log = defaults[2] if event_log is None else event_log
+        self.process_port, self.storage_port = process_port, storage_port
         self.process = self.receiver = self.tree = None
         self.job_id = None
         self._terminal = False
@@ -108,7 +123,10 @@ class JobManager:
         return self.process_port.launch(self, operation, payload, job_id, reconciliation_admitted, helper_nonce, approved_analysis_plan, request)
 
     def _join_descendants(self, pid):
-        port = self.process_port
+        port = getattr(self, 'process_port', None)
+        if port is None:
+            module, name = DEFAULT_JOB_PORT_FACTORY.split(':')
+            port = getattr(importlib.import_module(module), name)()[0]
         return port.join_descendants(self, pid)
 
     def start(self, operation, payload):

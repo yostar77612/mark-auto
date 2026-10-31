@@ -1,7 +1,5 @@
 """Failure-only synthetic smoke evidence; never copy raw output or user state."""
 
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
-
 from contextlib import contextmanager
 import json
 import os
@@ -173,9 +171,7 @@ def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, jo
 
         return diagnosed_generic_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     if operation != 'ui_walk_forward_run':
-        return _original_job_worker(
-            sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options, storage_port=WorkspaceJobStorage()
-        )
+        return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     # Preserve Job Object admission before importing or instrumenting work.
     if not gate.wait(15):
         return
@@ -194,9 +190,7 @@ def diagnosed_smoke_worker(sender, gate, operation, payload, root, bootstrap, jo
     reporter.start()
     try:
         with timings.measure('worker.body'), instrument_walk_forward(timings):
-            return _original_job_worker(
-                sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options, storage_port=WorkspaceJobStorage()
-            )
+            return _original_job_worker(sender, gate, operation, payload, root, bootstrap, job_id, reconciliation_admitted, *worker_options)
     finally:
         stop.set()
         reporter.join()

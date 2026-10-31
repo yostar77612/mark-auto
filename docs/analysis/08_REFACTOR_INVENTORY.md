@@ -681,6 +681,17 @@ PR E4 market/history owners (content-only):
 | `tools/refactor/e_runtime.py` | 416 | tooling | `tools/refactor/e_runtime.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
 | `tools/refactor/scan_runtime_imports.py` | 98 | tooling | `tools/refactor/scan_runtime_imports.py` | Existing E2/E3 tooling; inventory completion verified during E4. |
 
+| `desktop_app/smoke/auth.py` | 99 | tooling | `desktop_app/smoke/auth.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/fixtures.py` | 60 | tooling | `desktop_app/smoke/fixtures.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/history.py` | 184 | tooling | `desktop_app/smoke/history.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/lifecycle.py` | 43 | tooling | `desktop_app/smoke/lifecycle.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/market.py` | 173 | tooling | `desktop_app/smoke/market.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/runner.py` | 276 | tooling | `desktop_app/smoke/runner.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/walk_forward.py` | 176 | tooling | `desktop_app/smoke/walk_forward.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `tools/refactor/e_smoke.py` | 257 | tooling | `tools/refactor/e_smoke.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+
+| `tools/refactor/e6_references.py` | 32 | tooling | `tools/refactor/e6_references.py` | T5-E6: exact mechanical reference replay; assertions preserved. |
+
 ## 3 跨層匯入違規（GitNexus + AST）
 
 ### 3.1 靜態匯入明細

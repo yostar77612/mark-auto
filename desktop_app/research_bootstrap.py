@@ -10,17 +10,17 @@ def create_event_log(path):
     return RedactedEventLog(path, error_codes=ERROR_TABLE)
 
 
-def create_job_manager(paths, *, process_port=None, storage_port=None):
+def create_job_ports(paths=None):
     from quantlab.research_core.adapters.job_process import DesktopJobProcess
     from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+
+    return DesktopJobProcess(), WorkspaceJobStorage(), create_event_log(paths.logs / 'desktop-events.jsonl') if paths is not None else None
+
+
+def create_job_manager(paths, *, process_port=None, storage_port=None):
     from quantlab.research_core.application.job_manager import JobManager
 
-    return JobManager(
-        paths,
-        process_port=process_port or DesktopJobProcess(),
-        storage_port=storage_port or WorkspaceJobStorage(),
-        event_log=create_event_log(paths.logs / 'desktop-events.jsonl'),
-    )
+    return JobManager(paths, process_port=process_port, storage_port=storage_port)
 
 
 def create_history_storage():
@@ -61,3 +61,9 @@ def create_market_provider(config=None) -> MarketDataProvider:
     # Both official sources already share the parser/transport service contract.
     providers = {'official_daily': market_providers}
     return providers[(config or {}).get('provider', 'official_daily')]
+
+
+def create_worker_storage():
+    from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
+
+    return WorkspaceJobStorage()

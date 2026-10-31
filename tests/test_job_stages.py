@@ -1,7 +1,5 @@
 """Cheap in-process worker/UI diagnostics; no subprocesses, disk or real data."""
 
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
-
 from quantlab.research_core.adapters import job_worker
 
 from desktop_app.shell.job_presenter import JobPresenter as _c_JobPresenter
@@ -34,9 +32,7 @@ class JobStageTests(unittest.TestCase):
             patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', side_effect=guard or (lambda *args: nullcontext())),
             patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=executor),
         ):
-            job_worker._job_worker(
-                sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'offline-job', storage_port=WorkspaceJobStorage()
-            )
+            job_worker._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'offline-job')
         sender.close.assert_called_once_with()
         return packets
 

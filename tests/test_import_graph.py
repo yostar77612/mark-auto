@@ -326,7 +326,7 @@ class ImportGraphTests(unittest.TestCase):
     def test_error_guidance_u7_has_only_display_dependencies(self):
         self.assertEqual(
             import_graph(self.sources)['desktop_app.components.error_guidance'],
-            {'desktop_app.components.privacy', 'desktop_app.strings.catalog', 'quantlab.desktop_errors'},
+            {'desktop_app.components.privacy', 'desktop_app.components.validation_feedback', 'quantlab.desktop_errors'},
         )
 
     def test_backtest_summary_u4_is_pure(self):

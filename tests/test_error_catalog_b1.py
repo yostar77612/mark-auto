@@ -1,7 +1,5 @@
 """B1 catalogue and worker/log contract; no Qt windows or child processes."""
 
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
-
 from desktop_app.research_bootstrap import create_job_manager
 
 from quantlab.research_core.adapters import job_worker
@@ -243,9 +241,7 @@ class WorkerLogTests(unittest.TestCase):
                     patch('quantlab.research_core.adapters.job_worker._worker_recovery_guard', return_value=nullcontext()),
                     patch('quantlab.research_core.adapters.job_worker._worker_operation_executor', return_value=Mock(side_effect=exc)),
                 ):
-                    job_worker._job_worker(
-                        sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'b1-offline', storage_port=WorkspaceJobStorage()
-                    )
+                    job_worker._job_worker(sender, SimpleNamespace(wait=lambda seconds: True), 'ui_campaign', {}, '.', None, 'b1-offline')
                 self.assertEqual(packets[-1]['error_code'], expected)
                 manager = self.manager(directory, packets)
                 manager.poll()

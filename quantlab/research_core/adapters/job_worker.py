@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from quantlab.job_stages import normalize_stage, stage_from_traceback
 from quantlab.shared.runtime_errors import RuntimeSafetyError
-from quantlab.research_core.domain.job_protocol import DEFAULT_OPERATION_REGISTRAR, UI_OPERATIONS
+from quantlab.research_core.domain.job_protocol import DEFAULT_OPERATION_REGISTRAR, DEFAULT_WORKER_STORAGE_FACTORY, UI_OPERATIONS
 
 
 class _OperationExecutorRegistry:
@@ -113,14 +113,14 @@ def _job_worker(
     reconciliation_admitted=False,
     helper_nonce=None,
     operation_registrar=DEFAULT_OPERATION_REGISTRAR,
-    *,
-    storage_port,
 ):
     if sys.platform != 'win32':
         os.setsid()
     if not gate.wait(15):
         return
 
+    module, name = DEFAULT_WORKER_STORAGE_FACTORY.split(':')
+    storage_port = getattr(importlib.import_module(module), name)()
     failure_stage = 'prepare_operation'
 
     def emit(kind, **values):

@@ -210,8 +210,25 @@ def reviewed_inventory(base, delta):
     for item in delta['patch_points']['added']:
         result['patch_points'].extend([item['row']] * item['count'])
     result['patch_points'].sort(key=lambda p: (p['file'], p['line'], p['name'], p['kind']))
-    return project_page_service_lines(result)
+    return project_e6_service_refs(project_page_service_lines(result))
 
 
-if __name__ == '__main__':
-    FIXTURE.write_text(json.dumps(inventory(), indent=2) + '\n', encoding='utf-8')
+def project_e6_service_refs(result):
+    """Preserve exact observer identities across mechanical E import edits."""
+    import hashlib
+
+    path = ROOT / 'tests/fixtures/layered_paths/e6_service_relocations.json'
+    table = json.loads(path.read_text(encoding='utf-8'))
+    canonical = json.dumps(table, sort_keys=True, separators=(',', ':')).encode()
+    assert hashlib.sha256(canonical).hexdigest() == 'c4d1d003e7149a28e674fe958168e03c47ff7f74d869a5ccafcb7a447360d74c'
+    for row in table['relocations']:
+        old, new = row['original'], row['current']
+        assert {k: v for k, v in old.items() if k != 'line'} == {k: v for k, v in new.items() if k != 'line'}
+        result['patch_points'][result['patch_points'].index(old)] = dict(new)
+    assert [(p['file'], p['name'], p['receiver']) for p in table['additions']] == [('tests/test_t9_expiry_inputs.py', 'history', 'host')]
+    result['patch_points'].extend(table['additions'])
+    alias = next(row for row in result['aliases'] if row['name'] == 'history')
+    assert alias['patch_sensitive'] is False
+    alias['patch_sensitive'] = True
+    result['patch_points'].sort(key=lambda p: (p['file'], p['line'], p['name'], p['kind']))
+    return result

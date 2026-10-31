@@ -195,7 +195,11 @@ def window_capture():
 
     # Keep this dependency local to the stage that uses it.
     from quantlab.research_core.adapters.workspace_store import AppPaths
+
+    # Compose adapters only while capturing the real window.
     from desktop_app.research_bootstrap import create_job_manager
+
+    # Load settings only while capturing the real window.
     from quantlab.research_core.adapters.settings_store import SettingsStore
 
     # Keep this dependency local to the stage that uses it.
