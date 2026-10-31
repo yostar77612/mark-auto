@@ -51,7 +51,7 @@
     "outer_scroll_areas": 0
   },
   "window-1920x1080": {
-    "page_height": 886,
+    "page_height": 867,
     "visible_input_count": 1,
     "button_count": 13,
     "label_char_count": 39,
@@ -89,15 +89,15 @@
     "primary_button_count": 0,
     "window_size": [
       1920,
-      1080
+      1061
     ],
     "terminal_size": [
       1730,
-      886
+      867
     ],
     "chart_size": [
       1032,
-      452
+      439
     ],
     "outer_scroll_areas": 0
   }

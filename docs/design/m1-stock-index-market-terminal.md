@@ -1,6 +1,9 @@
 # M1：個股與指數看盤終端
 
-Status: PROPOSED / NOT IMPLEMENTED. Verification: NOT RUN.
+Status: M1-1 and M1-2 IMPLEMENTED; M1-3 integration in progress; M1-U delivered independently.
+Verification: M1-1 offline fake SDK, storage, scheduling and protocol tests passed;
+stage prepush evidence is recorded in the implementation contracts. Real broker
+and manual visual verification remain PENDING OWNER CHECK.
 Owner review: APPROVED 2026-11-01 for implementation; detailed spec:
 [m1-implementation-spec.md](m1-implementation-spec.md).
 

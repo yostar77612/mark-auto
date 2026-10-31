@@ -12,7 +12,7 @@ from time import monotonic
 from uuid import uuid4
 
 from quantlab.runtime_support import WindowsAppMutex
-from quantlab.trading.application.contracts import UiAction
+from quantlab.trading.application.contracts import UiAction, UiReceipt
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.domain.validation import DomainError
 from .bootstrap import EngineFactory, RuntimeBundle, build_runtime
@@ -47,12 +47,24 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
     if request.operation is Operation.SNAPSHOT:
         return Response(request.request_id, state=bundle.snapshot())
     if request.operation is Operation.MARKET_SERIES:
+        if bundle.market_terminal is not None and bundle.market_terminal.active:
+            return Response(request.request_id, series=bundle.market_terminal.series(request.series))
         with bundle.lock:
             engine = bundle.engine
             if engine is None or engine.live_market is None:
                 raise DomainError('capability_missing', 'live market service unavailable')
             with engine.lock:
                 return Response(request.request_id, series=engine.live_market.series(request.series))
+    if request.operation is Operation.SYMBOL_DIRECTORY:
+        return Response(request.request_id, instruments=bundle.market_terminal.instruments())
+    if request.operation is Operation.MARKET_SELECT:
+        live = bundle.market_terminal.select(request.series.instrument_id, request.series.period)
+        bundle.market_terminal.active = True
+        return Response(request.request_id, receipt=UiReceipt(True, 'completed', '', 'LIVE' if live else 'HISTORY'))
+    if request.operation is Operation.MARKET_STATUS:
+        return Response(request.request_id, market_status=bundle.market_terminal.status())
+    if request.operation is Operation.MARKET_PREFERENCES:
+        return Response(request.request_id, market_selected=bundle.market_terminal.selected)
     if request.operation is Operation.COMMAND:
         if not isinstance(request.command.action, UiAction):
             raise DomainError('validation_failed', 'typed UI action required')

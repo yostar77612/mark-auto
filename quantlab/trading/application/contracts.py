@@ -11,6 +11,7 @@ from quantlab.trading.domain.live_bars import DataGap, LiveBar
 from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.validation import DomainError, identity, integer
 from .broker_settings import BrokerReadiness, BrokerSettings
+from .market_settings import MarketDataSettings
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,7 @@ class MarketWatchView:
     low: Decimal | None = None
     total_volume: int | None = None
     receive_latency: str = ''
+    price_tick: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -106,6 +108,9 @@ class UiAction(str, Enum):
     CHECK_READINESS = 'check_readiness'
     CONNECT_READ_ONLY = 'connect_read_only'
     ADD_CONTEXT = 'add_context'
+    SAVE_MARKET_DATA_SETTINGS = 'save_market_data_settings'
+    CONNECT_MARKET_DATA = 'connect_market_data'
+    DISCONNECT_MARKET_DATA = 'disconnect_market_data'
 
 
 @dataclass(frozen=True)
@@ -153,6 +158,7 @@ class UiCommand:
     profile_ref: str = ''
     context_epoch: int | None = None
     watchlist: tuple[str, ...] | None = None
+    market_data_settings: MarketDataSettings | None = None
 
 
 @dataclass(frozen=True)
@@ -326,6 +332,8 @@ class UiState:
     unrealized_pnl: Decimal | None = None
     remaining_daily_loss: Decimal | None = None
     today_fill_count: int | None = None
+    market_data_settings: MarketDataSettings = MarketDataSettings()
+    market_data_error: str = ''
 
 
 class TradingFacade(Protocol):

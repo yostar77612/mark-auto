@@ -73,6 +73,19 @@ def _allowed(layer: str, target: str) -> bool:
             or _within(target, 'desktop_app.features.trading')
             or _within(target, PREFIX + 'application.contracts')
             or _within(target, PREFIX + 'domain.models')
+            # M1 exposes only immutable watch/alert values and their typed UI
+            # boundary; concrete storage, SDK and execution remain prohibited.
+            or any(
+                _within(target, PREFIX + module)
+                for module in (
+                    'application.market_settings',
+                    'application.symbol_search',
+                    'application.alert_contracts',
+                    'domain.watch',
+                    'domain.alerts',
+                    'domain.validation',
+                )
+            )
         )
     if root in sys.stdlib_module_names:
         if layer == 'ports' and target == 'pathlib.Path':
