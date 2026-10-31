@@ -521,5 +521,15 @@ class LayerGateTests(unittest.TestCase):
         self.assertEqual(groups.linux_core_slice_for_module('test_layer_gate'), 'paper-remaining')
 
 
+class RetiredLegacyImportTests(unittest.TestCase):
+    def test_legacy_ban_is_independent_of_files_and_layer(self):
+        mapping = gate.load_map(ROOT / 'tools/layer_map.json')
+        for path in ('quantlab/core.py', 'quantlab/research_core/adapters/new.py', 'desktop.py', 'tools/new.py'):
+            for source in ('import legacy_autotrading.trader', 'from archives.legacy_autotrading import gui', 'import trader', 'import gui', 'import run'):
+                with self.subTest(path=path, source=source):
+                    findings = gate.check_source(source, path, mapping, {})
+                    self.assertTrue(any(item.rule == 'forbidden-legacy-import' for item in findings))
+
+
 if __name__ == '__main__':
     unittest.main()

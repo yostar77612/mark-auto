@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # TMF AI 量化研究與模擬交易目標設計
 
 目標是形成可追溯、有限預算的研究閉環：合規行情 → 候選策略 → 因果回測 → 改善假設 → 新版本 → 樣本外驗證 → 比較與選擇。第一版先證明流程、帳務與隔離正確；沒有策略通過績效門檻也是有效研究結論。AI、回測或 paper 成功都不代表核準真實交易。

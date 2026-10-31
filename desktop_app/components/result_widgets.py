@@ -65,7 +65,7 @@ def shown(value=MISSING, key=''):
         return ui_text('forms.metric.not_provided')
     if value is None:
         return ui_text('forms.metric.undefined')
-    if key.endswith(('_id', '_hash')) and value is not None:
+    if key.endswith(('_id', '_hash')):
         return str(value)
     if key in ('open_position', 'position'):
         return position_text(value)

@@ -14,7 +14,7 @@ def _handle_ui_idea_research(ports: UiOperationPorts, payload, paths, root, *, e
         raise ValidationError(ports.text('idea.invalid_request'))
     if (payload['consent'] if retry else payload['request'].get('consent')) != {'network': True, 'plan_usage': True}:
         raise ValidationError(ports.text('idea.consent_required'))
-    bootstrap = str(getattr(paths, 'bootstrap', None) or paths.root)
+    bootstrap = str(paths.bootstrap or paths.root)
     reference = ports.auth.OAuthCredentialReference(bootstrap, payload['registration'])
     if transport is None:
         if ports.subscription.read_account_status(reference, Path(bootstrap) / 'control-v1') != {'state': 'ready', 'pending': False}:

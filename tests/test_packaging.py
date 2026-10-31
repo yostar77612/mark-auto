@@ -13,6 +13,8 @@ import sys
 import types
 import subprocess
 import unittest
+
+from legacy_history import historical_text
 from unittest.mock import patch
 # Source scans below use current physical paths.
 
@@ -226,7 +228,7 @@ class PackagingTests(unittest.TestCase):
             self.assertIn(name, (ROOT / 'requirements-desktop.txt').read_text())
             self.assertIn(name, (ROOT / 'requirements-desktop.lock').read_text())
         for name in ('PyJWT[crypto]==2.15.1', 'cryptography==50.0.2', 'cffi==2.1.1', 'pycparser==3.11'):
-            self.assertNotIn(name, (ROOT / 'archives/legacy_autotrading/requirements.txt').read_text())
+            self.assertNotIn(name, historical_text('requirements.txt'))
 
     def test_source_manifest_hashes_auth_and_notice_inputs(self):
         import hashlib

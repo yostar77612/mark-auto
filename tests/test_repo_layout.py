@@ -196,10 +196,10 @@ class RepoLayoutTests(unittest.TestCase):
     def test_legacy_archive_and_license(self):
         for name in ('trader', 'gui.py', 'run.py', 'TelegramBot.md'):
             self.assertFalse((ROOT / name).exists(), name)
-            self.assertTrue((ARCHIVE / name).exists(), name)
-        self.assertTrue((ARCHIVE / 'requirements.txt').is_file())
+            self.assertFalse((ARCHIVE / name).exists(), name)
+        self.assertFalse(ARCHIVE.exists())
         self.assertTrue((ROOT / 'LICENSE').is_file())
-        self.assertIn('](archives/legacy_autotrading/)', (ROOT / 'README.md').read_text(encoding='utf-8'))
+        self.assertIn('909fc49/archives/legacy_autotrading/', (ROOT / 'README.md').read_text(encoding='utf-8'))
         spec = ast.parse((ROOT / 'packaging/markauto.spec').read_text(encoding='utf-8'))
         analysis = next(n for n in ast.walk(spec) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'Analysis')
         excluded = ast.literal_eval(next(k.value for k in analysis.keywords if k.arg == 'excludes'))
@@ -218,7 +218,7 @@ class RepoLayoutTests(unittest.TestCase):
                     modules = [node.module or '']
                 else:
                     continue
-                self.assertFalse({'trader', 'gui', 'run', 'archives'}.intersection(name.split('.')[0] for name in modules), str(path))
+                self.assertFalse({'trader', 'gui', 'run', 'archives', 'legacy_autotrading'}.intersection(name.split('.')[0] for name in modules), str(path))
 
     def test_gate_scans_archive_and_rejects_reenabled_startup_or_orders(self):
         name = 'archives/legacy_autotrading/trader/__init__.py'
@@ -231,9 +231,18 @@ class RepoLayoutTests(unittest.TestCase):
                 self.assertEqual(scan(root), [])
 
     def test_archive_import_cannot_bypass_product_boundary(self):
-        for source in ('import archives.legacy_autotrading.trader', 'from archives.legacy_autotrading import gui'):
+        for source in (
+            'import archives.legacy_autotrading.trader',
+            'from archives.legacy_autotrading import gui',
+            'import legacy_autotrading.trader',
+            'import trader',
+            'import gui',
+            'import run',
+        ):
             self.assertTrue(python_findings(source, 'desktop_app/shell/main_window.py', desktop=True))
             self.assertTrue(python_findings(source, 'quantlab/new.py', research=True))
+            for label in ('desktop_app/features/new.py', 'tools/new.py', 'desktop.py'):
+                self.assertTrue(python_findings(source, label))
 
 
 if __name__ == '__main__':

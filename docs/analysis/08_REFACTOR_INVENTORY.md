@@ -1055,6 +1055,20 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 
 以上 **10 個候選全部 kept**；本次沒有足以列為 **confirmed dead (text-search: 0 refs)** 的產品符號。這是逐項反證後的結果，不是宣稱全 repo 沒有死碼。E 的 archives 刪除是第 6 節已指定的範圍，與這些 callback、範例的存廢分開；真正刪除前仍需重新確認當時圖與文字參照。
 
+### 8.1 PR E outcome
+
+All ten section-8 candidates remain **kept**; no dead-code candidate was removed in E.
+Final owners: `_order` — `quantlab/chart_data.py`; `_training_packet` —
+`quantlab/research_analysis.py`; `_training_status` — `quantlab/agent_tools.py`;
+`local_time` — `quantlab/backup_inspection.py`; `WorkspacePanel.dragEnterEvent` —
+`desktop_app/features/market/workspace.py`; the two StrategyConfig example methods and
+example module — `docs/script samples/strategy_sample.py` (non-runnable historical
+example, intentionally excluded from the product legacy-import ban).
+The old `_worker_gui_unavailable` and `_WorkerBindings` symbols were already absent
+at E's starting head after C's worker/UI separation. E removes nothing for them;
+the retained worker boundary lives in `quantlab/research_core/adapters/job_worker.py`,
+and the UI binding owner is `desktop_app/shell/bindings.py`.
+
 ## 9 過度防禦程式碼
 
 依規格 4.3，以下是 **E 的內容清理清單**。需要先形成明確內部型別／presenter 邊界的項目已寫出前置條件；不能在 R0 或搬檔 PR 順手刪除，也不能把「內部呼叫」當成可以刪除反序列化驗證的理由。
@@ -1073,6 +1087,25 @@ node .gitnexus/run.cjs impact _training_status --direction upstream --repo .
 **明確排除的刻意安全邊界：** 使用者輸入（如 `desktop_forms.py:65`）、外部 API 回應（如 `quantlab/market_providers.py:325`）、讀檔／反序列化（如 `quantlab/market_history.py:265`、`quantlab/saved_candidate_pool.py:1198`）、IPC（如 `quantlab/desktop_runtime.py:1623`）的檢查均保留。Shioaji 的單一受限 lazy loader、禁止 pickle/eval／動態執行、真實下單停用、憑證／TLS 防護不列入清理。`tools/check_trading_architecture.py:116` 與 `tools/quality_gate.py:129` 所在安全掃描不放寬。
 
 另外保留 OOS／holdout 隔離、不可逆預算、deadline／timeout、取消後未知結果的 fail-closed 行為、來源 SHA-256／producer profile、路徑 reparse/symlink 與 WAL／restore／process-tree 證據。重複驗證若跨越了 IPC、磁碟或不可信 payload，仍是兩個邊界；不能拿本節的內部型別清理去刪除它。G3 八檔須遵循第 5 節逐檔 QA；frozen profiles 的 bytes 不受本節 removal note 授權。
+
+### 9.1 PR E outcome
+
+| Inventory item | Outcome | Final path and reason |
+|---|---|---|
+| shown duplicate None test | removed | `desktop_app/components/result_widgets.py`: only the second condition removed; MISSING/None/zero and numeric checks retained. |
+| AppPaths bootstrap fallback | removed | `quantlab/research_core/application/ui_operations/idea.py`, `quantlab/research_core/application/ui_operations/assistant.py`, `quantlab/research_core/application/analysis_operations.py`: former desktop_ui operation owners now read `paths.bootstrap or paths.root`; actual worker input is AppPaths, constructed in `quantlab/research_core/adapters/job_worker.py`. Credential/path checks retained. Unlisted assistant/recovery uses stay untouched. |
+| marker-index fallback | removed | `desktop_app/components/charts.py` and `desktop_app/components/chart_geometry.py`: constructor already initializes the index before any paint; both reads now access the field. |
+| market TypeError catch | precondition not met | `desktop_app/features/market/chart_presenter.py`: aggregation still validates source and timeframe itself; no complete presenter/adapter admission contract exists. Keep ValueError/TypeError handling and invalid-data display. |
+| prepare-paper unused parameters | removed | `quantlab/research_core/application/paper_operations.py`: remove paths, emit and descendants_stopped only from the private helper; all eight private call sites updated; dispatcher/recovery signatures and policy validation retained. |
+| geometry painter parameter | removed | `desktop_app/components/chart_geometry.py` and private call in `desktop_app/components/charts.py`: font metrics, geometry and text callback retained. |
+| async exception parameter | kept | `desktop_app/components/async_status.py`: sensitive exception discard contract unchanged. |
+| fault injection / polymorphic / Qt arguments | kept | `quantlab/paper.py`, `desktop_app/components/result_tables.py` and Qt overrides: fault seam, set_rows columns argument and event signatures unchanged. |
+| Explicit safety boundaries and following paragraph | kept | User/API/file/serialization/IPC checks, Shioaji loader, pickle/eval/dynamic-execution bans, live/credential/TLS guards, OOS/holdout isolation, irreversible budgets, deadline/timeout, unknown-result fail-closed, producer profiles, reparse/symlink/WAL/restore/process evidence unchanged. |
+
+No GitNexus or unittest execution in E2, per owner instruction. Mechanical private
+calls/import-reference edits are reproducible with `tools/refactor/cleanup_e2.py`.
+The archive is deleted from the working tree; index permission prevented staging.
+Tests read fixed historical blobs at main `909fc49`; no security assertion is dropped.
 
 ## 10 大於 600 行的責任拆分方案
 
@@ -1367,3 +1400,25 @@ and ordered validation across modules during this extraction.
 | function | `tools/ui_redesign_preview.py:88` | `capture` | 82 | Pre-existing definition, verbatim vs base `tools/ui_redesign_preview.py:87` (82 lines). Existing diagnostic/test-orchestration tooling; retain its ordered operation and cleanup outside runtime decomposition. |
 | function | `tools/ui_snapshot.py:85` | `page_metrics` | 53 | Pre-existing definition, verbatim vs base `tools/ui_snapshot.py:85` (53 lines). Existing diagnostic/test-orchestration tooling; retain its ordered operation and cleanup outside runtime decomposition. |
 | function | `tools/ui_snapshot.py:206` | `capture` | 137 | Grew from base `tools/ui_snapshot.py:206` (136 lines) by 1 line solely to split the BackupManager import to the extracted adapter. Keep snapshot widget traversal/capture/cleanup together. |
+
+### 10.4 PR E size exceptions
+
+The UI checker still verifies section 10.1 unchanged. The core checker now measures
+its existing base against the working tree, including new untracked Python (instead of HEAD) so E's unstaged edits
+cannot escape validation. Section 10.3 stays byte-for-byte historical; the explicit
+rows below replace all D rows for the named files, covering inherited merged UI/history
+spans that its older base omitted and E's scanner changes. No size limits are raised.
+New E scripts/helpers are below the targets; no product responsibility is split for line counts.
+
+| kind | path | name | lines | justification |
+|---|---|---|---:|---|
+| function | `desktop_app/features/backtest/summary.py:51` | `backtest_summary_text` | 71 | Inherited merged C UI span, already present at main@909fc49; D's older-base inventory omitted it. Existing responsibility and behavior unchanged by E2; retain the ordered display/lifecycle operation. |
+| function | `desktop_app/features/data/data.py:17` | `__init__` | 124 | Inherited merged C UI span, already present at main@909fc49; D's older-base inventory omitted it. Existing responsibility and behavior unchanged by E2; retain the ordered display/lifecycle operation. |
+| function | `desktop_app/features/market/history_dialog.py:31` | `__init__` | 103 | Inherited merged C UI span, already present at main@909fc49; D's older-base inventory omitted it. Existing responsibility and behavior unchanged by E2; retain the ordered display/lifecycle operation. |
+| function | `desktop_app/features/market/indicator_controls.py:27` | `_build_market_indicators` | 57 | Inherited merged C UI span, already present at main@909fc49; D's older-base inventory omitted it. Existing responsibility and behavior unchanged by E2; retain the ordered display/lifecycle operation. |
+| function | `desktop_app/shell/window.py:96` | `closeEvent` | 61 | Inherited merged C UI span, already present at main@909fc49; D's older-base inventory omitted it. Existing responsibility and behavior unchanged by E2; retain the ordered display/lifecycle operation. |
+| file | `quantlab/market_history.py:1` | `<module>` | 677 | Inherited merged C/D history validation owner, already present at main@909fc49; omitted by D's older HEAD-only scope. Keep ordered untrusted file/calendar validation and atomic import together; E does not edit this file. |
+| function | `quantlab/market_history.py:267` | `_decode` | 104 | Inherited merged C/D history validation owner, already present at main@909fc49; omitted by D's older HEAD-only scope. Keep ordered untrusted file/calendar validation and atomic import together; E does not edit this file. |
+| function | `quantlab/market_history.py:430` | `load_history` | 82 | Inherited merged C/D history validation owner, already present at main@909fc49; omitted by D's older HEAD-only scope. Keep ordered untrusted file/calendar validation and atomic import together; E does not edit this file. |
+| function | `quantlab/market_history.py:624` | `import_history` | 54 | Inherited merged C/D history validation owner, already present at main@909fc49; omitted by D's older HEAD-only scope. Keep ordered untrusted file/calendar validation and atomic import together; E does not edit this file. |
+| function | `tools/quality_gate.py:137` | `scan` | 92 | E2 applies explicit retired-module names across product/tooling sources and tolerates only absent retired archive blobs during the unstaged controller handoff; all remaining syntax/credential/startup/order checks stay active. |

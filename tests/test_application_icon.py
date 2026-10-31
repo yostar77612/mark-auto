@@ -5,6 +5,8 @@ import hashlib
 from pathlib import Path
 import struct
 import unittest
+
+from legacy_history import historical_bytes
 from unittest.mock import patch
 
 from PySide6.QtCore import QSize
@@ -76,16 +78,16 @@ class ApplicationIconTests(unittest.TestCase):
 
     def test_legacy_dependencies_are_archived_byte_identically_and_never_installed(self):
         self.assertFalse((ROOT / 'requirements.txt').exists())
-        archived = ROOT / 'archives/legacy_autotrading/requirements.txt'
+        archived = historical_bytes('requirements.txt')
         # Git may check out text as CRLF on Windows or LF on Linux CI.
-        canonical = archived.read_bytes().replace(b'\r\n', b'\n')
+        canonical = archived.replace(b'\r\n', b'\n')
         self.assertEqual(hashlib.sha256(canonical).hexdigest(), '6b7bc80e0d50e3633ad0087f40b55d7d1ff62fb346ac688fc7cb0519fafda9d7')
         readme = (ROOT / 'README.md').read_text(encoding='utf-8')
         self.assertNotIn('pip install -r requirements.txt', readme)
         self.assertIn('requirements-desktop.lock', readme)
         self.assertIn('packaging/build.ps1', readme)
         workflow = (ROOT / '.github/workflows/quantlab.yml').read_text()
-        self.assertIn('archives/legacy_autotrading/requirements.txt is outside this audit', workflow)
+        self.assertIn('Historical legacy dependencies (removed in PR E) are outside this audit', workflow)
         for lock in ('requirements-ui.lock', 'requirements-qt-ci.lock', 'requirements-ruff.lock'):
             self.assertIn('requirements: ' + lock, workflow)
         self.assertIn('pip-audit', workflow)

@@ -269,7 +269,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             'volume': b.volume,
             'change_text': f'{change:+g}',
             'partial': getattr(b, 'partial', False),
-            'markers': tuple(getattr(self, '_marker_index', {}).get(index, ())),
+            'markers': tuple(self._marker_index.get(index, ())),
         }
 
     def bar_point(self, index):
@@ -324,7 +324,7 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             p.end()
             return
         self.last_rendered_bar_count = len(visible)
-        detail, low, high, references, marker_index, y, step, x = _prepare_chart_geometry(self, p, fm, text, start, end, visible, r)
+        detail, low, high, references, marker_index, y, step, x = _prepare_chart_geometry(self, fm, text, start, end, visible, r)
         volume_bottom = _paint_chart_bars(self, p, text, start, end, visible, r, low, high, x, y, step, _paint_drawings)
         snapshots, labels = _paint_chart_references(self, p, fm, text, references, r, x, y, step)
         _paint_chart_markers_and_panes(self, p, text, start, end, marker_index, r, x, y, step, volume_bottom)

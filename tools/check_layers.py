@@ -19,7 +19,7 @@ if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.check_trading_architecture import Finding, _module, _relative
-from tools.quality_gate import git
+from tools.quality_gate import LEGACY_IMPORT_ROOTS, git
 
 ROOT = Path(__file__).resolve().parents[1]
 LAYERS = frozenset(('domain', 'application', 'infrastructure', 'presentation', 'shared', 'composition', 'tooling'))
@@ -80,6 +80,8 @@ def resolve_target(name: str, modules: dict[str, str]) -> tuple[str, str | None]
 
 
 def dependency_rule(layer: str, target: str, target_path: str | None, mapping: dict) -> str | None:
+    if target.split('.')[0] in LEGACY_IMPORT_ROOTS:
+        return 'forbidden-legacy-import'
     if layer in ('composition', 'tooling'):
         return None
     if target_path is not None:
@@ -124,6 +126,9 @@ def check_source(source: str, path: str, mapping: dict, modules: dict[str, str])
             if target_path is None and isinstance(node, ast.ImportFrom):
                 target = base
             rule = dependency_rule(layer, target, target_path, mapping)
+            # Inventory section 8 keeps this non-runnable historical example.
+            if rule == 'forbidden-legacy-import' and path == 'docs/script samples/strategy_sample.py':
+                continue
             if rule:
                 findings.add(Finding(path, node.lineno, rule, target))
     return tuple(sorted(findings, key=lambda item: (item.path, item.line, item.rule, item.target)))

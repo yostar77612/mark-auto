@@ -24,7 +24,8 @@ SECRET_PATTERNS = {
     "slack-token": re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
     "telegram-token": re.compile(r"\b[0-9]{8,12}:[A-Za-z0-9_-]{35}\b"),
 }
-BANNED_IMPORTS = {"archives", "trader", "shioaji", "pickle", "subprocess"}
+LEGACY_IMPORT_ROOTS = {"archives", "legacy_autotrading", "trader", "gui", "run"}
+BANNED_IMPORTS = LEGACY_IMPORT_ROOTS | {"shioaji", "pickle", "subprocess"}
 BANNED_CALLS = {"eval", "exec", "compile", "__import__"}
 
 # Owner-authorized v2 boundaries, not research-core exceptions. The SDK import
@@ -86,7 +87,12 @@ def python_findings(source: str, label: str, research: bool = False, desktop: bo
         # SyntaxError text can contain a credential literal; do not print it.
         return [f"{label}: invalid Python syntax"]
     findings = []
-    if research or desktop:
+    legacy_boundary = label.startswith(('quantlab/', 'desktop_app/', 'tools/', 'packaging/')) or label in {
+        'desktop.py',
+        'trading_entry.py',
+        'trading_runtime.py',
+    }
+    if research or desktop or legacy_boundary:
         sdk_loader_body = {
             id(node)
             for function in tree.body
@@ -113,10 +119,11 @@ def python_findings(source: str, label: str, research: bool = False, desktop: bo
                         first_party.add("desktop_app")
                 if set(modules) - sys.stdlib_module_names - first_party - allowed_v2:
                     findings.append(f"{label}:{node.lineno}: research dependency must be standard library")
-            prohibited = BANNED_IMPORTS.intersection(modules) - allowed_v2
+            banned = BANNED_IMPORTS if research or desktop else LEGACY_IMPORT_ROOTS
+            prohibited = banned.intersection(modules) - allowed_v2
             if prohibited:
                 findings.append(f"{label}:{node.lineno}: forbidden research import")
-            if isinstance(node, ast.Call):
+            if (research or desktop) and isinstance(node, ast.Call):
                 name = node.func.id if isinstance(node.func, ast.Name) else (node.func.attr if isinstance(node.func, ast.Attribute) else "")
                 if name in BANNED_CALLS:
                     findings.append(f"{label}:{node.lineno}: dynamic execution")
@@ -133,6 +140,10 @@ def scan(root: Path, history: bool = False) -> list[str]:
     for name in filter(None, names):
         path = root / name
         if not path.is_file():
+            # PR E retires this tree; unstaged removals are allowed during handoff.
+            # Existing/reintroduced archive files still receive all legacy scans.
+            if name.startswith("archives/legacy_autotrading/"):
+                continue
             findings.append(f"{name}: tracked file missing")
             continue
         raw = path.read_bytes()

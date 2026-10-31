@@ -13,13 +13,15 @@ import re
 import tempfile
 from types import SimpleNamespace
 import unittest
+
+from legacy_history import historical_text, historical_python_paths
 from unittest.mock import Mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def tree(path):
-    return ast.parse((ROOT / path).read_text(encoding='utf-8'), filename=path)
+    return ast.parse(historical_text(path), filename=path)
 
 
 def extract(path, names, globals_=None, class_name=None):
@@ -65,8 +67,8 @@ class LegacySecurityTests(unittest.TestCase):
             self.assertEqual(error.exception.code, code)
 
     def test_no_tls_bypass(self):
-        for path in ROOT.joinpath('archives/legacy_autotrading/trader').rglob('*.py'):
-            source = path.read_text(encoding='utf-8')
+        for path in historical_python_paths():
+            source = historical_text(path)
             self.assertNotIn('_create_unverified_context', source)
             for node in ast.walk(ast.parse(source)):
                 if isinstance(node, ast.Call):
@@ -85,8 +87,8 @@ class LegacySecurityTests(unittest.TestCase):
         self.assertEqual(broker_sdk.mock_calls, [])
 
     def test_no_broker_order_submission_calls_remain(self):
-        for path in ROOT.joinpath('archives/legacy_autotrading/trader').rglob('*.py'):
-            for n in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
+        for path in historical_python_paths():
+            for n in ast.walk(ast.parse(historical_text(path))):
                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name) and n.func.value.id == 'API':
                     self.assertNotIn(n.func.attr, ('place_order', 'place_comboorder'))
 
@@ -110,7 +112,7 @@ class LegacySecurityTests(unittest.TestCase):
             self.assertFalse(self.permission(chats, users))
         for chat, user in ((None, 456), (-123, None), ('-123', 456), (-123, '456'), (True, True)):
             self.assertFalse(self.permission({-123, 1}, {456, 1}, chat, user))
-        source = (ROOT / 'archives/legacy_autotrading/trader/utils/bot.py').read_text(encoding='utf-8')
+        source = historical_text('archives/legacy_autotrading/trader/utils/bot.py')
         self.assertNotIn('[TEXT MESSAGE]', source)
         self.assertNotIn('TELEGRAM_USER_WHITELIST', source)
 
@@ -158,9 +160,9 @@ class LegacySecurityTests(unittest.TestCase):
             fn = extract('archives/legacy_autotrading/trader/utils/database/redis.py', [name], class_name='RedisTools')[name]
             with self.assertRaises(RuntimeError):
                 fn(None, 'untrusted')
-        source = (ROOT / 'archives/legacy_autotrading/trader/utils/file.py').read_text(encoding='utf-8')
+        source = historical_text('archives/legacy_autotrading/trader/utils/file.py')
         self.assertNotIn('pd.read_pickle(', source)
-        source = (ROOT / 'archives/legacy_autotrading/trader/utils/database/redis.py').read_text(encoding='utf-8')
+        source = historical_text('archives/legacy_autotrading/trader/utils/database/redis.py')
         self.assertNotIn('pickle.loads(', source)
         crawler_tree = tree('archives/legacy_autotrading/trader/utils/crawler.py')
         method = next(n for n in ast.walk(crawler_tree) if isinstance(n, ast.FunctionDef) and n.name == 'get_FuturesTickData')

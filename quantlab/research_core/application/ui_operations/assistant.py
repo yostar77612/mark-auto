@@ -57,7 +57,7 @@ def plan_provider(ports: UiOperationPorts, paths, data, config, options, *, for_
     if not for_usage and options.get('expected_binding') != identity:
         raise ValidationError(ports.text('ui.plan_provider.request_binding_changed'))
     controls = ports.inputs.research_controls(paths)
-    reference = ports.auth.OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), parsed.registration)
+    reference = ports.auth.OAuthCredentialReference(str(paths.bootstrap or paths.root), parsed.registration)
     provider = ports.subscription.ChatGPTPlanProvider(
         model=parsed.model,
         credential_reference=reference,
@@ -85,9 +85,7 @@ def _handle_ui_chatgpt_auth(ports: UiOperationPorts, payload, paths, root, *, em
 
     if request.action in ('begin', 'first_sign_in', 'enable_plan') and emit is None:
         raise ValidationError(ports.text('ui.execute_ui_operation.managed_process_required'))
-    result = ports.connection.run_connection_request(
-        request, bootstrap=str(getattr(paths, 'bootstrap', None) or paths.root), emit=private_event, cancelled=lambda: False
-    )
+    result = ports.connection.run_connection_request(request, bootstrap=str(paths.bootstrap or paths.root), emit=private_event, cancelled=lambda: False)
     if result.authorization_url is not None:
         raise ValidationError(ports.text('ui.execute_ui_operation.authorization_url_private'))
     return {'auth_event': asdict(result)}
@@ -117,7 +115,7 @@ def _handle_ui_chatgpt_reconcile(ports: UiOperationPorts, payload, paths, root, 
 def _handle_ui_chatgpt_usage(ports: UiOperationPorts, payload, paths, root, *, emit=None, descendants_stopped=False):
     if set(payload) - {'registration', 'provider', 'config'}:
         raise ValidationError(ports.text('ui.execute_ui_operation.unsupported_reconciliation_fields'))
-    reference = ports.auth.OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), payload['registration'])
+    reference = ports.auth.OAuthCredentialReference(str(paths.bootstrap or paths.root), payload['registration'])
     status = ports.subscription.read_account_status(reference, ports.inputs.research_controls(paths))
     result = {'registration': payload['registration'], 'account_status': status}
     if 'provider' in payload:

@@ -33,7 +33,7 @@ def analysis_plan(ports: UiOperationPorts, paths, request, *, emit=None):
 
 
 def analysis_provider_for(ports: UiOperationPorts, paths, plan, *, authorized=False):
-    reference = ports.auth.OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), plan['binding']['registration'])
+    reference = ports.auth.OAuthCredentialReference(str(paths.bootstrap or paths.root), plan['binding']['registration'])
     return ports.subscription.analysis_provider(plan, reference, network_opt_in=authorized, included_usage_policy_confirmed=authorized)
 
 
@@ -43,7 +43,7 @@ def _handle_ui_analysis_preview(ports: UiOperationPorts, payload, paths, root, *
         raise ValidationError(ports.text('ui.execute_ui_operation.invalid_analysis_fields'))
     plan = analysis_plan(ports, paths, payload['request'], emit=emit)
     provider = analysis_provider_for(ports, paths, plan)
-    reference = ports.auth.OAuthCredentialReference(str(getattr(paths, 'bootstrap', None) or paths.root), plan['binding']['registration'])
+    reference = ports.auth.OAuthCredentialReference(str(paths.bootstrap or paths.root), plan['binding']['registration'])
     snapshot = provider.read_receipt_snapshot()
     account = ports.subscription.read_account_status(reference, ports.inputs.research_controls(paths))
     return {'analysis_id': plan['analysis_id'], 'plan': plan, 'receipt_snapshot': snapshot, 'account_status': account}

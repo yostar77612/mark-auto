@@ -143,8 +143,6 @@ dev.py
 
 dockerfile
 shell/*
-archives/legacy_autotrading/trader/scripts/*
-!archives/legacy_autotrading/trader/scripts/README.md
 runtime/*
 
 # Research runtime artifacts and local inputs

@@ -45,7 +45,7 @@ def active_markdown(text):
 
 def document_paths():
     # Verbatim historical links resolve from their original location (see banners).
-    paths = {ROOT / 'README.md', ROOT / 'packaging/README.md', ROOT / 'archives/legacy_autotrading/README.md', *(ROOT / 'docs').rglob('*.md')}
+    paths = {ROOT / 'README.md', ROOT / 'packaging/README.md', *(ROOT / 'docs').rglob('*.md')}
     return sorted(path for path in paths if not path.is_relative_to(HISTORY))
 
 
@@ -118,7 +118,7 @@ class DocumentationLayeringTests(unittest.TestCase):
                 self.assertIn(line, preserved)
 
     def test_history_link_exclusion_is_limited_to_history_directory(self):
-        all_paths = {ROOT / 'README.md', ROOT / 'packaging/README.md', ROOT / 'archives/legacy_autotrading/README.md', *(ROOT / 'docs').rglob('*.md')}
+        all_paths = {ROOT / 'README.md', ROOT / 'packaging/README.md', *(ROOT / 'docs').rglob('*.md')}
         histories = set(HISTORY.rglob('*.md'))
         self.assertTrue(histories)
         self.assertEqual(all_paths - set(document_paths()), histories)

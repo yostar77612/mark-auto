@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # 分層式重構規格書
 
 本文件定義 mark-auto 下一階段的 code review 與重構工作：目標架構、程式碼規範、階段計畫與驗收標準。重構只改結構，不改行為；新功能不在本規格範圍內。

@@ -1,3 +1,5 @@
+> PR E outcome: the legacy autotrading archive was removed from the current tree. References below describe historical evidence at commit `909fc49`, not current installation paths. The legacy import ban remains active.
+
 # T12 part A: legacy move decisions and verification
 
 Scope: P2-B7 only. P2-B8/P2-B9 remain for subsequent runs. The optimization plan is unchanged.
