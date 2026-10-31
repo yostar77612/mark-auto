@@ -109,8 +109,8 @@ class BrokerPanel(QWidget):
         self.checks = table(('v2.broker_check_item', 'v2.state', 'v2.broker_next_step'), 'broker_readiness_checks')
         layout.addWidget(self.checks)
 
-    def apply_market(self, settings, connection):
-        self.market_panel.apply(settings, connection)
+    def apply_market(self, settings, connection, error_code=''):
+        self.market_panel.apply(settings, connection, error_code)
 
     def _edited(self) -> None:
         if not self._loading:

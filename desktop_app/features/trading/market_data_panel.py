@@ -59,7 +59,6 @@ class MarketDataPanel(QGroupBox):
             self.status.setText(ui_text('marketdata.invalid'))
             return
         self.save_requested.emit(settings)
-        self.dirty = False
 
     def _connect(self):
         if self.dirty:
@@ -67,7 +66,7 @@ class MarketDataPanel(QGroupBox):
             return
         self.connect_requested.emit()
 
-    def apply(self, settings: MarketDataSettings, connection: str):
+    def apply(self, settings: MarketDataSettings, connection: str, error_code: str = ''):
         if not self.dirty:
             self._loading = True
             self.environment.setCurrentIndex(self.environment.findData(settings.environment))
@@ -75,3 +74,5 @@ class MarketDataPanel(QGroupBox):
             self._loading = False
         key = {'CONNECTED': 'watch.connected', 'CONNECTING': 'watch.connecting', 'DISCONNECTED': 'watch.disconnected'}
         self.status.setText(ui_text(key.get(connection, 'watch.unknown')))
+        if error_code:
+            self.status.setText(ui_text('marketdata.connection_failed'))

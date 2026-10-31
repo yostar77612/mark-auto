@@ -155,6 +155,7 @@ class TradingWindow(QMainWindow):
         broker_settings: BrokerSettings | None = None,
         context_id: str | None = None,
         profile_ref: str = '',
+        market_data_settings=None,
     ) -> None:
         self._run(
             UiCommand(
@@ -170,6 +171,7 @@ class TradingWindow(QMainWindow):
                 self.state.context_id if context_id is None else context_id,
                 profile_ref,
                 self.state.context_epoch if self.state.contexts else None,
+                market_data_settings=market_data_settings,
             )
         )
 
@@ -235,6 +237,8 @@ class TradingWindow(QMainWindow):
                 self._settings_dirty = False
             elif action == UiAction.SAVE_BROKER_SETTINGS:
                 self.broker_panel.dirty = False
+            elif action == UiAction.SAVE_MARKET_DATA_SETTINGS:
+                self.broker_panel.market_panel.dirty = False
         if action in (UiAction.SWITCH_CONTEXT, UiAction.ADD_CONTEXT):
             self._rendered_version = None
         self.apply_state(state)
@@ -435,7 +439,7 @@ class TradingWindow(QMainWindow):
             context_id, account_ref = (selected[0], selected[1]) if self.state.contexts else ('', selected)
             if self.state.contexts and (context_id, account_ref) == (self.state.context_id, self.state.account_ref):
                 return
-            if self._settings_dirty or self.broker_panel.dirty:
+            if self._settings_dirty or self.broker_panel.dirty or self.broker_panel.market_panel.dirty:
                 if not self._confirm(ui_text('v2.context_unsaved')):
                     self._rendered_version = None
                     self.apply_state(self.state)
@@ -566,6 +570,7 @@ class TradingWindow(QMainWindow):
             self.setting_risk.setCurrentIndex(self.setting_risk.findData(state.settings.risk_fraction))
         self._context_rendering = False
         self.broker_panel.apply(state.broker_settings, state.broker_readiness)
+        self.broker_panel.apply_market(state.market_data_settings, state.market_connection, state.market_data_error)
 
     @staticmethod
     def _stamp(state: UiState) -> tuple[int, int, int]:

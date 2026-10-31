@@ -10,6 +10,15 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'market_data_not_configured': ErrorText('尚未設定行情連線。', '到設定頁填入環境與 API 金鑰引用名稱。'),
+    'market_data_login_failed': ErrorText('行情登入失敗。', '確認金鑰已用 store_sinopac_key.py 存入，並檢查網路後重試。'),
+    'market_data_not_connected': ErrorText('行情未連線。', '先連線，或改看本機已有的歷史 K 線。'),
+    'history_quota_low': ErrorText('今日行情流量將滿。', '歷史更新已暫停，明日或額度恢復後再試。'),
+    'history_query_failed': ErrorText('歷史 K 線更新失敗。', '保留本機已有資料，恢復行情連線後按重試。'),
+    'symbol_not_found': ErrorText('找不到這個商品。', '確認股號；未連線時只能搜尋本機已有資料。'),
+    'kline_store_unavailable': ErrorText('本機 K 線庫無法使用。', '原檔已保留，已建立新檔；可重新更新歷史。'),
+    'alert_invalid_params': ErrorText('警示參數不正確。', '依欄位提示修正後再建立。'),
+    'alert_store_unavailable': ErrorText('警示檔案無法使用。', '保留原檔，檢查工作區寫入權限後重試。'),
     'subscription_limit_reached': ErrorText('行情訂閱額度已滿。', '移除自選商品後再試；既有策略訂閱保留。'),
     'capability_missing': ErrorText('目前帳戶或環境尚未具備這項能力。', '核對帳戶、商品、交易資格與權限證據；可先使用本機跨日模擬。'),
     'intraday_eligibility_missing': ErrorText(

@@ -6528,3 +6528,54 @@ fixtures request temp directories outside the writable workspace. This is the
 explicit non-blocking sandbox exception in t4-base.md; the controller must rerun
 the original discovery commands outside the sandbox. No replacement tests,
 skips, fixture rewrites or timeout extensions were used.
+
+## M1-1 — independent watch-only market history (2026-11-01)
+
+The explicitly enabled market-data connection needs only an environment and an
+exact SecretResolver reference. It never reads CA references or asks for accounts,
+positions or execution. CONNECT_READ_ONLY and trading Catalog/bindings retain
+existing semantics. WatchInstrument is a separate identity for TWSE/TPEX stocks
+and INDEX instruments, including fixed IX0001/IX0043 fallbacks. Names are fetched
+from Contract V2 info during a measured, atomic daily directory refresh.
+
+One background HistorySync persists right-labelled SDK minutes as aware UTC
+minute starts in SQLite (same patched SQLite/WAL/timeout policy as Ledger).
+Official history wins over live ticks. Coverage merges successful empty intervals;
+sparse trading minutes are not fabricated. A corrupt/version-mismatched database
+is renamed with its WAL/SHM preserved. No user cache is deleted. Historical API
+retains all seven periods while UI offers 1/5/15 minute and daily buttons.
+
+Fixed indices and explicit watches request one year; unlisted chart browsing
+requests sixty days, extending to one year for daily view. A single priority queue
+merges requests, issues <=29-day chunks and <=40 queries/10 seconds, checks quota
+and durable daily bar counts, and rearms on the next local date. Removal cancels
+pending/inflight result publication without refunding consumed query budget.
+Reconnection marks interrupted minutes incomplete and old prices STOPPED until a
+new-generation tick; gap-only official recovery restores the cache. Final live
+minutes alone are written; current-day daily bars remain forming before close.
+
+MarketTerminalService is independent of execution. Its fixed/watch/temporary
+subscription allocation, settings and bounded paged IPC chart API work without
+trading references. Legacy engine snapshots/queries retain their contract until
+an explicit terminal selection or market settings enable the new watch projection.
+K-line-only identities remain searchable offline if the directory is unavailable,
+with code as the honest unknown-name fallback. Unknown prices/volumes stay None.
+
+M1-1 completed offline modules: test_kline_store (9), test_history_sync (17),
+test_market_terminal_service (10), test_m1_market_runtime (2), test_market_session
+(5), test_symbol_directory (2), test_market_connection (4), test_m1_architecture
+(3). Existing test_trading_architecture (8), test_market_series_transport (8),
+test_trading_broker_runtime (12), test_trading_ui (32) also passed individually.
+Tests use fake SDKs/disposable workspaces, never real credentials or login.
+The market settings screenshot uses tools/ui_snapshot.py's renderer and fake
+read models: docs/analysis/m1-connection/1366x768.png. Full prepush evidence and
+remaining host-native limitations are reported in m1-decisions/run-report.
+
+Graph edit warnings: UiAction/UiState/MarketWatchView, build_runtime, IPC
+Operation/_dispatch, _settings_page, MarketWatchWidget and the architecture import
+classifier are CRITICAL; TradingWindow/registry are HIGH. Changes append defaulted
+DTOs/operations, retain execution gates and add exact pure presentation value
+imports with negative dependency tests. No G3/SDK pin/PROJECT_STATE/profile/test
+weakening. UNKNOWN new/method dispatch was checked against direct source and rg.
+Real market login, complete-market info refresh latency, native callbacks/quota,
+and owner visual inspection remain unverified and require owner testing.

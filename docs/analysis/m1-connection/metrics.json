@@ -1,0 +1,22 @@
+{
+  "page_height": 362,
+  "visible_input_count": 0,
+  "button_count": 1,
+  "label_char_count": 92,
+  "visible_text": [
+    "永豐連接器與權限就緒",
+    "尚未執行本機設定檢查；券商帳戶、行情、交易及憑證仍待外部驗證。",
+    "這裡只保存設定與憑證的引用名稱，不貼入金鑰、憑證密碼或完整帳號。本機模擬不需要這些資料，可先繼續操作。",
+    "交易連接器（進階）",
+    "檢查本機設定（不連線券商）"
+  ],
+  "combo_items": [],
+  "table_headers": [
+    "檢查項目",
+    "狀態",
+    "下一步"
+  ],
+  "unlabeled_inputs": [],
+  "disabled_buttons": [],
+  "primary_button_count": 0
+}

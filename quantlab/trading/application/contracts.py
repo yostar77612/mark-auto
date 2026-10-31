@@ -333,6 +333,7 @@ class UiState:
     remaining_daily_loss: Decimal | None = None
     today_fill_count: int | None = None
     market_data_settings: MarketDataSettings = MarketDataSettings()
+    market_data_error: str = ''
 
 
 class TradingFacade(Protocol):
