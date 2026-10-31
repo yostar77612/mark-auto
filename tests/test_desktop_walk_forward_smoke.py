@@ -41,7 +41,8 @@ def run_job(manager, operation, payload):
 
 class WalkForwardSmokeFixtureTests(unittest.TestCase):
     def test_fixed_two_fold_five_builtin_plan_and_explicit_nonacceptance(self):
-        from desktop import _walk_forward_smoke_fixture, _smoke_steps
+        from desktop_app.smoke.walk_forward import _walk_forward_smoke_fixture
+        from desktop_app.smoke.fixtures import _smoke_steps
         from quantlab.core import to_dict
         from quantlab.research_core.adapters.workspace_store import AppPaths
         from quantlab.reporting import load_dataset
@@ -81,11 +82,11 @@ class WalkForwardSmokeFixtureTests(unittest.TestCase):
             [operation for operation, _ in _smoke_steps()],
             ['ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'],
         )
-        source = (ROOT / 'desktop_app/smoke/__init__.py').read_text(encoding='utf-8')
+        source = (ROOT / 'desktop_app/smoke/runner.py').read_text(encoding='utf-8')
         self.assertIn('smoke_deadline = time.monotonic() + 120', source)
 
     def test_omitted_core_module_cannot_prepare_smoke(self):
-        from desktop import _walk_forward_smoke_fixture
+        from desktop_app.smoke.walk_forward import _walk_forward_smoke_fixture
         from quantlab.research_core.adapters.workspace_store import AppPaths
 
         with tempfile.TemporaryDirectory() as temporary, patch.dict(sys.modules, {'quantlab.walk_forward': None}):
@@ -97,7 +98,7 @@ class WalkForwardSmokeFixtureTests(unittest.TestCase):
 class WalkForwardSmokeResultTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from desktop import _walk_forward_smoke_fixture, _check_walk_forward_smoke_result
+        from desktop_app.smoke.walk_forward import _walk_forward_smoke_fixture, _check_walk_forward_smoke_result
         from quantlab.research_core.adapters.workspace_store import AppPaths
         from desktop_app.research_bootstrap import create_job_manager
 
@@ -116,7 +117,7 @@ class WalkForwardSmokeResultTests(unittest.TestCase):
         cls.original_journal = cls.journal.read_bytes()
 
     def check(self, result=None, operation='ui_walk_forward_read'):
-        from desktop import _check_walk_forward_smoke_result
+        from desktop_app.smoke.walk_forward import _check_walk_forward_smoke_result
 
         return _check_walk_forward_smoke_result(operation, self.result if result is None else result, self.paths, self.payload, self.report)
 
@@ -192,7 +193,7 @@ class WalkForwardSmokeResultTests(unittest.TestCase):
             self.journal.write_bytes(self.original_journal)
 
     def test_journal_read_and_no_paper_side_effects_are_required(self):
-        from desktop import _check_walk_forward_smoke_result
+        from desktop_app.smoke.walk_forward import _check_walk_forward_smoke_result
 
         with self.assertRaisesRegex(ValueError, 'read mutated'):
             _check_walk_forward_smoke_result(OPERATIONS[2], self.result, self.paths, self.payload, {**self.report, 'journal_sha256': '0' * 64})
@@ -205,7 +206,7 @@ class WalkForwardSmokeResultTests(unittest.TestCase):
             sentinel.unlink()
 
     def test_real_no_winner_decision_cannot_satisfy_smoke_by_skipping_oos(self):
-        from desktop import _walk_forward_smoke_fixture, _check_walk_forward_smoke_result
+        from desktop_app.smoke.walk_forward import _walk_forward_smoke_fixture, _check_walk_forward_smoke_result
         from quantlab.research_core.adapters.workspace_store import AppPaths
         from desktop_app.research_bootstrap import create_job_manager
 
@@ -295,9 +296,9 @@ class WalkForwardSmokeProcessTests(unittest.TestCase):
     def test_omitted_module_malformed_result_reference_and_worker_failure_fail_overall(self):
         variants = {
             'missing_module': "sys.modules['quantlab.walk_forward'] = None\n",
-            'bad_result': "original = desktop._check_walk_forward_smoke_result\ndef bad(op, result, *args):\n if op == 'ui_walk_forward_run': result = dict(result, summary={})\n return original(op, result, *args)\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
-            'bad_reference': "original = desktop._check_walk_forward_smoke_result\ndef bad(op, result, *args):\n if op == 'ui_walk_forward_read': result = dict(result, reference='../outside')\n return original(op, result, *args)\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
-            'worker_failure': "original = desktop._check_walk_forward_smoke_result\ndef bad(op, result, paths, *args):\n evidence = original(op, result, paths, *args)\n if op == 'ui_walk_forward_preview': (paths.state / 'dataset.json').unlink()\n return evidence\n__import__('desktop_app.smoke', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
+            'bad_result': "original = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_walk_forward_smoke_result\ndef bad(op, result, *args):\n if op == 'ui_walk_forward_run': result = dict(result, summary={})\n return original(op, result, *args)\n__import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
+            'bad_reference': "original = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_walk_forward_smoke_result\ndef bad(op, result, *args):\n if op == 'ui_walk_forward_read': result = dict(result, reference='../outside')\n return original(op, result, *args)\n__import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
+            'worker_failure': "original = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_walk_forward_smoke_result\ndef bad(op, result, paths, *args):\n evidence = original(op, result, paths, *args)\n if op == 'ui_walk_forward_preview': (paths.state / 'dataset.json').unlink()\n return evidence\n__import__('desktop_app.smoke.runner', fromlist=['__name__'])._check_walk_forward_smoke_result = bad\n",
             'launch_failure': "from quantlab.research_core.application.job_manager import JobManager\noriginal = JobManager.start\ndef bad(self, op, payload):\n if op == 'ui_walk_forward_run': raise RuntimeError('Injected launch failure')\n return original(self, op, payload)\nJobManager.start = bad\n",
         }
         for name, injected in variants.items():

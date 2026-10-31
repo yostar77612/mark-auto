@@ -1483,7 +1483,7 @@ class CoreShardWorkflowTests(unittest.TestCase):
             '--only-binary=:all: --force-reinstall --no-cache-dir --report qt-install-report.json '
             '-r requirements-qt-ci.lock',
             'python tools/install_desktop_auth.py --report dist/validation/desktop-auth-install.json',
-            'python -c "from desktop import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"',
+            'python -c "from desktop_app.smoke.auth import _auth_smoke_dependencies; print(_auth_smoke_dependencies())"',
         )
         previous = -1
         for command in setup_commands:

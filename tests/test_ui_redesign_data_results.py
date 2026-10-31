@@ -21,7 +21,7 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import scale_window_fonts
 from desktop_app.shell.window import MainWindow
 from desktop_app.shell.main_window import execute_ui_operation
-from desktop_app.smoke import _smoke_steps
+from desktop_app.smoke.fixtures import _smoke_steps
 from quantlab.core import ValidationError, canonical_json, to_dict
 from quantlab.research_core.adapters.workspace_store import AppPaths
 from desktop_app.research_bootstrap import create_job_manager

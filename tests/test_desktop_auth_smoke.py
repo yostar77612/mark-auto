@@ -14,10 +14,10 @@ HAS_DEPS = all(importlib.util.find_spec(name) is not None for name in ('jwt', 'c
 @unittest.skipUnless(HAS_DEPS, 'Pinned optional desktop auth dependencies required')
 class AuthPackagingSmokeTests(unittest.TestCase):
     def test_actual_native_parser_and_identity_smoke_never_grants_account(self):
-        from desktop import _auth_smoke_dependencies
+        from desktop_app.smoke.auth import _auth_smoke_dependencies
 
         original = (socket.socket, socket.create_connection, socket.getaddrinfo)
-        with tempfile.TemporaryDirectory() as directory, patch('desktop.Path.cwd', return_value=Path(directory)):
+        with tempfile.TemporaryDirectory() as directory, patch('desktop_app.smoke.auth.Path.cwd', return_value=Path(directory)):
             result = _auth_smoke_dependencies()
             self.assertEqual(list(Path(directory).iterdir()), [])
         self.assertEqual(result['status'], 'passed')
@@ -31,7 +31,7 @@ class AuthPackagingSmokeTests(unittest.TestCase):
         self.assertEqual(original, (socket.socket, socket.create_connection, socket.getaddrinfo))
 
     def test_native_failure_is_not_swallowed_and_network_functions_restored(self):
-        from desktop import _auth_smoke_dependencies
+        from desktop_app.smoke.auth import _auth_smoke_dependencies
         import pycparser
 
         original = (socket.socket, socket.create_connection, socket.getaddrinfo)
@@ -41,7 +41,7 @@ class AuthPackagingSmokeTests(unittest.TestCase):
         self.assertEqual(original, (socket.socket, socket.create_connection, socket.getaddrinfo))
 
     def test_wrong_version_fails_closed(self):
-        from desktop import _auth_smoke_dependencies
+        from desktop_app.smoke.auth import _auth_smoke_dependencies
         import jwt
 
         with patch.object(jwt, '__version__', '0.0.0'):

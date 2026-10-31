@@ -77,6 +77,16 @@ analysis = Analysis(
                    'desktop_app.research_bootstrap',
                    'desktop_app.research_session',
 
+                   'desktop_app.smoke.fixtures',
+                   'desktop_app.smoke.auth',
+                   'desktop_app.smoke.market',
+                   'desktop_app.smoke.history',
+                   'desktop_app.smoke.walk_forward',
+                   'desktop_app.smoke.lifecycle',
+                   'desktop_app.smoke.runner',
+                   'desktop_app.smoke.recovery',
+                   'desktop_app.smoke.tls',
+
                    # Lazy JWT import must be visible to native upstream hooks.
                    'jwt', 'cryptography', 'cryptography.hazmat.bindings._rust',
                    'cffi', '_cffi_backend', 'pycparser'],

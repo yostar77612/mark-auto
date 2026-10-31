@@ -394,7 +394,7 @@ time.sleep(60)
     def test_post_join_injected_failure_cannot_grant_original_owner_proof(self):
         # Protocol test, not native Windows or smoke acceptance. Match the real
         # terminal injection: stop succeeds, then its proof operation raises.
-        from desktop import _close_smoke_worker
+        from desktop_app.smoke.lifecycle import _close_smoke_worker
         from tests.test_desktop_walk_forward_runtime import WalkForwardRuntimeTests, REFERENCE
 
         fixture = WalkForwardRuntimeTests(methodName='runTest')

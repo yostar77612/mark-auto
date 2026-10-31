@@ -106,7 +106,7 @@ class StartupTests(unittest.TestCase):
         functions.update(
             {
                 node.name: node
-                for node in ast.parse((ROOT / 'desktop_app/smoke/__init__.py').read_text(encoding='utf-8-sig')).body
+                for node in ast.parse((ROOT / 'desktop_app/smoke/runner.py').read_text(encoding='utf-8-sig')).body
                 if isinstance(node, ast.FunctionDef)
             }
         )

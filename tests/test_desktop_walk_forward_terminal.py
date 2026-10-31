@@ -15,7 +15,7 @@ from tests.test_desktop_smoke_terminal import process_can_run
 
 REFERENCE = runtime_tests.REFERENCE
 from quantlab.desktop_runtime import RuntimeSafetyError
-from desktop import _close_smoke_worker
+from desktop_app.smoke.lifecycle import _close_smoke_worker
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -122,7 +122,7 @@ def tracked_cleanup(manager):
  result = diagnostic_original_cleanup(manager)
  trace('cleanup_end', verified=result['verified'])
  return result
-desktop._close_smoke_worker = __import__('desktop_app.smoke', fromlist=['__name__'])._close_smoke_worker = tracked_cleanup
+desktop._close_smoke_worker = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._close_smoke_worker = tracked_cleanup
 original_start = JobManager.start
 pids = []
 def tracked_start(self, operation, payload):

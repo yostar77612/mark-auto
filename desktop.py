@@ -16,23 +16,9 @@ import argparse
 from pathlib import Path
 import sys
 
-from desktop_app.smoke import (
-    _SmokeSettingsView,
-    _auth_smoke_dependencies,
-    _smoke_steps,
-    _market_smoke_ui,
-    _market_smoke_response,
-    _check_market_worker_result,
-    _history_smoke_fixture,
-    _check_history_worker_result,
-    _history_smoke_ui,
-    _walk_forward_smoke_fixture,
-    _check_walk_forward_smoke_result,
-    _start_smoke_job,
-    _close_smoke_worker,
-    _retain_smoke_directory,
-    run_smoke,
-)
+from desktop_app.smoke.fixtures import _SmokeSettingsView
+from desktop_app.smoke.lifecycle import _close_smoke_worker, _retain_smoke_directory
+from desktop_app.smoke.runner import run_smoke
 
 
 from desktop_app.connection_composition import configure as configure_connection

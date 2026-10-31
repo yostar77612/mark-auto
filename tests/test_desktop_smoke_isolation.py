@@ -98,7 +98,7 @@ class ReadOnlyWorkspaceTests(unittest.TestCase):
 @unittest.skipUnless(HAS_QT, 'Pinned Qt required for isolated desktop launch')
 class SmokeUserStateIsolationTests(unittest.TestCase):
     def smoke(self, *, redirected=False, injected='', expected_status='passed', seeded=True, isolated=False, long_temp=False):
-        from desktop import _smoke_steps
+        from desktop_app.smoke.fixtures import _smoke_steps
         from quantlab.research_core.application.paper_operations import _paper
         from quantlab.research_core.adapters.workspace_store import AppPaths
 
@@ -216,7 +216,7 @@ QMessageBox.critical = QMessageBox.information = lambda *args: (_ for _ in ()).t
         self.smoke(injected="sys.modules['quantlab.research_core.domain.market_sessions'] = None", expected_status='failed')
         self.smoke(
             redirected=True,
-            injected="original = desktop._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke', fromlist=['__name__'])._history_smoke_fixture = missing",
+            injected="original = __import__('desktop_app.smoke.runner', fromlist=['__name__'])._history_smoke_fixture\ndef missing(root):\n report, payload = original(root)\n payload['local_path'] = str(root / 'missing.csv')\n return report, payload\n__import__('desktop_app.smoke.runner', fromlist=['__name__'])._history_smoke_fixture = missing",
             expected_status='failed',
         )
 

@@ -346,7 +346,7 @@ diagnostics.diagnosed_generic_worker(None, gate, 'ui_campaign', {}, None, None, 
         self.assertEqual(counts['sqlite.commit'], counts['export.write'])
 
     def test_25_bar_paper_replay_keeps_exact_sql_events_and_storage_profiles(self):
-        from desktop import _smoke_steps
+        from desktop_app.smoke.fixtures import _smoke_steps
 
         policy = _smoke_steps()[4][1]['policy']
         reconcile = _smoke_steps()[4][1]['snapshot']

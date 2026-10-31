@@ -257,7 +257,7 @@ def exercise(execute):
         local = paths.root / 'official.json'
         local.write_bytes(TWSE)
         call('ui_market_refresh', {'local_path': str(local), 'provider': 'twse', 'format': 'json'})
-        from desktop import _history_smoke_fixture
+        from desktop_app.smoke.history import _history_smoke_fixture
 
         _, history_payload = _history_smoke_fixture(paths.root)
         call('history_import', history_payload, operation='ui_market_refresh')

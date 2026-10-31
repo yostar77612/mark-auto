@@ -1,4 +1,4 @@
-"""Reproduce the R2 extraction and record canonical AST preservation evidence."""
+"""Record canonical R2 AST evidence across current owners; replay lives in refactor/e_smoke.py."""
 
 import ast
 import hashlib
@@ -23,27 +23,12 @@ PRODUCTION = {
 def main():
     source = subprocess.check_output(['git', 'show', BASE + ':desktop.py'], cwd=ROOT).decode('utf-8')
     nodes = [node for node in ast.parse(source).body if isinstance(node, (ast.FunctionDef, ast.ClassDef))]
-    moved = [node for node in nodes if node.name not in PRODUCTION]
-    lines = source.splitlines(keepends=True)
     package = ROOT / 'desktop_app/smoke/__init__.py'
-    if not package.exists():
-        package.parent.mkdir(exist_ok=True)
-        package.write_text(
-            '"""Offline desktop smoke harness; production startup remains in desktop."""\n\n'
-            'from __future__ import annotations\n\nfrom pathlib import Path\nimport sys\n\nfrom desktop_app.strings.catalog import ui_text\n\n'
-            + '\n\n'.join(''.join(lines[node.lineno - 1 : node.end_lineno]) for node in moved)
-            + '\n',
-            encoding='utf-8',
-        )
-        removed = {line for node in moved for line in range(node.lineno - 1, node.end_lineno)}
-        production = ''.join(line for index, line in enumerate(lines) if index not in removed)
-        production = production.replace(
-            'import sys\n', 'import sys\n\nfrom desktop_app.smoke import (\n' + ''.join('    ' + node.name + ',\n' for node in moved) + ')\n', 1
-        )
-        while '\n\n\n\n' in production:
-            production = production.replace('\n\n\n\n', '\n\n\n')
-        (ROOT / 'desktop.py').write_text(production, encoding='utf-8')
-    current = {node.name: node for node in ast.parse(package.read_text(encoding='utf-8')).body if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
+    current = {
+        node.name: node
+        for node in [node for owner in sorted(package.parent.glob('*.py')) for node in ast.parse(owner.read_text(encoding='utf-8')).body]
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef))
+    }
     production = {node.name: node for node in ast.parse((ROOT / 'desktop.py').read_text(encoding='utf-8')).body if isinstance(node, ast.FunctionDef)}
     records = {}
     for node in nodes:

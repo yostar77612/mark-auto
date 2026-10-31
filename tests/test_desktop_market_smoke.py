@@ -17,13 +17,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class MarketSmokeContractTests(unittest.TestCase):
     def test_original_seven_operations_remain_unchanged(self):
-        from desktop import _smoke_steps
+        from desktop_app.smoke.fixtures import _smoke_steps
 
         self.assertEqual(
             [step[0] for step in _smoke_steps()],
             ['ui_demo', 'ui_backtest', 'ui_select', 'ui_campaign', 'ui_paper_reconcile', 'ui_paper_replay', 'ui_paper_kill'],
         )
-        script = (ROOT / 'desktop_app/smoke/__init__.py').read_text(encoding='utf-8')
+        script = (ROOT / 'desktop_app/smoke/runner.py').read_text(encoding='utf-8')
         self.assertIn('smoke_deadline = time.monotonic() + 120', script)
         self.assertIn("market_report['status'] == 'passed'", script)
         self.assertIn("'market_smoke': market_report", script)
@@ -31,7 +31,7 @@ class MarketSmokeContractTests(unittest.TestCase):
         self.assertIn("'history_smoke': history_report", script)
 
     def test_smoke_settings_snapshot_has_no_persistent_side_effects(self):
-        from desktop import _SmokeSettingsView
+        from desktop_app.smoke.fixtures import _SmokeSettingsView
 
         source = {'market': {'version': 1}, 'sentinel': 'keep'}
         view = _SmokeSettingsView(source)
@@ -46,14 +46,15 @@ class MarketSmokeContractTests(unittest.TestCase):
             view.save([])
 
     def test_manual_result_without_provenance_cannot_pass(self):
-        from desktop import _check_market_worker_result
+        from desktop_app.smoke.market import _check_market_worker_result
 
         for phase, value in [('manual_export', {}), ('manual_import', {'status': 'completed'}), ('unknown', {})]:
             with self.subTest(phase=phase), self.assertRaises((ValueError, KeyError)):
                 _check_market_worker_result(phase, value, Path('does-not-exist.json'))
 
     def test_export_requires_actual_file_and_matching_bundled_source(self):
-        from desktop import _check_market_worker_result, _market_smoke_response, _smoke_steps
+        from desktop_app.smoke.market import _check_market_worker_result, _market_smoke_response
+        from desktop_app.smoke.fixtures import _smoke_steps
         from quantlab.manual_exchange import export_request_file, import_response
         from quantlab.reporting import synthetic_dataset
         from quantlab.__main__ import config_from_json
@@ -70,7 +71,7 @@ class MarketSmokeContractTests(unittest.TestCase):
             self.assertEqual(evidence['module_source_hash'], request['module_source_hash'])
             generator = import_response(synthetic_dataset(120), config, _market_smoke_response(request, to_dict(builtin_strategies()[0])))
             self.assertEqual(generator.mode, 'manual_unverified')
-            with patch('desktop.Path.read_text', side_effect=FileNotFoundError('missing bundled source')):
+            with patch('desktop_app.smoke.market.Path.read_text', side_effect=FileNotFoundError('missing bundled source')):
                 with self.assertRaises(FileNotFoundError):
                     _check_market_worker_result('manual_export', result, path)
             request['module_source_hash'] = '0' * 64
@@ -88,7 +89,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_render_indicators_timeframes_and_typed_payload_are_honest_fixtures(self):
-        from desktop import _market_smoke_ui
+        from desktop_app.smoke.market import _market_smoke_ui
 
         report, config, candidate = _market_smoke_ui(self.app)
         self.assertEqual(report['source_type'], 'synthetic')
@@ -103,7 +104,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
         self.assertEqual(candidate['parameters']['fast'], 5)
 
     def test_missing_root_modules_fail_instead_of_reporting_market_success(self):
-        from desktop import _market_smoke_ui
+        from desktop_app.smoke.market import _market_smoke_ui
 
         for name in (
             'desktop_app.features.market.dashboard',
@@ -116,7 +117,7 @@ class MarketSmokeWidgetTests(unittest.TestCase):
                     _market_smoke_ui(self.app)
 
     def test_invalid_typed_module_contract_fails(self):
-        from desktop import _market_smoke_ui
+        from desktop_app.smoke.market import _market_smoke_ui
 
         with patch('desktop_app.features.strategy.forms.StrategyForm.build_payload', return_value={}):
             with self.assertRaises((ValueError, KeyError)):

@@ -66,7 +66,7 @@ def build_window(root, *, populated=True):
     paths = AppPaths(root / 'workspace').ensure()
     jobs = PreviewJobs(paths)
     if populated:
-        from desktop_app.smoke import _smoke_steps
+        from desktop_app.smoke.fixtures import _smoke_steps
 
         for operation, payload in _smoke_steps()[:2]:
             execute_ui_operation(operation, payload, paths)
