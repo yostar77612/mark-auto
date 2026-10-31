@@ -662,6 +662,7 @@ class NativeDesktopTests(unittest.TestCase):
         self.window.timer.stop()
         original = self.window.jobs
         self.window.jobs = SlowErrorExit()
+        self.window.jobs.event_log = original.event_log
         self.window.last_operation = 'ui_import'
         try:
             self.window.poll_jobs()

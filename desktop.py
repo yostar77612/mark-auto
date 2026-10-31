@@ -15,7 +15,7 @@ from trading_entry import launch
 import argparse
 from pathlib import Path
 import sys
-
+import desktop_app.smoke  # Static package edge for the frozen entry point.
 from desktop_app.smoke.fixtures import _SmokeSettingsView
 from desktop_app.smoke.lifecycle import _close_smoke_worker, _retain_smoke_directory
 from desktop_app.smoke.runner import run_smoke

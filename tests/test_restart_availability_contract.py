@@ -11,7 +11,6 @@ Run with the prepared cloud Qt interpreter, QT_QPA_PLATFORM=offscreen, and a
 """
 
 from __future__ import annotations
-from quantlab.research_core.adapters.workspace_backup import WorkspaceJobStorage
 
 from desktop_app.bootstrap import create_operation_ports as _c_create_operation_ports, create_ui_services as _c_create_ui_services
 
@@ -60,7 +59,7 @@ def _offline_worker(*args, **kwargs):
         patch('quantlab.assistant.adapters.chatgpt.provider.PlanHTTPTransport', side_effect=AssertionError('TEST_ONLY: no provider')),
         patch('quantlab.research_core.application.analysis_operations.analysis_provider_for', side_effect=AssertionError('TEST_ONLY: no analysis provider')),
     ):
-        return _job_worker(*args, **dict(kwargs, storage_port=kwargs.get('storage_port') or WorkspaceJobStorage()))
+        return _job_worker(*args, **kwargs)
 
 
 def _snapshot(root):

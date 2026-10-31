@@ -161,6 +161,8 @@ PAIRS = (
 def source_map():
     paths = (
         sorted((ROOT / 'quantlab').glob('*.py'))
+        + sorted((ROOT / 'quantlab/research_core').rglob('*.py'))
+        + sorted((ROOT / 'quantlab/shared').rglob('*.py'))
         + sorted(
             [
                 *ROOT.glob('desktop*.py'),

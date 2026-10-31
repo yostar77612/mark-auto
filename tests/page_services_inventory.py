@@ -215,6 +215,7 @@ def reviewed_inventory(base, delta):
 
 def project_e6_service_refs(result):
     """Preserve exact observer identities across mechanical E import edits."""
+    # Hash only the reviewed relocation table when projecting its observer identities.
     import hashlib
 
     path = ROOT / 'tests/fixtures/layered_paths/e6_service_relocations.json'
