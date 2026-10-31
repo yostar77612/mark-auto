@@ -282,6 +282,16 @@
             "receiver": "window"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_onboarding_c2.py",
+            "kind": "assignment",
+            "line": 118,
+            "name": "result_choice",
+            "receiver": "self.shell"
+          },
+          "count": 1
         }
       ],
       "added": [
@@ -562,6 +572,16 @@
             "line": 280,
             "name": "start_job",
             "receiver": "window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_onboarding_c2.py",
+            "kind": "assignment",
+            "line": 120,
+            "name": "result_choice",
+            "receiver": "self.shell"
           },
           "count": 1
         }

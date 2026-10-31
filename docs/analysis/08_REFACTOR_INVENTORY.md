@@ -698,6 +698,9 @@ PR E4 market/history owners (content-only):
 | `tests/legacy_history.py` | 32 | tooling | `tests/legacy_history.py` | T5-E6: test-only legacy history interface fixture; excluded from runtime layer scanning. |
 | `tools/refactor/e6_references.json` | 1821 | tooling | `tools/refactor/e6_references.json` | T5-E6: anchored mechanical reference recipes. |
 | `tools/refactor/e7_references.py` | 60 | tooling | `tools/refactor/e7_references.py` | T5-E7: exact owner-reference and fixture-interface correction replay. |
+| `desktop_app/components/disclosure.py` | 17 | presentation | `desktop_app/components/disclosure.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/context_header.py` | 44 | presentation | `desktop_app/features/trading/context_header.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/strings/m1_ui.py` | 14 | shared | `desktop_app/strings/m1_ui.py` | M1: reviewed new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
