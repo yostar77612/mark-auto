@@ -413,6 +413,8 @@ def apply_theme(target=None):
                 set_theme_property(widget, 'themePart', widget.property('themePart'))
             if widget.objectName() == 'market_dashboard':
                 apply_market_theme(widget)
+            if widget.objectName() == 'market_terminal':
+                _apply_terminal_theme(widget)
             if isinstance(widget, QLabel) and widget.property('financialSign') is not None:
                 _refresh_financial_label(widget)
             if isinstance(widget, QTableWidget):
@@ -447,3 +449,40 @@ def set_status(widget, state):
 def status_for_color(color):
     """Bridge the existing stop_presentation colour contract without changing it."""
     return next(state for state, value in STATUS_COLORS.items() if value == color)
+
+
+_TERMINAL_QSS = """
+QWidget#market_terminal QPushButton[terminalPeriod="true"]:checked { background:@tab_selection@; border-color:@focus_border@; }
+QWidget#market_terminal QLabel#terminal_freshness { color:@disabled_text@; }
+QWidget#market_terminal QLabel#terminal_freshness[terminalFreshness="LIVE"] { color:@success@; }
+QWidget#market_terminal QLabel#terminal_freshness[terminalFreshness="DELAYED"] { color:@warning@; }
+QWidget#market_terminal QLabel#terminal_chart_title[terminalDirection="UP"], QWidget#market_terminal QPushButton#terminal_index_title[terminalDirection="UP"] { color:@terminal_rise@; }
+QWidget#market_terminal QLabel#terminal_chart_title[terminalDirection="DOWN"], QWidget#market_terminal QPushButton#terminal_index_title[terminalDirection="DOWN"] { color:@terminal_fall@; }
+QWidget#market_terminal QLabel#terminal_chart_title[terminalDirection="FLAT"], QWidget#market_terminal QPushButton#terminal_index_title[terminalDirection="FLAT"] { color:@terminal_flat@; }
+"""
+
+
+def _build_terminal_stylesheet(theme, convention, colours, flat):
+    """New terminal selectors stay separate from the reviewed legacy QSS bytes."""
+    return (
+        _expand(_TERMINAL_QSS, theme, convention)
+        .replace('@terminal_rise@', QColor(colours[0]).name())
+        .replace('@terminal_fall@', QColor(colours[1]).name())
+        .replace('@terminal_flat@', QColor(flat).name())
+    )
+
+
+def _apply_terminal_theme(widget):
+    """Apply only the terminal's selectors and refresh changed semantic properties."""
+    stylesheet = _build_terminal_stylesheet(*appearance(widget), widget.colours(widget), widget.palette().text().color())
+    if widget.styleSheet() != stylesheet:
+        widget.setStyleSheet(stylesheet)
+    for target, property_name in ((widget.title, 'terminalDirection'), (widget.index_title, 'terminalDirection'), (widget.freshness, 'terminalFreshness')):
+        set_theme_property(target, property_name, target.property(property_name))
+    for table in (widget.table, widget.index_table):
+        for row in range(table.rowCount()):
+            view = widget._view(table.item(row, 0).data(Qt.ItemDataRole.UserRole))
+            for column in (2, 3, 4):
+                item = table.item(row, column)
+                if item.text() != ui_text('watch.unknown'):
+                    item.setForeground(widget._colour(view))

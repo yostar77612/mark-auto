@@ -1,6 +1,6 @@
 # M1：個股與指數看盤終端
 
-Status: M1-U and M1-1 IMPLEMENTED offline; M1-2/M1-3 tracked on their stacked PRs.
+Status: M1-U, M1-1 and M1-2 IMPLEMENTED offline; M1-3 tracked on its stacked PR.
 Verification: CI baseline repair and full-suite verification in progress. Real broker
 and final human visual acceptance remain PENDING OWNER CHECK.
 Owner review: APPROVED 2026-11-01 for implementation; detailed spec:

@@ -717,6 +717,14 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/runtime/market_terminal.py` | 72 | composition | `quantlab/trading/runtime/market_terminal.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_terminal_settings.py` | 42 | composition | `quantlab/trading/runtime/market_terminal_settings.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `tools/m1_connection_snapshot.py` | 41 | tooling | `tools/m1_connection_snapshot.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/market_terminal.py` | 309 | presentation | `desktop_app/features/trading/market_terminal.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/market_terminal_layout.py` | 154 | presentation | `desktop_app/features/trading/market_terminal_layout.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/market_terminal_rows.py` | 93 | presentation | `desktop_app/features/trading/market_terminal_rows.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/market_terminal_search.py` | 98 | presentation | `desktop_app/features/trading/market_terminal_search.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/market_terminal_widgets.py` | 237 | presentation | `desktop_app/features/trading/market_terminal_widgets.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/strings/terminal.py` | 52 | shared | `desktop_app/strings/terminal.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/symbol_search.py` | 30 | application | `quantlab/trading/application/symbol_search.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `tools/m1_terminal_snapshot.py` | 147 | tooling | `tools/m1_terminal_snapshot.py` | M1: reviewed new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

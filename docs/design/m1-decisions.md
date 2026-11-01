@@ -60,6 +60,18 @@
 - Ruff lint、1000 個追蹤 Python 檔的 Python 3.11 語法、static gate、兩套架構檢查皆通過。
   M1-1 新增與既有相關模組逐一通過，詳見 docs/analysis/m1-1-verification.md。
 - 圖譜刷新成功（51.8 秒），未下載擴充。共用委託與風險路徑不變。
+
+## 2026-11-01 02:31 +08:00 — M1-2：堆疊、版面與整合
+
+- M1-2 以 merge 納入 M1-1，保留所有提交歷史，不 rebase／force-push。
+- 自動核准曾拒絕未備份 contracts.py 的清理；已先完整備份並核對 SHA256，之後安全恢復借用依賴。
+  未遺失任何原始半成品，沒有仍被拒絕的動作。
+- 合併兩階段字串註冊，週期保留終端四個中文標籤；原七週期 API 不變。
+- 使用注入的 panel_factory／配色函式重用 C5 與外觀，不讓 trading presentation 匯入 infrastructure。
+- 指數小圖沒有成交量，略去冗餘圖內標題；預設共用圖表路徑不改，委託線／繪圖測試保持通過。
+- 完整 prepush 205 項中，Windows 原生環境失敗據實保留；真正 Python 解釋器的12項程序測試通過。
+  已確認測試啟動器 PID 361768 與引擎 PID237016 不同，未增加任何期限或削弱斷言。
+- 真實視窗兩種尺寸截圖、六欄、無外層捲軸與無障礙測試完成；最後人工目視仍待擁有者。
 ## 2026-11-01 03:34 +08:00 — CI 修復，M1-U
 
 - 問題：上一輪只跑 changed-file prepush，漏掉完整基準鎖定測試。
@@ -89,6 +101,16 @@
 - catalog upstream CRITICAL：以完整字串/alias/UI 閘門與本分支 full discover 驗證，
   不用圖譜空流程取代測試。影響 strings/marketdata.py、strings/catalog.py、
   第2節清冊、desktop_catalog_main_6b78239.json、test_desktop_catalog_split.py。
+
+## 2026-11-01 03:58 +08:00 — CI 修復，M1-2
+
+- 以正常 merge 接續 U→1，終端48條字串為2632–2679，註冊於 Lane M1-2。
+- 四處 inline stylesheet 搬至 theme.py 私有 scoped selector，以 semantic properties
+  與既有 composition 注入更新；不放寬 AST gate、不直接跨層匯入。保留舊 app/market QSS
+  bytes，深淺主題與漲跌配色切換仍更新標題、指數與表格。具體 HIGH/CRITICAL impact
+  與新三項/舊12項測試證據見 m1-ci-style-verification.md。
+- 只重釘終端新增字串、總數2680、真實新增模組與測試觀察點，獨立 fixture-only commit。
+  原 C5、圖表與研究基準沿用上一層，B11 類別/公開介面限制完全保留。
 ## 2026-11-01 03:54 +08:00 — M1-U：完整基準相依項
 
 - U9 將兩個紙上交易 advanced 勾選框改為 Qt 原生展開按鈕，tooltip 基準輸入數精確5→3；

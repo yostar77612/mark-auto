@@ -56,8 +56,12 @@ def _run_window(
 
     # Presentation is assembled here, not imported by the application core.
     from desktop_app.features.trading import TradingWindow
-    from desktop_app.features.trading.market_watch import MarketWatchWidget
+    from desktop_app.features.trading.market_terminal import MarketTerminalWidget
+    from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
     from desktop_app.components.charts import CandlestickChart
+    from quantlab.research_core.adapters.market_layout import LayoutStore
+    from desktop_app.features.market.workspace import WorkspacePanel
+    from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme
 
     # Share the installed product icon without starting its legacy runtime.
     from desktop_app.components.icon import application_icon
@@ -85,7 +89,20 @@ def _run_window(
         QMessageBox.critical(None, ui_text('v2.title'), error.explanation + ' ' + error.action)
         return 1
     initial = facade.snapshot()
-    window = TradingWindow(facade, initial, market_watch=MarketWatchWidget(facade, CandlestickChart(), initial))
+    layout_store = LayoutStore(
+        root or default_root(), panel_ids=PANEL_IDS, areas=('left', 'center'), file_name='market-terminal-layout-v1.json', default_layout=terminal_preset()
+    )
+    terminal = MarketTerminalWidget(
+        facade,
+        CandlestickChart(),
+        initial,
+        layout_store=layout_store,
+        index_chart=CandlestickChart(show_volume=False),
+        panel_factory=WorkspacePanel,
+        colours=lambda widget: up_down_colors(appearance(widget)[1]),
+        style_terminal=_apply_terminal_theme,
+    )
+    window = TradingWindow(facade, initial, market_watch=terminal)
     from desktop_app.research_session import ResearchSession, UnifiedResearch
 
     # One presenter/controller/session in the same Qt application. Explicit

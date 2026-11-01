@@ -197,6 +197,24 @@ def _strategy_page(self) -> None:
 
 
 def _market_page(self) -> None:
+    if self.market_watch is not None and self.market_watch.objectName() == 'market_terminal':
+        content = QWidget()
+        content.setObjectName('market_workspace')
+        content.setAccessibleName(ui_text('terminal.title'))
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.market_watch, 1)
+        self.pages.addWidget(content)
+        # Retain the historical table/route API for the host's general renderer.
+        self.market_refresh_button = button('v2.refresh_market', 'market_refresh_button')
+        self.market_refresh_button.clicked.connect(self.refresh)
+        self.market_archive = button('v2.markets', 'market_archive')
+        self.market_archive.setCheckable(True)
+        self.market_archive_content = QWidget(content)
+        self.market_archive_content.hide()
+        self.markets = table(('v2.instrument', 'v2.market', 'v2.unit', 'v2.price', 'v2.quote_time', 'v2.availability', 'v2.source'), 'markets')
+        self.markets.setParent(self.market_archive_content)
+        return
     layout = _page(self, 'market')
     layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
     layout.addWidget(label('v2.market_data_hint'))

@@ -98,10 +98,10 @@ class MarketWatchWidget(QWidget):
         periods = QHBoxLayout()
         self.period_buttons = {}
         choices = (
-            ('1m', ui_text('marketdata.period_1m')),
-            ('5m', ui_text('marketdata.period_5m')),
-            ('15m', ui_text('marketdata.period_15m')),
-            ('1d', ui_text('marketdata.period_1d')),
+            ('1m', ui_text('terminal.period_1m')),
+            ('5m', ui_text('terminal.period_5m')),
+            ('15m', ui_text('terminal.period_15m')),
+            ('1d', ui_text('terminal.period_1d')),
         )
         for period, text in choices:
             button = self._button('watch_period_' + period, text)

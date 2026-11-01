@@ -6580,6 +6580,33 @@ weakening. UNKNOWN new/method dispatch was checked against direct source and rg.
 Real market login, complete-market info refresh latency, native callbacks/quota,
 and owner visual inspection remain unverified and require owner testing.
 
+## M1-2 — searchable market terminal (2026-11-01)
+
+The actual market workspace now mounts MarketTerminalWidget: fixed top search,
+quotes/alerts/chart/index movable panels and bottom status. Four panel identities
+use parameterized C5 storage in market-terminal-layout-v1.json; the original C5
+panel defaults and market-layout-v1.json are unchanged. Named presets, collapse,
+drag, reset and keyboard-accessible controls are retained. Search normalizes
+fullwidth/case, debounces150ms and ranks exact/prefix/name matches, at most20.
+Selecting a result changes only the chart and temporary subscription; watchlist
+promotion/removal is explicit and quota refusals are explained. Four UI periods
+remember each product during the run; prior selection persists via application.
+
+Quotes provide six sortable columns with Decimal tick precision, Taiwan rise/fall
+colors and unknown fields. Diagnostics use Chinese source labels and Taipei times;
+status summarizes non-live products, quota and counts instead of repeating every
+live state. Async selection/query generations discard stale UI responses and
+incremental chart updates preserve zoom/pan. Index shows the latest cached day,
+without volume or a redundant internal header. The main chart fills both requested
+window sizes without an outer scroll area. Every visible input has an accessible
+name. M1-2 leaves the specified alert placeholder for M1-3.
+
+Verified individual modules and exact prepush/environment limitations are in
+m1-2-verification.md. New terminal12/search2 and unchanged C5/market/chart/drawing/
+paper-order suites pass. Native process12 passes using the documented true Python
+interpreter. Shared chart CRITICAL impact was acknowledged; default mode and
+existing tests remain intact. No G3/SDK pin/PROJECT_STATE/test weakening. Real native
+visual acceptance and broker verification remain pending owner checks.
 ## M1-U existing UI corrections (2026-11-01)
 
 Research workflow chips share sidebar page identity/captions, retain five
