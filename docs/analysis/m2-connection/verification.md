@@ -267,3 +267,104 @@ The refreshed all/staged graph results each cover eight documentation files and
 18 sections, LOW risk, zero affected processes, no error/partial/truncation flags
 and no empty IDs. Global index candidate/trace limits remain recorded locally;
 no product safety conclusion relies on absent graph edges.
+
+
+
+
+## Earlier frozen-probe correction and source9f startup
+
+Earlier corrected source9f2184ed03c003fb63aa3e4553db5f370026bd8c normally inherits
+all final M2-6/M2-8 documents and source corrections. The optional frozen metadata
+probe passes its required immutable Environment.LIVE without constructing SDK,
+logging in or making broker calls; the existing nine strict fake tests passed.
+Whole-project prepush passes:1154 formatted files, Python3.11 syntax1071 files,
+Ruff lint and static credential gate0 findings. All35 newly added Python files
+are explicitly registered in inventory section2. Protected G3/PROJECT_STATE/
+acceptance/SDK1.7.9 pin+lock remain unchanged.
+
+Actual private-interpreter `_run_window` repeats on this exact source:
+LOCAL10.958s and direct fake BROKER_SIMULATION5.960s, both return0. The original
+LOCAL child and owned fake broker thread close normally, research releases and
+owned endpoints disappear. No real SDK is imported; LOCAL makes0 SDK/secret
+calls and SIM uses one fake login/logout with0 CA/order calls. This M2-1 startup
+is a connection/composition check: resource_calls0 and unknown broker finances
+are retained, not claimed as M2-2 resource validation or order readiness.
+Sanitized results: [LOCAL](startup-local-9f2184e.json) and
+[direct SIM](startup-direct-9f2184e.json). Each retains its original raw SHA256;
+private paths/PIDs are omitted. The previously recorded8d98564 UI save/connect/
+keyboard-account-selection/explicit-navigation case remains source-specific.
+
+## Earlier complete attempts retained, not waived
+
+1. Source1cc9e1d:3996 tests1416.477s,10F23E42skip. One new frozen probe
+   constructor error is a real compatibility omission; source9f2184e fixes it.
+2. Corrected source9f2184e:3996 tests2783.468s,11F23E42skip;34 blocks/33 IDs.
+   The probe omission is gone, but two NEW cases exceed unchanged deadlines:
+   TerminalSmokeProcessTests.test_join_failure_is_reported_without_fake_cleanup_or_evidence_deletion
+   and AnalysisTests.test_offline_read_rejects_forged_descriptor_plan_binding.
+   The first retains its40s diagnostic and proves all recorded owned workers stop;
+   the second is PlanError(deadline_exceeded) in the fake provider. No real
+   inference occurs. Their seven referenced test/implementation files are exact
+   Git blobs from the original0453136 main. That equality alone does not waive
+   either failure; quiet differential cases and complete retry are required.
+
+This corrected attempt overlapped local indexing and, after20:27:27, another
+independent task's full suite. It is not described as fully isolated. No claim
+of exact timing causation follows from overlap alone. Do not stop the other
+task's processes; wait for natural completion, then serialize all native probes
+and full suites, with no index/GUI/static workload during the acceptance retry.
+
+The32 inherited occurrences match main exception type chains;20 symlink
+occurrences retain WinError1314, native file locks retain WinError32, and PID,
+mutex/preexisting-lifetime and retained-grandchild-handle causes are unchanged.
+Thirty inherited ordered frame lists match exactly; the two installer-lifetime
+cases retain the exact first preexisting-app assertion with cleanup-related line
+shifts from M2-8.22/23 referenced source blobs are identical, with only that
+reviewed installer test changed. The independent checkout audit finds0 retained
+owned M2 engine processes and does not control the installed owner application.
+
+Failed-attempt metrics: [earlier-full-attempts.json](earlier-full-attempts.json).
+Detailed sanitized occurrence accounting:
+[corrected-source-first-review.json](corrected-source-first-review.json).
+Raw full traces and the serialized timeout diagnostic remain in local coordinator
+scratch with recorded SHA256. No assertion, timeout, risk gate or skip changes.
+
+## Final lifecycle correction and repeated actual startup — source897df1b
+
+Sourcea7a6738 closes legacy unknown-logout re-entry through both old market
+commands and profile read-only connection. The independently explained baseline
+897df1ba9b21f88f512420caaf4ccb7cf740c207 records actual owned inventory/readability
+measurements. Three internal lifecycle flags are explicitly initialized, with
+no missing-field fallback. Two exact fake regressions were first RED5 occurrences
+and then GREEN;47 related routing/readiness/market cases pass40.057s. No old
+assertion, limit, skip, SDK pin, canonical execution or single-session rule is
+relaxed. The existing gateway already turns native logout False into a known
+exception; no redundant internal fallback is added.
+
+Whole-project prepush again passes on this source:1154 formatted files,
+Python3.11 syntax1071 files, Ruff lint and static gate0 findings.
+The original private `_run_window` is repeated three ways on exact897df1b:
+
+| Path | Return | Time | Evidence |
+| --- | --- | --- | --- |
+| LOCAL |0|8.491s|[local](connection-local-897df1b.json)|
+| LOCAL -> save/connect -> keyboard account selection -> explicit SIM |0|8.718s|[UI connection](connection-ui-897df1b.json)|
+| Direct fake BROKER_SIMULATION |0|5.751s|[direct](connection-direct-897df1b.json)|
+
+Every owned lifetime closes normally, research releases and endpoints disappear.
+The two broker cases each use one fake constructor/login/logout, two quote
+subscriptions and0 CA/order calls. LOCAL uses0 SDK/secret calls. No real SDK is
+imported. The original guarded LOCAL process entry is retained; the broker host
+is an owned Thread(serve) with real authenticated IPC and injected fake ports,
+not a broker subprocess/real-key claim. Resource_calls0 remains truthful here;
+M2-2 separately proves manual resource materialization and execution handling.
+
+## Quiet differential controls and final complete retry
+
+Before the final full retry, both previously new timeout cases were run unchanged and quietly on original main and exact final connection source. Native join case: main20.290s/source20.107s; forged-descriptor case: main0.648s/source0.699s; all four exit0. These targeted controls do not replace the complete retry below.
+
+Exact clean source `897df1ba9b21f88f512420caaf4ccb7cf740c207` completes **3998 tests in 2123.797s**: `FAILED (failures=10, errors=22, skipped=42)`. All 32 traceback occurrences (31 distinct identities) were reviewed against the measured original main baseline, with **zero new failures**. 30/32 ordered frame lists and 32/32 exception type chains match; 15/16 referenced repository sources are byte-identical. Expected installer-lifetime cleanup line offsets are reviewed separately. This nonzero local suite is explicitly FAILED; the allowed main host restrictions are documented, not counted as passing.
+
+The20 symlink occurrences retain WinError1314; the worker-log lock retains WinError32; the three mutex/preexisting-application assertions and three retained-grandchild Errno6 chains match. The four paper diagnostics retain the same early probe exit/assertions; parent-PID attribution relies on previously retained diagnostic controls, not this traceback alone. The unchanged E06 driver first fails its launcher/native PID assertion, as on main. Its secondary cleanup differs: current WinError5 on .sqlite-shm versus main WinError32 on .sqlite. The same ID/type does not establish identical secondary cleanup causes.
+
+Raw full log SHA256: `0a2958bb938490f2aa8e27584aa5d6ff430a6fcd99bb70207705dfb312c0cec1`. Sanitized occurrence accounting: [final-full-comparison.json](final-full-comparison.json). Full discovery used the required provisioned venv, offscreen Qt and UTF-8, with unchanged clean HEAD before and after. This acceptance run was serialized without coordinator indexing, static scans, Qt captures or native probes. Remote CI on the pushed documentation head remains a separate gate.

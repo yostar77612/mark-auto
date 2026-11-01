@@ -1470,3 +1470,74 @@ plus seven direct test construction sites are confirmed by source. No empty
 caller set is treated as unused. Refresh the sole offline index and require
 complete all/staged identities plus all newly added methods before the merge
 commit. No SDK, catalogue, risk limit, timeout or existing assertion changes.
+
+## M2-1 / final source-specific acceptance evidence
+
+2026-11-01/02 Asia/Taipei. Publish exact 897df1b complete discovery 3998/2123.797s and all 32 manually reviewed inherited failure occurrences honestly, with zero new failures. Preserve failed prior attempts and raw SHA256. Final private-interpreter LOCAL/fake-SIM starts close every owned lifetime normally; fake clock functional order flow is explicitly separate from real Sunday availability. No real SDK/key/CA/actual real or SIM order. This evidence-only finalization changes no executable/test/tool/fixture bytes. Source-equivalence audit and complete graph detection precede commit; current pushed head CI is still an independent required gate.
+
+## 2026-11-01 — M2-1 CI / owned shutdown endpoint race
+
+- CI for PR132 head65e7d7f, offline run41316970314/job124878999508, fails one
+  of422 cases after393.130s: RuntimeContextClientTests' original CAS cleanup
+  test completes its explicit shutdown, then its registered owned cleanup
+  observes FileNotFoundError. Preserve this first failure; do not call it a
+  timeout or waive it merely because the prior complete local run had no new IDs.
+- Rank possible timing paths: normal shutdown removes its endpoint before native
+  exit becomes visible; a snapshot/command version-conflict retry reaches that
+  removed endpoint; an endpoint disappears while the owned process stays alive.
+  Reproduce the exact error at both snapshot and execute boundaries with fake
+  retained processes: four boundary tests initially have two error subtests in
+  0.005s. The unchanged original native IPC/CAS test remains required later.
+- At the IPC/filesystem boundary only, catch FileNotFoundError and join the exact
+  retained process under the unchanged15s allowance. Passing still requires
+  observed exit0. An alive process/timeout or abnormal exit remains FAILED with
+  the original owned-handle containment and explicit cleanup error. Foreign PID
+  refusal and current-version CAS remain unchanged; no financial path changes.
+- Both new methods plus the existing two pure boundaries pass in0.003s. This is
+  a deterministic fake seam, not a claim that native or complete discovery has
+  already been repeated. Defer native tests/index/static scans until the active
+  source799efad manual full suite ends naturally; preserve that intermediate run,
+  then repeat complete discovery on both branches after inheriting this fix.
+- Pre-edit exact method impact is LOW: close -> context-manager cleanup / load
+  probe, four resolved symbols and nine load-probe flows. Boundary test class
+  impact is UNKNOWN; direct source search and the actual four-case invocation
+  prove unittest discovery usage, not an unused-class assumption.
+- Files: tools/owned_trading_engine.py, tests/test_trading_engine_cleanup.py;
+  measured inventory changes will use a separate explained baseline commit.
+  G3/PROJECT_STATE/SDK1.7.9/acceptance, existing assertions/timeouts/skips and all
+  product application/runtime files stay untouched by this correction.
+
+### Owner time constraint / verification scheduling
+
+After the owner requested completion within one hour, prepare the two-file
+formatting and graph/commit work during the older799 manual run, which must
+therefore be labelled intermediate and not fully isolated. The scoped native
+cleanup group and static/index preparation overlap this intermediate attempt;
+no second full suite does. Final corrected full suites remain serialized and quiet.
+Bundle the final run report in the last PR's final CI head; validate that exact
+head before delivery, rather than wait for a green feature head and only then
+start another whole CI run for the report. Record only results actually known
+when written and link the final PR/checks as the authoritative final CI evidence.
+
+The original CI IPC/CAS case plus the11-case cleanup module now pass12/24.115s
+using real owned processes and the existing fake broker fixtures. All original
+assertions remain, including foreign-host preservation and cleanup failures.
+Whole-project prepush passes Ruff lint,1154 formatted/1071 Python3.11 syntax
+files and credential/static gate0 findings. Fresh offline all/staged graph
+checks each return10 unique symbols/3files, LOW, no error/partial/truncation;
+all3 added qualified definitions and the required method/class are represented.
+No final corrected complete discovery or current-head CI is claimed yet.
+
+## M2-2 / prebuilt cleanup integration worktree
+
+To shorten owner-requested delivery, prepare this normal merge in a separate
+worktree while the unchanged799 manual full run finishes. Preserve both additive
+decision histories and every M2-2 inventory row; replace only the old cleanup
+test211-line measurement with its separately committed267-line measurement.
+The only non-documentation delta799 is the exact owned cleanup tool and two new
+regressions from M2-1; all application/runtime/manual/UI/financial blobs remain
+identical. Pre-merge source2 method impact is LOW4 and nine load-probe flows;
+the original tool/test blobs match the reviewed65e7d7f source exactly.
+After the old run ends, fast-forward the official manual branch to this ordinary
+merge without history rewriting, then run complete final discovery in its own
+official checkout. New native/startup/full/CI results remain source-specific.
