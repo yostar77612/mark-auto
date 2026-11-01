@@ -1084,3 +1084,8 @@ files and credential/static gate0 findings. Fresh offline all/staged graph
 checks each return10 unique symbols/3files, LOW, no error/partial/truncation;
 all3 added qualified definitions and the required method/class are represented.
 No final corrected complete discovery or current-head CI is claimed yet.
+
+## connection-cleanup-retry / complete corrected source evidence
+
+Publish exact f77d2b0 complete discovery 4000/1436.847s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.
+The prior4000-case attempt has one new M1 alert-store WinError5. Neither100 main nor100 unchanged-source controls reproduce it. Keep it outside the allowed main baseline and avoid speculative production storage retries; acceptance requires this actual complete unchanged-source retry to have zero new failures. Both failed attempt and successful controls remain retained.

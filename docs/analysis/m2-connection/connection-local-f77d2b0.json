@@ -1,0 +1,62 @@
+{
+  "head": "f77d2b07f5ed24bd276f42c520b26efc033f6f49",
+  "mode": "local",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_run_window": true,
+  "real_trading_window": true,
+  "real_research_session": true,
+  "local_child_delegates_original": true,
+  "sinopac_host": "owned Thread(serve) with natural factory/secrets/resource ports",
+  "original_local_child_safety_bootstrap": true,
+  "child_guard_proven_before_product": true,
+  "secret_reads_before_ui_connect": 0,
+  "research_pages": 7,
+  "environment": "LOCAL",
+  "engine_state": "WAITING_RECONCILIATION",
+  "window_visible": true,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "widget_count": 2727,
+  "financial_facts_verified": true,
+  "research_released": true,
+  "return_code": 0,
+  "elapsed_seconds": 5.835,
+  "ui_steps": [
+    "initial_local",
+    "finish",
+    "closed"
+  ],
+  "owned_local_processes": 1,
+  "owned_fake_hosts": 0,
+  "fake_sdk": {
+    "constructors": 0,
+    "login_count": 0,
+    "logout_count": 0,
+    "resource_calls": 0,
+    "subscription_count": 0,
+    "ca_calls": 0,
+    "order_constructions": 0,
+    "order_calls": 0
+  },
+  "real_sdk_imported": false,
+  "fake_secret_lookup_count": 0,
+  "owned_endpoints_removed": true,
+  "passed": true,
+  "owned_lifetimes": [
+    {
+      "exit_code": 0,
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    }
+  ],
+  "errors": [],
+  "host_errors": [],
+  "raw_sha256": "0a654a9a89cd96a39f68f1907f25329c63ee391d8b4f2d6984aaa7763a150629",
+  "redactions": [
+    "Private checkout/workspace paths, PIDs, process command lines and local stack paths omitted; only whitelist facts retained. Broker values/counters come exclusively from injected fake ports."
+  ]
+}
