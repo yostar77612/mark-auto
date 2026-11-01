@@ -330,7 +330,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/m1_market_probe.py` | 122 | tooling | `tools/m1_market_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`read_keys`，`tools/m1_market_probe.py:40` |
 | `tools/make_icon.py` | 58 | tooling | `tools/make_icon.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_chunk`，`tools/make_icon.py:12` |
 | `tools/measure_ci_margin.py` | 83 | tooling | `tools/measure_ci_margin.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/measure_ci_margin.py:20` |
-| `tools/owned_trading_engine.py` | 128 | tooling | `tools/owned_trading_engine.py` | M2-8 測試／開發引擎生命週期；原生 Python 啟動、保留自有 Popen 身分、正常認證關閉及失敗清理；產品 runtime 不匯入。 |
+| `tools/owned_trading_engine.py` | 134 | tooling | `tools/owned_trading_engine.py` | M2-8 測試／開發引擎生命週期；原生 Python 啟動、保留自有 Popen 身分、正常認證關閉及失敗清理；CI 端點移除競態仍須保留程序零退出；產品 runtime 不匯入。 |
 | `tools/probe_windows_guest_host.py` | 224 | tooling | `tools/probe_windows_guest_host.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`query_kvm_api`，`tools/probe_windows_guest_host.py:42` |
 | `tools/quality_gate.py` | 244 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
 | `tools/research_app.py` | 404 | tooling | `tools/research_app.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`guard`，`tools/research_app.py:37` |
@@ -741,7 +741,7 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/runtime/market_alerts.py` | 137 | composition | `quantlab/trading/runtime/market_alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
 
-| `tests/test_trading_engine_cleanup.py` | 211 | tooling | `tests/test_trading_engine_cleanup.py` | M2-8: retained-owned-process success/failure/timeout cleanup and foreign-host preservation regressions; fake SDK only. |
+| `tests/test_trading_engine_cleanup.py` | 267 | tooling | `tests/test_trading_engine_cleanup.py` | M2-8: retained-owned-process success/failure/timeout cleanup, normal endpoint-removal race and live/abnormal-exit counterexamples; foreign-host preservation; fake SDK only. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
