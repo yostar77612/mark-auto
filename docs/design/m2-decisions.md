@@ -1130,3 +1130,40 @@ caller,11 upstream symbols,1 affected process. complete_smoke risk LOW with1
 direct timer-guard caller. Index differs only by documentation from the inspected
 smoke blobs. Fresh complete graph and added-definition coverage precede commit;
 measured runner size deltas get a separate explained baseline commit.
+
+## M2-1 / actual installer failure: floating-point endpoint comparison
+
+2026-11-02 Asia/Taipei: attempt2 retry-install.log closes at17:07:07.695 UTC;
+the recovered executable fails by17:07:38.054 UTC. Its entire lifetime is at
+most30.359s, so ordinary exhaustion of the120s smoke budget down below40s
+cannot explain that actual CI guard result. The earlier callback control
+establishes a possible late-admission scheduling failure, not this actual
+installer root cause. Keep that small joined-manager ordering improvement and
+its unchanged-budget negative controls, but do not claim it alone fixes CI.
+
+The original admission arithmetic is independently red-capable: started
+511.00000000000006 and end=min(started+120,started+40)=551.0 produce
+end-started=39.99999999999994, falsely below40. The same error occurs across
+the1024 and2048 exponent boundaries. The actual installed uptime was not
+recorded; these are controlled exact inputs, not claimed CI measurements.
+Actual function controls stop before any native preparation: all three full
+budget subcases are RED under the original condition (2methods/0.004s),
+while deadline=nextafter(started+40,-infinity) still correctly refuses.
+
+Change only the predicate to end < started + CAP_SECONDS. Keep the exact same
+end=min(deadline,started+40), watchdog end,40s helper cap,6s preparation cap
+and120s outer deadline. Compare the clamped endpoints instead of subtracting
+nearly equal floats; add no epsilon, grace time, retry or fallback. The exact
+three full-budget controls become admitted, and all three immediately-shorter
+endpoints still fail before timer/preparation/process creation. GREEN2methods
+0.061s; the injected preparation error proves admission without native work.
+
+Interrupt only the stale db1ccd5 validation session after identifying this
+additional root cause; retain its partial raw log and never count it as a
+complete full suite. A read-only census immediately after interruption finds
+zero full-run Python processes and zero known M2-worktree trading engines.
+New exact-source complete discovery and actual fake startup are required for
+both branches. No raw log or history is rewritten. Recovery module/function
+line counts are unchanged, so this one-line fix needs no unrelated baseline
+refresh. Pre-edit recovery upstream impact LOW:4 direct callers,5 total,
+with the shared timer flow still separately treated as HIGH.
