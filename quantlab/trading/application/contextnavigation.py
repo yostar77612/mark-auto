@@ -6,6 +6,7 @@ from threading import RLock
 from .contracts import ContextNavigationRequest, ContextPort, TradingFacade, UiAction, UiCommand, UiReceipt, UiState
 from .errors import ERROR_TABLE
 from .manual_contracts import ManualBookForm, ManualOrderForm, ManualMutationForm
+from .manual_routing import forward_refusal
 from quantlab.trading.domain.validation import DomainError, identity
 from quantlab.trading.domain.models import Environment
 
@@ -116,22 +117,30 @@ class CompositeFacade:
     def execute(self, command: UiCommand) -> UiReceipt:
         if not isinstance(command, UiCommand):
             return _failure('validation_failed')
+        if type(command.manual_no_admission) is not bool:
+            return _failure('validation_failed')
+        if command.manual_no_admission:
+            with self._lock:
+                facade = self._current
+            return self._manual_refusal(command, facade)
         if command.action is UiAction.SWITCH_CONTEXT:
             return self._switch(command)
         try:
             with self._lock:
-                if command.context_id and command.context_id != self._context_id:
-                    raise DomainError('state_conflict', 'command belongs to a different context')
-                if command.context_epoch is not None and command.context_epoch != self._epoch:
-                    raise DomainError('state_conflict', 'command belongs to an old context selection')
-                if self._switching and command.action is not UiAction.STOP_NEW:
-                    raise DomainError('state_conflict', 'context switch in progress')
-                if self._switching and command.action is UiAction.STOP_NEW:
+                facade = self._current
+                refused = (
+                    (command.context_id and command.context_id != self._context_id)
+                    or (command.context_epoch is not None and command.context_epoch != self._epoch)
+                    or (self._switching and command.action is not UiAction.STOP_NEW)
+                )
+                if not refused and self._switching and command.action is UiAction.STOP_NEW:
                     # An explicit stop cancels the in-flight navigation intent;
                     # observation-only book updates do not change this epoch.
                     self._epoch += 1
-                facade = self._current
-                self._mutations += 1
+                if not refused:
+                    self._mutations += 1
+            if refused:
+                return self._manual_refusal(command, facade)
             try:
                 if command.action in (
                     UiAction.SAVE_AND_CONNECT_SINOPAC,
@@ -182,7 +191,7 @@ class CompositeFacade:
                         or form is not None
                         and form.scope != accepted
                     ):
-                        raise DomainError('state_conflict', 'manual intent must retain its accepted native scope')
+                        return self._manual_refusal(command, facade)
                 return facade.execute(command)
             finally:
                 with self._lock:
@@ -191,6 +200,11 @@ class CompositeFacade:
             return _failure('operation_failed')
         except DomainError as exc:
             return _failure(exc.code)
+
+    def _manual_refusal(self, command, facade):
+        with self._lock:
+            connection = self._connection
+        return forward_refusal(command, facade, connection)
 
     def _sinopac(self, command, book):
         if book.snapshot().version != command.expected_version:

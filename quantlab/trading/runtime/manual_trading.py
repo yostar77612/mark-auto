@@ -19,6 +19,7 @@ from quantlab.trading.application.contracts import UiAction, UiReceipt
 from quantlab.trading.application.engine import TradingEngine
 from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.application.manual_contracts import ManualScope, ManualTradingView
+from quantlab.trading.application.manual_routing import refusal_command
 from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import BrokerOrder
@@ -150,6 +151,8 @@ class ManualRuntime:
     def execute(self, command):
         if command.environment is Environment.LIVE or self.bundle.launch.environment is Environment.LIVE:
             return UiReceipt(False, 'production_orders_disabled', '')
+        if type(command.manual_no_admission) is not bool or command.manual_no_admission and refusal_command(command) is None:
+            return UiReceipt(False, 'validation_failed', '')
         if self.service is None:
             return UiReceipt(False, self.error or 'manual_account_observation_required', '')
         if command.action is UiAction.RECONCILE:
@@ -159,7 +162,11 @@ class ManualRuntime:
                 return UiReceipt(False, 'state_conflict', '')
             return UiReceipt(not self.error, self.error or 'ok', '')
         receipt = self.service.execute(replace(command, expected_version=command.expected_version - self.bundle.version_offset))
-        if receipt.accepted:
+        confirmed = refusal_command(command)
+        form = command.manual_order or command.manual_mutation if confirmed is not None else None
+        result = self.service.snapshot(form.scope).last_result if form is not None and form.scope.account_ref in self.bundle.engine.gateways else None
+        known = result is not None and result.outcome_known and result.scope == form.scope and result.request_id == form.request_id
+        if receipt.accepted or known:
             self.last_scopes[command.account_ref] = ManualScope(
                 command.context_id, command.context_epoch, command.environment, command.account_ref, command.connection_generation, command.connection_revision
             )

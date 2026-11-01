@@ -1001,3 +1001,19 @@ The runtime/Composite owner preserves the original request scope and handles
 its separate outer-boundary forwarding regressions. Invalid/stale native scope,
 closed/failed storage or lost writer ownership cannot mint known admission
 outcomes. LIVE remains denied independently before any mutation.
+
+## M2-2 / outer-CAS known-no-admission routing — 2026-11-01
+
+Keep the original confirmed form, request ID, context/epoch and native owner CAS
+when a boundary refuses admission. The default-false manual_no_admission field
+is deny-only: core may seal a proven absent key under its existing writer/fence,
+or replay an existing known/UNKNOWN request unchanged; it cannot execute the
+financial body. A pure helper limits forwarding to typed confirmed SIM submit,
+prepared diagnostic, cancel and amend forms with equal inner/outer scopes.
+Composite uses only its already-held current book or same-native-owner control
+port; it never opens/switches a host for a refusal. The authenticated server
+turns a mismatched envelope into the same deny-only path without rescoping.
+LIVE, malformed markers and unsupported/unconfirmed actions fail before fallback.
+The runtime retains a false-receipt scope only when a matching server-known
+result exists. Transport failures and preexisting UNKNOWN remain uncertain; no
+generic state_conflict whitelist clears pending state or manufactures a result.

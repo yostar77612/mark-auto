@@ -6,9 +6,9 @@ import unittest
 
 from quantlab.trading.application.contextnavigation import CompositeFacade
 from quantlab.trading.application.contracts import ContextOption, UiAction, UiCommand, UiReceipt, UiState
-from quantlab.trading.application.manual_contracts import ManualBookForm, ManualPendingView, ManualScope, ManualTradingView
+from quantlab.trading.application.manual_contracts import ManualBookForm, ManualOrderForm, ManualPendingView, ManualScope, ManualTradingView
 from quantlab.trading.application.sinopac_contracts import SinopacConnectionView
-from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.models import Environment, Side
 from decimal import Decimal
 
 
@@ -78,6 +78,27 @@ class ManualPresentationScopeTests(unittest.TestCase):
         )
         self.assertFalse(self.client.execute(command).accepted)
         self.assertEqual(self.sent, [])
+
+    def test_old_ui_epoch_only_forwards_original_confirmed_request_for_denial(self):
+        scope = replace(self.scope, context_epoch=3)
+        form = ManualOrderForm(scope, 'outer-cas-refusal', 'TMF:202611', Side.BUY, 1, Decimal('25000'), Decimal('24900'), confirmed=True)
+        command = UiCommand(
+            UiAction.SUBMIT_MANUAL,
+            11,
+            environment=scope.environment,
+            account_ref=scope.account_ref,
+            context_id=scope.context_id,
+            context_epoch=scope.context_epoch,
+            connection_generation=scope.connection_generation,
+            connection_revision=scope.connection_revision,
+            manual_order=form,
+        )
+        self.host.execute = lambda value: self.sent.append(value) or UiReceipt(False, 'state_conflict', '')
+        result = self.client.execute(command)
+        self.assertFalse(result.accepted)
+        self.assertEqual(len(self.sent), 1)
+        self.assertTrue(self.sent[0].manual_no_admission)
+        self.assertEqual(replace(self.sent[0], manual_no_admission=False), command)
 
 
 if __name__ == '__main__':

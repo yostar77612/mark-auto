@@ -268,6 +268,12 @@ class RuntimeBundle:
     def execute(self, command: UiCommand) -> UiReceipt:
         from .sinopac_connection import SINOPAC_ACTIONS
 
+        if isinstance(command, UiCommand) and (type(command.manual_no_admission) is not bool or command.manual_no_admission):
+            if type(command.manual_no_admission) is not bool:
+                return UiReceipt(False, 'validation_failed', '')
+            if self.manual_runtime is None or not self.manual_runtime.handles(command) or self.closing or self.closed or self.control_failed:
+                return UiReceipt(False, 'state_conflict', '')
+            return self.manual_runtime.execute(command)
         if isinstance(command, UiCommand) and self.manual_runtime is not None and self.manual_runtime.handles(command):
             if self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')

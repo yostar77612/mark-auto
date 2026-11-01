@@ -6996,3 +6996,17 @@ manual/canonical key under the existing healthy writer fence. Existing keys
 UiCommand.manual_no_admission=False is wire-compatible and deny-only: outer
 CAS forwarding may seal an absent key, never execute its financial command.
 Original admitted scope/id remain on results, independent of current UI epoch.
+
+**M2-2 P1 outer-CAS result contract (2026-11-01).**
+
+manual_routing creates a deny-only copy of the original confirmed financial
+command and routes it through existing facade.execute/COMMAND ports. Only the
+core writer can prove the request key absent from both request/order journals
+and publish its original-scope known refusal. Existing UNKNOWN is replayed and
+never cleared. Composite stale UI epochs/context selections and server envelope
+refusals may use an already-held same-owner port; there is no host activation,
+new action/operation, scope rewriting, financial entry or extra commit authority.
+True markers on unsupported/LOCAL/LIVE/malformed paths cannot fall through.
+Actual bundle/Composite/codec/authenticated-Pipe tests assert zero added SDK
+mutations, no context opening, exact original scope/request IDs and preserved
+UNKNOWN; the old-wire omission defaults false in the core compatibility tests.

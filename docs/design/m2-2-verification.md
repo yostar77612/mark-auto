@@ -308,3 +308,16 @@ to certify a request without an existing confirmed manual book. The two
 canonical submit-caller/fenced-commit AST guards also pass in 1.845 seconds;
 the earlier wrong-class invocation was a harness lookup error, superseded by
 that exact corrected run. No new submit or commit caller was introduced.
+
+**P1 boundary result follow-up.**
+
+The pure stale-epoch regression first failed because no backend denial was
+delivered. With frozen deny-only core 3795a891 and runtime routing, all 55 related
+unit/fake/actual same-process authenticated-Pipe cases pass in 15.518s. Cases cover
+old UI epoch, switched LOCAL presentation with an existing SIM owner, mismatched
+authenticated envelope, current-version deny markers, malformed markers, LIVE,
+unconfirmed/unsupported forms, stale native scope and preserved same-key UNKNOWN.
+No SDK mutation is added on refusal and no host/context is opened. Original
+request/scope identity remains visible in the authoritative result. This closes
+the observed boundary routing gap; full desktop startup/full-suite/CI remain
+separate coordinator gates.

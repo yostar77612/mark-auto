@@ -14,6 +14,7 @@ from uuid import uuid4
 
 from quantlab.runtime_support import WindowsAppMutex
 from quantlab.trading.application.contracts import UiAction, UiReceipt
+from quantlab.trading.application.manual_routing import refusal_command
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.domain.validation import DomainError
 from .bootstrap import EngineFactory, RuntimeBundle, build_runtime
@@ -72,13 +73,20 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
     if request.operation is Operation.COMMAND:
         if not isinstance(request.command.action, UiAction):
             raise DomainError('validation_failed', 'typed UI action required')
+        if type(request.command.manual_no_admission) is not bool:
+            raise DomainError('validation_failed', 'typed manual refusal marker required')
         if (
             bundle.manual_runtime is not None
             and bundle.manual_runtime.handles(request.command)
             and request.command.action is not UiAction.RECONCILE
             and (request.command.account_ref != request.account_ref or request.command.environment is not request.environment)
         ):
-            raise DomainError('state_conflict', 'manual command differs from authenticated account envelope')
+            denied = refusal_command(request.command)
+            if denied is None:
+                raise DomainError('state_conflict', 'manual command differs from authenticated account envelope')
+            receipt = bundle.execute(denied)
+            state = bundle.snapshot(request.account_ref)
+            return Response(request.request_id, state=replace(state, account_ref=request.account_ref), receipt=receipt)
         if request.command.action.value == 'connect_read_only':
             receipt = bundle.connect_read_only(request.command)
         else:
