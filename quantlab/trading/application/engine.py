@@ -25,6 +25,7 @@ from quantlab.trading.domain.models import Environment, HoldingKind, HoldingPoli
 from quantlab.trading.domain.policies import ExitCoordinator, check_entry_eligibility, holding_window
 from quantlab.trading.domain.risk import RiskPolicy, RiskService
 from quantlab.trading.domain.validation import DomainError, decimal_value
+from quantlab.trading.domain.execution_policy import orders_enabled
 from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.ports.interfaces import Clock
 from quantlab.trading.ports.contracts import RemoteSnapshot
@@ -150,6 +151,8 @@ class TradingEngine:
 
     def assert_execution_allowed(self) -> None:
         config = self.configuration
+        if not orders_enabled(config.environment):
+            raise DomainError('production_orders_disabled')
         if config.environment is not Environment.LOCAL and not self.explicit_cost_schedule:
             raise DomainError('capability_missing', 'explicit verified cost schedule required outside local simulation')
         if (
@@ -463,6 +466,8 @@ class TradingEngine:
             raise DomainError(result.reason, 'exit is not executable')
 
     def exit_lot(self, lot_id: str, *, protective: bool = False) -> str | None:
+        if not orders_enabled(self.configuration.environment):
+            raise DomainError('production_orders_disabled')
         lot = next((p for p in self.state.positions if p.lot_id == lot_id), None)
         if lot is None or not lot.quantity:
             return None

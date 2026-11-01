@@ -6835,11 +6835,46 @@ connect, resolve credentials, switch books, activate CA or enable execution.
 Subsequent runtime acceptance owns connection CAS and SDK result validation;
 the UI mirrors accepted book context independently of its connection draft.
 
+## M2-2 manual simulation wire contract (2026-11-01)
+
+Defaulted manual fields extend the existing typed UiCommand/UiState codec.
+ManualScope binds accepted context/epoch/environment/account and shared-owner
+generation/revision; outer expected_version remains independent. Forms contain
+untrusted user confirmation and request identity, never an execution grant or
+StrategyRecord. Backend validation and the unique Engine/ExecutionService/risk
+commit path remain mandatory. This contract slice does not enable execution.
+
+ManualTradingView keeps app virtual capital/source distinct from actual broker
+financial facts, and exposes backend preview cash/risk/fees, instruments' true
+quantity units/whole-lot steps and quote/price facts. Missing capital remains
+unknown, default actions disabled and stopped. stop_price is only a sizing
+estimate; UNPROTECTED does not assert a broker stop order or clear existing
+protection locks. Pending/last-result projections retain exact request identity;
+missing cached data cannot discharge UNKNOWN or authorize a new-key retry.
+
 The SDK facade now requires a typed broker environment at construction and
 exposes it read-only, independently of mutable native flags. Existing factory
 and legacy market-session construction supply that environment explicitly.
 The M2-2 execution guard work consumes this same property; no fallback to LOCAL
 or mutable production opt-in is introduced by the connection implementation.
+
+## M2-2 production mutation prohibition (2026-11-01, D1)
+
+One pure orders_enabled environment predicate admits typed LOCAL and
+BROKER_SIMULATION only. Engine execution and exits, ExecutionService commit and
+cancel, connector readiness/execution and each final SDK place/update/cancel
+method reject LIVE independently of flags, signed/CA state or native simulation
+properties. SDK scope comes from its explicitly constructed read-only environment.
+LIVE STOP_NEW records the local halt without cancelling a broker order. Queries,
+existing SIM positive controls, all risk/reservation/journal/fence checks and
+the sole state-bearing TradingEngine.submit -> ExecutionService.commit remain.
+
+The earlier controlled LIVE-positive fixture is superseded in an independent
+policy baseline: its validated/researched LIVE case now requires zero deliveries
+and a production_orders_disabled refusal; every original SIM fill/protection/
+performance assertion remains. New real-core/fake-boundary regressions also bind
+SDK sinks, contradictory readiness flags, direct service calls and local stop
+semantics. No real session/credential/order is verification evidence.
 
 SharedSDKSession is the sole native login/logout owner. Named SharedFacadeView
 consumers retain ShioajiSDKFacade's environment and mutation guards. Consumers

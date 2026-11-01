@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from quantlab.trading.domain.arithmetic import decimal_operation
+from quantlab.trading.domain.execution_policy import orders_enabled
 from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.models import AccountSnapshot, CapabilitySnapshot, Environment, InstrumentSpec, Market, OrderPlan, OrderStatus, Quote
 from quantlab.trading.domain.validation import DomainError, identity, integer
@@ -169,7 +170,7 @@ class ShioajiAdapter:
         self._account(account_ref)
         evidence = self.capabilities[account_ref]
         signed = getattr(self.accounts[account_ref], 'signed', False) is True
-        enabled = not self.read_only and self.execution_enabled and signed
+        enabled = orders_enabled(self.environment) and not self.read_only and self.execution_enabled and signed
         if self.environment is Environment.LIVE:
             enabled = enabled and evidence.ca_ready
         return replace(evidence, can_trade=evidence.can_trade and enabled)
@@ -269,6 +270,8 @@ class ShioajiAdapter:
         return tuple(result)
 
     def _execution(self, plan: OrderPlan) -> object:
+        if not orders_enabled(self.environment):
+            raise DomainError('production_orders_disabled')
         account = self._account(plan.account_ref)
         capability = self.inspect(plan.account_ref)
         if plan.environment is not self.environment or not capability.can_trade or plan.deadline <= self.clock.now():

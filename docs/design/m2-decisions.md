@@ -513,6 +513,36 @@ then passed in0.003s, including old-field omission and malformed settings. This
 slice starts no engine, SDK or child process. Inventory/baseline registration
 is a separate precise commit; broader runtime implementation is still pending.
 
+## M2-2 / scoped manual intent contracts — 2026-11-01
+
+Manual intents carry context id/epoch, environment/account, shared connection's
+opaque string generation and revision; UiCommand.expected_version remains the
+separate book CAS. A backend must match every accepted scope before execution.
+No submitted object is a grant, ACTIVE strategy or research/OOS evidence.
+
+Book allocation is explicitly APP_VIRTUAL_SIMULATION, requires user confirmation
+and fresh verified account observations, and never replaces unknown broker funds
+or automatic daily-baseline rules. Preview returns backend cash/risk/fee amounts
+and sources. Canonical quantities are integer shares/contracts with an explicit
+whole-lot step. stop_price is a sizing estimate, not a placed protection order;
+the view explicitly remains UNPROTECTED. Existing protection/STOP_NEW latches
+cannot be cleared by a manual-book label. Automatic stop/strategy cycles are not
+part of this round.
+
+Pending and last_result retain exact request identity and known/unknown outcome.
+An empty snapshot is not evidence that a timed-out command was never admitted.
+The user-confirmed diagnostic shares the normal submit/cancel path; its purpose
+is narrow, quantities/prices require verified facts, and it never promises no fill
+or automatically retries/reverses partial/full fills. Full dispatch is subsequent
+work; the contract slice starts no SDK, engine or financial operation.
+
+Own pre-edit graph reports CRITICAL for UiAction/UiCommand/UiState and HIGH for
+registry.initialize; warnings and exact source checks are recorded in
+m2-2-verification.md. Four new boundary/codec tests pass, preserving old messages
+and rejecting malformed money/quantity/scope input. The early foundation merge
+missed the own precommit check; its actual postmerge comparison is documented
+without rewriting history or retroactively claiming compliance.
+
 ## M2-1 / immutable facade environment — 2026-11-01
 
 Require ShioajiSDKFacade(client,module,environment=Environment...) explicitly;
@@ -545,6 +575,23 @@ tick_gateway test-helper node. Source search confirms its direct consumers are
 the tick fixture modules; this does not waive the CRITICAL warning or replace
 tests. All33 relevant fake tests passed. Future source PR notes retain this
 warning and the index's dynamic receiver/process-cap limitations explicitly.
+
+## M2-2 / precise LIVE policy oracle — 2026-11-01
+
+Owner D1 supersedes the earlier controlled LIVE-positive environment fixture.
+Retain both environment setups and the real fixture's validation/research/deploy
+steps. At LIVE submission now assert production_orders_disabled, no port delivery,
+zero broker submissions and no orders/positions. SIM retains every original
+entry/fill/protection/performance assertion, quantity, timeout and risk limit.
+This is an independent baseline commit; no test is removed or skipped. The new
+fake-only guard module additionally checks direct SDK/adapter/service/engine/UI
+stop/cancel/flatten paths and SIM delegation. The source guard is separate.
+
+Before source changes the original environment module passed2/2. With the guard
+and the old oracle it reports exactly one LIVE policy error; its original log
+is .tmp/m2-2-live-old-oracle-red.log. After the precise oracle update both cases
+are required to pass. Graph reports UNKNOWN static callers for the test method;
+direct source and unittest discovery establish its actual invocation.
 
 ## M2-1 / shared native owner — 2026-11-01
 

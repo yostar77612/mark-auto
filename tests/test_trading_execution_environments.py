@@ -122,7 +122,8 @@ class ExecutionEnvironmentTests(unittest.TestCase):
                     port.allocation_cap = None
                     with self.assertRaises(DomainError):
                         engine.assert_execution_allowed()
-                    # Only this in-memory injected simulator is explicitly armed.
+                    # SIM can be armed. Owner decision D1 keeps LIVE prohibited
+                    # even when this entirely local port accepts contradictory flags.
                     engine.configuration = replace(
                         config,
                         read_only=False,
@@ -189,6 +190,15 @@ class ExecutionEnvironmentTests(unittest.TestCase):
                         deadline=clock.now() + timedelta(seconds=30),
                         state_version=engine.state.version,
                     )
+                    if environment is Environment.LIVE:
+                        with self.assertRaises(DomainError) as rejected:
+                            engine.submit(plan, record.policy, 'injected-entry')
+                        self.assertEqual(rejected.exception.code, 'production_orders_disabled')
+                        self.assertEqual(port.received, [])
+                        self.assertEqual(broker.submission_count, 0)
+                        self.assertEqual(engine.state.orders, ())
+                        self.assertEqual(engine.state.positions, ())
+                        continue
                     order_id = engine.submit(plan, record.policy, 'injected-entry')
                     broker.fill(order_id, 1, plan.limit_price)
                     poll_events(engine)
