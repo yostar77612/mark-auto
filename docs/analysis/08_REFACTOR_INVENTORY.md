@@ -750,7 +750,7 @@ PR E4 market/history owners (content-only):
 | `desktop_app/features/trading/trading_page.py` | 162 | presentation | `desktop_app/features/trading/trading_page.py` | M2-6: accepted-state environment controls, scoped confirmations and position-table presentation; no SDK or IO. |
 | `desktop_app/strings/m2_trading.py` | 57 | shared | `desktop_app/strings/m2_trading.py` | M2-6: 53 additive literal catalogue records through order2805; historical records unchanged. |
 | `desktop_app/features/trading/page_help.py` | 47 | presentation | `desktop_app/features/trading/page_help.py` | M2-6 owner additions: short summaries and fully owned keyboard-accessible plain-text dialogs; no SDK or IO. |
-| `desktop_app/features/trading/trading_page_widgets.py` | 79 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
+| `desktop_app/features/trading/trading_page_widgets.py` | 82 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
 
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
 | `quantlab/trading/application/sinopac_contracts.py` | 113 | application | `quantlab/trading/application/sinopac_contracts.py` | M2-1: scoped reference settings, redacted accounts and independent connection read model; no SDK or IO. |
@@ -800,7 +800,7 @@ not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 | `desktop_app/features/trading/manual_form.py` | 91 | presentation | `desktop_app/features/trading/manual_form.py` | M2-2: Decimal inputs and server-provided whole-lot conversion. Readability exception: 58-line constructor keeps one compact form layout together; no execution logic. |
 | `desktop_app/features/trading/manual_intents.py` | 59 | presentation | `desktop_app/features/trading/manual_intents.py` | M2-2: pending UI identity survives unknown outcomes; never substitutes for the execution journal. |
 | `desktop_app/features/trading/manual_presenter.py` | 197 | presentation | `desktop_app/features/trading/manual_presenter.py` | M2-2: accepted manual facts, readiness and source labels; no risk calculations. Readability exception: 107-line render function projects one accepted snapshot atomically into this bounded form. |
-| `desktop_app/strings/m2_manual.py` | 91 | shared | `desktop_app/strings/m2_manual.py` | M2-2: additive phase63 literal catalogue records following the M2-1 phase62. |
+| `desktop_app/strings/m2_manual.py` | 93 | shared | `desktop_app/strings/m2_manual.py` | M2-2: additive phase63 literal catalogue records following the M2-1 phase62. |
 | `tests/test_m2_manual_ui.py` | 560 | tooling | `tests/test_m2_manual_ui.py` | M2-2: actual offscreen controls, asynchronous fake facade and exact intent identity regressions; no SDK/process orders. Readability exception: 560-line test module and 456-line test class group 29 short cases with one owned Qt fixture; no production-class exception. |
 
 
@@ -852,6 +852,8 @@ the same command dispatch, without a second lifecycle owner or result cache.
 Its existing _materialize 95 / refresh 53 exceptions and bootstrap split plan
 remain unchanged. No caller/commit oracle, risk threshold, catalogue or other
 historical baseline is relaxed or repinned by this independent path baseline.
+
+| `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -1804,3 +1806,13 @@ Required narrow split plan for the two files over600:
 
 1. Product first seam: move read-only readiness/instrument/manual-view projection into a dedicated application projection module after capturing immutable facts under the current engine writer. Keep scope validation, preview identity/cache, absence-proof rejection, durable intent/order changes, canonical submit, SDK mutation and report adoption in the existing service/engine writer/journal. No new execution port, authority framework, risk policy, commit caller or second reconciliation state machine is introduced. Preserve all current DTO scope/UNKNOWN semantics and existing RiskService/fence checks; demonstrate unchanged outputs with the existing strict-fake tests before removing any old body.
 2. Test first seam: extract only the shared strict SDK/composition fixture into a test-support module, then group preflight/restart and stock-settlement cases into focused test classes/modules with explicit discovery mapping. Retain every assertion, native call count, fault injection, test case and failure identity/migration accounting. No count cap, timeout or skip is changed. A later behavior-preserving split needs its own graph impact, independent full discovery and focused/restart proofs; it is not performed during this frozen first-round handoff.
+
+
+### M2-2 remembered-order-column readability audit
+
+Only two optional window preference inputs and the existing column selector are
+extended. The new20-line presentation-options helper keeps preference IO in the
+composition root and preserves the existing inherited window split plan: extract
+context navigation/confirmation without changing accepted scope or financial
+validation. These inherited window/function size exceptions are not new limits.
+Measured spans: window.py655 lines (TradingWindow563, operation helper55); trading_runtime.py173 lines.
