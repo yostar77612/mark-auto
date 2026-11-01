@@ -80,7 +80,7 @@ class PureHelperTests(unittest.TestCase):
 
     def test_committed_files_round_trip_through_the_writers_byte_for_byte(self):
         for name in ('desktop_catalog_main_6b78239.json', 'download_auto_import_ui_delta.json'):
-            raw = (FIXTURES / name).read_bytes().decode('utf-8')
+            raw = (FIXTURES / name).read_bytes().decode('utf-8').replace('\r\n', '\n')  # Windows checkouts convert newlines
             self.assertEqual(repin.render_json(json.loads(raw)), raw, name)
         delta = json.loads((FIXTURES / 'download_auto_import_ui_delta.json').read_text(encoding='utf-8'))['inventory']['m1_patch_points']
         for side in ('removed', 'added'):
@@ -88,6 +88,10 @@ class PureHelperTests(unittest.TestCase):
             for item in delta[side]:
                 rows[repin.row_key(item['row'])] += item['count']
             self.assertEqual(repin.counted(rows, delta[side]), delta[side], 'committed order and shape must be preserved')
+
+    def test_newline_style_of_the_target_file_is_preserved(self):
+        self.assertEqual(repin.like('a\r\nb\r\n', 'x\ny\n'), 'x\r\ny\r\n')
+        self.assertEqual(repin.like('a\nb\n', 'x\ny\n'), 'x\ny\n')
 
     def test_inserted_inventory_rows_follow_the_last_section_2_row(self):
         text = '## 2 x\n\n| `a.py` | 1 | tooling | `a.py` | n |\n\n## 3 y\n'
