@@ -6921,3 +6921,11 @@ subtracts pending owned exits once. A confirmed canceled/unfilled current-owner
 TMF diagnostic is the shared first-attempt proof; UNKNOWN or a fill cannot pass.
 Restart, missing closing evidence, lost scope, external orders or degraded
 observations halt new risk without resetting the confirmed book or retry key.
+
+M2-2 confirmed manual submit/cancel/amend preflight failures expose a durable
+matching known rejection only with validated original scope and proven absent
+manual/canonical key under the existing healthy writer fence. Existing keys
+(including UNKNOWN) replay unchanged; no failure-code whitelist clears them.
+UiCommand.manual_no_admission=False is wire-compatible and deny-only: outer
+CAS forwarding may seal an absent key, never execute its financial command.
+Original admitted scope/id remain on results, independent of current UI epoch.

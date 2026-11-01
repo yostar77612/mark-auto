@@ -188,6 +188,9 @@ class UiCommand:
     manual_book: ManualBookForm | None = None
     manual_order: ManualOrderForm | None = None
     manual_mutation: ManualMutationForm | None = None
+    # Deny-only forwarding after an outer preflight refused the original request.
+    # It never grants permission to execute the financial command body.
+    manual_no_admission: bool = False
 
 
 @dataclass(frozen=True)

@@ -238,3 +238,35 @@ All follow-up Python passes Ruff and diff whitespace checks. Graph evidence is
 refreshed before commits after the coordinator's isolated smoke prefix. These
 focused results do not claim the final full suite, Qt startup, IPC integration
 or CI, which the coordinator runs against the eventual merged source.
+
+## Confirmed-request preflight result follow-up
+
+Read-only UI integration review reproduced a permanent pending state: confirmed
+submission could fail stale_quote before recording any request, leaving the UI's
+correct UNKNOWN latch with no matching result that could ever resolve it. The
+same issue affected preflight-rejected price amendments and stale engine CAS.
+Three real core-chain regressions were first RED with mismatched last_result
+request identities (.tmp/m2-p1-red.log), then GREEN after durable absent-key
+rejection. The quote test advances a real strict-SDK fixture from an allowed
+preview to a stale quote within preview lifetime, refreshes account evidence,
+and verifies zero additional native placement plus durable restart/replay.
+
+The expanded group passes 47 tests in 0.612 seconds: core 30, DTO 4, production
+mutation wall 8 and shared-consumer mutation guards 5. Added cases cover exact
+scope/result identity, preflight amendment refusal, stale engine version, old
+wire omission/default false, deny-only true codec roundtrip, delayed same-key
+original, existing UNKNOWN immunity, invalid native scope, writer-fence failure
+and LIVE refusal. The initial combined invocation included one misspelled test
+module and is retained as a harness import error, superseded by the corrected
+47-case run. Ruff and git diff whitespace checks pass.
+
+No actual SDK/login/order or native engine was used. Runtime/Composite/server
+outer-CAS forwarding and actual IPC regressions are separately owned by the
+runtime agent; these focused results do not claim that integration or final
+full/startup/CI. Fresh graph analysis is required before this follow-up commit.
+
+Final pre-index confirmation: 47 cases pass in 0.700 seconds, including refusal
+to certify a request without an existing confirmed manual book. The two
+canonical submit-caller/fenced-commit AST guards also pass in 1.845 seconds;
+the earlier wrong-class invocation was a harness lookup error, superseded by
+that exact corrected run. No new submit or commit caller was introduced.

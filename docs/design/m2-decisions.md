@@ -747,3 +747,24 @@ and no submitted order before separately observing a historical order/fill
 seeded only in the local exchange double through the read-only cycle. The
 original SIM branch and all of its quantity/fill/clock assertions remain intact.
 This introduces no production submit caller or permission exception.
+
+## M2-2 confirmed-request preflight rejection
+
+The UI must retain an unknown financial request until matching authoritative
+request evidence arrives. A preflight refusal is therefore journaled as a known
+REJECTED result only after current typed inner/outer native scope validation,
+while holding the existing writer, and only if both the manual request key and
+canonical order key are absent. A healthy writer fence and durable append are
+required. The exact original form hash, scope and request identity are retained;
+no error-code whitelist and no empty broker-cache inference provide certainty.
+Existing known/unknown keys replay unchanged. Sealing the rejected key also
+prevents a delayed original command from later admitting a different outcome.
+
+UiCommand.manual_no_admission defaults to false for existing wire clients. It is
+a deny-only forwarding marker for an outer CAS refusal: after native/account
+scope and existing-book checks it can only reject/seal an absent key. It never
+executes the financial body, even when its version would otherwise be current.
+The runtime/Composite owner preserves the original request scope and handles
+its separate outer-boundary forwarding regressions. Invalid/stale native scope,
+closed/failed storage or lost writer ownership cannot mint known admission
+outcomes. LIVE remains denied independently before any mutation.

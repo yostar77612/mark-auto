@@ -92,6 +92,8 @@ class ManualTradingService:
             raise DomainError('validation_failed')
         if not isinstance(command.action, UiAction) or type(command.expected_version) is not int:
             raise DomainError('validation_failed')
+        if type(command.manual_no_admission) is not bool:
+            raise DomainError('validation_failed')
         if form is not None and not isinstance(form, (ManualBookForm, ManualOrderForm, ManualMutationForm)):
             raise DomainError('validation_failed')
         if command.environment is not Environment.BROKER_SIMULATION:
@@ -128,6 +130,36 @@ class ManualTradingService:
     def _record_request(self, request: ManualRequest) -> None:
         requests = tuple(row for row in self.engine.state.manual_requests if row.request_id != request.request_id) + (request,)
         self.engine._persist('manual_request_' + request.status.lower(), replace(self.engine.state, manual_requests=requests))
+
+    def _reject_unadmitted(self, command: UiCommand, form, operation: str, reason: str) -> None:
+        """Seal a validated, absent request key; never infer a broker outcome."""
+        order_command = command.action in (UiAction.SUBMIT_MANUAL, UiAction.TEST_SIM_ORDER) and isinstance(form, ManualOrderForm)
+        mutation_command = command.action in (UiAction.CANCEL_MANUAL, UiAction.AMEND_MANUAL) and isinstance(form, ManualMutationForm)
+        if not (order_command or mutation_command) or not form.confirmed:
+            return
+        engine = self.engine
+        if book_for(engine, form.scope.account_ref) is None:
+            return
+        # A previous intent/order is durable admission evidence, even when the
+        # current SDK cache is empty. Never replace it with a preflight result.
+        if request_for(engine, form.request_id) is not None or any(order.key == form.request_id for order in engine.state.orders):
+            return
+        if engine.storage_failed or engine.state.engine_closed:
+            return
+        engine.fence()
+        self._record_request(
+            ManualRequest(
+                form.scope,
+                form.request_id,
+                operation,
+                sha256(dumps(form).encode()).hexdigest(),
+                purpose=form.purpose if order_command else ManualPurpose.MANUAL,
+                order_id=form.order_id if mutation_command else '',
+                status='REJECTED',
+                outcome_known=True,
+                reason=reason,
+            )
+        )
 
     def _book(self, account_ref: str) -> ManualBook:
         book = book_for(self.engine, account_ref)
@@ -499,6 +531,7 @@ class ManualTradingService:
 
     def execute(self, command: UiCommand) -> UiReceipt:
         with self.engine.lock:
+            scope, form, operation = None, None, ''
             try:
                 form = command.manual_book or command.manual_order or command.manual_mutation
                 scope = self._scope(command, form)
@@ -515,6 +548,12 @@ class ManualTradingService:
                     replay = self._replay(form, operation)
                     if replay is not None:
                         return replay
+                if command.manual_no_admission:
+                    self._book(scope.account_ref)
+                    # The outer boundary refused delivery. This path only
+                    # reserves an absent key as rejected, even if its version
+                    # is now current; it cannot fall through to SDK execution.
+                    raise DomainError('state_conflict')
                 if command.expected_version != self.engine.state.version:
                     raise DomainError('state_conflict')
                 if self.engine.state.engine_closed or self.engine.storage_failed:
@@ -553,6 +592,11 @@ class ManualTradingService:
                 code = request.reason if request is not None and request.reason else 'ok'
                 return UiReceipt(code not in ('broker_rejected', 'outcome_unknown'), code, '', reference)
             except DomainError as error:
+                if scope is not None:
+                    try:
+                        self._reject_unadmitted(command, form, operation, error.code)
+                    except DomainError as persistence_error:
+                        error = persistence_error
                 text = ERROR_TABLE.get(error.code, ERROR_TABLE['operation_failed'])
                 return UiReceipt(False, error.code, text.explanation + ' ' + text.action)
 
