@@ -226,5 +226,54 @@ Sunday 2026-11-01 is closed under the unchanged built-in calendar; real UTC leas
 heartbeats remain valid. Ruff, Python 3.11 AST parsing and the trading architecture
 gate pass. No complete suite, actual desktop startup or remote CI is claimed
 by these focused results; the coordinator owns those separate gates. The initial
-core merge is dcdbaef (adopting 4c2f15f), with the final readiness/restart follow-up
-still to be normally merged before final composition acceptance.
+core merge was dcdbaef (adopting 4c2f15f). The current composition also adopts
+the frozen final readiness/restart/allocation follow-up 10859eb through a normal
+merge; the post-merge focused evidence is recorded separately below.
+
+With that final core present, all 46 related runtime/native-scope/inherited
+navigation cases passed together in 17.024s, including both owned authenticated
+Pipe cases. No snapshot/preview time authority, calendar or deadline was changed.
+The independent seven-caller/path baseline had already passed eight strict
+oracle/inventory cases; final full/startup/CI acceptance remains separate.
+## Readiness, interrupted intent and LIVE follow-ups
+
+Three strict regressions were first RED: stale-session controls appeared ready,
+a receipted order was not linked to its earlier pending manual request after
+restart, and a proven pre-submission append failure remained pending forever.
+The repaired projection uses the existing active-session, verified quote,
+current actual limit and capability policy. It leaves cancellation readiness
+independent of entry quote/session rules. Restored pending submit requests link
+only by their exact durable canonical key. A complete valid replay with no
+durable order and no recorded order id proves the earlier manual intent never
+reached the sole SDK submit call; only that case becomes known rejected with
+manual_not_submitted. A durable SUBMITTING/UNKNOWN order is never cleared by an
+empty cache and is never automatically resent. Original admitted scope remains.
+
+An additional two-account regression proves enabling a stock book after the
+existing futures book's STOP_NEW keeps the global stop, both book histories and
+the 100000 cap. The final settings regression was first RED, then verifies the
+existing SAVE_SETTINGS action can lower a bucket without authorizing the old
+confirmed capital for new risk. manual_allocation_exceeds_settings explains the
+constraint; book capital/history and legal reductions are retained.
+
+The expanded tiny matrix passes 37 tests in 0.450 seconds: manual core 24, LIVE
+wall 8 and actual shared-session consumer 5. LIVE cases include direct manual
+command routes with contradictory flags and a real engine replay/read-only
+recovery from SUBMITTING to a known report, with zero native Order/place/update/
+cancel calls. The separate existing domain/grid/SDK/session/coordinator group
+passes 107 tests in 8.419 seconds after the precise independent D1 oracle update;
+its original restricted-token attempt failed on test-owned temporary paths and
+is not counted as product evidence. No timeout, skip or source limit changed.
+
+All follow-up Python passes Ruff and diff whitespace checks. Graph evidence is
+refreshed before commits after the coordinator's isolated smoke prefix. These
+focused results do not claim the final full suite, Qt startup, IPC integration
+or CI, which the coordinator runs against the eventual merged source.
+
+Independent integration review subsequently found a request-result liveness
+issue: a confirmed submit/amend refused before admission needs a matching known
+rejection result. The UI's UNKNOWN latch remains intact, and this checkpoint
+is not overall M2-2 completion. The core owner is implementing that follow-up;
+this runtime forwards the service's authority without synthetic snapshots or
+clearing a prior unknown on a generic refusal. Final integration must adopt
+and retest the matching-result fix before full/startup/CI acceptance.

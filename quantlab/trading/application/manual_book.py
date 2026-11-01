@@ -89,6 +89,17 @@ def manual_market(engine: 'TradingEngine', account_ref: str) -> Market:
     return next(iter(markets))
 
 
+def manual_allocations_valid(engine: 'TradingEngine') -> bool:
+    books = engine.state.manual_books
+    stock = sum((book.capital for book in books if manual_market(engine, book.account_ref) is Market.STOCK), ZERO)
+    futures = sum((book.capital for book in books if manual_market(engine, book.account_ref) is Market.INDEX_FUTURE), ZERO)
+    return (
+        stock <= engine.state.settings.stock_allocation
+        and futures <= engine.state.settings.futures_allocation
+        and stock + futures <= engine.risk().policy.total_budget
+    )
+
+
 def request_for(engine: 'TradingEngine', request_id: str) -> ManualRequest | None:
     return next((request for request in engine.state.manual_requests if request.request_id == request_id), None)
 
@@ -204,6 +215,8 @@ def assert_manual_plan(engine: 'TradingEngine', request: ManualRequest, plan: Or
     if set(observations) != set(engine.gateways) or any(not 0 <= (engine.clock.now() - row.as_of).total_seconds() <= 30 for row in observations.values()):
         raise DomainError('manual_account_observation_required')
     if not plan.reduce_only:
+        if not manual_allocations_valid(engine):
+            raise DomainError('manual_allocation_exceeds_settings')
         if book.halted or engine.state.stopped or not engine.state.reconciled:
             raise DomainError('risk_rejected', 'manual new risk is stopped')
         if book.opening_day != engine.state.trading_day:

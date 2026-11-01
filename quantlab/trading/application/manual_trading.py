@@ -19,6 +19,7 @@ from .manual_book import (
     ManualBook,
     ManualRequest,
     book_for,
+    manual_allocations_valid,
     manual_capacity,
     diagnostic_passed,
     manual_market,
@@ -69,7 +70,22 @@ class ManualTradingService:
         with engine.lock:
             if engine.state.manual_books:
                 books = tuple(replace(book, halted=True, reasons=('manual_restarted',)) for book in engine.state.manual_books)
-                engine._persist('manual_restart_requires_confirmation', replace(engine.state, manual_books=books, stopped=True, reconciled=False))
+                requests = []
+                for request in engine.state.manual_requests:
+                    if request.operation == 'SUBMIT' and not request.outcome_known:
+                        order = next((row for row in engine.state.orders if row.key == request.request_id), None)
+                        if order is not None:
+                            request = replace(request, order_id=order.order_id, status='UNKNOWN', reason='outcome_unknown')
+                        elif not request.order_id:
+                            # The canonical SDK call requires a durable order.
+                            # A complete replay with only the earlier manual
+                            # intent proves this request never reached that call.
+                            request = replace(request, status='REJECTED', outcome_known=True, reason='manual_not_submitted')
+                    requests.append(request)
+                engine._persist(
+                    'manual_restart_requires_confirmation',
+                    replace(engine.state, manual_books=books, manual_requests=tuple(requests), stopped=True, reconciled=False),
+                )
 
     def _scope(self, command: UiCommand, form=None) -> ManualScope:
         if not isinstance(command, UiCommand):
@@ -661,6 +677,36 @@ class ManualTradingService:
                     engine._persist('manual_observation_unresolved', replace(engine.state, reconciled=False))
                 raise
 
+    def _market_readiness(self, scope: ManualScope, spec) -> str:
+        try:
+            engine, now = self.engine, self.engine.clock.now()
+            engine.assert_execution_allowed()
+            capability = engine.gateways[scope.account_ref].inspect(scope.account_ref)
+            if not capability.can_trade or not capability.checked_at <= now < capability.expires_at or spec.market not in capability.markets:
+                raise DomainError('capability_missing')
+            session = engine.calendar.session_at(now)
+            quote, bounds = engine.quotes.get(spec.instrument_id), self.limits.get(spec.instrument_id)
+            if (
+                quote is None
+                or quote.quality != 'VERIFIED'
+                or not 0 <= (now - quote.source_at).total_seconds() <= 30
+                or not 0 <= (now - quote.received_at).total_seconds() <= 30
+            ):
+                raise DomainError('stale_quote')
+            if (quote.trade_date, quote.session) != (session.trade_date, session.kind):
+                raise DomainError('session_closed')
+            if (
+                bounds is None
+                or bounds.observed_at.date() != session.trade_date
+                or bounds.observed_at > now
+                or spec.effective_at > now
+                or (spec.expiry and spec.expiry < session.trade_date)
+            ):
+                raise DomainError('instrument_unresolved')
+            return ''
+        except DomainError as error:
+            return error.code
+
     def _instruments(self, scope: ManualScope) -> tuple[ManualInstrumentView, ...]:
         market = manual_market(self.engine, scope.account_ref)
         result = []
@@ -668,6 +714,7 @@ class ManualTradingService:
             if spec.market is not market:
                 continue
             quote, bounds = self.engine.quotes.get(spec.instrument_id), self.limits.get(spec.instrument_id)
+            reason = self._market_readiness(scope, spec)
             result.append(
                 ManualInstrumentView(
                     spec.instrument_id,
@@ -686,7 +733,8 @@ class ManualTradingService:
                     quote.source_at if quote else None,
                     spec.margin,
                     self.margin_source,
-                    tradable=quote is not None and bounds is not None,
+                    tradable=not reason,
+                    reasons=(reason,) if reason else (),
                 )
             )
         return tuple(result)
@@ -698,6 +746,10 @@ class ManualTradingService:
             try:
                 self.validate_scope(scope)
                 self._fresh()
+                self.engine.assert_execution_allowed()
+                capability = self.engine.gateways[scope.account_ref].inspect(scope.account_ref)
+                if not capability.can_trade or not capability.checked_at <= self.engine.clock.now() < capability.expires_at:
+                    raise DomainError('capability_missing')
             except DomainError as error:
                 reasons.append(error.code)
             if scope.environment is not Environment.BROKER_SIMULATION:
@@ -729,6 +781,8 @@ class ManualTradingService:
                     can_prepare=not reasons,
                 )
             reasons.extend(book.reasons)
+            if not manual_allocations_valid(self.engine):
+                reasons.append('manual_allocation_exceeds_settings')
             if self.engine.state.stopped and not reasons:
                 reasons.append('risk_rejected')
             try:
@@ -745,6 +799,13 @@ class ManualTradingService:
                 reasons.append(error.code)
             halted = book.halted or self.engine.state.stopped or bool(reasons)
             ready = not halted and not any(not row.outcome_known for row in self.engine.state.manual_requests)
+            instruments = self._instruments(scope)
+            market_ready = any(item.tradable for item in instruments)
+            if not market_ready:
+                reasons.extend(reason for item in instruments for reason in item.reasons)
+                if not instruments:
+                    reasons.append('instrument_unresolved')
+            ready = ready and market_ready
             passed = diagnostic_passed(self.engine, scope.connection_generation)
             if not passed:
                 reasons.append('manual_futures_test_required' if market is Market.STOCK else 'manual_test_required')
@@ -757,14 +818,14 @@ class ManualTradingService:
                 confirmed=True,
                 halted=halted,
                 reasons=tuple(sorted(set(reasons))),
-                instruments=self._instruments(scope),
+                instruments=instruments,
                 preview=preview,
                 pending=self._result(pending) if pending else None,
                 last_result=self._result(requests[-1]) if requests else None,
                 manual_order_ids=tuple(row.order_id for row in self.engine.state.orders if row.plan.strategy_id == book.book_id),
                 test_status='PASSED' if passed else 'UNTESTED' if book.test_status == 'PASSED' else book.test_status,
                 test_reason=book.test_reason,
-                can_preview=ready,
+                can_preview=ready and passed,
                 can_submit=ready and passed,
                 can_test=ready and not passed and market is Market.INDEX_FUTURE,
                 can_mutate=scope_ready,

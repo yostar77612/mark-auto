@@ -971,3 +971,12 @@ or commit authority: ManualTradingService._submit -> TradingEngine.submit ->
 ExecutionService.commit remains the sole financial admission/journal path.
 Historical v1 submit callers, the sole execution.commit assertion, protected
 files, risk limits and all existing test assertions remain intact.
+## M2-2 D1 coordinator oracle baseline
+
+The older coordinator fixture still expected an armed LIVE strategy cycle to
+submit. D1 supersedes only that LIVE-positive expectation. Its independent
+baseline now requires production_orders_disabled, zero production deliveries
+and no submitted order before separately observing a historical order/fill
+seeded only in the local exchange double through the read-only cycle. The
+original SIM branch and all of its quantity/fill/clock assertions remain intact.
+This introduces no production submit caller or permission exception.

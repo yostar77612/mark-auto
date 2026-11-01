@@ -5,6 +5,7 @@ from datetime import timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from quantlab.trading.adapters.shioaji.gateway import ShioajiAdapter
 from quantlab.trading.adapters.shioaji.sdk import InstrumentBinding
@@ -175,9 +176,8 @@ class ManualCoreTests(unittest.TestCase):
         self.observe()
 
     def validate_scope(self, scope):
-        if (scope.environment, scope.account_ref, scope.connection_generation, scope.connection_revision) != (
+        if scope.account_ref not in self.engine.gateways or (scope.environment, scope.connection_generation, scope.connection_revision) != (
             self.scope.environment,
-            self.scope.account_ref,
             self.scope.connection_generation,
             self.scope.connection_revision,
         ):
@@ -518,6 +518,141 @@ class ManualCoreTests(unittest.TestCase):
         self.assertEqual(self.engine.state.orders, ())
         self.assertIsNone(self.engine.state.daily_baseline_evidence)
 
+    def test_snapshot_readiness_requires_current_session_quotes_and_limits(self):
+        self.confirm_test()
+        self.assertTrue(self.service.snapshot(self.scope).can_submit)
+        self.clock.value += timedelta(seconds=31)
+        self.observe()
+        view = self.service.snapshot(self.scope)
+        self.assertFalse(view.can_submit)
+        self.assertFalse(view.can_preview)
+        self.assertIn('stale_quote', view.reasons)
+        self.engine.quote(Quote(self.spec.instrument_id, D('24999'), D('25000'), D('25000'), self.clock.now(), self.clock.now(), self.clock.now().date()))
+        limits = self.service.limits
+        self.service.limits = {}
+        view = self.service.snapshot(self.scope)
+        self.assertFalse(view.can_submit)
+        self.assertIn('instrument_unresolved', view.reasons)
+        self.service.limits = limits
+        self.clock.value = self.engine.calendar.day_session(self.engine.state.trading_day).closes_at + timedelta(minutes=1)
+        self.adapter.capabilities['future-alias'] = replace(
+            self.adapter.capabilities['future-alias'], checked_at=self.clock.now(), expires_at=self.clock.now() + timedelta(hours=3)
+        )
+        self.observe()
+        view = self.service.snapshot(self.scope)
+        self.assertFalse(view.can_submit)
+        self.assertIn('session_closed', view.reasons)
+        self.assertTrue(view.can_mutate, 'cancel readiness is independent of entry session/quotes')
+
+    def test_reduced_allocation_does_not_reauthorize_old_virtual_capacity(self):
+        from quantlab.trading.application.contracts import SettingsForm
+        from quantlab.trading.application.facade import LocalFacade
+
+        self.confirm_test()
+        # The official SIM financial response can be known zero. These are
+        # explicit fake query facts for the legacy settings action, never the
+        # manual risk funding source or invented unknown broker balances.
+        zero = SimpleNamespace(equity=0, today_balance=0, initial_margin=0, available_margin=0)
+        with patch.object(self.native, 'margin', return_value=zero):
+            receipt = LocalFacade(self.engine).execute(
+                UiCommand(UiAction.SAVE_SETTINGS, self.engine.state.version, settings=SettingsForm(D('90000'), D('10000'), D('0.02')))
+            )
+        self.assertTrue(receipt.accepted, receipt)
+        self.assertEqual(book_for(self.engine, 'future-alias').capital, D('40000'))
+        view = self.service.snapshot(self.scope)
+        self.assertFalse(view.can_submit)
+        self.assertTrue(view.can_mutate)
+        self.assertIn('manual_allocation_exceeds_settings', view.reasons)
+        form = ManualOrderForm(self.scope, 'after-budget-reduction', self.spec.instrument_id, Side.BUY, 1, D('25000'), D('24950'))
+        receipt = self.service.execute(self.command(UiAction.PREVIEW_MANUAL, manual_order=form))
+        self.assertEqual(receipt.code, 'manual_allocation_exceeds_settings')
+        self.assertEqual(len(self.native.trades), 1)
+
+    def test_restart_links_receipted_order_without_retransmission(self):
+        self.confirm_test()
+        form, _ = self.normal()
+        original = self.journal.append
+        with patch.object(
+            self.journal,
+            'append',
+            side_effect=lambda kind, *args, **kwargs: (
+                (_ for _ in ()).throw(OSError('owned fixture append fault')) if kind == 'manual_request_accepted' else original(kind, *args, **kwargs)
+            ),
+        ):
+            receipt = self.service.execute(self.command(UiAction.SUBMIT_MANUAL, manual_order=form))
+        self.assertEqual(receipt.code, 'journal_failed')
+        admitted = self.engine.state.orders[-1]
+        self.assertEqual(len(self.native.trades), 2)
+        restored = TradingEngine(
+            self.journal,
+            self.clock,
+            self.engine.calendar,
+            self.engine.catalog,
+            self.engine.gateways,
+            configuration=self.engine.configuration,
+            ownership_clock=self.clock.now,
+            fees=self.engine.fees,
+        )
+        self.engine = restored
+        restored.quote(Quote(self.spec.instrument_id, D('24999'), D('25000'), D('25000'), self.clock.now(), self.clock.now(), self.clock.now().date()))
+        self.service = ManualTradingService(
+            restored,
+            validate_scope=self.validate_scope,
+            limits=tuple(self.service.limits.values()),
+            cost_source=self.service.cost_source,
+            margin_source=self.service.margin_source,
+        )
+        self.assertEqual(self.service.snapshot(self.scope).pending.order_id, admitted.order_id)
+        self.observe()
+        self.assertTrue(self.service.snapshot(self.scope).last_result.outcome_known)
+        self.assertEqual(self.service.snapshot(self.scope).last_result.order_id, admitted.order_id)
+        self.assertEqual(len(self.native.trades), 2)
+        self.assertTrue(self.service.snapshot(self.scope).halted)
+
+    def test_restart_rejects_provably_never_submitted_intent(self):
+        self.confirm_test()
+        form, _ = self.normal()
+        original = self.journal.append
+        with patch.object(
+            self.journal,
+            'append',
+            side_effect=lambda kind, *args, **kwargs: (
+                (_ for _ in ()).throw(OSError('owned fixture append fault')) if kind == 'order_submitting' else original(kind, *args, **kwargs)
+            ),
+        ):
+            receipt = self.service.execute(self.command(UiAction.SUBMIT_MANUAL, manual_order=form))
+        self.assertEqual(receipt.code, 'journal_failed')
+        self.assertEqual(len(self.native.trades), 1)
+        restored = TradingEngine(
+            self.journal,
+            self.clock,
+            self.engine.calendar,
+            self.engine.catalog,
+            self.engine.gateways,
+            configuration=self.engine.configuration,
+            ownership_clock=self.clock.now,
+            fees=self.engine.fees,
+        )
+        self.engine = restored
+        restored.quote(Quote(self.spec.instrument_id, D('24999'), D('25000'), D('25000'), self.clock.now(), self.clock.now(), self.clock.now().date()))
+        self.service = ManualTradingService(
+            restored,
+            validate_scope=self.validate_scope,
+            limits=tuple(self.service.limits.values()),
+            cost_source=self.service.cost_source,
+            margin_source=self.service.margin_source,
+        )
+        view = self.service.snapshot(self.scope)
+        self.assertIsNone(view.pending)
+        self.assertEqual(view.last_result.request_id, form.request_id)
+        self.assertTrue(view.last_result.outcome_known)
+        self.assertEqual(view.last_result.reason, 'manual_not_submitted')
+        self.observe()
+        self.assertTrue(self.service.execute(self.command(UiAction.RESUME, manual_book=ManualBookForm(self.scope, D('40000'), True))).accepted)
+        retry = self.service.execute(self.command(UiAction.SUBMIT_MANUAL, manual_order=form))
+        self.assertEqual(retry.code, 'manual_not_submitted')
+        self.assertEqual(len(self.native.trades), 1)
+
 
 class MultiAccountManualSDK(ManualSDK):
     def __init__(self, spec):
@@ -587,8 +722,9 @@ class ManualStockTests(unittest.TestCase):
         self.observe()
         case.confirm_test()
         case.scope = replace(case.scope, account_ref='stock-alias')
-        receipt = case.service.execute(case.command(UiAction.ENABLE_MANUAL_BOOK, manual_book=ManualBookForm(case.scope, D('60000'), True)))
-        self.assertTrue(receipt.accepted, receipt)
+        if not getattr(self, 'defer_stock_book', False):
+            receipt = case.service.execute(case.command(UiAction.ENABLE_MANUAL_BOOK, manual_book=ManualBookForm(case.scope, D('60000'), True)))
+            self.assertTrue(receipt.accepted, receipt)
 
     def observe(self):
         case = self.case
@@ -627,6 +763,26 @@ class ManualStockTests(unittest.TestCase):
         self.assertEqual(case.engine.state.positions[-1].sellable_quantity, 0)
         self.assertEqual(case.engine.state.orders[-1].reservation.cash, D('0'))
         self.assertGreater(case.engine.state.orders[-1].reservation.risk, D('0'))
+
+    def test_new_account_book_cannot_clear_existing_stop(self):
+        from quantlab.trading.application.facade import LocalFacade
+
+        fresh = ManualStockTests()
+        fresh.defer_stock_book = True
+        fresh.setUp()
+        case = fresh.case
+        receipt = LocalFacade(case.engine).execute(UiCommand(UiAction.STOP_NEW, case.engine.state.version))
+        self.assertTrue(receipt.accepted)
+        self.assertTrue(case.engine.state.stopped)
+        previous = book_for(case.engine, 'future-alias')
+        receipt = case.service.execute(case.command(UiAction.ENABLE_MANUAL_BOOK, manual_book=ManualBookForm(case.scope, D('60000'), True)))
+        self.assertTrue(receipt.accepted, receipt)
+        self.assertTrue(case.engine.state.stopped)
+        self.assertTrue(book_for(case.engine, 'stock-alias').halted)
+        self.assertEqual(book_for(case.engine, 'future-alias'), previous)
+        future_scope = replace(case.scope, account_ref='future-alias')
+        self.assertFalse(case.service.snapshot(future_scope).can_submit)
+        self.assertEqual(sum(book.capital for book in case.engine.state.manual_books), D('100000'))
 
     def test_odd_lot_and_unverified_same_day_stock_exit_are_rejected(self):
         case = self.case
