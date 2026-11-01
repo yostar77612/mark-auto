@@ -42,6 +42,27 @@ paid installer service or code-signing certificate is used. Inno Setup 6.4.3 is
 used under its permissive license, available at:
 https://github.com/jrsoftware/issrc/blob/is-6_4_3/license.txt
 
+## SinoPac Shioaji SDK
+
+The standard desktop installer includes Shioaji **1.7.9**, using only the
+official PyPI wheel `shioaji-1.7.9-cp37-abi3-win_amd64.whl` pinned in
+`requirements-shioaji-v2.lock`:
+
+- Wheel SHA256: `77c864aa5bcd0f873746cb10a55a484c7a38723df432a7778f328d5fb7f57be4`.
+- Native `_core.pyd` SHA256: `7844fb48ca1116fed793a03ab556c92049a243f9637062a4624a71590412de76`.
+- Official release metadata: <https://pypi.org/pypi/shioaji/1.7.9/json>.
+- Wheel METADATA homepage/documentation: <https://sinotrade.github.io/>.
+- Wheel METADATA repository: <https://github.com/Sinotrade/Shioaji>.
+
+The verified wheel METADATA declares **no SDK license**: it supplies no
+License, License-Expression or License-File field and no license classifier.
+No license or redistribution permission is inferred, and MarkAuto's Apache-2.0
+license does not relicense the SDK. Original METADATA, WHEEL and native CycloneDX
+SBOM are retained under `_internal/licenses/shioaji` with `SDK-NOTICE.txt`.
+The wheel's separate `.data/scripts/shioaji.exe` CLI/server is not included.
+Per-file verification and installed import evidence are described in
+[BROKER_BUILD.md](BROKER_BUILD.md); the manifest records actual SDK digests.
+
 ## Desktop ChatGPT authentication dependencies
 
 The desktop also includes PyJWT 2.15.1 (MIT), cryptography 50.0.2

@@ -1,0 +1,70 @@
+{
+  "source_head": "590646058aa73f7084ed310b63dd4b0acad6d491",
+  "phase": "engine-cleanup-endpoint-backport",
+  "passed": true,
+  "results": [
+    {
+      "head": "590646058aa73f7084ed310b63dd4b0acad6d491",
+      "mode": "LOCAL",
+      "no_site": true,
+      "sqlite": "3.54.0",
+      "real_window_constructor": true,
+      "real_runtime_composition": true,
+      "instrumentation_delegates_original": true,
+      "window_visible": true,
+      "research_pages": 7,
+      "research_released": true,
+      "rendered_size": [
+        780,
+        720
+      ],
+      "widget_count": 2726,
+      "financial_facts_verified": true,
+      "engine_shutdown_clean": true,
+      "real_sdk_imported": false,
+      "return_code": 0,
+      "elapsed_seconds": 5.692,
+      "errors": [],
+      "passed": true,
+      "owned_endpoints_removed": true,
+      "raw_sha256": "bbcee51e21029ef0cd8537da0a954541fd5416aa1692555c3c3af20260b47707",
+      "rendered_png_sha256": "984b990a2d813d3b172783fcefc13b4da6144f2ab57c83fcb56aedf8d3a448e8"
+    },
+    {
+      "head": "590646058aa73f7084ed310b63dd4b0acad6d491",
+      "mode": "BROKER_SIMULATION",
+      "no_site": true,
+      "sqlite": "3.54.0",
+      "real_window_constructor": true,
+      "real_runtime_composition": true,
+      "instrumentation_delegates_original": true,
+      "window_visible": true,
+      "research_pages": 7,
+      "research_released": true,
+      "rendered_size": [
+        780,
+        720
+      ],
+      "widget_count": 2726,
+      "financial_facts_verified": false,
+      "engine_shutdown_clean": true,
+      "real_sdk_imported": false,
+      "return_code": 0,
+      "elapsed_seconds": 3.718,
+      "errors": [],
+      "fake_sdk": {
+        "login_count": 1,
+        "logout_count": 1,
+        "subscription_count": 2,
+        "order_constructions": 0,
+        "orders": 0
+      },
+      "broker_host": "Real authenticated IPC server in an owned thread with fake SDK",
+      "passed": true,
+      "owned_endpoints_removed": true,
+      "raw_sha256": "026042806282b3eccc4818a32b128c43631cc7be84fef28e8b61f9bd3e3cb246",
+      "rendered_png_sha256": "570a30068f9c484bccc78466743b198932d7fbce0683e661f7d12ccdbbf94058"
+    }
+  ],
+  "boundary": "Original real window/runtime and original safety gates; fake SDK only. No actual broker/CA/order operation. Private paths and PIDs omitted."
+}

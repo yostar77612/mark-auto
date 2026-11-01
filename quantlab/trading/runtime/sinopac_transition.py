@@ -6,6 +6,7 @@ from quantlab.trading.adapters.shioaji.account_discovery import discover_account
 from quantlab.trading.adapters.shioaji.market_session import MarketSession
 from quantlab.trading.adapters.shioaji.shared_session import SharedSDKSession
 from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
+from quantlab.trading.adapters.shioaji.sdk_loader import SdkUnavailable
 from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.application.sinopac_contracts import SinopacAccountView, SinopacReadiness
 from quantlab.trading.domain.models import Environment
@@ -183,6 +184,8 @@ def transition(owner, command, ticket):
         public = (
             'logout_unconfirmed'
             if owner.cleanup_unconfirmed
+            else 'market_sdk_missing'
+            if isinstance(error, SdkUnavailable)
             else 'broker_permission_missing'
             if type(error).__name__ in ('AuthError', 'ShioajiPermissionError')
             else 'account_query_failed'

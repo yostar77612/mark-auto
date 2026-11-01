@@ -1,0 +1,965 @@
+{
+  "source_head": "b39af9c9e7a148661dfb1bd254c3f4e34157a11a",
+  "comparison": {
+    "complete": true,
+    "count": 3943,
+    "seconds": 1456.19,
+    "result": "FAILED (failures=10, errors=22, skipped=42)",
+    "failure_ids": [
+      "test_analysis_recovery.RecoveryLedgerTests.test_links_hardlinks_and_oversize_are_rejected",
+      "test_automatic_backup.AutomaticBackupTests.test_managed_hardlink_and_success_symlink_are_rejected",
+      "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+      "test_automatic_backup.AutomaticBackupTests.test_unsafe_destinations_do_not_write_config",
+      "test_chatgpt_auth.AuthTests.test_dpapi_rejects_dangling_links_and_junction_lstat_attributes",
+      "test_chatgpt_auth.AuthTests.test_first_use_guard_rejects_prior_host_control_and_partial_vault_evidence",
+      "test_desktop_runtime.WindowsRuntimeTests.test_installer_mutex_lifetime",
+      "test_downloads.DownloadTests.test_failure_preserves_latest_and_refuses_symlink",
+      "test_market.MarketTests.test_cache_rejects_symlink",
+      "test_market_history.HistoryBoundaryTests.test_cache_tamper_symlinks_and_bad_policy",
+      "test_market_history.HistoryTests.test_cache_tamper_symlinks_and_bad_policy",
+      "test_notice_collector.ZipCollectorTests.test_dangling_source_parent_fails",
+      "test_notice_collector.ZipCollectorTests.test_destination_file_symlink_fails_preserves_target",
+      "test_notice_collector.ZipCollectorTests.test_destination_parent_symlink_fails",
+      "test_notice_collector.ZipCollectorTests.test_source_file_symlink_fails",
+      "test_notice_collector.ZipCollectorTests.test_source_parent_symlink_fails",
+      "test_paper_diagnostics.ConnectionDiagnosticTests.test_external_observer_failure_stops_waiting_probe_and_cleans_owned_fixture",
+      "test_paper_diagnostics.ConnectionDiagnosticTests.test_fixed_matrix_uses_full_commits_real_external_control_and_owned_cleanup",
+      "test_paper_diagnostics.ConnectionDiagnosticTests.test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture",
+      "test_paper_diagnostics.ConnectionDiagnosticTests.test_wrong_commit_count_cannot_be_certified",
+      "test_qt_licenses.QtLicenseTests.test_destination_symlink_preserves_target",
+      "test_qt_licenses.QtLicenseTests.test_payload_directory_symlink_fails_before_audit",
+      "test_qt_licenses.QtLicenseTests.test_source_symlink_and_simulated_junction_fail",
+      "test_reporting.ReportingTests.test_symlink_output_refused",
+      "test_test_group.ParallelResearchGroupTests.test_native_windows_natural_parent_exit_with_descendant_cannot_pass",
+      "test_trading_acceptance_combinations.AcceptanceCombinationTests.test_e06_parent_os_kill_before_submit_and_after_remote_accept_preserves_unknown",
+      "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+      "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace",
+      "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_gui_death_quiesces_before_test_only_durable_receipt",
+      "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_after_gui_before_quiescence_never_publishes_receipt",
+      "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_before_gui_never_publishes_receipt"
+    ],
+    "traceback_blocks": 32,
+    "encoding": "utf-8-sig",
+    "raw_sha256": "56c77a6fe6dbe361a10f5e8dc88fc994a5fe84453fcd47094f69f33fa51ec40b",
+    "new_failure_ids": [],
+    "baseline_failure_ids_not_seen": [
+      "test_runtime_context_client_v2.RuntimeContextClientTests.test_failed_profile_target_retains_current_data_and_selector",
+      "test_runtime_context_client_v2.RuntimeContextClientTests.test_owned_cleanup_handles_real_ipc_version_change_without_bypassing_cas",
+      "test_runtime_context_client_v2.RuntimeContextClientTests.test_standard_disconnected_launch_without_profile_keeps_financial_facts_unknown",
+      "test_runtime_context_client_v2.RuntimeContextClientTests.test_three_environments_use_real_ipc_and_never_mix_books_or_implicitly_connect",
+      "test_trading_runtime.IndependentEngineRuntimeTests.setUpClass"
+    ]
+  },
+  "local_suite_passed": false,
+  "review": {
+    "occurrences": 32,
+    "distinct_ids": 31,
+    "ordered_frame_matches": 30,
+    "exception_type_chain_matches": 32,
+    "source_checks": [
+      {
+        "file": "tests\\test_analysis_recovery.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_automatic_backup.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_chatgpt_auth.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_desktop_runtime.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_downloads.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_market.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_market_history.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_notice_collector.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_paper_diagnostics.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_qt_licenses.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_reporting.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_test_group.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_trading_acceptance_combinations.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_trading_application.py",
+        "equal": true
+      },
+      {
+        "file": "tests\\test_trading_installer_guard.py",
+        "equal": false
+      },
+      {
+        "file": "tests\\test_windows_recovery_feasibility.py",
+        "equal": true
+      }
+    ],
+    "categories": {
+      "symlink_privilege_1314": 20,
+      "native_worker_cleanup_file_lock": 1,
+      "crash_driver_pid_mismatch": 1,
+      "named_mutex_visibility": 3,
+      "paper_probe_parent_pid_guard": 4,
+      "retained_grandchild_handle_invalid": 3
+    },
+    "occurrences_reviewed": [
+      {
+        "id": "test_analysis_recovery.RecoveryLedgerTests.test_links_hardlinks_and_oversize_are_rejected",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": ".sqlite"
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": ".sqlite"
+          }
+        ]
+      },
+      {
+        "id": "test_automatic_backup.AutomaticBackupTests.test_managed_hardlink_and_success_symlink_are_rejected",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_automatic_backup.AutomaticBackupTests.test_unsafe_destinations_do_not_write_config",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_chatgpt_auth.AuthTests.test_dpapi_rejects_dangling_links_and_junction_lstat_attributes",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_chatgpt_auth.AuthTests.test_first_use_guard_rejects_prior_host_control_and_partial_vault_evidence",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_downloads.DownloadTests.test_failure_preserves_latest_and_refuses_symlink",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_market.MarketTests.test_cache_rejects_symlink",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_market_history.HistoryBoundaryTests.test_cache_tamper_symlinks_and_bad_policy",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_market_history.HistoryTests.test_cache_tamper_symlinks_and_bad_policy",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_notice_collector.ZipCollectorTests.test_dangling_source_parent_fails",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_notice_collector.ZipCollectorTests.test_destination_file_symlink_fails_preserves_target",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_notice_collector.ZipCollectorTests.test_destination_parent_symlink_fails",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_notice_collector.ZipCollectorTests.test_source_file_symlink_fails",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_notice_collector.ZipCollectorTests.test_source_parent_symlink_fails",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_qt_licenses.QtLicenseTests.test_destination_symlink_preserves_target",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_qt_licenses.QtLicenseTests.test_payload_directory_symlink_fails_before_audit",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_qt_licenses.QtLicenseTests.test_source_symlink_and_simulated_junction_fail",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_reporting.ReportingTests.test_symlink_output_refused",
+        "kind": "ERROR",
+        "category": "symlink_privilege_1314",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [
+              "1314"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_test_group.ParallelResearchGroupTests.test_native_windows_natural_parent_exit_with_descendant_cannot_pass",
+        "kind": "ERROR",
+        "category": "native_worker_cleanup_file_lock",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": null
+          },
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": null
+          },
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_trading_acceptance_combinations.AcceptanceCombinationTests.test_e06_parent_os_kill_before_submit_and_after_remote_accept_preserves_unknown",
+        "kind": "ERROR",
+        "category": "crash_driver_pid_mismatch",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": ".sqlite"
+          },
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": ".sqlite"
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": ".sqlite"
+          },
+          {
+            "type": "PermissionError",
+            "winerror": [
+              "32"
+            ],
+            "storage_suffix": ".sqlite"
+          }
+        ]
+      },
+      {
+        "id": "test_desktop_runtime.WindowsRuntimeTests.test_installer_mutex_lifetime",
+        "kind": "FAIL",
+        "category": "named_mutex_visibility",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_external_observer_failure_stops_waiting_probe_and_cleans_owned_fixture",
+        "kind": "FAIL",
+        "category": "paper_probe_parent_pid_guard",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_fixed_matrix_uses_full_commits_real_external_control_and_owned_cleanup",
+        "kind": "FAIL",
+        "category": "paper_probe_parent_pid_guard",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture",
+        "kind": "FAIL",
+        "category": "paper_probe_parent_pid_guard",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_wrong_commit_count_cannot_be_certified",
+        "kind": "FAIL",
+        "category": "paper_probe_parent_pid_guard",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+        "kind": "FAIL",
+        "category": "named_mutex_visibility",
+        "same_frames": false,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace",
+        "kind": "FAIL",
+        "category": "named_mutex_visibility",
+        "same_frames": false,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_gui_death_quiesces_before_test_only_durable_receipt",
+        "kind": "FAIL",
+        "category": "retained_grandchild_handle_invalid",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_after_gui_before_quiescence_never_publishes_receipt",
+        "kind": "FAIL",
+        "category": "retained_grandchild_handle_invalid",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      },
+      {
+        "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_before_gui_never_publishes_receipt",
+        "kind": "FAIL",
+        "category": "retained_grandchild_handle_invalid",
+        "same_frames": true,
+        "same_exception_types": true,
+        "current_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ],
+        "main_exception_facts": [
+          {
+            "type": "OSError",
+            "winerror": [],
+            "storage_suffix": null
+          },
+          {
+            "type": "AssertionError",
+            "winerror": [],
+            "storage_suffix": null
+          }
+        ]
+      }
+    ]
+  },
+  "boundary": "Every actual current traceback was reviewed against main. A same ID/type alone is not an identical-cause claim. Secondary Windows cleanup differences remain explicit. Earlier paper parent-PID controls are historical causal evidence, not inferred from this trace alone. Local discovery remains nonzero; exact published-head CI is independent."
+}

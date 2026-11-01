@@ -1,6 +1,7 @@
 """Literal UI vocabulary for redacted connection DTOs; vendor text stays out."""
 
 from desktop_app.strings.catalog import ui_text
+from quantlab.trading.application.market_settings import market_connection_guidance
 from quantlab.trading.domain.models import Environment, Market
 
 
@@ -23,6 +24,7 @@ def reason_text(code):
         'permission_denied': ui_text('m2.connection.permission_denied'),
         'broker_permission_missing': ui_text('m2.connection.permission_denied'),
         'broker_login_failed': ui_text('m2.connection.login_failed'),
+        'market_sdk_missing': market_connection_guidance('market_sdk_missing'),
         'connection_timeout': ui_text('m2.connection.timeout'),
         'session_lost': ui_text('m2.connection.session_lost'),
         'logout_unconfirmed': ui_text('m2.connection.logout_unconfirmed'),
