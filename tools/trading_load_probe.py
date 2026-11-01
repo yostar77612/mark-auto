@@ -35,6 +35,7 @@ from quantlab.trading.runtime.ipc import IpcFacade, read_session
 from quantlab.trading.runtime.protocol import Operation
 import trading_runtime
 from tools.trading_load_report import write_report
+from tools.owned_trading_engine import OwnedEngineProcesses
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -68,7 +69,15 @@ def process_memory(pid: int) -> dict[str, int]:
 
 def source_identity() -> dict[str, str]:
     paths = [*ROOT.glob('quantlab/trading/**/*.py'), *ROOT.glob('desktop_app/features/trading/**/*.py')]
-    paths.extend((ROOT / 'trading_runtime.py', ROOT / 'desktop_app/strings/catalog.py', ROOT / 'tools/trading_load_report.py', Path(__file__).resolve()))
+    paths.extend(
+        (
+            ROOT / 'trading_runtime.py',
+            ROOT / 'desktop_app/strings/catalog.py',
+            ROOT / 'tools/trading_load_report.py',
+            ROOT / 'tools/owned_trading_engine.py',
+            Path(__file__).resolve(),
+        )
+    )
     return {str(path.relative_to(ROOT)).replace('\\', '/'): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
 
 
@@ -426,16 +435,12 @@ class Probe:
         }
 
 
-def cleanup_owned_engine(root: Path, report: Path, initialized: bool) -> None:
+def cleanup_owned_engine(root: Path, report: Path, owned: OwnedEngineProcesses) -> None:
     process = trading_runtime._STARTED.get(root)
     try:
-        if initialized:
-            trading_runtime.shutdown(root)
-        elif process is not None:
-            if process.poll() is None:
-                process.terminate()  # Only the fresh isolated child this probe owns.
-            process.wait(timeout=5)
-            trading_runtime._STARTED.pop(root, None)
+        # The owner was registered before ensure_engine; a partial setup still
+        # receives the same authenticated shutdown as a completed acceptance.
+        owned.close()
     except Exception:
         if report.exists():
             saved = json.loads(report.read_text(encoding='utf-8'))
@@ -445,7 +450,7 @@ def cleanup_owned_engine(root: Path, report: Path, initialized: bool) -> None:
     if report.exists():
         saved = json.loads(report.read_text(encoding='utf-8'))
         saved['owned_engine_exit_code'] = process.poll() if process is not None else None
-        saved['shutdown_verified'] = initialized and process is not None and process.poll() == 0 and not (root / 'engine-session-v2.json').exists()
+        saved['shutdown_verified'] = process is not None and process.poll() == 0 and not (root / 'engine-session-v2.json').exists()
         write_report(report, saved)
 
 
@@ -461,33 +466,33 @@ def main() -> int:
     if not 1 <= args.seconds <= 1800 or root.exists() or report.exists() or not root.is_relative_to(ROOT.parent / 't') or root.is_symlink():
         raise SystemExit('Use a fresh absolute isolated root below workspace/t and 1..1800 seconds.')
     report.parent.mkdir(parents=True, exist_ok=True)
-    facade = None
-    try:
-        facade = trading_runtime.ensure_engine(root)
-        evidence = {
-            'started_utc': datetime.now(timezone.utc).isoformat(),
-            'machine': machine_specification(),
-            'source_files_sha256': source_identity(),
-            'load': prepare(facade),
-        }
-        return Probe(root, report, args.seconds, facade, evidence).run()
-    except Exception as exc:
-        if not report.exists():
-            write_report(
-                report,
-                {
-                    'schema_version': 2,
-                    'status': 'FAIL',
-                    'acceptance_30_minutes': False,
-                    'isolated_root': str(root),
-                    'requested_duration_seconds': args.seconds,
-                    'errors': [type(exc).__name__ + ': ' + str(exc)],
-                    'phase': 'setup-or-native-ui',
-                },
-            )
-        raise
-    finally:
-        cleanup_owned_engine(root, report, facade is not None)
+    with OwnedEngineProcesses() as owned:
+        try:
+            facade = trading_runtime.ensure_engine(root)
+            evidence = {
+                'started_utc': datetime.now(timezone.utc).isoformat(),
+                'machine': machine_specification(),
+                'source_files_sha256': source_identity(),
+                'load': prepare(facade),
+            }
+            return Probe(root, report, args.seconds, facade, evidence).run()
+        except Exception as exc:
+            if not report.exists():
+                write_report(
+                    report,
+                    {
+                        'schema_version': 2,
+                        'status': 'FAIL',
+                        'acceptance_30_minutes': False,
+                        'isolated_root': str(root),
+                        'requested_duration_seconds': args.seconds,
+                        'errors': [type(exc).__name__ + ': ' + str(exc)],
+                        'phase': 'setup-or-native-ui',
+                    },
+                )
+            raise
+        finally:
+            cleanup_owned_engine(root, report, owned)
 
 
 if __name__ == '__main__':
