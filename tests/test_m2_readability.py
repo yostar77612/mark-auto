@@ -116,7 +116,8 @@ class M2ReadabilityTests(unittest.TestCase):
         action = self.window.findChild(QPushButton, 'dashboard_new_strategy')
         self.assertIsNotNone(action)
         self.assertTrue(action.isVisibleTo(self.window.pages.currentWidget()))
-        self.assertFalse(self.window.dashboard.strategy_summary.isVisible())
+        self.assertTrue(self.window.dashboard.strategy_summary.isVisible())
+        self.assertEqual(self.window.dashboard.strategy_summary.text(), ui_text('m2t.empty_strategy_reason'))
         with patch.object(StrategyWizard, 'exec', return_value=StrategyWizard.DialogCode.Rejected) as opened:
             action.click()
         opened.assert_called_once()

@@ -7,6 +7,7 @@ from dataclasses import replace
 from decimal import Decimal
 import time
 import unittest
+from unittest.mock import patch
 
 from PySide6.QtCore import QCoreApplication, QEvent, Qt, QThreadPool
 from PySide6.QtGui import QFont
@@ -137,7 +138,8 @@ class DashboardUiTests(unittest.TestCase):
         for action, control in self.dashboard.operation_buttons.items():
             with self.subTest(action=action):
                 control.setFocus()
-                QTest.keyClick(control, Qt.Key.Key_Space)
+                with patch.object(self.window, '_confirm', return_value=True):
+                    QTest.keyClick(control, Qt.Key.Key_Space)
                 self.wait_for(lambda: self.window._operation is None and self.window._priority_operation is None)
                 self.assertEqual(self.facade.commands[-1].action, action)
 

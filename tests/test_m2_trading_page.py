@@ -214,7 +214,8 @@ class M2TradingPageTests(unittest.TestCase):
         self.assertEqual(window.overview_stop.text(), ui_text('m2t.live_stop'))
         self.assertTrue(window.overview_stop.isEnabled())
         self.assertTrue(window.reconcile_button.isEnabled())
-        window.stop_button.click()
+        with patch.object(window, '_confirm', return_value=True):
+            window.stop_button.click()
         self.drain()
         self.assertEqual([command.action for command in self.facade.commands], [UiAction.STOP_NEW])
         window.reconcile_button.click()
@@ -257,6 +258,7 @@ class M2TradingPageTests(unittest.TestCase):
         self.app.processEvents()
         table = self.window.positions
         self.assertEqual(table.columnCount(), 12)
+        self.assertEqual({column for column in range(12) if not table.isColumnHidden(column)}, {0, 1, 2, 5, 8, 9})
         self.assertEqual(table.rowCount(), 3)
         self.assertFalse(table.horizontalScrollBar().isVisible())
         self.assertEqual(table.horizontalScrollBar().maximum(), 0)
@@ -264,7 +266,7 @@ class M2TradingPageTests(unittest.TestCase):
         first = table.item(0, 0)
         self.assertGreaterEqual(table.columnWidth(0), table.fontMetrics().horizontalAdvance(first.text()) + 6)
         self.assertTrue(table.viewport().rect().contains(table.visualItemRect(first)))
-        self.assertLessEqual(table.horizontalHeader().sectionViewportPosition(11) + table.columnWidth(11), table.viewport().width())
+        self.assertLessEqual(table.horizontalHeader().sectionViewportPosition(9) + table.columnWidth(9), table.viewport().width())
         scroll = self.window.findChild(QScrollArea, 'trading_scroll')
         self.assertEqual(scroll.horizontalScrollBar().maximum(), 0)
         for row in range(table.rowCount()):
