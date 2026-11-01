@@ -1,7 +1,9 @@
 """User-triggered metadata only. No installer/file/browser operations.
 
-The release publishes release-manifest.json (object: {"version": "0.2.3"}) and
-release-manifest.json.sha256 (64 hex digits, optionally two spaces + filename).
+Every preview release re-uploads release-manifest.json (object:
+{"version": "0.3.0", "commit": "<40 hex>"}) and release-manifest.json.sha256
+(64 hex digits, optionally two spaces + filename) to the fixed prerelease
+desktop-preview-latest, because GitHub's releases/latest skips prereleases.
 Transport returns (raw JSON bytes, ASCII sidecar text). SHA-256 provides content
 consistency, not publisher authentication; HTTPS supplies transport trust.
 """
@@ -17,7 +19,7 @@ from quantlab.payload_cleanup import parse_version
 from quantlab.tls_trust import build_trust_context
 
 
-RELEASE_METADATA_URL = 'https://github.com/yostar77612/mark-auto/releases/latest/download/release-manifest.json'
+RELEASE_METADATA_URL = 'https://github.com/yostar77612/mark-auto/releases/download/desktop-preview-latest/release-manifest.json'
 MAX_BODY = 64 * 1024
 TIMEOUT = 8
 # Network-only adapter: no built-in/Path.open file operations in this module.
@@ -59,8 +61,12 @@ def _default_transport(url):
     return values[0], values[1].decode('ascii')
 
 
-def check_for_update(installed_version, *, transport=None, url=RELEASE_METADATA_URL):
-    """Verify a bounded manifest before JSON parsing; any failure is an error."""
+def check_for_update(installed_version, installed_commit='', *, transport=None, url=RELEASE_METADATA_URL):
+    """Verify a bounded manifest before JSON parsing; any failure is an error.
+
+    A same-version build from another commit is also an update, because every
+    preview of one version shares its number.
+    """
     try:
         installed = parse_version(installed_version)
         _https(url)
@@ -79,8 +85,12 @@ def check_for_update(installed_version, *, transport=None, url=RELEASE_METADATA_
             raise ValueError('bad_manifest')
         version = manifest.get('version')
         latest = parse_version(version)
-        status = 'update_available' if latest > installed else 'up_to_date'
-        return UpdateResult(status, status, version)
+        commit = manifest.get('commit', '')
+        if not isinstance(commit, str) or not re.fullmatch(r'(?:[0-9a-f]{40})?', commit):
+            raise ValueError('bad_manifest')
+        rebuilt = latest == installed and bool(commit and installed_commit) and not commit.startswith(installed_commit)
+        status = 'update_available' if latest > installed or rebuilt else 'up_to_date'
+        return UpdateResult(status, status, f'{version} ({commit[:7]})' if commit else version)
     except (ValueError, TypeError, OSError, RuntimeError):
         # Fixed code only: server bodies, URLs and OS details never become UI text.
         return UpdateResult('error', 'check_failed')

@@ -168,6 +168,22 @@ class UpdateCheckTests(OfflineTest):
         body = b'{"version":"1.3"}'
         self.assertEqual(self.check(body, hashlib.sha256(body).hexdigest() + '  release-manifest.json\n').status, 'update_available')
 
+    def test_same_version_from_another_commit_is_an_update(self):
+        built = 'a' * 40
+        body = json.dumps({'version': '1.2', 'commit': built}).encode()
+
+        def check(installed_commit):
+            return check_for_update('1.2', installed_commit, transport=lambda url: (body, hashlib.sha256(body).hexdigest()))
+
+        self.assertEqual(check('b' * 7), UpdateResult('update_available', 'update_available', '1.2 (aaaaaaa)'))
+        self.assertEqual(check('a' * 7), UpdateResult('up_to_date', 'up_to_date', '1.2 (aaaaaaa)'))
+        # A source run has no commit, so only a higher version counts.
+        self.assertEqual(check('').status, 'up_to_date')
+        for commit in ('A' * 40, 'a' * 39, 3):
+            with self.subTest(commit=commit):
+                body = json.dumps({'version': '1.2', 'commit': commit}).encode()
+                self.assertEqual(check('b' * 7).status, 'error')
+
     def test_missing_mismatched_hash_never_parses_json(self):
         for digest in ('', 'a' * 64, 'missing', b'a' * 64, 'a' * 257):
             with self.subTest(digest=digest), patch('quantlab.update_check.json.loads') as loads:

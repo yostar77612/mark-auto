@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QMessageBox, QPushButton, QVBoxLayout, QWidget
 from desktop_app.strings.catalog import ui_text
 from desktop_app.components.async_status import AsyncStatus
 from quantlab import __version__
+from quantlab.build_info import build_commit
 from quantlab.payload_cleanup import execute_payload_cleanup, plan_payload_cleanup
 from quantlab.update_check import UpdateResult, check_for_update
 
@@ -29,9 +30,9 @@ def installed_payload_root():
     return root
 
 
-def _check_in_background(queue, version):
+def _check_in_background(queue, version, commit):
     try:
-        result = check_for_update(version)
+        result = check_for_update(version, commit)
     except Exception:
         result = UpdateResult('error', 'check_failed')
     queue.put(result)
@@ -69,7 +70,7 @@ class MaintenancePanel(QWidget):
         self.update_button.setEnabled(False)
         self.async_status.set_state('loading')
         try:
-            Thread(target=_check_in_background, args=(self.results, __version__), daemon=True).start()
+            Thread(target=_check_in_background, args=(self.results, __version__, build_commit()), daemon=True).start()
             self.timer.start()
         except RuntimeError:
             self.results.put(UpdateResult('error', 'check_failed'))
