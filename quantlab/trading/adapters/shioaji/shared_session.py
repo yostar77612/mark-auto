@@ -23,6 +23,7 @@ class SharedSDKSession:
         self._leases: dict[tuple, tuple[set[str], Callable]] = {}
         self._authenticated = False
         self._closed = False
+        self.logout_confirmed = False
         self.callback_errors = 0
 
     def login(self, *, api_key: str, secret_key: str) -> list[object]:
@@ -120,6 +121,8 @@ class SharedSDKSession:
         with self._operations:
             with self._lock:
                 if self._closed:
+                    if not self.logout_confirmed:
+                        raise DomainError('outcome_unknown', 'session logout remains unconfirmed')
                     return
                 self._closed = True
                 self._callbacks.clear()
@@ -135,6 +138,7 @@ class SharedSDKSession:
             finally:
                 if self.facade.logout() is False:
                     raise DomainError('market_data_not_connected', 'session logout unconfirmed')
+                self.logout_confirmed = True
 
 
 class SharedFacadeView(ShioajiSDKFacade):
@@ -142,8 +146,9 @@ class SharedFacadeView(ShioajiSDKFacade):
 
     def __init__(self, owner: SharedSDKSession, name: str):
         parent = owner.facade
-        super().__init__(parent._client, parent._module, environment=parent.environment,
-                         query_timeout_ms=parent.query_timeout_ms, order_timeout_ms=parent.order_timeout_ms)
+        super().__init__(
+            parent._client, parent._module, environment=parent.environment, query_timeout_ms=parent.query_timeout_ms, order_timeout_ms=parent.order_timeout_ms
+        )
         self._owner, self._name = owner, name
 
     def login(self, **kwargs) -> list[object]:
@@ -162,8 +167,7 @@ class SharedFacadeView(ShioajiSDKFacade):
         self._quote(contract, quote_type, version, True)
 
     def _quote(self, contract, quote_type, version, remove, *, market=False) -> None:
-        key = ('quote', *(sdk_text(sdk_value(contract, field)) for field in ('security_type', 'exchange', 'code')),
-               sdk_text(quote_type), sdk_text(version))
+        key = ('quote', *(sdk_text(sdk_value(contract, field)) for field in ('security_type', 'exchange', 'code')), sdk_text(quote_type), sdk_text(version))
         parent = self._owner.facade
         if market:
             acquire = lambda: parent.market_subscribe(contract)
@@ -185,7 +189,11 @@ class SharedFacadeView(ShioajiSDKFacade):
 
     def _scanner(self, scanner, region, security_type, exchange, remove) -> None:
         parent = self._owner.facade
-        key = ('scanner', *(sdk_text(item) for item in (scanner, region, security_type, exchange)))
-        self._owner.lease(self._name, key,
-                          lambda: parent.subscribe_scanner(scanner, region=region, security_type=security_type, exchange=exchange),
-                          lambda: parent.unsubscribe_scanner(scanner, region=region, security_type=security_type, exchange=exchange), remove)
+        key = ('scanner', sdk_text(sdk_value(scanner, 'id')), *(sdk_text(item) for item in (region, security_type, exchange)))
+        self._owner.lease(
+            self._name,
+            key,
+            lambda: parent.subscribe_scanner(scanner, region=region, security_type=security_type, exchange=exchange),
+            lambda: parent.unsubscribe_scanner(scanner, region=region, security_type=security_type, exchange=exchange),
+            remove,
+        )

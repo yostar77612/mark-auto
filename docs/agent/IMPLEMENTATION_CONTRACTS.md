@@ -6847,3 +6847,23 @@ share callback dispatch and remote quote/scanner leases; detaching one cannot
 logout another. Callback exceptions degrade owner health without exposing SDK
 payloads or preventing other deliveries. MarketSession.attach_authenticated
 adopts a consumer without resolving credentials or constructing another SDK.
+
+The profile-free unified host is explicitly RuntimeLaunch.sinopac=True with a
+stable SINOPAC:environment configuration identity and sinopac-pending process
+seed. Account navigation reuses that host. Connection/market overlay may be
+borrowed by LOCAL; its money, positions, version and context remain LOCAL.
+Environment replacement requires confirmed logout, including legacy-session
+migration. Unknown cleanup cannot be converted to success by a second request.
+Connection CAS uses generation plus monotonic material revision, independent
+of harmless ticks; late owned SDK results never promote after acceptance expiry.
+
+SinopacConnection.resources(alias) returns account-scoped typed catalogue,
+bindings, calendar, estimated fees, native mapping, query-only capabilities and
+optional observed daily limits. Consumers assemble every accepted alias and
+check generation/revision again. One callback owner gets one named shared
+consumer; multiple independent adapters must use distinct names or one shared
+multi-account adapter. Native SDK callback setters and login remain singular.
+Persisted alias metadata does not grant native query/execution capability.
+Selection/discovery must never delete historical manual orders or positions.
+M2-1 never enables automatic strategies or sends broker orders. M2-2 owns the
+canonical manual engine and execution guard; LIVE remains prohibited.

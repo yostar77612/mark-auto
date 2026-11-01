@@ -122,8 +122,14 @@ class MarketSession:
         self.directory.refresh(self.facade, self.clock.now())
         self.connected = True
         self.tick_stream = ShioajiTickStream(
-            self.facade, self.clock, (), WatchSessionResolver(), lambda: self.connected,
-            self.live_settings, self._session_down, watch_instruments=self.directory.items,
+            self.facade,
+            self.clock,
+            (),
+            WatchSessionResolver(),
+            lambda: self.connected,
+            self.live_settings,
+            self._session_down,
+            watch_instruments=self.directory.items,
             tick_normalizer=self._watch_tick,
         )
         self.tick_stream.start()
@@ -231,7 +237,8 @@ class MarketSession:
             raise DomainError('market_data_not_connected') from None
         finally:
             try:
-                facade.logout()
+                if facade.logout() is False:
+                    raise DomainError('market_data_not_connected', 'native logout unconfirmed')
             except Exception:
                 raise DomainError('market_data_not_connected') from None
 

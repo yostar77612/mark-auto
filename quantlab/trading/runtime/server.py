@@ -1,6 +1,7 @@
 """Independent authenticated local engine; GUI lifetime does not own positions."""
 
 from contextlib import closing
+from dataclasses import replace
 from datetime import datetime, timezone
 import json
 from multiprocessing.connection import Client, Listener, answer_challenge, deliver_challenge
@@ -45,7 +46,8 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
     if request.environment is not bundle.launch.environment or request.account_ref not in bundle.account_refs:
         raise DomainError('capability_missing', 'explicit running account/environment required')
     if request.operation is Operation.SNAPSHOT:
-        return Response(request.request_id, state=bundle.snapshot())
+        state = bundle.snapshot()
+        return Response(request.request_id, state=replace(state, account_ref=request.account_ref) if bundle.launch.sinopac else state)
     if request.operation is Operation.MARKET_SERIES:
         if bundle.market_terminal is not None and bundle.market_terminal.active:
             return Response(request.request_id, series=bundle.market_terminal.series(request.series))
@@ -74,7 +76,8 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
             receipt = bundle.connect_read_only(request.command)
         else:
             receipt = bundle.execute(request.command)
-        return Response(request.request_id, state=bundle.snapshot(), receipt=receipt)
+        state = bundle.snapshot()
+        return Response(request.request_id, state=replace(state, account_ref=request.account_ref) if bundle.launch.sinopac else state, receipt=receipt)
     if request.operation is Operation.QUOTES:
         if len(request.quotes.items) > 1000:
             raise DomainError('validation_failed', 'quote batch limit')
@@ -169,22 +172,42 @@ class _Handlers:
         raise DomainError('operation_failed', 'owned request handlers did not finish')
 
 
-def serve(root: Path, *, launch: RuntimeLaunch | None = None, engine_factory: EngineFactory | None = None) -> int:
+def serve(
+    root: Path,
+    *,
+    launch: RuntimeLaunch | None = None,
+    engine_factory: EngineFactory | None = None,
+    sinopac_factory=None,
+    secret_resolver=None,
+    resource_factory=None,
+) -> int:
     # Acquire before even the Unix endpoint or engine/workspace is opened.
     # The shared helper is a no-op outside Windows and preserves the v1 name.
     with closing(WindowsAppMutex()):
+        ports = {'sinopac_factory': sinopac_factory, 'secret_resolver': secret_resolver, 'resource_factory': resource_factory}
         if os.name == 'nt':
-            return _serve(root, launch=launch, engine_factory=engine_factory)
+            return _serve(root, launch=launch, engine_factory=engine_factory, **ports)
         with unix_endpoint(root) as endpoint:
-            return _serve(root, launch=launch, engine_factory=engine_factory, endpoint=endpoint)
+            return _serve(root, launch=launch, engine_factory=engine_factory, endpoint=endpoint, **ports)
 
 
-def _serve(root: Path, *, launch: RuntimeLaunch | None, engine_factory: EngineFactory | None, endpoint: UnixEndpoint | None = None) -> int:
+def _serve(
+    root: Path,
+    *,
+    launch: RuntimeLaunch | None,
+    engine_factory: EngineFactory | None,
+    endpoint: UnixEndpoint | None = None,
+    sinopac_factory=None,
+    secret_resolver=None,
+    resource_factory=None,
+) -> int:
     root = root.resolve()
     launch = launch or RuntimeLaunch(root)
     if launch.root.resolve() != root:
         raise DomainError('validation_failed', 'launch and server roots differ')
-    bundle = build_runtime(launch, engine_factory=engine_factory)
+    bundle = build_runtime(
+        launch, engine_factory=engine_factory, sinopac_factory=sinopac_factory, secret_resolver=secret_resolver, resource_factory=resource_factory
+    )
     family = 'AF_PIPE' if os.name == 'nt' else 'AF_UNIX'
     address = '\\\\.\\pipe\\markauto-v2-' + uuid4().hex if os.name == 'nt' else endpoint.address
     key = os.urandom(32)
