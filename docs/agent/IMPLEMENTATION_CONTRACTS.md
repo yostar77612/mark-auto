@@ -6815,7 +6815,8 @@ Cleanup errors remain failures, attempt remaining owned handles, and never
 authorize broad termination, other processes or data deletion. Load-probe partial
 initialization has the same normal shutdown and truthful failure reporting.
 Production lifecycle/ownership/security, broker gates, deadlines and applicability
-are unchanged. Exact focused and pending controller evidence is recorded in
+are unchanged. Exact focused, complete-run comparison and actual-window evidence,
+including retained first-run failure and pending CI, is recorded in
 docs/design/m2-8-verification.md.
 
 ## M2-1 shared connection wire contract (2026-11-01)
@@ -6834,23 +6835,6 @@ DISCONNECT_SINOPAC are reference-only intents. This contract slice does not
 connect, resolve credentials, switch books, activate CA or enable execution.
 Subsequent runtime acceptance owns connection CAS and SDK result validation;
 the UI mirrors accepted book context independently of its connection draft.
-
-## M2-2 manual simulation wire contract (2026-11-01)
-
-Defaulted manual fields extend the existing typed UiCommand/UiState codec.
-ManualScope binds accepted context/epoch/environment/account and shared-owner
-generation/revision; outer expected_version remains independent. Forms contain
-untrusted user confirmation and request identity, never an execution grant or
-StrategyRecord. Backend validation and the unique Engine/ExecutionService/risk
-commit path remain mandatory. This contract slice does not enable execution.
-
-ManualTradingView keeps app virtual capital/source distinct from actual broker
-financial facts, and exposes backend preview cash/risk/fees, instruments' true
-quantity units/whole-lot steps and quote/price facts. Missing capital remains
-unknown, default actions disabled and stopped. stop_price is only a sizing
-estimate; UNPROTECTED does not assert a broker stop order or clear existing
-protection locks. Pending/last-result projections retain exact request identity;
-missing cached data cannot discharge UNKNOWN or authorize a new-key retry.
 
 The SDK facade now requires a typed broker environment at construction and
 exposes it read-only, independently of mutable native flags. Existing factory
@@ -6929,3 +6913,100 @@ manual/canonical key under the existing healthy writer fence. Existing keys
 UiCommand.manual_no_admission=False is wire-compatible and deny-only: outer
 CAS forwarding may seal an absent key, never execute its financial command.
 Original admitted scope/id remain on results, independent of current UI epoch.
+
+Explicit profile-free broker startup for a known generated alias reuses its
+registered unified environment context and stable process seed/configuration.
+It must not synthesize a second UNCONFIGURED host from that alias. Metadata
+registration never logs in or changes selected book context; legacy profile-free
+aliases without a matching unified registration retain their existing fallback.
+
+Unified CA activation is restricted to BROKER_SIMULATION. LIVE refusal occurs
+before worker creation/password lookup/native activation and leaves accepted
+connection state unchanged. The executor checks the same boundary independently;
+the LIVE UI disables CA controls using the existing formal-readonly reason.
+This restriction does not modify the separately retained legacy CA connector.
+
+## M2-1 unified connection presentation contract (2026-11-01)
+
+Settings exposes one reference-only three-step Sinopac connection panel. Draft
+connection settings and accepted trading-book context remain separate; connect
+never chooses a viewed book. Four connection intents carry the accepted opaque
+generation and connection revision, not merely an engine version. Existing worker
+execution keeps the GUI responsive. Connection snapshots are rendered before
+book-version fast paths, older connection revisions cannot replace newer facts,
+and polls never overwrite dirty key/CA/Decimal-fee drafts. Mutations display only
+accepted account selections. Failed transport makes readiness unknown; messages
+use an explicit Chinese reason map and cannot echo backend/vendor text.
+
+Signed has three display states. Market, accounts, simulation orders and disabled
+production orders remain separate facts; discovery/login/signed cannot infer
+execution permission. Certificate picker returns a local path reference only,
+password is an OS credential reference and person_id has no input. Optional CA
+and fee estimates have complete keyboard help. Native disconnect confirmation
+uses Cancel by default and detects connection replacement during its nested
+modal loop. Existing legacy metadata/import behavior remains at the typed backend
+boundary, while obsolete primary forms and their production module are removed.
+
+Exact screenshot, focused-test and baseline procedures are recorded in
+[connection UI verification](../analysis/m2-connection/verification.md). Source
+and additive baseline changes are separate commits; historical fixture identities,
+class/function caps, protected files and assertions remain intact. Shared-runtime
+integration, actual startup, full discovery and remote CI remain coordinator-owned.
+
+## M2-2 manual simulation wire contract (2026-11-01)
+
+Defaulted manual fields extend the existing typed UiCommand/UiState codec.
+ManualScope binds accepted context/epoch/environment/account and shared-owner
+generation/revision; outer expected_version remains independent. Forms contain
+untrusted user confirmation and request identity, never an execution grant or
+StrategyRecord. Backend validation and the unique Engine/ExecutionService/risk
+commit path remain mandatory. This contract slice does not enable execution.
+
+ManualTradingView keeps app virtual capital/source distinct from actual broker
+financial facts, and exposes backend preview cash/risk/fees, instruments' true
+quantity units/whole-lot steps and quote/price facts. Missing capital remains
+unknown, default actions disabled and stopped. stop_price is only a sizing
+estimate; UNPROTECTED does not assert a broker stop order or clear existing
+protection locks. Pending/last-result projections retain exact request identity;
+missing cached data cannot discharge UNKNOWN or authorize a new-key retry.
+
+## M2-2 manual simulation presentation contract
+
+The Trading page exposes manual intents only for the accepted broker-simulation
+book. The existing asynchronous command worker carries the current book version,
+context/epoch, account, immutable environment and connection generation/revision.
+An empty navigation-choice list does not erase a manual command's accepted epoch.
+LIVE widget/programmatic intents remain disabled, and the application/backend
+separately owns the execution invariant. Presentation never imports a broker SDK
+or calculates a risk/fee/margin permission.
+
+Preparing a virtual book requires explicit confirmation and displays application
+simulation provenance, not a claim about broker funds. Pending preparation locks
+the input; an accepted value becomes the displayed value. Inputs express whole
+stock lots and futures contracts; the typed instrument supplies conversion to
+canonical quantity. Preview and confirmation show server estimates, quote time,
+expiry, sources and absence of a protective stop. An edited draft, changed book,
+account, generation, revision or expired preview cannot authorize a submission.
+
+The diagnostic has separate preparation and explicit confirmation; preparing it
+does not submit. Its capability is distinct from normal manual submission so the
+initial required test is reachable. Cancel/amend act only on an owned selected
+order; amendment is price-only. Native dangerous-action dialogs default to Cancel,
+and nested-event-loop changes are rechecked before dispatch. STOP_NEW, reconciliation
+and the application's existing order/position tables retain their existing roles.
+
+An admitted request keeps its original identity through an IPC error, a false
+receipt, an empty projection and a new login generation. Only a matching server
+result with a known outcome clears that UI observation latch. A failed read-only
+poll also disables prior readiness until a successful snapshot returns. Explicit
+manual resume requires the unchanged confirmed book and fresh current facts; it
+cannot reset losses or an unknown operation. No automatic strategy cycle, synthetic
+research evidence or replacement broker journal is introduced.
+
+New copy belongs to catalogue phase63, after M2-1's phase62. Empty SIM tables guide
+the user to manual preparation or connection; LOCAL retains strategy navigation.
+The existing semantic button roles and centralized theme remain in use. The
+separate baseline commit must record the literal LIVE-action oracle expansion,
+continuous catalogue records and exact feature-specific inventory/fixture delta.
+Final integrated full discovery, actual LOCAL/fake-SIM startup and remote CI are
+independent of the focused real-widget/fake-port tests and are recorded separately.

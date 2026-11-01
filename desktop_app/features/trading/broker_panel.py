@@ -1,187 +1,326 @@
-"""Reference-only configuration; UI never opens a certificate or credential store."""
+"""One reference-only Sinopac form; accepted facts remain backend-owned."""
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QComboBox, QFormLayout, QGroupBox, QLabel, QLineEdit, QVBoxLayout, QWidget
+from decimal import Decimal, InvalidOperation
+
+from PySide6.QtCore import QSignalBlocker, Qt, Signal
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
 
 from desktop_app.strings.catalog import ui_text
-from quantlab.trading.application.contracts import BrokerReadiness, BrokerSettings
+from quantlab.trading.application.contracts import SinopacConnectionSettings, SinopacConnectionView
 from quantlab.trading.domain.models import Environment
-
-from desktop_app.features.trading.widgets import button, label, rows, table
-from desktop_app.features.trading.market_data_panel import MarketDataPanel
+from quantlab.trading.domain.validation import DomainError
+from desktop_app.features.trading import sinopac_panel_text as text
 from desktop_app.features.trading.page_help import HelpText
+from desktop_app.features.trading.widgets import button
 
 
-FIELDS = (
-    ('profile_alias', 'v2.broker_profile'),
-    ('stock_account_ref', 'v2.broker_stock_alias'),
-    ('futures_account_ref', 'v2.broker_futures_alias'),
-    ('broker_secret_ref', 'v2.broker_secret_reference'),
-    ('account_mapping_ref', 'v2.broker_account_mapping'),
-    ('certificate_ref', 'v2.broker_certificate_reference'),
-    ('certificate_secret_ref', 'v2.broker_certificate_secret'),
-    ('instrument_spec_ref', 'v2.broker_instrument_reference'),
-    ('calendar_ref', 'v2.broker_calendar_reference'),
-    ('fee_schedule_ref', 'v2.broker_fee_reference'),
-    ('capability_proof_ref', 'v2.broker_capability_reference'),
-    ('sdk_version', 'v2.broker_sdk_version'),
-)
-CHECK_KEYS = {
-    'sdk_version': 'v2.broker_sdk_version',
-    'account_selection': 'v2.broker_account_selection',
-    'broker_secret_ref': 'v2.broker_secret_reference',
-    'account_mapping_ref': 'v2.broker_account_mapping',
-    'instrument_spec_ref': 'v2.broker_instrument_reference',
-    'calendar_ref': 'v2.broker_calendar_reference',
-    'fee_schedule_ref': 'v2.broker_fee_reference',
-    'capability_proof_ref': 'v2.broker_capability_reference',
-    'certificate_ref': 'v2.broker_certificate_reference',
-    'certificate_secret_ref': 'v2.broker_certificate_secret',
-    'execution_default_disabled': 'v2.broker_execution_disabled',
-    'external_account_verified': 'v2.broker_external_account',
-    'external_capability_verified': 'v2.broker_external_capability',
-    'external_broker_simulation_verified': 'v2.broker_external_simulation',
-    'external_ca_verified': 'v2.broker_external_ca',
-}
+def _certificate_controls(panel, connected):
+    live = panel.view.environment is Environment.LIVE or panel.view.settings.environment is Environment.LIVE
+    enabled = connected and not live
+    hint = text.reason_text('production_orders_disabled') if live else ui_text('m2.connection.ca_connect_first')
+    for widget in (panel.choose_certificate, panel.certificate_secret_ref, panel.certificate_path):
+        widget.setEnabled(enabled)
+        widget.setToolTip(hint if not enabled else '')
+    panel.activate_certificate.setEnabled(
+        enabled and bool(panel.certificate_path.text()) and bool(panel.certificate_secret_ref.text()) and panel.view.certificate_status != 'ACTIVATING'
+    )
+    panel.activate_certificate.setToolTip(ui_text('m2.connection.ca_reference_needed') if enabled else hint)
+    panel._paint(
+        panel.certificate_status,
+        text.reason_text('production_orders_disabled') if live else text.certificate_text(panel.view.certificate_status),
+        'BLOCKED' if live else panel.view.certificate_status,
+    )
 
 
 class BrokerPanel(QWidget):
-    save_requested = Signal(object)
-    check_requested = Signal()
-    market_save_requested = Signal(object)
-    market_connect_requested = Signal()
-    market_disconnect_requested = Signal()
+    save_connect_requested = Signal(object, int, str)
+    accounts_requested = Signal(object, int, str)
+    certificate_requested = Signal(object, int, str)
+    disconnect_requested = Signal(int, str)
 
-    def __init__(self, parent=None, *, help_header=None):
+    def __init__(self, parent=None, *, help_header=None, confirm):
         super().__init__(parent)
-        self.setObjectName('broker_readiness_panel')
-        self.dirty = False
-        self._loading = False
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.market_panel = MarketDataPanel()
-        self.market_panel.save_requested.connect(self.market_save_requested)
-        self.market_panel.connect_requested.connect(self.market_connect_requested)
-        self.market_panel.disconnect_requested.connect(self.market_disconnect_requested)
-        layout.addWidget(self.market_panel)
-        layout.addWidget(label('v2.broker_title'))
-        self.status = QLabel(ui_text('v2.broker_not_checked'))
-        self.status.setTextFormat(Qt.TextFormat.PlainText)
-        self.status.setWordWrap(True)
-        self.status.setObjectName('broker_readiness_status')
-        layout.addWidget(self.status)
-        layout.addWidget(HelpText(ui_text('m2t.broker_hint'), ui_text('v2.broker_reference_hint'), 'broker_reference', header=help_header))
-        self.group = QGroupBox(ui_text('marketdata.advanced_broker'))
-        self.group.setCheckable(True)
-        self.group.setChecked(False)
-        group_layout = QVBoxLayout(self.group)
-        self.content = QWidget()
-        form = QFormLayout(self.content)
-        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
-        self.environment = QComboBox()
-        self.environment.setObjectName('broker_environment')
-        self.environment.setAccessibleName(ui_text('v2.broker_environment'))
+        self.setObjectName('sinopac_connection_panel')
+        self.setAccessibleName(ui_text('m2.connection.title'))
+        self.confirm, self.view = confirm, SinopacConnectionView()
+        self._loading, self._initialized, self._busy = False, False, False
+        self._connection_dirty, self._certificate_dirty, self._failure = False, False, ''
+        self._available = True
+        self.account_boxes = {}
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.addWidget(self._label(ui_text('m2.connection.title')))
+        self.help = HelpText(ui_text('m2.connection.help_short'), ui_text('m2.connection.help_full'), 'sinopac_connection', header=help_header)
+        self._layout.addWidget(self.help)
+        self._connection_fields()
+        self._account_fields()
+        self._certificate_fields()
+        self._fee_fields()
+        ready = QGroupBox(ui_text('m2.connection.readiness'), self)
+        form = QVBoxLayout(ready)
+        self.readiness_labels = {code: self._label('') for code in ('market', 'accounts', 'simulation_orders', 'production_orders')}
+        for code, widget in self.readiness_labels.items():
+            widget.setObjectName('sinopac_readiness_' + code)
+            form.addWidget(widget)
+        self._layout.addWidget(ready)
+        self.apply(self.view)
+
+    @staticmethod
+    def _label(value):
+        widget = QLabel(value)
+        widget.setTextFormat(Qt.TextFormat.PlainText)
+        widget.setWordWrap(True)
+        return widget
+
+    def _connection_fields(self):
+        group = QGroupBox(ui_text('m2.connection.key_step'), self)
+        form = QFormLayout(group)
+        self.environment = QComboBox(group)
+        self.environment.setObjectName('sinopac_environment')
+        self.environment.setAccessibleName(ui_text('m2.connection.target'))
         self.environment.addItem(ui_text('v2.broker_sim'), Environment.BROKER_SIMULATION)
         self.environment.addItem(ui_text('v2.live'), Environment.LIVE)
-        self.environment.currentIndexChanged.connect(self._edited)
-        form.addRow(ui_text('v2.broker_environment'), self.environment)
-        self.fields: dict[str, QLineEdit] = {}
-        for name, key in FIELDS:
-            field = QLineEdit()
-            field.setObjectName('broker_' + name)
-            field.setAccessibleName(ui_text(key))
-            field.setMaxLength(1000)
-            field.textEdited.connect(self._edited)
-            if name == 'sdk_version':
-                field.setReadOnly(True)
-            self.fields[name] = field
-            form.addRow(ui_text(key), field)
-        form.addRow(HelpText(ui_text('m2t.reference_hint'), ui_text('v2.broker_local_only'), 'broker_reference_scope', header=help_header))
-        save = button('v2.broker_save', 'broker_save_button')
-        save.clicked.connect(self._save)
-        form.addRow(save)
-        group_layout.addWidget(self.content)
-        self.content.setVisible(False)
-        self.group.toggled.connect(self.content.setVisible)
-        layout.addWidget(self.group)
-        check = button('v2.broker_check', 'broker_check_button')
-        check.clicked.connect(self._check)
-        layout.addWidget(check)
-        self.checks = table(('v2.broker_check_item', 'v2.state', 'v2.broker_next_step'), 'broker_readiness_checks')
-        layout.addWidget(self.checks)
+        self.environment.currentIndexChanged.connect(self._changed)
+        form.addRow(ui_text('m2.connection.target'), self.environment)
+        self.key_ref = QLineEdit(group)
+        self.key_ref.setObjectName('sinopac_key_ref')
+        self.key_ref.setAccessibleName(ui_text('m2.connection.key'))
+        self.key_ref.setMaxLength(120)
+        self.key_ref.textEdited.connect(self._changed)
+        form.addRow(ui_text('m2.connection.key'), self.key_ref)
+        controls = QHBoxLayout()
+        self.save_connect = button('m2.connection.save', 'sinopac_save_connect', role='primary')
+        self.save_connect.clicked.connect(self._save)
+        self.disconnect_button = button('m2.connection.disconnect', 'sinopac_disconnect', role='danger')
+        self.disconnect_button.clicked.connect(self._disconnect)
+        controls.addWidget(self.save_connect)
+        controls.addWidget(self.disconnect_button)
+        form.addRow(controls)
+        self.status = self._label('')
+        self.status.setObjectName('sinopac_connection_status')
+        form.addRow(self.status)
+        self.draft_notice = self._label(ui_text('m2.connection.draft_notice'))
+        form.addRow(self.draft_notice)
+        self._layout.addWidget(group)
 
-    def apply_market(self, settings, connection, error_code=''):
-        self.market_panel.apply(settings, connection, error_code)
+    def _account_fields(self):
+        group = QGroupBox(ui_text('m2.connection.accounts'), self)
+        form = QVBoxLayout(group)
+        self.account_container = QWidget(group)
+        self._accounts_layout = QVBoxLayout(self.account_container)
+        self._accounts_layout.setContentsMargins(0, 0, 0, 0)
+        form.addWidget(self.account_container)
+        self.account_empty = self._label(ui_text('m2.connection.account_empty'))
+        form.addWidget(self.account_empty)
+        self.account_next = button('m2.connection.back_to_connect', 'sinopac_account_next')
+        self.account_next.clicked.connect(lambda: self.key_ref.setFocus())
+        form.addWidget(self.account_next)
+        self._layout.addWidget(group)
 
-    def _edited(self) -> None:
-        if not self._loading:
-            self.dirty = True
+    def _certificate_fields(self):
+        self.certificate_group = QGroupBox(ui_text('m2.connection.certificate'), self)
+        self.certificate_group.setCheckable(True)
+        self.certificate_group.setChecked(False)
+        layout = QVBoxLayout(self.certificate_group)
+        self.certificate_status = self._label('')
+        layout.addWidget(self.certificate_status)
+        self._certificate_container = QWidget(self.certificate_group)
+        form = QFormLayout(self._certificate_container)
+        self.certificate_path = QLineEdit(self._certificate_container)
+        self.certificate_path.setReadOnly(True)
+        self.certificate_path.setAccessibleName(ui_text('m2.connection.ca_file'))
+        self.certificate_path.setObjectName('sinopac_certificate_path')
+        self.choose_certificate = button('m2.connection.choose_ca', 'sinopac_choose_certificate')
+        self.choose_certificate.clicked.connect(self._choose_certificate)
+        form.addRow(self.certificate_path, self.choose_certificate)
+        self.certificate_secret_ref = QLineEdit(self._certificate_container)
+        self.certificate_secret_ref.setObjectName('sinopac_certificate_secret_ref')
+        self.certificate_secret_ref.setAccessibleName(ui_text('m2.connection.ca_ref'))
+        self.certificate_secret_ref.setMaxLength(120)
+        self.certificate_secret_ref.textEdited.connect(self._certificate_changed)
+        form.addRow(ui_text('m2.connection.ca_ref'), self.certificate_secret_ref)
+        self.activate_certificate = button('m2.connection.activate_ca', 'sinopac_activate_certificate')
+        self.activate_certificate.clicked.connect(self._activate_certificate)
+        form.addRow(self.activate_certificate)
+        layout.addWidget(self._certificate_container)
+        self._certificate_container.hide()
+        self.certificate_group.toggled.connect(self._certificate_container.setVisible)
+        self._layout.addWidget(self.certificate_group)
 
-    def settings(self) -> BrokerSettings:
-        value = lambda name: self.fields[name].text().strip()
-        return BrokerSettings(
-            profile_alias=value('profile_alias'),
-            environment=Environment(self.environment.currentData()),
-            stock_account_ref=value('stock_account_ref'),
-            futures_account_ref=value('futures_account_ref'),
-            account_mapping_ref=value('account_mapping_ref'),
-            broker_secret_ref=value('broker_secret_ref'),
-            certificate_ref=value('certificate_ref'),
-            certificate_secret_ref=value('certificate_secret_ref'),
-            instrument_spec_ref=value('instrument_spec_ref'),
-            calendar_ref=value('calendar_ref'),
-            fee_schedule_ref=value('fee_schedule_ref'),
-            capability_proof_ref=value('capability_proof_ref'),
-            sdk_version=value('sdk_version'),
-            read_only=True,
-            execution_enabled=False,
+    def _fee_fields(self):
+        self.fee_group = QGroupBox(ui_text('v2.advanced') + ' · ' + ui_text('m2.connection.fee'), self)
+        self.fee_group.setCheckable(True)
+        self.fee_group.setChecked(False)
+        layout = QVBoxLayout(self.fee_group)
+        self.fee_discount = QLineEdit(self.fee_group)
+        self.fee_discount.setObjectName('sinopac_fee_discount')
+        self.fee_discount.setAccessibleName(ui_text('m2.connection.fee'))
+        self.fee_discount.setToolTip(ui_text('m2.connection.fee_help'))
+        self.fee_discount.textEdited.connect(self._changed)
+        layout.addWidget(self.fee_discount)
+        self.fee_discount.hide()
+        self.fee_group.toggled.connect(self.fee_discount.setVisible)
+        self._layout.addWidget(self.fee_group)
+
+    @property
+    def dirty(self):
+        return self._connection_dirty or self._certificate_dirty
+
+    def settings(self):
+        return SinopacConnectionSettings(
+            Environment(self.environment.currentData()),
+            self.key_ref.text().strip(),
+            self.certificate_path.text().strip(),
+            self.certificate_secret_ref.text().strip(),
+            Decimal(self.fee_discount.text().strip()),
         )
 
-    def _save(self) -> None:
+    def _changed(self):
+        if not self._loading:
+            self._connection_dirty, self._failure = True, ''
+            self._enabled()
+
+    def _certificate_changed(self):
+        if not self._loading:
+            self._certificate_dirty, self._failure = True, ''
+            self._enabled()
+
+    def _save(self):
         try:
             settings = self.settings()
-        except ValueError:
-            self.status.setText(ui_text('v2.broker_form_invalid'))
+        except (DomainError, InvalidOperation, ValueError):
+            self._failure = ui_text('m2.connection.invalid')
+            self._enabled()
             return
-        self.save_requested.emit(settings)
+        self.save_connect_requested.emit(settings, self.view.revision, self.view.generation)
 
-    def _check(self) -> None:
-        if self.dirty:
-            self.status.setText(ui_text('v2.broker_save_first'))
-            return
-        self.check_requested.emit()
+    def _choose_certificate(self):
+        path, _ = QFileDialog.getOpenFileName(self, ui_text('m2.connection.choose_ca'), '', ui_text('m2.connection.ca_filter'))
+        if path:
+            self.certificate_path.setText(path)
+            self._certificate_changed()
 
-    def apply(self, settings: BrokerSettings, readiness: BrokerReadiness | None) -> None:
-        if not self.dirty:
-            self._loading = True
-            self.environment.setCurrentIndex(self.environment.findData(settings.environment))
-            for name, _ in FIELDS:
-                self.fields[name].setText(getattr(settings, name))
-            self._loading = False
-        if readiness is None:
-            self.status.setText(ui_text('v2.broker_not_checked'))
-            rows(self.checks, ())
+    def _activate_certificate(self):
+        try:
+            settings = self.settings()
+        except (DomainError, InvalidOperation, ValueError):
+            self._failure = ui_text('m2.connection.invalid')
+            self._enabled()
             return
-        self.status.setText(ui_text('v2.broker_local_complete' if readiness.local_ready else 'v2.broker_local_incomplete'))
-        rows(
-            self.checks,
-            tuple(
-                (
-                    check.code,
-                    (
-                        ui_text(CHECK_KEYS.get(check.code, 'v2.broker_check_item')),
-                        ui_text(
-                            'v2.broker_external_pending'
-                            if check.external_required
-                            else 'v2.broker_metadata_passed'
-                            if check.passed
-                            else 'v2.broker_metadata_missing'
-                        ),
-                        ui_text(
-                            'v2.broker_external_next' if check.external_required else 'v2.broker_metadata_next' if not check.passed else 'v2.broker_no_action'
-                        ),
-                    ),
-                )
-                for check in readiness.checks
-            ),
-        )
+        self.certificate_requested.emit(settings, self.view.revision, self.view.generation)
+
+    def _select_accounts(self):
+        selected = tuple(alias for alias, widget in self.account_boxes.items() if widget.isChecked())
+        self._update_accounts()
+        self.accounts_requested.emit(selected, self.view.revision, self.view.generation)
+
+    def _disconnect(self):
+        scope = self.view.revision, self.view.generation
+        if self.confirm(ui_text('m2.connection.disconnect_confirm')):
+            if scope == (self.view.revision, self.view.generation):
+                self.disconnect_requested.emit(*scope)
+            else:
+                self._failure = ui_text('m2.connection.state_conflict')
+                self._enabled()
+
+    def set_busy(self, value):
+        self._busy = value
+        if value:
+            self._failure = ''
+        self._enabled()
+
+    def apply(self, view):
+        if view.revision < self.view.revision:
+            return
+        if self._initialized and view == self.view and self._available:
+            self._enabled()
+            return
+        self.view, self._failure, self._loading = view, '', True
+        self._available = True
+        if not self._connection_dirty:
+            self.environment.setCurrentIndex(self.environment.findData(view.settings.environment))
+            self.key_ref.setText(view.settings.key_ref)
+            self.fee_discount.setText(str(view.settings.fee_discount))
+        if not self._certificate_dirty:
+            self.certificate_path.setText(view.settings.certificate_path)
+            self.certificate_secret_ref.setText(view.settings.certificate_secret_ref)
+        self._loading, self._initialized = False, True
+        self._update_accounts()
+        for item in view.readiness:
+            self._paint(self.readiness_labels[item.code], text.readiness_text(item), 'BLOCKED' if item.code == 'production_orders' else item.state)
+        self._enabled()
+
+    def unavailable(self):
+        self._available = False
+        self._failure = ui_text('m2.connection.outcome_unknown')
+        for item in self.view.readiness:
+            self._paint(
+                self.readiness_labels[item.code], text.readiness_text(item, reachable=False), 'BLOCKED' if item.code == 'production_orders' else 'UNKNOWN'
+            )
+        self._paint(self.certificate_status, ui_text('m2.connection.unknown'), 'UNKNOWN')
+        self._enabled()
+
+    def _update_accounts(self):
+        aliases = {item.alias for item in self.view.accounts}
+        for alias in self.account_boxes.keys() - aliases:
+            self.account_boxes.pop(alias).deleteLater()
+        for item in self.view.accounts:
+            widget = self.account_boxes.get(item.alias)
+            if widget is None:
+                widget = QCheckBox(self.account_container)
+                widget.setObjectName('sinopac_account_' + item.alias)
+                widget.toggled.connect(self._select_accounts)
+                self.account_boxes[item.alias] = widget
+            with QSignalBlocker(widget):
+                widget.setChecked(item.selected)
+            widget.setText(text.account_text(item))
+            widget.setAccessibleName(widget.text())
+            widget.setToolTip(text.reason_text(item.reason))
+            self._accounts_layout.removeWidget(widget)
+            self._accounts_layout.addWidget(widget)
+        self.account_empty.setVisible(not self.view.accounts)
+        self.account_next.setVisible(not self.view.accounts)
+
+    def complete(self, command, receipt):
+        if receipt.accepted:
+            if command.sinopac_settings is not None:
+                try:
+                    if self.settings() == command.sinopac_settings == self.view.settings:
+                        self._connection_dirty = self._certificate_dirty = False
+                except (DomainError, InvalidOperation, ValueError):
+                    pass  # A newer invalid user draft must survive the old receipt.
+        else:
+            self._failure = text.reason_text(receipt.code)
+        self._update_accounts()
+        self._enabled()
+
+    @staticmethod
+    def _paint(widget, value, status):
+        widget.setText(value)
+        widget.setAccessibleName(value)
+        widget.setProperty('sinopacStatus', status)
+        widget.style().unpolish(widget)
+        widget.style().polish(widget)
+
+    def _enabled(self):
+        busy = self._busy or self.view.phase in ('CONNECTING', 'DISCONNECTING')
+        connected = self._available and self.view.phase == 'CONNECTED' and not self._connection_dirty and not busy
+        for widget in (self.environment, self.key_ref, self.fee_discount, self.save_connect):
+            widget.setEnabled(not busy)
+        self.disconnect_button.setEnabled(not self._busy and self.view.phase in ('CONNECTED', 'CONNECTING'))
+        _certificate_controls(self, connected)
+        self.save_connect.setToolTip(ui_text('m2.connection.busy') if busy else ui_text('m2.connection.help_short'))
+        for item in self.view.accounts:
+            widget = self.account_boxes[item.alias]
+            widget.setEnabled(connected and item.selectable)
+            hint = (
+                ui_text('m2.connection.busy')
+                if busy
+                else ui_text('m2.connection.draft_notice')
+                if self._connection_dirty
+                else ui_text('m2.connection.connect_first')
+            )
+            widget.setToolTip(text.reason_text(item.reason) or (hint if not widget.isEnabled() else ''))
+        self.draft_notice.setVisible(self.dirty)
+        message = ui_text('m2.connection.busy') if self._busy else self._failure or text.phase_text(self.view)
+        self._paint(self.status, message, 'CONNECTING' if self._busy else 'FAILED' if self._failure or self.view.error_code else self.view.phase)

@@ -193,6 +193,27 @@ class ConnectionRoutingTests(unittest.TestCase):
 
 
 class UnifiedRegistryTests(unittest.TestCase):
+    def test_explicit_broker_startup_reuses_registered_unified_account_host(self):
+        for environment, expected in ((Environment.BROKER_SIMULATION, 'sinopac-simulation'), (Environment.LIVE, 'sinopac-live')):
+            with self.subTest(environment=environment), TemporaryDirectory(dir=Path.cwd()) as temporary:
+                manager = RuntimeContextManager(Path(temporary))
+                with patch('quantlab.trading.runtime.context_client.ensure_engine') as ensure:
+                    manager.open_sinopac(environment)
+                    launch = ensure.call_args.kwargs['launch']
+                    SinopacSettingsStore(launch.root).save(SinopacConnectionSettings(environment), ('sinopac-selected',))
+                    before = manager.list_contexts()
+                    restored = RuntimeContextManager(Path(temporary))
+                    self.assertEqual(restored.configure_launch(environment, 'sinopac-selected', None), expected)
+                    self.assertEqual(restored.list_contexts(), before)
+                    self.assertEqual(restored.selected_context, 'local')
+                    self.assertEqual(restored._entries[expected].expected_configuration(), 'SINOPAC:' + environment.value)
+                    self.assertEqual(restored._entries[expected].launch.root, launch.root)
+                    self.assertTrue(restored._entries[expected].launch.sinopac)
+                    ensure.assert_called_once()
+                    legacy = restored.configure_launch(environment, 'legacy-explicit-account', None)
+                    self.assertFalse(restored._entries[legacy].launch.sinopac)
+                    self.assertTrue(restored._entries[legacy].expected_configuration().startswith('UNCONFIGURED:'))
+
     def test_legacy_metadata_only_context_port_refuses_new_connect_without_throwing(self):
         from test_context_navigation_v2 import NavigationStub
 

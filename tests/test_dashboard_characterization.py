@@ -39,7 +39,9 @@ class OverviewCharacterizationTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertIsNotNone(page.findChild(QListWidget, name))
         self.assertEqual(self.window.overview_deployments.objectName(), 'overview_strategy_summary')
-        self.assertEqual(self.window.overview_status.text(), ui_text('v2.local_data'))
+        self.assertEqual(self.window.overview_status.text(), ui_text('m2t.local_data'))
+        self.assertEqual(self.window.dashboard.data_help.details.text(), ui_text('v2.local_data'))
+        self.assertEqual(self.window.dashboard.data_help.button.accessibleDescription(), ui_text('v2.local_data'))
 
     def test_apply_state_overview_refresh_and_market_only_preservation(self):
         state = replace(self.facade.state, version=2, issues=('attention',), events=('started', 'stopped'))
@@ -55,4 +57,6 @@ class OverviewCharacterizationTests(unittest.TestCase):
         self.window.apply_state(replace(state, market_revision=1))
         self.assertIs(self.window.issue_details.item(0), item)
         self.window.apply_state(replace(state, version=3, financial_facts_verified=False))
-        self.assertEqual(self.window.overview_status.text(), ui_text('v2.context_facts_pending'))
+        self.assertEqual(self.window.overview_status.text(), ui_text('m2t.facts_pending'))
+        self.assertEqual(self.window.dashboard.data_help.details.text(), ui_text('v2.context_facts_pending'))
+        self.assertEqual(self.window.dashboard.data_help.button.accessibleDescription(), ui_text('v2.context_facts_pending'))

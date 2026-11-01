@@ -1,0 +1,32 @@
+{
+  "source": "6950a0c07bceb1f8b5a58d1bd9950cb33ad0fcc9",
+  "complete": true,
+  "tests": 3914,
+  "seconds": 1638.307,
+  "result": "FAILED (failures=14, errors=27, skipped=42)",
+  "distinct_failure_ids": 40,
+  "new_failure_ids": [
+    "test_dashboard_characterization.OverviewCharacterizationTests.test_apply_state_overview_refresh_and_market_only_preservation",
+    "test_dashboard_characterization.OverviewCharacterizationTests.test_overview_identities_and_buttons",
+    "test_desktop_pages.PageBoundaryTests.test_pages_never_import_or_discover_shell",
+    "test_trading_valuation_freshness.ValuationFreshnessTests.test_unknown_finance_dto_repaints_same_stamp_without_formatting_none_as_money"
+  ],
+  "baseline_failure_ids_not_seen": [],
+  "raw_log_sha256": "d95ef32b729967ceaa041bb167da733f555872c704fcf07dbd11dc88e294c7c6",
+  "traceback_review": {
+    "blocks": 41,
+    "ordered_frames_matching_main": 37,
+    "exception_type_chains_matching_main": 37,
+    "referenced_repository_blobs_equal_main": 22,
+    "referenced_repository_blobs_total": 22
+  },
+  "new_failure_review": {
+    "three_short_copy_oracles": "Old full data-status warning expected in the now intentionally short visible label; complete original text remains in HelpText details and accessibleDescription. Exact expectations are updated independently; no financial/identity/repaint assertions removed.",
+    "page_architecture": "Real violation: install_trading_environment discovered layout.parentWidget(). Pass the explicit owned trading-page component; unchanged architecture test plus distinct-layout-owner widget regression verify the boundary."
+  },
+  "limits": [
+    "First complete run remains FAILED; four new failures are not waived.",
+    "Subsequent source/main merge and M2-8 test-cleanup dependency require new complete discovery and actual startup on the final composite.",
+    "No new full/native/actual startup run was performed by the fixing agent."
+  ]
+}

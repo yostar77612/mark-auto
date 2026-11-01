@@ -1,0 +1,27 @@
+{
+  "source_commit": "36fc1e86ee00ee9c9c506932c5d962133ec72c0c",
+  "scope": "fake DTO visual evidence only; no runtime, SDK, login or broker facts",
+  "captured_at": "2026-11-01T15:55:57.2958965+08:00",
+  "fake_dto_only": true,
+  "live_ca_disabled_after_expansion": true,
+  "captured_default_certificate_group": "collapsed",
+  "local_book_retained": true,
+  "commands": 0,
+  "captures": [
+    {
+      "file": "1366x768-live.png",
+      "width": 1366,
+      "height": 768,
+      "horizontal_max": 0,
+      "sha256": "1da86bf2e42a276a54e0fbe5e645657ca22013e48a34a01e83e805d1a0ac64b1"
+    },
+    {
+      "file": "1920x1080-live.png",
+      "width": 1920,
+      "height": 1080,
+      "horizontal_max": 0,
+      "sha256": "bdc843313edd62799d7ecadf869f3a83ab8bbe75b4a830006fabfd59713ef0c9"
+    }
+  ],
+  "other_scene_images_changed": false
+}

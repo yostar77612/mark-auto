@@ -512,6 +512,11 @@ QWidget#overview_dashboard QLabel[level="live"] { font-weight:bold; color:#176b3
 QWidget#overview_dashboard QLabel[level="warning"] { font-weight:bold; color:#805500; }
 QWidget#overview_dashboard QLabel[level="muted"] { font-weight:bold; color:#526071; }
 QWidget#overview_dashboard QLabel[level="red"] { font-weight:bold; color:#9b1c1c; }
+QWidget#sinopac_connection_panel QLabel[sinopacStatus="READY"], QWidget#sinopac_connection_panel QLabel[sinopacStatus="CONNECTED"] { color:#176b36; }
+QWidget#sinopac_connection_panel QLabel[sinopacStatus="CONNECTING"], QWidget#sinopac_connection_panel QLabel[sinopacStatus="DISCONNECTING"], QWidget#sinopac_connection_panel QLabel[sinopacStatus="ACTIVATING"] { color:#31465d; }
+QWidget#sinopac_connection_panel QLabel[sinopacStatus="DISCONNECTED"], QWidget#sinopac_connection_panel QLabel[sinopacStatus="UNKNOWN"], QWidget#sinopac_connection_panel QLabel[sinopacStatus="NOT_REQUIRED"] { color:#526071; }
+QWidget#sinopac_connection_panel QLabel[sinopacStatus="BLOCKED"], QWidget#sinopac_connection_panel QLabel[sinopacStatus="NOT_CONFIGURED"] { color:#805500; }
+QWidget#sinopac_connection_panel QLabel[sinopacStatus="FAILED"] { color:#9b1c1c; }
 '''
 
 

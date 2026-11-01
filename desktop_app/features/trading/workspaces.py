@@ -18,10 +18,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading.manual_actions import ManualActions
 from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.domain.models import Environment
 from desktop_app.features.trading.widgets import button, combo, label, table
-from desktop_app.features.trading.broker_panel import BrokerPanel
+from desktop_app.features.trading.sinopac_ui import install_panel
 from desktop_app.features.trading.dashboard import DashboardWidget
 from desktop_app.features.trading.trading_page import (
     install_trading_environment,
@@ -266,7 +267,7 @@ def _market_page(self) -> None:
 
 def _trading_page(self) -> None:
     layout = _page(self, 'trading')
-    install_trading_environment(self, layout)
+    install_trading_environment(self, layout, self.pages.widget(3).widget())
     layout.addWidget(HelpText(ui_text('m2t.trading_hint'), ui_text('v2.control_hint'), 'trading_control', header=self.page_headers['trading']))
     _buttons(
         self,
@@ -274,7 +275,7 @@ def _trading_page(self) -> None:
         (
             ('v2.stop_new', 'stop_button', lambda: confirm_trading_action(self, UiAction.STOP_NEW)),
             ('v2.cancel_entries', 'cancel_entries_button', lambda: confirm_trading_action(self, UiAction.CANCEL_ENTRIES)),
-            ('v2.resume', 'resume_button', lambda: self.command(UiAction.RESUME)),
+            ('v2.resume', 'resume_button', lambda: self.manual_controls.resume()),
             ('v2.reconcile', 'reconcile_button', lambda: self.command(UiAction.RECONCILE)),
             ('v2.flatten', 'flatten_button', self.flatten_selected),
             ('v2.transfer', 'transfer_button', self.transfer_selected),
@@ -302,11 +303,12 @@ def _trading_page(self) -> None:
     configure_trading_positions(self.positions)
     self.position_columns = PositionColumns(self.positions, self.page_headers['trading'], self._position_columns, self._save_position_columns, self._feedback)
     layout.addWidget(self.positions)
-    self.positions_empty = EmptyTableState(self.positions, ui_text('m2t.empty_positions'), lambda: self.navigation.setCurrentRow(1))
+    self.positions_empty = EmptyTableState(self.positions, ui_text('m2t.empty_positions'), lambda: self.manual_controls.next_step())
     layout.addWidget(label('v2.orders'))
     self.orders = table(('v2.instrument', 'v2.direction', 'v2.quantity', 'v2.filled', 'v2.state', 'v2.order_scope', 'v2.account'), 'orders')
     layout.addWidget(self.orders)
-    self.orders_empty = EmptyTableState(self.orders, ui_text('m2t.empty_orders'), lambda: self.navigation.setCurrentRow(1))
+    self.orders_empty = EmptyTableState(self.orders, ui_text('m2t.empty_orders'), lambda: self.manual_controls.next_step())
+    self.manual_controls = ManualActions(self, layout)
     _reconciliation_panel(self, layout)
     layout.addStretch()
 
@@ -395,33 +397,16 @@ def _settings_page(self) -> None:
     layout.addLayout(form)
     self.environment.currentIndexChanged.connect(self._environment_selected)
     self.account.currentIndexChanged.connect(self._switch_context)
-    _buttons(
-        self,
-        layout,
-        (
-            ('v2.context_add_profile', 'add_context_button', self.add_context),
-            ('v2.connect_readonly', 'connect_read_only_button', self.connect_read_only),
-        ),
-    )
     layout.addWidget(
         HelpText(
-            ui_text('m2t.context_hint'),
-            ui_text('v2.context_navigation_hint') + '\n\n' + ui_text('v2.external_hint'),
+            ui_text('m2.connection.context_hint'),
+            ui_text('m2.connection.context_help') + '\n\n' + ui_text('v2.external_hint'),
             'settings_context',
             header=self.page_headers['settings'],
         )
     )
     self.accounts = table(('v2.account', 'v2.environment', 'v2.market', 'v2.allocation', 'v2.availability'), 'accounts')
-    layout.addWidget(self.accounts)
-    self.broker_panel = BrokerPanel(help_header=self.page_headers['settings'])
-    self.broker_panel.save_requested.connect(lambda settings: self.command(UiAction.SAVE_BROKER_SETTINGS, broker_settings=settings))
-    self.broker_panel.check_requested.connect(lambda: self.command(UiAction.CHECK_READINESS))
-    self.broker_panel.market_save_requested.connect(lambda settings: self.command(UiAction.SAVE_MARKET_DATA_SETTINGS, market_data_settings=settings))
-    self.broker_panel.market_connect_requested.connect(lambda: self.command(UiAction.CONNECT_MARKET_DATA))
-    self.broker_panel.market_disconnect_requested.connect(lambda: self.command(UiAction.DISCONNECT_MARKET_DATA))
-    self.broker_panel.layout().removeWidget(self.broker_panel.market_panel)
-    layout.insertWidget(1, self.broker_panel.market_panel)
-    layout.addWidget(self.broker_panel)
+    install_panel(self, layout)
     self.advanced = QGroupBox(ui_text('v2.advanced'))
     self.advanced.setCheckable(True)
     self.advanced.setChecked(False)
@@ -429,6 +414,10 @@ def _settings_page(self) -> None:
     self.advanced_content = QWidget()
     fields = QFormLayout(self.advanced_content)
     fields.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+    fields.addRow(self.accounts)
+    self.add_context_button = button('m2.connection.legacy_import', 'add_context_button')
+    self.add_context_button.clicked.connect(self.add_context)
+    fields.addRow(self.add_context_button)
     self.stock_budget = QLineEdit()
     self.futures_budget = QLineEdit()
     self.setting_risk = combo((('v2.risk_2', Decimal('0.02')), ('v2.risk_3', Decimal('0.03'))), 'risk')
