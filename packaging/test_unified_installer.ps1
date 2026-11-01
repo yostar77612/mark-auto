@@ -224,6 +224,24 @@ foreach ($link in @($startMenu, $desktop)) {
 }
 Install-Version $Version $CandidateManifest -RequireMultiMarketShortcut
 Smoke 'upgraded' $Version
+# Import through the installed executable, with developer tools absent from PATH.
+# The existing early broker probe imports 1.7.9 without constructing a client.
+$sdkReport = Join-Path $results 'broker-sdk-installed-no-login.json'
+Assert-AcceptancePath $sdkReport -RequireAbsent
+$sdkOldPath = $env:PATH
+try {
+  $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+  $sdkOwned = Start-OwnedAcceptanceProcess $script:installedExe -ArgumentList @('--broker-sdk-probe',"`"$sdkReport`"")
+  Wait-OwnedAcceptanceProcess $sdkOwned 30000 'Installed SDK import timed out' -DrainJob
+  if ($sdkOwned.Process.get_ExitCode()) { throw 'Installed SDK import failed' }
+} finally { $env:PATH = $sdkOldPath }
+$sdkProof = Get-Content -LiteralPath $sdkReport -Raw | ConvertFrom-Json
+if ($sdkProof.status -cne 'passed' -or $sdkProof.frozen -ne $true -or $sdkProof.sdk_version -cne '1.7.9' -or
+    $sdkProof.application_sdk_client_constructions -ne 0 -or $sdkProof.broker_login_performed -ne $false -or
+    $sdkProof.sdk_module_inside_selected_runtime -ne $true -or $sdkProof.native_core_inside_selected_runtime -ne $true -or
+    $sdkProof.ca_activation_performed -ne $false -or $sdkProof.asset_operations_performed -ne $false) {
+  throw 'Installed SDK import proof invalid'
+}
 # Launch normal mode via the Start-menu shortcut and check a real top-level window.
 $launchClock = [Diagnostics.Stopwatch]::StartNew()
 if ($AcceptanceScope -eq 'PreparedHost') {

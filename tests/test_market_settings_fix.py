@@ -17,6 +17,7 @@ from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.market_settings import MarketDataSettings
 from quantlab.trading.domain.alerts import AlertKind
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.application.errors import ERROR_TABLE
 
 
 class MarketSettingsUiRegressionTests(unittest.TestCase):
@@ -62,6 +63,7 @@ class MarketSettingsUiRegressionTests(unittest.TestCase):
                 ('CONNECTED', '', ui_text('watch.connected')),
                 ('DISCONNECTED', '', ui_text('watch.disconnected')),
                 ('DISCONNECTED', 'market_data_login_failed', ui_text('marketdata.connection_failed')),
+                ('DISCONNECTED', 'market_sdk_missing', ERROR_TABLE['market_sdk_missing'].explanation + ERROR_TABLE['market_sdk_missing'].action),
                 ('UNKNOWN', '', ui_text('watch.unknown')),
             ):
                 with self.subTest(connection=connection, error=error):

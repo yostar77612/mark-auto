@@ -31,6 +31,16 @@ try {
   $env:PATH = "$privateRuntime;$env:PATH"
   & $python -m pip install --require-hashes --only-binary=:all: -r requirements-desktop.lock
   if ($LASTEXITCODE) { throw 'Dependency install failed' }
+  # Reuse the broker flavor's exact official wheel and per-file verification.
+  # Keep the wheel for Analysis to verify installed bytes before collection.
+  $sdkWheels = Join-Path (Get-Location) 'build/broker-wheels'
+  & $python -m pip download --require-hashes --only-binary=:all: --dest $sdkWheels -r requirements-shioaji-v2.lock
+  if ($LASTEXITCODE) { throw 'Pinned broker wheel download failed' }
+  $sdkWheel = Join-Path $sdkWheels 'shioaji-1.7.9-cp37-abi3-win_amd64.whl'
+  & $python -m pip install --force-reinstall --no-index --find-links $sdkWheels --require-hashes --only-binary=:all: -r requirements-shioaji-v2.lock
+  if ($LASTEXITCODE) { throw 'Pinned broker SDK install failed' }
+  & $python -c "import runpy,sys; from pathlib import Path; runpy.run_path('packaging/broker_package.py')['installed_sdk'](Path(sys.argv[1]))" $sdkWheel
+  if ($LASTEXITCODE) { throw 'Broker SDK per-file verification failed' }
   & $python -c "from PySide6.QtWidgets import QApplication; import PySide6; print('Native Qt preflight', PySide6.__version__)"
   if ($LASTEXITCODE) { throw 'Native Qt preflight failed; refusing skipped UI tests' }
   $env:MARKAUTO_REQUIRE_DESKTOP_AUTH_TESTS = '1'
@@ -54,11 +64,19 @@ try {
   # Resolve native dependencies only from the pinned runtime, wheels and Windows.
   # Unrelated developer tools can carry an incompatible same-named ICU DLL.
   $analysisPath = $env:PATH
+  $previousBrokerBuild = $env:MARKAUTO_BROKER_BUILD
+  $previousBrokerWheel = $env:MARKAUTO_BROKER_WHEEL
   try {
     $env:PATH = "$privateRuntime;$env:SystemRoot\System32;$env:SystemRoot"
+    $env:MARKAUTO_BROKER_BUILD = '1'
+    $env:MARKAUTO_BROKER_WHEEL = $sdkWheel
     & $python -m PyInstaller --noconfirm --clean packaging/markauto.spec
     if ($LASTEXITCODE) { throw 'PyInstaller failed' }
-  } finally { $env:PATH = $analysisPath }
+  } finally {
+    $env:PATH = $analysisPath
+    $env:MARKAUTO_BROKER_BUILD = $previousBrokerBuild
+    $env:MARKAUTO_BROKER_WHEEL = $previousBrokerWheel
+  }
   & $python packaging/qt_licenses.py --payload dist/MarkAuto --report dist/validation/qt-license-audit.json
   if ($LASTEXITCODE) { throw 'Actual Qt payload/license-text scope audit failed' }
   # Inspect the actual frozen EXE, not just its resource source. No DLL is modified.

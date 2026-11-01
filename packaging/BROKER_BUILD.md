@@ -1,9 +1,16 @@
-# Local broker-enabled portable build contract
+# Verified broker SDK build contract
 
-The default `packaging/build.ps1`, its 18-dependency lock, SQLite gate and SDK
-exclusion remain unchanged. Installing Shioaji into another Python environment
-does **not** add it to an existing frozen MarkAuto executable. This separate
-opt-in recipe closes that packaging gap without another engine implementation.
+The default `packaging/build.ps1` now includes the existing verified broker
+flavor. It downloads only the official wheel allowed by
+`requirements-shioaji-v2.lock`, installs it in the private SQLite interpreter,
+and calls `installed_sdk` to verify every package/metadata file before tests and
+again before PyInstaller collection. The desktop dependency lock and SQLite gate
+remain intact. Installing Shioaji into another Python environment does **not**
+add it to an existing frozen MarkAuto executable; rebuild/install the candidate.
+
+The former opt-in portable recipe below remains available for a separate local
+ZIP. Both outputs use `broker_package.py` and the same wheel/native pins,
+not separate SDK collection implementations.
 
 ## Pinned inputs and isolation
 
@@ -18,7 +25,7 @@ opt-in recipe closes that packaging gap without another engine implementation.
   selected. Every installed SDK package/metadata file is checked against the
   hash-verified wheel, with exact package-file coverage.
 
-The builder clones the supplied private interpreter to `build/broker-python` and
+The portable builder clones the supplied private interpreter to `build/broker-python` and
 installs the SDK there using `--require-hashes --only-binary=:all: --no-index`.
 It never installs globally, changes the registry or PATH globally, runs an
 installer, publishes an artifact or creates a broker SDK client. Existing
@@ -40,11 +47,17 @@ No PowerShell script execution-policy bypass is required. The explicit source
 review flag is required for a full build; a dirty checkout is rejected. Merely
 preparing dependencies does not count as a frozen artifact or desktop QA.
 
-## Actual optional collection
+## Verified collection
 
-Only the PyInstaller subprocess receives `MARKAUTO_BROKER_BUILD=1` and the exact
-`MARKAUTO_BROKER_WHEEL` path. `broker_package.py` wraps Analysis only in this
-mode. Its original offline inputs remain literal and unchanged when disabled.
+During PyInstaller execution, the default builder sets `MARKAUTO_BROKER_BUILD=1`
+and the exact `MARKAUTO_BROKER_WHEEL` path, restoring prior values afterward.
+`broker_package.py` refuses missing/disabled flags, missing wheel paths,
+unverified wheels or changed installed files before Analysis runs. Removing
+`shioaji` from the spec exclusions therefore cannot collect an arbitrary
+developer-installed SDK. The portable builder selects the same verification.
+The resulting Analysis TOCs are checked as well: SDK Python/native sources must
+come from that verified package and still match the wheel hashes. A shadow
+module in a freezer search path, changed input or missing native core fails.
 
 The SDK package/native extension, metadata and supplied SBOM are collected.
 The wheel's `.data/scripts` standalone Shioaji CLI/server executable is not
@@ -60,7 +73,7 @@ amendment, cancellation or position-changing test.
 
 ## No-login proof and provenance
 
-The optional package supports the dedicated early diagnostic:
+Both packages support the existing dedicated early diagnostic:
 
 ```powershell
 & "<broker-enabled-payload>/MarkAuto.exe" --broker-sdk-probe "<fresh-absolute-report.json>"
@@ -77,17 +90,30 @@ multiprocessing arguments leave the diagnostic hook passive.
 An explicit `broker_probe.py --source-runtime` preflight is also available; its
 report states `frozen: false` and **cannot substitute for the actual EXE proof**.
 
-The full build retains `broker-build.json`, metadata/SBOM/notice files under
+The default installer CI runs this diagnostic through the actual installed
+executable after candidate upgrade, with developer tools removed from PATH.
+Missing SDK, wrong `__version__`, wrong native hash, non-frozen evidence or client
+construction fails CI. Evidence is `validation/broker-sdk-installed-no-login.json`.
+No SDK login, CA, order or network call is made. The standard `build-manifest.json`
+records verified wheel/package hashes and independently hashes the bundled
+`_core.pyd`; an unexpected standalone CLI is a build failure.
+
+The portable build retains `broker-build.json`, metadata/SBOM/notice files under
 `licenses/shioaji`, a payload inventory, Qt license audit, the actual frozen
 probe report and `broker-build-manifest.json`. The latter records flavor,
 source commit, SDK/wheel/native hashes and every payload file hash. It produces
 a separate local portable ZIP, not an installer or publication. Private prepare
 results and failed diagnostics must not be presented as completed native QA.
 
-The vendor wheel METADATA does not declare an SDK license. The supplied native
-SBOM and metadata are retained exactly; this local-only artifact makes no claim
-of external redistribution clearance. It does not inherit an Apache license
-merely because MarkAuto uses Apache-2.0.
+The official `shioaji-1.7.9-cp37-abi3-win_amd64.whl` METADATA does not declare an
+SDK license (no License/License-Expression/License-File fields or license
+classifier). It identifies the documentation/homepage as
+<https://sinotrade.github.io/> and repository as
+<https://github.com/Sinotrade/Shioaji>. The supplied native SBOM and metadata are
+retained exactly under `_internal/licenses/shioaji`; absence of a declaration
+does not establish redistribution clearance. The SDK does not inherit
+MarkAuto's Apache-2.0 license. These facts were read from the hash-verified wheel,
+not inferred from repository badges or package-index summaries.
 
 When changing between offline and broker-enabled executables, close the old
 selected engine normally before reopening its isolated v2 root. An existing

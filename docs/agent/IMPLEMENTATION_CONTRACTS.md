@@ -6716,3 +6716,29 @@ changes are isolated from source fixes; historical fixture bytes and test
 strength remain authoritative. Decisions and verification ownership are in
 docs/design/m2-decisions.md. Real broker operations, G3/SDK pin/PROJECT_STATE,
 OOS, budgets, deadlines and source profiles remain untouched.
+
+## Verified SDK in the default installer (2026-11-01)
+
+The default Windows installer reuses `broker_package.py` and the official
+Shioaji 1.7.9 Windows wheel in `requirements-shioaji-v2.lock`. Both the wheel
+and every installed package/metadata input are verified before collection;
+unverified/disabled broker flavors fail before Analysis. All other security
+exclusions remain, and the separate vendor CLI/server is never shipped.
+The standard manifest records verified SDK inputs and the actual bundled native
+core hash. Vendor metadata/SBOM and accurate absent-license/source notices are
+retained. Packaging authorizes no login, CA or financial operation.
+
+After installing/upgrading the candidate, Windows CI invokes the installed
+`MarkAuto.exe --broker-sdk-probe` with developer tools absent from PATH. Actual
+frozen import, module/distribution version 1.7.9, selected-runtime containment
+and native hash must pass; no SDK client, login or asset operation is performed.
+The existing TLS, full regression, lifecycle and recovery checks remain required.
+
+In the market-connection composition, loader `capability_missing` becomes
+`market_sdk_missing`, rendered from application ErrorText as
+「此安裝版未包含永豐元件，請安裝新版」. Other capability errors retain their
+existing semantics. Saving settings/startup remains inert; LIVE stays hard-disabled.
+No G3, SDK version constant, historical producer profile or PROJECT_STATE change
+is made. One unchanged test observer moves 25 source lines with its SDK fixture;
+only its current line projection and corresponding SHA256 are re-pinned in an
+independent baseline commit, preserving every observer identity and count.

@@ -1,10 +1,17 @@
-"""The only user-input boundary for independent market-data settings."""
+"""Independent market-data settings and their user-facing guidance boundary."""
 
 from dataclasses import dataclass
 
 from .broker_settings import _secret_reference
+from .errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
+
+
+def market_connection_guidance(code: str) -> str:
+    """Render a known market error without exposing the private error catalogue."""
+    error = ERROR_TABLE[code]
+    return error.explanation + error.action
 
 
 @dataclass(frozen=True)

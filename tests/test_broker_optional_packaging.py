@@ -1,4 +1,4 @@
-"""Optional SDK collection is explicit, byte-verified and never starts a client."""
+"""Default SDK collection is byte-verified and never starts a client."""
 
 from hashlib import sha256
 import json
@@ -58,13 +58,12 @@ class OptionalBrokerPackagingTests(unittest.TestCase):
         self.sdk_hash_patch.start()
         self.addCleanup(self.sdk_hash_patch.stop)
 
-    def test_default_analysis_is_untouched_without_wheel_or_sdk_lookup(self):
+    def test_analysis_refuses_unverified_build_even_when_sdk_is_installed(self):
         analysis = object()
         with patch.dict(self.globals, distribution=lambda _: (_ for _ in ()).throw(AssertionError('no SDK lookup'))):
-            self.assertIs(self.module['configure_analysis'](analysis, self.root, None, environment={}), analysis)
-            self.assertIs(self.module['configure_analysis'](analysis, self.root, None, environment={'MARKAUTO_BROKER_BUILD': '0'}), analysis)
-        with self.assertRaises(RuntimeError):
-            self.module['configure_analysis'](analysis, self.root, None, environment={'MARKAUTO_BROKER_BUILD': 'yes'})
+            for environment in ({}, {'MARKAUTO_BROKER_BUILD': '0'}, {'MARKAUTO_BROKER_BUILD': 'yes'}, {'MARKAUTO_BROKER_BUILD': '1'}):
+                with self.subTest(environment=environment), self.assertRaises(RuntimeError):
+                    self.module['configure_analysis'](analysis, self.root, None, environment=environment)
 
     def test_complete_wheel_and_installed_package_are_verified_without_standalone_cli(self):
         _, _, core, info = self.module['installed_sdk'](self.wheel, sdk_distribution=self.distribution)
@@ -97,13 +96,16 @@ class OptionalBrokerPackagingTests(unittest.TestCase):
 
         def analysis(*args, **kwargs):
             captured.update(kwargs)
-            return 'captured'
+            return SimpleNamespace(
+                pure=[('shioaji', str(self.site / 'shioaji/__init__.py'), 'PYMODULE')],
+                binaries=[('shioaji/_core.pyd', str(self.site / 'shioaji/_core.pyd'), 'EXTENSION')],
+            )
 
         with patch.dict(self.globals, distribution=lambda _: self.distribution):
             configured = self.module['configure_analysis'](
                 analysis, self.root, lambda name: [(name, 'metadata')], environment={'MARKAUTO_BROKER_BUILD': '1', 'MARKAUTO_BROKER_WHEEL': str(self.wheel)}
             )
-            self.assertEqual(
+            self.assertIsInstance(
                 configured(
                     runtime_hooks=['sqlite-first', 'worker-second'],
                     hiddenimports=['base'],
@@ -111,7 +113,7 @@ class OptionalBrokerPackagingTests(unittest.TestCase):
                     binaries=[],
                     datas=[],
                 ),
-                'captured',
+                SimpleNamespace,
             )
         self.assertEqual(captured['runtime_hooks'][:2], ['sqlite-first', 'worker-second'])
         self.assertTrue(captured['runtime_hooks'][2].endswith('broker_probe_runtime_hook.py'))
@@ -124,6 +126,23 @@ class OptionalBrokerPackagingTests(unittest.TestCase):
         manifest = json.loads((self.root / 'build/broker-build.json').read_text(encoding='utf-8'))
         self.assertEqual(manifest['flavor'], 'broker-enabled')
         self.assertFalse(manifest['default_execution_enabled'])
+
+    def test_freezer_cannot_substitute_shadow_or_modified_sdk_sources(self):
+        _, package_root, core, info = self.module['installed_sdk'](self.wheel, sdk_distribution=self.distribution)
+        selected = SimpleNamespace(pure=[('shioaji', str(package_root / '__init__.py'), 'PYMODULE')], binaries=[('shioaji/_core.pyd', str(core), 'EXTENSION')])
+        self.module['verify_collected_sdk'](selected, package_root, info['verified_sdk_files'])
+        shadow = self.root / 'shioaji.py'
+        shadow.write_bytes((package_root / '__init__.py').read_bytes())
+        selected.pure = [('shioaji', str(shadow), 'PYMODULE')]
+        with self.assertRaisesRegex(RuntimeError, 'outside the verified package'):
+            self.module['verify_collected_sdk'](selected, package_root, info['verified_sdk_files'])
+        selected.pure = [('shioaji', str(package_root / '__init__.py'), 'PYMODULE')]
+        core.write_bytes(b'changed-after-installed-verification')
+        with self.assertRaisesRegex(RuntimeError, 'differs from the pinned wheel'):
+            self.module['verify_collected_sdk'](selected, package_root, info['verified_sdk_files'])
+        selected.binaries = []
+        with self.assertRaisesRegex(RuntimeError, 'must both be collected'):
+            self.module['verify_collected_sdk'](selected, package_root, info['verified_sdk_files'])
 
     def test_bad_wheel_hash_is_refused_before_any_installed_package_lookup(self):
         self.wheel.write_bytes(self.wheel.read_bytes() + b'changed')
@@ -196,6 +215,20 @@ class OptionalBrokerProbeTests(unittest.TestCase):
                 patch.object(sys, '_MEIPASS', str(root), create=True),
                 patch.dict(sys.modules, {'shioaji._core': SimpleNamespace(__file__=str(native_file))}),
             ):
+                with patch.dict(function.__globals__, import_module=unittest.mock.Mock(side_effect=ImportError('missing SDK'))):
+                    with self.assertRaises(ImportError):
+                        function(output, info)
+                self.assertFalse(output.exists())
+                sdk.__version__ = '1.7.8'
+                with self.assertRaisesRegex(RuntimeError, 'must agree'):
+                    function(output, info)
+                self.assertFalse(output.exists())
+                sdk.__version__ = '1.7.9'
+                native_file.write_bytes(b'tampered-native')
+                with self.assertRaisesRegex(RuntimeError, 'native core hash'):
+                    function(output, info)
+                self.assertFalse(output.exists())
+                native_file.write_bytes(b'SYNTHETIC-NATIVE-PROBE-FIXTURE')
                 self.assertEqual(function(output, info), 0)
                 with self.assertRaises(RuntimeError):
                     function(output, info)

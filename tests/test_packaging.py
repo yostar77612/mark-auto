@@ -116,10 +116,31 @@ class PackagingTests(unittest.TestCase):
             datas = [(str(Path(destination) / Path(source).name), source, 'DATA') for source, destination in kwargs['datas']]
             return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=datas)
 
+        original_run_path = runpy.run_path
+        broker = original_run_path(str(ROOT / 'packaging/broker_package.py'))
+        broker_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(broker_temp.cleanup)
+        broker_root = Path(broker_temp.name)
+        core = ROOT / 'build/verified-test-sdk/shioaji/_core.pyd'
+        sdk_info = {'verified_sdk_files': {}}
+
+        def run_path(path, *args, **kwargs):
+            if Path(path).name == 'broker_package.py':
+                return {**broker, 'configure_analysis': lambda selected, root, metadata: broker['configure_analysis'](selected, broker_root, metadata)}
+            return original_run_path(path, *args, **kwargs)
+
         with (
             patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}),
             patch('quantlab.sqlite_runtime.verify') as verify_sqlite,
             patch('quantlab.sqlite_runtime.verify_binaries') as verify_binaries,
+            patch.dict(os.environ, MARKAUTO_BROKER_BUILD='1', MARKAUTO_BROKER_WHEEL=str(ROOT / 'verified-test-sdk.whl')),
+            patch.dict(
+                broker['configure_analysis'].__globals__,
+                installed_sdk=lambda wheel: (None, core.parent, core, sdk_info),
+                retain_notices=lambda *a, **k: {},
+                verify_collected_sdk=lambda *a: None,
+            ),
+            patch('runpy.run_path', side_effect=run_path),
         ):
             runpy.run_path(
                 str(ROOT / 'packaging/markauto.spec'),
@@ -131,13 +152,15 @@ class PackagingTests(unittest.TestCase):
                     'COLLECT': lambda *a, **kw: None,
                 },
             )
-        self.assertEqual(captured['binaries'], [])
+        self.assertEqual(captured['binaries'], [(str(core), 'shioaji')])
+        self.assertIn('shioaji._core', captured['hiddenimports'])
+        self.assertTrue(any(path.endswith('broker_probe_runtime_hook.py') for path in captured['runtime_hooks']))
         self.assertFalse(any('local_ai' in str(entry) or 'local-ai' in str(entry) for entry in captured['datas']))
         verify_sqlite.assert_called_once()
         verify_binaries.assert_called_once()
         self.assertIn(str(ROOT / 'packaging/sqlite_runtime_hook.py'), captured['runtime_hooks'])
         datas = set(captured['datas'])
-        self.assertEqual(metadata_names, ['PyJWT', 'cryptography', 'cffi', 'pycparser'])
+        self.assertEqual(metadata_names, ['PyJWT', 'cryptography', 'cffi', 'pycparser', 'shioaji'])
         for name in (
             'quantlab/assistant/adapters/chatgpt/auth.py',
             'quantlab/assistant/adapters/chatgpt/provider.py',
@@ -213,7 +236,21 @@ class PackagingTests(unittest.TestCase):
             if record and not record.startswith('#'):
                 self.assertRegex(record, r'^[-\w]+(?:\[[\w,.-]+\])?==[\d.]+\s+--hash=sha256:[a-f0-9]{64}')
         self.assertIn('PySide6==6.12.0', lock)
-        self.assertNotIn('shioaji', lock.lower())
+        sdk_lock = (ROOT / 'requirements-shioaji-v2.lock').read_text()
+        self.assertIn('shioaji==1.7.9', sdk_lock)
+        self.assertIn('--hash=sha256:77c864aa5bcd0f873746cb10a55a484c7a38723df432a7778f328d5fb7f57be4', sdk_lock)
+        build = (ROOT / 'packaging/build.ps1').read_text()
+        for required in ('requirements-shioaji-v2.lock', '--require-hashes', '--only-binary=:all:', 'MARKAUTO_BROKER_BUILD', 'MARKAUTO_BROKER_WHEEL'):
+            self.assertIn(required, build)
+        self.assertLess(build.index('requirements-shioaji-v2.lock'), build.index('-m PyInstaller'))
+        spec = (ROOT / 'packaging/markauto.spec').read_text()
+        tree = ast.parse(spec)
+        exclusions = next(node.value for node in ast.walk(tree) if isinstance(node, ast.keyword) and node.arg == 'excludes')
+        excluded = ast.literal_eval(exclusions)
+        self.assertNotIn('shioaji', excluded)
+        for name in ('streamlit', 'trader', 'archives', 'archives.legacy_autotrading', 'legacy_autotrading', 'gui', 'run', 'PyQt5', 'PyQt6'):
+            self.assertIn(name, excluded)
+        self.assertLess(spec.index("['configure_analysis']"), spec.index('analysis = Analysis('))
 
     def test_auth_notice_and_provenance_build_inputs(self):
         import hashlib
@@ -256,9 +293,33 @@ class PackagingTests(unittest.TestCase):
             for name in names:
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / name).write_bytes(('fixture:' + name).encode())
-            with patch.dict(os.environ, GITHUB_SHA='fixture-source-commit'), patch('importlib.metadata.distributions', return_value=[]):
-                runpy.run_path(str(root / 'packaging/build_manifest.py'), run_name='__main__')
+            core = root / 'dist/MarkAuto/_internal/shioaji/_core.pyd'
+            core.parent.mkdir(parents=True)
+            core.write_bytes(b'verified-native-fixture')
+            sdk = {'sdk_version': '1.7.9', 'sdk_native_core_sha256': hashlib.sha256(core.read_bytes()).hexdigest()}
+            original_run_path = runpy.run_path
+
+            def run_path(path, *args, **kwargs):
+                if Path(path).name == 'broker_package.py':
+                    return {'installed_sdk': lambda wheel: (None, None, core, sdk)}
+                return original_run_path(path, *args, **kwargs)
+
+            with (
+                patch.dict(os.environ, GITHUB_SHA='fixture-source-commit'),
+                patch('importlib.metadata.distributions', return_value=[]),
+                patch('runpy.run_path', side_effect=run_path),
+            ):
+                original_run_path(str(root / 'packaging/build_manifest.py'), run_name='__main__')
+                core.write_bytes(b'tampered-native-fixture')
+                with self.assertRaisesRegex(RuntimeError, 'native core differs'):
+                    original_run_path(str(root / 'packaging/build_manifest.py'), run_name='__main__')
+                core.write_bytes(b'verified-native-fixture')
+                (core.parent / 'shioaji.exe').write_bytes(b'unrelated-cli-fixture')
+                with self.assertRaisesRegex(RuntimeError, 'CLI/server must not ship'):
+                    original_run_path(str(root / 'packaging/build_manifest.py'), run_name='__main__')
             manifest = json.loads((root / 'dist/build-manifest.json').read_text())
+            self.assertEqual(manifest['sdk'], sdk)
+            self.assertEqual(manifest['bundled_sdk_native_core_sha256'], sdk['sdk_native_core_sha256'])
             for name in names:
                 self.assertEqual(manifest['inputs_sha256'][name], hashlib.sha256((root / name).read_bytes()).hexdigest())
 

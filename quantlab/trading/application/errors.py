@@ -12,6 +12,7 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 V2_ERROR_TEXT = {
     'market_data_not_configured': ErrorText('尚未設定行情連線。', '到設定頁填入環境與 API 金鑰引用名稱。'),
     'market_data_login_failed': ErrorText('行情登入失敗。', '確認金鑰已用 store_sinopac_key.py 存入，並檢查網路後重試。'),
+    'market_sdk_missing': ErrorText('此安裝版未包含永豐元件，', '請安裝新版'),
     'market_data_not_connected': ErrorText('行情未連線。', '先連線，或改看本機已有的歷史 K 線。'),
     'history_quota_low': ErrorText('今日行情流量將滿。', '歷史更新已暫停，明日或額度恢復後再試。'),
     'history_query_failed': ErrorText('歷史 K 線更新失敗。', '保留本機已有資料，恢復行情連線後按重試。'),
