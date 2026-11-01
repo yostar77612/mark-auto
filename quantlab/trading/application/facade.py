@@ -13,6 +13,7 @@ from .workflows import cancel_entries, execute_day, fill_local_pending, resume, 
 from .errors import ERROR_TABLE
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.execution_policy import orders_enabled
 from quantlab.trading.domain.validation import DomainError
 
 
@@ -73,8 +74,17 @@ class LocalFacade:
         elif action is UiAction.RESUME:
             resume(engine)
         elif action is UiAction.STOP_NEW:
-            engine._persist('new_entries_stopped', replace(engine.state, stopped=True))
-            if not engine.configuration.read_only:
+            books = tuple(replace(book, halted=True, reasons=tuple(sorted(set((*book.reasons, 'risk_rejected'))))) for book in engine.state.manual_books)
+            engine._persist(
+                'new_entries_stopped',
+                replace(
+                    engine.state,
+                    stopped=True,
+                    manual_books=books,
+                    manual_stopped=engine.state.manual_stopped or engine.configuration.environment is Environment.BROKER_SIMULATION,
+                ),
+            )
+            if not engine.configuration.read_only and orders_enabled(engine.configuration.environment):
                 cancel_entries(engine)
         elif action is UiAction.CANCEL_ENTRIES:
             cancel_entries(engine)

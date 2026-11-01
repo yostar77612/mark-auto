@@ -302,6 +302,8 @@ class OrderEntryScanTests(unittest.TestCase):
                 ('quantlab/trading/application/execution.py', 'commit', 'self.broker'),
                 ('quantlab/trading/application/lifecycle.py', '_progress_close', 'engine'),
                 ('quantlab/trading/application/lifecycle.py', '_progress_open', 'engine'),
+                ('quantlab/trading/application/manual_trading.py', '_submit', 'engine'),
+                ('quantlab/trading/runtime/manual_trading.py', 'submit', 'self.adapter'),
             },
         )
         self.assertEqual(commits, {('quantlab/trading/application/engine.py', 'submit', 'execution')})

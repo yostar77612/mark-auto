@@ -15,6 +15,7 @@ from quantlab.trading.domain.models import Environment, HoldingPolicy, Instrumen
 from quantlab.trading.domain.strategy import StrategyDefinition
 from .lifecycle_models import CorporateActionJob, RollJob
 from .performance import VersionEquityTrack
+from .manual_book import ManualAcquisition, ManualBook, ManualReceivable, ManualRequest
 
 
 @dataclass(frozen=True)
@@ -90,6 +91,11 @@ class AppState:
     protection_stops: tuple[tuple[str, Decimal], ...] = ()
     reconciliation: tuple[ReconciliationView, ...] = ()
     performance_tracks: tuple[VersionEquityTrack, ...] = ()
+    manual_books: tuple[ManualBook, ...] = ()
+    manual_requests: tuple[ManualRequest, ...] = ()
+    manual_stopped: bool = False
+    manual_receivables: tuple[ManualReceivable, ...] = ()
+    manual_acquisitions: tuple[ManualAcquisition, ...] = ()
 
 
 def replace_order(state: AppState, order: LocalOrder) -> AppState:

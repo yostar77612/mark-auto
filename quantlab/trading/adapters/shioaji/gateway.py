@@ -1,10 +1,11 @@
 """Explicit-account Shioaji composition. Read-only and disconnected by default."""
 
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from quantlab.trading.domain.arithmetic import decimal_operation
+from quantlab.trading.domain.execution_policy import orders_enabled
 from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.models import AccountSnapshot, CapabilitySnapshot, Environment, InstrumentSpec, Market, OrderPlan, OrderStatus, Quote
 from quantlab.trading.domain.validation import DomainError, identity, integer
@@ -23,6 +24,7 @@ from quantlab.trading.ports.contracts import (
 )
 from quantlab.trading.ports.interfaces import Clock
 from quantlab.trading.ports.tick_stream import TickLoss
+from quantlab.trading.ports.manual import ManualAccountObservation
 from . import market_data
 from .sdk_facade import ShioajiSDKFacade
 from .tick_stream import ShioajiTickStream
@@ -169,7 +171,7 @@ class ShioajiAdapter:
         self._account(account_ref)
         evidence = self.capabilities[account_ref]
         signed = getattr(self.accounts[account_ref], 'signed', False) is True
-        enabled = not self.read_only and self.execution_enabled and signed
+        enabled = orders_enabled(self.environment) and not self.read_only and self.execution_enabled and signed
         if self.environment is Environment.LIVE:
             enabled = enabled and evidence.ca_ready
         return replace(evidence, can_trade=evidence.can_trade and enabled)
@@ -247,7 +249,7 @@ class ShioajiAdapter:
             equity += position.quantity * quote.last
         return replace(snapshot, equity=equity)
 
-    def list(self, account_ref: str) -> tuple[BrokerPosition, ...]:
+    def list(self, account_ref: str, *, manual: bool = False) -> tuple[BrokerPosition, ...]:
         account = self._account(account_ref)
         try:
             raw_positions = self.client.list_positions(account=account, unit=self.share_unit)
@@ -265,10 +267,21 @@ class ShioajiAdapter:
                 # Yesterday inventory is a conservative bound, not proof that
                 # reserved, pledged or already pending sells are available.
                 sellable = 0
-            result.append(position_from_sdk(raw, account_ref, binding, sellable))
+            position = position_from_sdk(raw, account_ref, binding, sellable)
+            if manual and binding.spec.market is Market.STOCK:
+                if (
+                    sdk_text(sdk_value(raw, 'cond')) != 'Cash'
+                    or sdk_text(sdk_value(raw, 'direction')) != 'Buy'
+                    or any(sdk_decimal(sdk_value(raw, field), field) != 0 for field in ('margin_purchase_amount', 'collateral', 'short_sale_margin'))
+                ):
+                    raise DomainError('reconciliation_required', 'manual stock scope requires observed unfinanced cash-long inventory')
+                position = replace(position, source='SHIOAJI_OBSERVED_UNFINANCED_CASH_LONG')
+            result.append(position)
         return tuple(result)
 
     def _execution(self, plan: OrderPlan) -> object:
+        if not orders_enabled(self.environment):
+            raise DomainError('production_orders_disabled')
         account = self._account(plan.account_ref)
         capability = self.inspect(plan.account_ref)
         if plan.environment is not self.environment or not capability.can_trade or plan.deadline <= self.clock.now():
@@ -329,7 +342,10 @@ class ShioajiAdapter:
         if local_order_id not in self.trades:
             raise DomainError('reconciliation_required', 'unknown trade cannot cancel/amend blindly')
         previous = self.orders[local_order_id]
-        self._execution(previous.plan)
+        # A later risk-reducing mutation has its own admission deadline. The
+        # original entry intent's 30-second TTL does not expire an open order.
+        now = self.clock.now()
+        self._execution(replace(previous.plan, decision_at=now, deadline=now + timedelta(seconds=30)))
         if previous.status not in (OrderStatus.ACCEPTED, OrderStatus.PARTIALLY_FILLED):
             raise DomainError('state_conflict', 'order not active')
         try:
@@ -343,10 +359,13 @@ class ShioajiAdapter:
                 if type(amount) is not int or not previous.cumulative_quantity < amount <= previous.plan.quantity:
                     raise DomainError('validation_failed', 'only reducing amendment supported')
                 changed_plan = replace(previous.plan, quantity=amount, limit_price=price)
-                sdk_quantity, _ = stock_sdk_quantity(
-                    changed_plan, self.bindings[spec.instrument_id], odd_lot=self.capabilities[changed_plan.account_ref].odd_lot
-                )
-                self.client.update_order(self.trades[local_order_id], price=sdk_price(price), qty=sdk_quantity)
+                if quantity is None:
+                    self.client.update_order(self.trades[local_order_id], price=sdk_price(price))
+                else:
+                    sdk_quantity, _ = stock_sdk_quantity(
+                        changed_plan, self.bindings[spec.instrument_id], odd_lot=self.capabilities[changed_plan.account_ref].odd_lot
+                    )
+                    self.client.update_order(self.trades[local_order_id], price=sdk_price(price), qty=sdk_quantity)
                 status = previous.status
         except DomainError:
             raise
@@ -369,14 +388,20 @@ class ShioajiAdapter:
     def amend(self, local_order_id: str, price: Decimal, quantity: int | None = None) -> CommandReceipt:
         return self._change(local_order_id, price, quantity)
 
-    def refresh(self, account_ref: str) -> RemoteSnapshot:
+    def _refresh_orders(self, account_ref: str, *, require_healthy: bool = False) -> tuple[BrokerOrder, ...]:
         account = self._account(account_ref)
         try:
-            self.client.update_status(account=account)
+            updated = self.client.update_status(account=account)
             trades = self.client.list_trades()
+            if require_healthy:
+                health = self.client.trade_cache_health(account=account)
+                reasons = sdk_value(health, 'reasons')
+                if updated is not None or sdk_text(sdk_value(health, 'state')) != 'Healthy' or not isinstance(reasons, (list, tuple)) or reasons:
+                    raise DomainError('reconciliation_required', 'broker order cache is not healthy')
         except Exception as exc:
             raise query_error(exc, 'order query unavailable; no retry submission') from None
         expected = self._account_identity(account)
+        observed = []
         for trade in trades:
             raw_order = sdk_value(trade, 'order')
             if self._account_identity(sdk_value(raw_order, 'account')) != expected:
@@ -386,14 +411,52 @@ class ShioajiAdapter:
             if len(matches) != 1:
                 raise DomainError('reconciliation_required', 'unmapped external/unknown broker order requires explicit adoption')
             previous = matches[0]
+            if require_healthy:
+                binding = self.bindings[previous.plan.instrument_id]
+                expected_quantity, _ = stock_sdk_quantity(previous.plan, binding, odd_lot=self.capabilities[account_ref].odd_lot)
+                expected_side = 'Buy' if previous.plan.side.value == 'BUY' else 'Sell'
+                if (
+                    type(sdk_value(raw_order, 'quantity')) is not int
+                    or sdk_value(raw_order, 'quantity') != expected_quantity
+                    or sdk_text(sdk_value(raw_order, 'action')) != expected_side
+                ):
+                    raise DomainError('reconciliation_required', 'owned broker order economics changed outside this intent')
             normalized = order_from_sdk(trade, previous.local_order_id, previous.plan, self.bindings[previous.plan.instrument_id], self.clock.now())
             if normalized.cumulative_quantity < previous.cumulative_quantity:
                 raise DomainError('reconciliation_required', 'broker cumulative fill regressed')
             if (normalized.status, normalized.cumulative_quantity) != (previous.status, previous.cumulative_quantity):
                 self._record(normalized, previous)
             self.trades[previous.local_order_id], self.orders[previous.local_order_id] = trade, normalized
+            observed.append(normalized)
+        return tuple(observed)
+
+    def refresh(self, account_ref: str) -> RemoteSnapshot:
+        self._refresh_orders(account_ref)
         orders = tuple(order for order in self.orders.values() if order.plan.account_ref == account_ref)
         return RemoteSnapshot(self.snapshot(account_ref), orders, self.list(account_ref), self.account_sequences[account_ref], self.clock.now())
+
+    def observe_manual(self, account_ref: str, after_sequence: int = 0) -> ManualAccountObservation:
+        """Completed scoped refresh + healthy cache + independent positions.
+
+        No account_balance, trading_limits or margin values are fabricated or
+        requested here. A missing working order remains missing for the caller.
+        """
+        integer(after_sequence, 'event cursor')
+        orders = self._refresh_orders(account_ref, require_healthy=True)
+        positions = self.list(account_ref, manual=True)
+        own = {order.local_order_id for order in self.orders.values() if order.plan.account_ref == account_ref}
+        events = tuple(event for event in self.event_log if event.sequence > after_sequence and event.local_order_id in own)
+        amended = []
+        for order in orders:
+            trade = self.trades[order.local_order_id]
+            raw = sdk_value(sdk_value(trade, 'status'), 'modified_price')
+            if raw is None or sdk_decimal(raw, 'modified price') == 0:
+                raw = sdk_value(sdk_value(trade, 'order'), 'price')
+            if raw is not None:
+                price = sdk_decimal(raw, 'observed modified price')
+                if price > 0:
+                    amended.append((order.local_order_id, price))
+        return ManualAccountObservation(account_ref, self.environment, orders, positions, events, self.clock.now(), amended_prices=tuple(amended))
 
     def events(self, account_ref: str, after_sequence: int = 0) -> tuple[OrderEvent, ...]:
         integer(after_sequence, 'event cursor')

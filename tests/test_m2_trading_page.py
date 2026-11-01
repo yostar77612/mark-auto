@@ -212,7 +212,8 @@ class M2TradingPageTests(unittest.TestCase):
             self.facade.release.set()
         self.drain()
         self.assertIs(window.state.environment, Environment.BROKER_SIMULATION)
-        self.assertTrue(window.flatten_button.isEnabled())
+        self.assertFalse(window.state.manual.confirmed)
+        self.assertFalse(window.flatten_button.isEnabled())
 
     def test_live_disables_controls_and_rejects_every_current_order_intent(self):
         window = self.window
@@ -222,7 +223,21 @@ class M2TradingPageTests(unittest.TestCase):
             control = getattr(window, name)
             self.assertFalse(control.isEnabled(), name)
             control.click()
-        expected = frozenset((UiAction.DEPLOY, UiAction.STEP, UiAction.RESUME, UiAction.CANCEL_ENTRIES, UiAction.FLATTEN))
+        expected = frozenset(
+            (
+                UiAction.DEPLOY,
+                UiAction.STEP,
+                UiAction.RESUME,
+                UiAction.CANCEL_ENTRIES,
+                UiAction.FLATTEN,
+                UiAction.ENABLE_MANUAL_BOOK,
+                UiAction.PREVIEW_MANUAL,
+                UiAction.SUBMIT_MANUAL,
+                UiAction.CANCEL_MANUAL,
+                UiAction.AMEND_MANUAL,
+                UiAction.TEST_SIM_ORDER,
+            )
+        )
         self.assertEqual(LIVE_ORDER_ACTIONS, expected)
         for action in expected:
             window.command(action, 'lot-1')

@@ -1,0 +1,3929 @@
+{
+  "capture_elapsed_seconds": 18.931,
+  "prepared_helper_executed_by_coordinator": true,
+  "head": "e8336226868c4355fb54a3d9740ac4c18c78a20f",
+  "fake_dto_only": true,
+  "sdk_imported": false,
+  "no_commands": true,
+  "preview_unit_metadata": [
+    "lot_size",
+    "quantity_unit"
+  ],
+  "captures": [
+    {
+      "scene": "local",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "reconcile_button"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": false,
+      "status": "帳戶 local-stock　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：尚未完成",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "local",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "reconcile_button"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": false,
+      "status": "帳戶 local-stock　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：尚未完成",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "live",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "reconcile_button"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": false,
+      "status": "帳戶 sinopac-visual-012345678901234567890123-live　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：尚未完成",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "live",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "reconcile_button"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": false,
+      "status": "帳戶 sinopac-visual-012345678901234567890123-live　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：尚未完成",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "not_connected",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　新單已停止\n帳戶資料尚未完成核對，請先對帳。\n模擬測試：結果未確認 委託結果尚未確認；請先對帳，勿重複送出。",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": true,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "not_connected",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　新單已停止\n帳戶資料尚未完成核對，請先對帳。\n模擬測試：結果未確認 委託結果尚未確認；請先對帳，勿重複送出。",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": true,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "need_book",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": true,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": true,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "need_book",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": true,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": true,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "stock_preview",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "TWSE:2330　買進　2 張　限價 20　停損參考 19.9\n預估占用 40,001.00 元　費用 1.00 元　風險 201.00 元　虛擬可用 60,000.00 元\n行情時間 11/01 20:35:00　預覽有效至 11/01 20:35:30（臺北時間）\n額度來源：人工虛擬帳本；費用估算：程式費用估算（非券商實收）。尚未建立停損保護單。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": true,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      },
+      "manual_tab_sequence": [
+        "manual_instrument",
+        "manual_side",
+        "manual_quantity",
+        "manual_price",
+        "manual_stop",
+        "manual_preview",
+        "manual_submit"
+      ],
+      "help_full_text_retained": true,
+      "help_plain_text": true,
+      "help_escape_closed": true
+    },
+    {
+      "scene": "stock_preview",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "TWSE:2330　買進　2 張　限價 20　停損參考 19.9\n預估占用 40,001.00 元　費用 1.00 元　風險 201.00 元　虛擬可用 60,000.00 元\n行情時間 11/01 20:35:00　預覽有效至 11/01 20:35:30（臺北時間）\n額度來源：人工虛擬帳本；費用估算：程式費用估算（非券商實收）。尚未建立停損保護單。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": true,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "future_preview",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 40,000.00 元　可用 40,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "TAIFEX:TMF:202611　買進　1 口　限價 30000　停損參考 29990\n預估占用 35,051.00 元　費用 1.00 元　風險 101.00 元　虛擬可用 40,000.00 元\n行情時間 11/01 20:35:00　預覽有效至 11/01 20:35:30（臺北時間）\n額度來源：人工虛擬帳本；費用估算：程式費用估算（非券商實收）。尚未建立停損保護單。",
+      "capital_input": "40000",
+      "accepted_capital": "40000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": true,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "future_preview",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 40,000.00 元　可用 40,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "TAIFEX:TMF:202611　買進　1 口　限價 30000　停損參考 29990\n預估占用 35,051.00 元　費用 1.00 元　風險 101.00 元　虛擬可用 40,000.00 元\n行情時間 11/01 20:35:00　預覽有效至 11/01 20:35:30（臺北時間）\n額度來源：人工虛擬帳本；費用估算：程式費用估算（非券商實收）。尚未建立停損保護單。",
+      "capital_input": "40000",
+      "accepted_capital": "40000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": true,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "diagnostic_preview",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 40,000.00 元　可用 40,000.00 元　人工新單已啟用\n模擬測試：尚未完成",
+      "preview": "TAIFEX:TMF:202611　買進　1 口　限價 27000　停損參考 26999\n預估占用 35,051.00 元　費用 1.00 元　風險 11.00 元　虛擬可用 40,000.00 元\n行情時間 11/01 20:35:00　預覽有效至 11/01 20:35:30（臺北時間）\n額度來源：人工虛擬帳本；費用估算：程式費用估算（非券商實收）。尚未建立停損保護單。",
+      "capital_input": "40000",
+      "accepted_capital": "40000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": true,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "diagnostic_preview",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 40,000.00 元　可用 40,000.00 元　人工新單已啟用\n模擬測試：尚未完成",
+      "preview": "TAIFEX:TMF:202611　買進　1 口　限價 27000　停損參考 26999\n預估占用 35,051.00 元　費用 1.00 元　風險 11.00 元　虛擬可用 40,000.00 元\n行情時間 11/01 20:35:00　預覽有效至 11/01 20:35:30（臺北時間）\n額度來源：人工虛擬帳本；費用估算：程式費用估算（非券商實收）。尚未建立停損保護單。",
+      "capital_input": "40000",
+      "accepted_capital": "40000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": true,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "unknown_missing_scope",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "委託結果尚未確認；請先對帳，勿重複送出。\n請先確認此帳戶的虛擬分配。\n模擬測試：尚未完成",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "unknown_missing_scope",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "委託結果尚未確認；請先對帳，勿重複送出。\n請先確認此帳戶的虛擬分配。\n模擬測試：尚未完成",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "owned_order",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": true,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": true,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "owned_order",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": true,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": true,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "known_result",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "剩餘已取消",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 767
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": true,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "known_result",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "剩餘已取消",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1321
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": true,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "foreign_order",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "foreign_order",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "empty_tables",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "empty_tables",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "",
+      "order_first_col_width": 44,
+      "order_first_text_width": 0,
+      "order_full_cells": [],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "transport_failed",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "transport_failed",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 60,000.00 元　可用 60,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "60000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "busy_book_preparation",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "busy_book_preparation",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 未知　可用 未知　新單已停止\n請先確認此帳戶的虛擬分配。\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "60000",
+      "accepted_capital": "None",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": false,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": false,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": false,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": false,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": false,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": false,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": false,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "book_accepted",
+      "size": [
+        1366,
+        768
+      ],
+      "requested_size": [
+        1366,
+        768
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 793
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 35,000.00 元　可用 35,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "35000",
+      "accepted_capital": "35000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    },
+    {
+      "scene": "book_accepted",
+      "size": [
+        1920,
+        1080
+      ],
+      "requested_size": [
+        1920,
+        1080
+      ],
+      "page_horizontal_max": 0,
+      "primary": [
+        "manual_submit"
+      ],
+      "positions_horizontal_max": 0,
+      "orders_horizontal_max": 0,
+      "position_visible_columns": [
+        0,
+        1,
+        2,
+        5,
+        8,
+        9
+      ],
+      "order_visible_columns": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "order_first_cell": "TWSE:2330",
+      "order_first_col_width": 76,
+      "order_first_text_width": 69,
+      "order_full_cells": [
+        {
+          "text": "TWSE:2330",
+          "tooltip": "",
+          "width": 76
+        },
+        {
+          "text": "做多／買進",
+          "tooltip": "",
+          "width": 72
+        },
+        {
+          "text": "2 張",
+          "tooltip": "2,000 股",
+          "width": 83
+        },
+        {
+          "text": "0 張",
+          "tooltip": "0 股",
+          "width": 70
+        },
+        {
+          "text": "已受理",
+          "tooltip": "",
+          "width": 46
+        },
+        {
+          "text": "增加曝險",
+          "tooltip": "",
+          "width": 1347
+        },
+        {
+          "text": "sinopac-visual-012345678901234567890123",
+          "tooltip": "sinopac-visual-012345678901234567890123",
+          "width": 0
+        }
+      ],
+      "known_outcome": null,
+      "form_visible": true,
+      "status": "帳戶 sinopac-visual-012345678901234567890123　人工虛擬分配 35,000.00 元　可用 35,000.00 元　人工新單已啟用\n模擬測試：微台已通過（其他商品依券商回報）",
+      "preview": "尚未預覽。修改內容後需重新預覽。",
+      "capital_input": "35000",
+      "accepted_capital": "35000",
+      "controls": {
+        "manual_capital": {
+          "enabled": false,
+          "accessible": "虛擬分配（元）",
+          "tooltip": ""
+        },
+        "manual_prepare": {
+          "enabled": false,
+          "accessible": "確認虛擬帳本",
+          "tooltip": ""
+        },
+        "manual_test": {
+          "enabled": true,
+          "accessible": "準備模擬測試",
+          "tooltip": ""
+        },
+        "manual_instrument": {
+          "enabled": true,
+          "accessible": "商品／合約",
+          "tooltip": ""
+        },
+        "manual_side": {
+          "enabled": true,
+          "accessible": "方向",
+          "tooltip": ""
+        },
+        "manual_quantity": {
+          "enabled": true,
+          "accessible": "數量（張／口）",
+          "tooltip": ""
+        },
+        "manual_price": {
+          "enabled": true,
+          "accessible": "限價",
+          "tooltip": ""
+        },
+        "manual_stop": {
+          "enabled": true,
+          "accessible": "停損參考價（僅估算）",
+          "tooltip": ""
+        },
+        "manual_preview": {
+          "enabled": true,
+          "accessible": "預覽風險與費用",
+          "tooltip": ""
+        },
+        "manual_submit": {
+          "enabled": false,
+          "accessible": "確認模擬委託",
+          "tooltip": ""
+        },
+        "manual_cancel": {
+          "enabled": false,
+          "accessible": "取消選取委託",
+          "tooltip": ""
+        },
+        "manual_amend": {
+          "enabled": false,
+          "accessible": "修改選取限價",
+          "tooltip": ""
+        }
+      }
+    }
+  ],
+  "dialogs": [
+    {
+      "file": "diagnostic-confirmation-cancel.png",
+      "default_cancel": true,
+      "text": "永豐模擬環境／帳戶 sinopac-visual-012345678901234567890123\n\nTAIFEX:TMF:202611　買進　1 口　限價 27000　停損參考 26999\n預估占用 35,051.00 元　費用 1.00 元　風險 11.00 元　虛擬可用 40,000.00 元\n行情時間 11/01 20:35:00　預覽有效至 11/01 20:35:30（臺北時間）\n額度來源：人工虛擬帳本；費用估算：程式費用估算（非券商實收）。尚未建立停損保護單。\n這是實際送往模擬環境的 TMF 測試委託，可能成交或部分成交。系統只在取得確定委託編號後嘗試取消；結果未知時停止新單並要求對帳。是否確認送出？"
+    },
+    {
+      "file": "cancel-confirmation-cancel.png",
+      "default_cancel": true,
+      "text": "永豐模擬環境／帳戶 sinopac-visual-012345678901234567890123\n\n取消 TWSE:2330 的委託 visual-owned-order？已成交部分無法取消。"
+    }
+  ],
+  "errors": [],
+  "passed": true,
+  "raw_sha256": "2b64fbd3033793b18bf9354af2708f6353e91e82eab1458c5dc03359d63727fc",
+  "redactions": [
+    "Private local checkout path omitted; all account/quote/cost values are explicit synthetic fixtures."
+  ],
+  "images": {
+    "1366x768-stock_preview-manual.png": "c143d3b4102c4c165defa5cb4c8b1a15b4b837184a5af6b8190c422c6cfae160",
+    "1920x1080-future_preview-manual.png": "513c41b809306a6280fba3f0a4ba28cfe692e1ade24e0d7d5da3e276035dc661",
+    "1366x768-owned_order-orders.png": "071042fd5c1b2f65071431cf0d4f98d757de2924a4b3c329fab9bd8851e55613",
+    "1920x1080-owned_order-orders.png": "c2ed4afebbff9d7c9ea1b1a1099a07aa2efa82fd755822e54b6e95bb0a9a7789",
+    "1366x768-live-top.png": "836a4498fde0b1cb7019c7c4ebd71e95bd5d26b1b851c53f9ce137305b743dbd",
+    "1920x1080-live-top.png": "ec6fbb47195bf43e2b6fdab4463f969a7f2e71d1b83eea847b2866163d2f6f63",
+    "1366x768-need_book-manual.png": "b50199a47f9af11eefb892e55753358e6db115f53857b940fc87d94c5cd3c4a4",
+    "1920x1080-empty_tables-orders.png": "27097d03e133cfc184201390e39dadca4621adae9136d82a6f2e892dbaf54b69",
+    "1366x768-unknown_missing_scope-manual.png": "110d9b58fbdb91b14751cc8c919c58159fa63eaa64ef8167e9906bfa87e5e464",
+    "1920x1080-transport_failed-manual.png": "18625a8329163e8d768c82499dc9ca361b387a18a72d3b8e263dfee38ffbf400",
+    "diagnostic-confirmation-cancel.png": "44d1d3565e530d03d6dd07f2b220fa1d07d62d8775a94b63efa47f031ea5471f",
+    "cancel-confirmation-cancel.png": "cbfdc6da78f0f2e267f65a09f31fad0b0ad50a8b633f1e7eda7226712b9f2720",
+    "manual-help.png": "2c12119d8575ee1a37c663e61079a85ab1910f3c2f33d8ecd2a5dbc1a11dd917"
+  }
+}

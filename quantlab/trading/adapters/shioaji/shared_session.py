@@ -157,6 +157,24 @@ class SharedFacadeView(ShioajiSDKFacade):
     def logout(self) -> None:
         self._owner.detach(self._name)
 
+    def place_order(self, contract: object, order: object) -> object:
+        with self._owner._operations:
+            with self._owner._lock:
+                self._owner._active(self._name)
+            return super().place_order(contract, order)
+
+    def update_order(self, trade: object, *, price: float | None = None, qty: int | None = None) -> object:
+        with self._owner._operations:
+            with self._owner._lock:
+                self._owner._active(self._name)
+            return super().update_order(trade, price=price, qty=qty)
+
+    def cancel_order(self, trade: object) -> object:
+        with self._owner._operations:
+            with self._owner._lock:
+                self._owner._active(self._name)
+            return super().cancel_order(trade)
+
     def _callback(self, name, callback, *, bind=None) -> None:
         self._owner.callback(name, self._name, callback, bind)
 

@@ -19,6 +19,7 @@ from typing import Callable, cast
 
 from .sdk import SDK_VERSION, sdk_decimal, sdk_text, sdk_value
 from quantlab.trading.domain.models import Environment, PriceBand, validate_price_bands
+from quantlab.trading.domain.execution_policy import orders_enabled
 from quantlab.trading.domain.validation import DomainError, identity
 
 
@@ -252,13 +253,24 @@ class ShioajiSDKFacade:
         return _callable(self._module, 'Order')(**kwargs)
 
     def place_order(self, contract: object, order: object) -> object:
+        if not orders_enabled(self.environment):
+            raise DomainError('production_orders_disabled')
         _contract_identity(contract)
         return _callable(self._client, 'place_order')(contract, order, timeout=self.order_timeout_ms)
 
-    def update_order(self, trade: object, *, price: float, qty: int) -> object:
-        return _callable(self._client, 'update_order')(trade, price=price, qty=qty, timeout=self.order_timeout_ms)
+    def update_order(self, trade: object, *, price: float | None = None, qty: int | None = None) -> object:
+        if not orders_enabled(self.environment):
+            raise DomainError('production_orders_disabled')
+        # Pinned 1.7.9 accepts either field independently. Omitting quantity is
+        # required for a price-only amendment; it must not become a quantity edit.
+        fields = {key: value for key, value in (('price', price), ('qty', qty)) if value is not None}
+        if not fields:
+            raise DomainError('validation_failed', 'amendment field required')
+        return _callable(self._client, 'update_order')(trade, timeout=self.order_timeout_ms, **fields)
 
     def cancel_order(self, trade: object) -> object:
+        if not orders_enabled(self.environment):
+            raise DomainError('production_orders_disabled')
         return _callable(self._client, 'cancel_order')(trade, timeout=self.order_timeout_ms)
 
     def update_status(self, *, account: object) -> object:

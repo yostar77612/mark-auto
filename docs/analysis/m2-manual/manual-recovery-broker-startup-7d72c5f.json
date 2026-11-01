@@ -1,0 +1,73 @@
+{
+  "head": "7d72c5f38ac32d38709a39bcfb6ecb0ce23c7177",
+  "mode": "broker-startup",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_run_window": true,
+  "real_trading_window": true,
+  "real_research_session": true,
+  "local_child_delegates_original": true,
+  "sinopac_host": "owned Thread(serve) with natural factory/secrets/resource ports",
+  "scenario": "broker-startup",
+  "fake_time_functional_integration": false,
+  "actual_sunday_availability_claim": false,
+  "clock_fixture": "default real wall clock",
+  "manual_flow_acceptance": false,
+  "original_local_child_safety_bootstrap": true,
+  "research_pages": 7,
+  "actual_manual_service_materialized": true,
+  "environment": "BROKER_SIMULATION",
+  "engine_state": "STOPPED",
+  "window_visible": true,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "widget_count": 2777,
+  "financial_facts_verified": false,
+  "research_released": true,
+  "return_code": 0,
+  "elapsed_seconds": 3.749,
+  "ui_steps": [
+    "initial_direct_sim",
+    "manual_materialize",
+    "finish",
+    "closed"
+  ],
+  "owned_local_processes": 0,
+  "owned_fake_hosts": 1,
+  "fake_sdk": {
+    "constructors": 1,
+    "login_count": 1,
+    "logout_count": 1,
+    "resource_calls": 1,
+    "subscription_count": 2,
+    "ca_calls": 0,
+    "order_constructions": 0,
+    "order_calls": 0,
+    "place_calls": 0,
+    "amend_calls": 0,
+    "cancel_calls": 0,
+    "financial_query_calls": 0
+  },
+  "real_sdk_imported": false,
+  "fake_secret_lookup_count": 1,
+  "owned_endpoints_removed": true,
+  "canonical_submit_commit_chains": 0,
+  "actual_default_clock": true,
+  "passed": true,
+  "owned_lifetimes": [
+    {
+      "exit_code": null,
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    }
+  ],
+  "errors": [],
+  "host_errors": [],
+  "raw_sha256": "3dea6c5914c5d015fc8f1374b7da5754e5707ae1daef02e48e8b56483327cd7b",
+  "redactions": [
+    "Private checkout/workspace paths, PIDs, process command lines and local stack paths omitted; only whitelist facts retained. Broker values/counters come exclusively from injected fake ports."
+  ]
+}

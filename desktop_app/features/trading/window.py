@@ -29,6 +29,7 @@ from desktop_app.features.trading.workspaces import build
 from desktop_app.features.trading.wizard import StrategyWizard
 from desktop_app.features.trading.context_header import install_context_header, refresh_context_header
 from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, refresh_trading_environment
+from desktop_app.features.trading.manual_intents import MANUAL_ACTIONS
 from desktop_app.features.trading.sinopac_ui import CONNECTION_ACTIONS, complete_connection, render_connection
 
 
@@ -93,12 +94,24 @@ class TradingWindow(QMainWindow):
     legacy_requested = Signal(str)
     close_ui_requested = Signal()
 
-    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None, *, market_watch=None, position_columns=None, save_position_columns=None):
+    def __init__(
+        self,
+        facade: TradingFacade,
+        initial_state: UiState,
+        parent=None,
+        *,
+        market_watch=None,
+        position_columns=None,
+        save_position_columns=None,
+        order_columns=None,
+        save_order_columns=None,
+    ):
         super().__init__(parent)
         self.facade = facade
         self.state = initial_state
         self.market_watch = market_watch
         self._position_columns, self._save_position_columns = position_columns, save_position_columns
+        self._order_columns, self._save_order_columns = order_columns, save_order_columns
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
@@ -161,6 +174,9 @@ class TradingWindow(QMainWindow):
         context_id: str | None = None,
         profile_ref: str = '',
         market_data_settings=None,
+        manual_book=None,
+        manual_order=None,
+        manual_mutation=None,
         sinopac_settings=None,
         sinopac_accounts=None,
         connection_revision=None,
@@ -168,6 +184,9 @@ class TradingWindow(QMainWindow):
     ) -> None:
         if self.state.environment is Environment.LIVE and action in LIVE_ORDER_ACTIONS:
             self._feedback(ui_text('m2t.orders_disabled'))
+            return
+        if action in MANUAL_ACTIONS and self.state.environment is not Environment.BROKER_SIMULATION:
+            self._feedback(ui_text('m2m.simulation_only'))
             return
         self._run(
             UiCommand(
@@ -182,8 +201,11 @@ class TradingWindow(QMainWindow):
                 broker_settings,
                 self.state.context_id if context_id is None else context_id,
                 profile_ref,
-                self.state.context_epoch if self.state.contexts else None,
+                self.state.context_epoch if self.state.contexts or action in MANUAL_ACTIONS or manual_book is not None else None,
                 market_data_settings=market_data_settings,
+                manual_book=manual_book,
+                manual_order=manual_order,
+                manual_mutation=manual_mutation,
                 sinopac_settings=sinopac_settings,
                 sinopac_accounts=sinopac_accounts,
                 connection_revision=connection_revision,
@@ -250,6 +272,8 @@ class TradingWindow(QMainWindow):
         state = render_connection(self, state)
         if complete_connection(self, state, receipt, action):
             return
+        operation = self._operation if action is not UiAction.STOP_NEW else self._priority_operation
+        self.manual_controls.received(operation.command if operation is not None else None, state, receipt)
         if self._stamp(state) < self._stamp(self.state):
             return
         self._engine_reachable = True
@@ -292,6 +316,7 @@ class TradingWindow(QMainWindow):
             if operation.command is not None and operation.command.action in CONNECTION_ACTIONS:
                 self.broker_panel.set_busy(False)
             operation.deleteLater()
+        self.manual_controls.render(self.state)
 
     def new_strategy(self) -> None:
         self._wizard('')
@@ -384,6 +409,9 @@ class TradingWindow(QMainWindow):
             state_label(position.source),
         )
         summary += '\n' + ui_text('v2.flatten_direction').format(ui_text('v2.long' if position.direction.value == 'BUY' else 'v2.short'))
+        if self.state.environment is Environment.BROKER_SIMULATION:
+            self.manual_controls.flatten(position, summary)
+            return
         if self._confirm(summary):
             self.command(UiAction.FLATTEN, identity)
 
@@ -505,6 +533,7 @@ class TradingWindow(QMainWindow):
         state = render_connection(self, state)
         if self._stamp(state) < self._stamp(self.state):
             return
+        self.manual_controls.render(state)
         market_changed = state.market_revision != self.state.market_revision
         market_only = (
             self._rendered_version is not None
@@ -563,6 +592,7 @@ class TradingWindow(QMainWindow):
         )
         refresh_context_header(self, state)
         refresh_trading_environment(self, state)
+        self.manual_controls.render(state)
         self.overview_step.setEnabled(state.environment == Environment.LOCAL)
         self.add_context_button.setVisible(bool(state.contexts))
         render_version = self._stamp(state)
@@ -571,6 +601,7 @@ class TradingWindow(QMainWindow):
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
         render_tables(self, state, state_changed=state_changed)
+        self.manual_controls.render(state)
         self.positions_empty.setVisible(not state.positions)
         self.orders_empty.setVisible(not state.orders)
         self.dashboard.render(state, state_changed=state_changed)

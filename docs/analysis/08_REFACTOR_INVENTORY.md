@@ -288,7 +288,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/trading/ports/storage.py` | 30 | application | `quantlab/trading/ports/storage.py` | port／資料契約，不是服務實作；保留路徑；`Fence`，`quantlab/trading/ports/storage.py:10` |
 | `quantlab/trading/ports/tick_stream.py` | 38 | application | `quantlab/trading/ports/tick_stream.py` | port／資料契約，不是服務實作；保留路徑；`TickLoss`，`quantlab/trading/ports/tick_stream.py:9` |
 | `quantlab/trading/runtime/__init__.py` | 1 | composition | `quantlab/trading/runtime/__init__.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`quantlab/trading/runtime/__init__.py:1` |
-| `quantlab/trading/runtime/bootstrap.py` | 651 | composition | `quantlab/trading/runtime/bootstrap.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WallClock`，`quantlab/trading/runtime/bootstrap.py:26` |
+| `quantlab/trading/runtime/bootstrap.py` | 703 | composition | `quantlab/trading/runtime/bootstrap.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WallClock`，`quantlab/trading/runtime/bootstrap.py:26` |
 | `quantlab/trading/runtime/broker.py` | 353 | composition | `quantlab/trading/runtime/broker.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`_pairs`，`quantlab/trading/runtime/broker.py:31` |
 | `quantlab/trading/runtime/build.py` | 366 | composition | `quantlab/trading/runtime/build.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`SimulationClock`，`quantlab/trading/runtime/build.py:28` |
 | `quantlab/trading/runtime/config.py` | 360 | composition | `quantlab/trading/runtime/config.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`RuntimeLaunch`，`quantlab/trading/runtime/config.py:27` |
@@ -710,6 +710,15 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/adapters/storage/kline_store.py` | 195 | infrastructure | `quantlab/trading/adapters/storage/kline_store.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/history_sync.py` | 282 | application | `quantlab/trading/application/history_sync.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/market_settings.py` | 24 | application | `quantlab/trading/application/market_settings.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/manual_contracts.py` | 179 | application | `quantlab/trading/application/manual_contracts.py` | M2-2: immutable manual SIM intents and read models; accepted context/account/generation scope, app virtual funds provenance, unknown receipt identity and unprotected risk estimates; no execution authority or SDK. |
+| `quantlab/trading/application/manual_book.py` | 239 | application | `quantlab/trading/application/manual_book.py` | M2-2: durable app-owned virtual book/intents, current allocation constraints, conservative settled-stock tranches and source-tagged internal risk capacity; no broker finance or research evidence fabrication. |
+| `quantlab/trading/application/manual_trading.py` | 876 | application | `quantlab/trading/application/manual_trading.py` | M2-2: explicit scoped manual SIM commands/previews/diagnostic, canonical submit, interrupted-request recovery, durable absent-key preflight rejection, readiness and nonfinancial observation adoption; no automatic cycle or native SDK access. |
+| `quantlab/trading/ports/manual.py` | 57 | application | `quantlab/trading/ports/manual.py` | M2-2: immutable verified price limits and nonfinancial account/order/position observation boundary. |
+| `quantlab/trading/domain/execution_policy.py` | 7 | domain | `quantlab/trading/domain/execution_policy.py` | M2-2: single side-effect-free LOCAL/SIM order-environment predicate; LIVE has no flag/CA override. |
+| `tests/test_manual_contracts.py` | 138 | tooling | `tests/test_manual_contracts.py` | M2-2: typed wire compatibility, malformed input, unit/price-band, virtual-source and UNKNOWN request-identity regression fixtures; no engine process or broker session. |
+| `tests/test_manual_trading.py` | 985 | tooling | `tests/test_manual_trading.py` | M2-2: 30 strict offline SDK-to-engine manual execution cases, exact preflight rejection and deny-only routing, failure/UNKNOWN identity, genuine fills, stock units/partial cancel/T+2, stop/restart/generation/current-allocation rules and unchanged automatic authority. |
+| `tests/test_manual_consumer_execution.py` | 93 | tooling | `tests/test_manual_consumer_execution.py` | M2-2: detached/closed shared execution views revoke all native mutations; LIVE guard, lifecycle serialization and strict price-only SDK update remain covered by in-memory fakes. |
+| `tests/test_live_order_guard.py` | 267 | tooling | `tests/test_live_order_guard.py` | M2-2: 8 fake SDK/in-memory engine cases cover direct manual routes, replay/read-only recovery and every production mutation authority denying LIVE while SIM deadlines/delegation remain intact. |
 | `quantlab/trading/application/market_terminal_service.py` | 326 | application | `quantlab/trading/application/market_terminal_service.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/market_terminal_views.py` | 57 | application | `quantlab/trading/application/market_terminal_views.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/watch.py` | 41 | domain | `quantlab/trading/domain/watch.py` | M1: reviewed new module; existing rows and layer rules retained. |
@@ -741,7 +750,7 @@ PR E4 market/history owners (content-only):
 | `desktop_app/features/trading/trading_page.py` | 162 | presentation | `desktop_app/features/trading/trading_page.py` | M2-6: accepted-state environment controls, scoped confirmations and position-table presentation; no SDK or IO. |
 | `desktop_app/strings/m2_trading.py` | 57 | shared | `desktop_app/strings/m2_trading.py` | M2-6: 53 additive literal catalogue records through order2805; historical records unchanged. |
 | `desktop_app/features/trading/page_help.py` | 47 | presentation | `desktop_app/features/trading/page_help.py` | M2-6 owner additions: short summaries and fully owned keyboard-accessible plain-text dialogs; no SDK or IO. |
-| `desktop_app/features/trading/trading_page_widgets.py` | 79 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
+| `desktop_app/features/trading/trading_page_widgets.py` | 82 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
 
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
 | `quantlab/trading/application/sinopac_contracts.py` | 113 | application | `quantlab/trading/application/sinopac_contracts.py` | M2-1: scoped reference settings, redacted accounts and independent connection read model; no SDK or IO. |
@@ -789,10 +798,68 @@ not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 | `tools/affected_tests.py` | 242 | tooling | `tools/affected_tests.py` | R8 開發工具：由 git diff 與 import 圖選出受影響測試模組；只讀來源、不匯入產品碼；既有列與分層規則不變。 |
 | `tools/repin_baselines.py` | 406 | tooling | `tools/repin_baselines.py` | R6 開發工具：重生字串目錄、盤點登記、樣式表雜湊與頁面服務觀察點基準；只產生預期值，不改斷言、不碰 G3 與 r7_base；既有列與分層規則不變。 |
 
+| `desktop_app/features/trading/manual_actions.py` | 285 | presentation | `desktop_app/features/trading/manual_actions.py` | M2-2: scope-captured manual confirmation and existing asynchronous command port; no SDK or economic authorization. |
+| `desktop_app/features/trading/manual_form.py` | 91 | presentation | `desktop_app/features/trading/manual_form.py` | M2-2: Decimal inputs and server-provided whole-lot conversion. Readability exception: 58-line constructor keeps one compact form layout together; no execution logic. |
+| `desktop_app/features/trading/manual_intents.py` | 59 | presentation | `desktop_app/features/trading/manual_intents.py` | M2-2: pending UI identity survives unknown outcomes; never substitutes for the execution journal. |
+| `desktop_app/features/trading/manual_presenter.py` | 197 | presentation | `desktop_app/features/trading/manual_presenter.py` | M2-2: accepted manual facts, readiness and source labels; no risk calculations. Readability exception: 107-line render function projects one accepted snapshot atomically into this bounded form. |
+| `desktop_app/strings/m2_manual.py` | 93 | shared | `desktop_app/strings/m2_manual.py` | M2-2: additive phase63 literal catalogue records following the M2-1 phase62. |
+| `tests/test_m2_manual_ui.py` | 568 | tooling | `tests/test_m2_manual_ui.py` | M2-2: actual offscreen controls, asynchronous fake facade and exact intent identity regressions; no SDK/process orders. Readability exception: 568-line test module and 464-line test class group 29 short cases with one owned Qt fixture; native Cancel test owns its application loop after prior quit; no production-class exception. |
+
+
+| `quantlab/trading/runtime/manual_resources.py` | 71 | composition | `quantlab/trading/runtime/manual_resources.py` | M2-2: lazy version-one owned resource Ledger retaining only masked alias markets and typed bindings for prior obligations; no credentials/native accounts. |
+| `quantlab/trading/runtime/manual_trading.py` | 367 | composition | `quantlab/trading/runtime/manual_trading.py` | M2-2: one aggregate manual SIM engine, strict native scope, bounded worker observations, serialized ExecutionPort and pure readiness projections; no automatic cycle. |
+| `tests/test_manual_runtime.py` | 163 | tooling | `tests/test_manual_runtime.py` | M2-2: pure CAS, failed-query, resource-schema, reference-only startup and logical market-clock/real-lease boundaries. |
+| `tests/test_manual_runtime_integration.py` | 364 | tooling | `tests/test_manual_runtime_integration.py` | M2-2: actual bundle/codec/dispatch/canonical engine with strict offline SDK; aggregate aliases, diagnostic/replay, owned authenticated Pipe cleanup and late-resource shutdown. |
+| `tests/test_manual_runtime_scope.py` | 84 | tooling | `tests/test_manual_runtime_scope.py` | M2-2: native revision retained through presentation offsets; only current context epoch projected, admitted result scopes preserved, foreign outer/form denied. |
+
+M2-2 runtime readability audit: the new runtime module is 367 lines and
+ManualRuntime exactly 300; the resource module is 71 and all three new test
+modules are below 400. Function exceptions are _materialize 95 (one ownership
+handoff keeps journal acquisition, restored cursor/order seeding and adoption
+under the same close/generation checks), refresh 53 (visibly separates input
+capture, native waits and writer adoption), and the test fixture setUp 76 (one
+explicit authenticated fake owner/resource/native-query audit fixture shared by
+single-account and aggregate cases). No generic factory/registry is introduced
+to split these short-lived composition transactions.
+
+Existing bootstrap grows 647→693 lines, RuntimeBundle 513→551. Its changed
+function spans are __post_init__ 58, snapshot 62, execute 70 and build_runtime 74;
+the inherited _connect_worker remains 65. The additional code only wires the
+separate ManualRuntime, pure atomic projections and trusted Clock dependency.
+The required plan for this inherited file over 600 lines is to extract the legacy
+read-only connection worker and its attempt/version lifecycle behind the same
+EngineFactory contract in a separate scoped change; the new manual engine/core
+is already outside it. CompositeFacade.execute 78 retains one accepted-intent
+boundary; server _dispatch 63 and inherited _serve 138 retain their authenticated
+request and owned-lifetime boundaries. This slice changes no size threshold.
+
+The independent M2-2 runtime baseline records exactly one additional production
+submit forwarder (runtime/manual_trading.py, submit, self.adapter), after the
+unchanged exhaustive oracle failed on that tuple alone. The v1 caller/writer
+sets, the sole TradingEngine.submit→execution.commit set and all guard-order
+assertions remain exact. These five path rows are additive; historical source
+counts, relocations, fixture hashes and unrelated baselines are not regenerated.
+
+
+| `quantlab/trading/application/manual_routing.py` | 71 | application | `quantlab/trading/application/manual_routing.py` | M2-2 P1: pure confirmed-request deny copy and already-held same-owner facade routing; no host opening, financial call, scope rewriting or new operation. |
+| `tests/test_manual_no_admission_routing.py` | 193 | tooling | `tests/test_manual_no_admission_routing.py` | M2-2 P1: real Composite/bundle/codec/authenticated-Pipe proof for outer-CAS refusal, original identity, no added SDK mutation, current/stale owner and preserved UNKNOWN. |
+
+P1 routing adds only these two Python paths; prior source/fixture identity rows
+remain historical. The new modules have no function over 50 lines and are below
+400 lines. CompositeFacade remains below 300 lines; its execute function grows
+to 86 while preserving one accepted-intent boundary. Existing ManualRuntime
+becomes 306 lines (file 374): the six lines over the readability target keep the
+deny-only action guard and exact authoritative-result scope retention beside
+the same command dispatch, without a second lifecycle owner or result cache.
+Its existing _materialize 95 / refresh 53 exceptions and bootstrap split plan
+remain unchanged. No caller/commit oracle, risk threshold, catalogue or other
+historical baseline is relaxed or repinned by this independent path baseline.
+
 | `tests/test_trading_engine_cleanup.py` | 267 | tooling | `tests/test_trading_engine_cleanup.py` | M2-8: retained-owned-process success/failure/timeout cleanup, normal endpoint-removal race and live/abnormal-exit counterexamples; foreign-host preservation; fake SDK only. |
 | `tests/test_m2_guidelines.py` | 175 | tooling | `tests/test_m2_guidelines.py` | M2-6: title/help placement, button roles, Cancel-default confirmations, column persistence, units and keyboard acceptance; no SDK or engine process. |
 | `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
-| `tests/test_m2_trading_page.py` | 306 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
+| `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
+| `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -1723,22 +1790,55 @@ since `909fc49`. All current exceptions are listed with exact AST spans.
 | function | `trading_runtime.py:45` | `_run_window` | 59 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
 
 
+## M2-2 explicit readability exceptions — first-round handoff
+
+Measured at backend source3795a891ba25c28c57f2349d6a4a31916404b036 / inventory300cacbfda13a4b1f33c18f87604c5968d6f317c. AST spans include the definition line and end line; file counts use splitlines(). These are explicit exceptions to docs/CONTRIBUTING.md:215's400/300/50 readability targets, not evidence that the targets were met. No threshold, skip, implementation or test assertion is changed by recording them.
+
+| Kind | Path / line | Symbol | Lines | Specific reason |
+|---|---|---|---:|---|
+| file | `quantlab/trading/application/manual_trading.py:1` | `<module>` | 876 | First-round manual SIM application coordinator keeps accepted scope, transient previews, durable request identity, guarded canonical execution and report adoption together. This exceeds600 and requires the concrete split plan below; it is not a permanent architecture exemption. |
+| class | `quantlab/trading/application/manual_trading.py:52` | `ManualTradingService` | 825 | One service owns the existing engine writer/journal and the exact request state machine; splitting ownership during the frozen safety fix could separate absence proof from admission or reconciliation. Read-only projection can be extracted without creating another execution authority. |
+| function | `quantlab/trading/application/manual_trading.py:242` | `ManualTradingService._prepare` | 101 | Shows the ordered current account/market/quote/limit/unit/capacity/risk checks and exact preview economics before caching the preview. Keep the canonical RiskService and same accepted evidence; later separate pure preview projection/calculation without changing check order, risk policy or confirmation identity. |
+| function | `quantlab/trading/application/manual_trading.py:354` | `ManualTradingService._submit` | 89 | Keeps exact preview revalidation, durable manual intent, sole TradingEngine.submit call, known/UNKNOWN receipt handling and diagnostic cancellation visibly ordered. Do not create a second ExecutionService.commit caller or split the existing writer/fence boundary. |
+| function | `quantlab/trading/application/manual_trading.py:444` | `ManualTradingService._mutate` | 51 | Keeps owned-order/partial-fill restrictions, price-only conservative risk check, durable mutation identity, fence and unknown-outcome latch in one reviewable mutation sequence. The one-line target excess is documented, not hidden by moving validation after the SDK call. |
+| function | `quantlab/trading/application/manual_trading.py:532` | `ManualTradingService.execute` | 70 | The single typed dispatcher makes scope/replay/version admission, deny-only sealing and matching durable preflight rejection ordering explicit. Future helpers may format receipts or validate typed action shape; they must not admit a request outside the existing writer or turn generic errors into known broker outcomes. |
+| function | `quantlab/trading/application/manual_trading.py:631` | `ManualTradingService.adopt` | 92 | Preserves one serialized adoption of complete native observations, the existing fill reducer, ownership reconciliation, halted books and request completion. Collection stays outside the writer; event application and durable state adoption remain inside it, with no second ledger/reducer. |
+| function | `quantlab/trading/application/manual_trading.py:786` | `ManualTradingService.snapshot` | 91 | Builds the complete UI projection from current accepted scope, app-owned capacity, reasons, request identities and readiness. This read-only projection is the first narrow extraction candidate; keep current-scope capture under the same writer and preserve original admitted scopes on previews/results. |
+| file | `tests/test_manual_trading.py:1` | `<module>` | 985 | Strict fake SDK through real adapter/engine/journal cases intentionally retain complete admission, reconciliation, UNKNOWN/restart and T+2 evidence. Over600 requires the test split below; do not replace actual-chain cases with permissive stubs to reduce size. |
+| class | `tests/test_manual_trading.py:116` | `ManualCoreTests` | 675 | Shared offline composition supports canonical-path cases and precise native-call assertions. Grouping avoids divergent fake authority, but exceeds300 and is a recorded split debt, not a new size limit. |
+| function | `tests/test_manual_trading.py:117` | `ManualCoreTests.setUp` | 60 | Explicitly constructs the immutable SIM facade/shared owner, source-tagged attempt capability, real adapter, in-memory journal, engine, quote, limits and service. Extract only the reusable fixture construction, preserving its explicit environment and zero real SDK/secret access. |
+
+Required narrow split plan for the two files over600:
+
+1. Product first seam: move read-only readiness/instrument/manual-view projection into a dedicated application projection module after capturing immutable facts under the current engine writer. Keep scope validation, preview identity/cache, absence-proof rejection, durable intent/order changes, canonical submit, SDK mutation and report adoption in the existing service/engine writer/journal. No new execution port, authority framework, risk policy, commit caller or second reconciliation state machine is introduced. Preserve all current DTO scope/UNKNOWN semantics and existing RiskService/fence checks; demonstrate unchanged outputs with the existing strict-fake tests before removing any old body.
+2. Test first seam: extract only the shared strict SDK/composition fixture into a test-support module, then group preflight/restart and stock-settlement cases into focused test classes/modules with explicit discovery mapping. Retain every assertion, native call count, fault injection, test case and failure identity/migration accounting. No count cap, timeout or skip is changed. A later behavior-preserving split needs its own graph impact, independent full discovery and focused/restart proofs; it is not performed during this frozen first-round handoff.
+
+
+### M2-2 remembered-order-column readability audit
+
+Only two optional window preference inputs and the existing column selector are
+extended. The new20-line presentation-options helper keeps preference IO in the
+composition root and preserves the existing inherited window split plan: extract
+context navigation/confirmation without changing accepted scope or financial
+validation. These inherited window/function size exceptions are not new limits.
+Measured spans: window.py655 lines (TradingWindow563, operation helper55); trading_runtime.py173 lines.
+
 ## M2-1 runtime composition readability exceptions
 
 These are measured current-source exceptions, not raised targets or claimed
-compliance. M2-1 extends the retained LOCAL/legacy-readonly host with shared
-SinoPac composition and explicit old-session retirement. The small final fix
+compliance. M2-1 and M2-2 extend the retained LOCAL/legacy-readonly host with shared
+SinoPac/manual composition and explicit old-session retirement. The small final fix
 initializes three internal flags and refuses re-entry after unknown logout;
 no guard, deadline, journal or financial caller changes.
 
 | Kind | Path / symbol | Current lines | Reason |
 | --- | --- | ---: | --- |
-| file | `quantlab/trading/runtime/bootstrap.py` | 651 | Retained three-environment composition, public-version durability and legacy/shared lifecycle admission; narrow split plan below. |
-| class | `bootstrap.py` / `RuntimeBundle` | 517 | One existing lifecycle lock, version journal and writer owner; keep shutdown/UNKNOWN semantics together during this safety handoff. |
-| function | `RuntimeBundle.__post_init__` | 55 | Ordered owner/store restoration and explicit lifecycle initialization. |
-| function | `RuntimeBundle.execute` | 66 | Existing public dispatch, short-lock scope and fail-closed legacy admission. |
+| file | `quantlab/trading/runtime/bootstrap.py` | 703 | Retained three-environment composition, public-version durability and legacy/shared lifecycle admission; narrow split plan below. |
+| class | `bootstrap.py` / `RuntimeBundle` | 561 | One existing lifecycle lock, version journal and writer owner; keep shutdown/UNKNOWN semantics together during this safety handoff. |
+| function | `RuntimeBundle.__post_init__` | 61 | Ordered owner/store restoration and explicit lifecycle initialization. |
+| function | `RuntimeBundle.execute` | 76 | Existing public dispatch, short-lock scope and fail-closed legacy admission. |
 | function | `RuntimeBundle._connect_worker` | 65 | Owned candidate validation, late-completion rejection and close ordering remain atomic in responsibility. |
-| function | `bootstrap.build_runtime` | 67 | Explicit LOCAL, pinned legacy profile and unified host composition share the existing lifecycle owner. |
+| function | `bootstrap.build_runtime` | 74 | Explicit LOCAL, pinned legacy profile and unified host composition share the existing lifecycle owner. |
 
 Required narrow split for the file over600: first move read-only public/market
 snapshot projection to a dedicated runtime projection helper, then the existing

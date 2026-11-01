@@ -979,6 +979,43 @@ an empty graph UID (its pre-edit impact still reported187direct callers). This
 is retained as an index limitation, not an unused/unaffected claim. Actual parser
 source and existing CLI tests were independently verified. Raw CLI report and
 structured flag/UID summary are in ignored .tmp/m2-backend-detect files.
+# M2-2 manual simulation core decisions (2026-11-01)
+
+- A confirmed app-owned virtual book provides source-tagged internal risk
+  capacity. It never replaces broker balances, actual PnL, or the automatic
+  previous-close/OOS evidence. Capital remains bounded by the existing account
+  allocation buckets and single 100000 platform cap, including multiple aliases
+  of the same market. Re-enabling a book cannot reset capital, loss or stop state.
+- A private durable manual intent enters TradingEngine.submit's narrow branch.
+  It creates no ACTIVE StrategyRecord. The sole state-bearing commit caller,
+  locked RiskService preview/rejection, reservation, SUBMITTING and fence remain.
+- One current-login-generation diagnostic proof requires a known TMF broker
+  reference and subsequently confirmed canceled/unfilled state. It permits
+  explicit SIM attempts from other accepted confirmed books, while each account
+  still requires signed/market/risk/reconciliation checks. This is not verified
+  stock trading permission. UNKNOWN, partial/full fills and a changed generation
+  do not pass. Only a backend-minted legal distant-price diagnostic may be used.
+- A manual stop price estimates sizing risk; it creates neither a protective
+  broker order nor automatic management. Manual positions are UNPROTECTED.
+  STOP_NEW latches books; bare RESUME and adding another book cannot clear it.
+- Price-only amendments may not increase committed risk; quantity amendment is
+  explicitly unsupported rather than guessing the pinned SDK's reduction units.
+  Mutations receive a fresh admission TTL, retain original conservative reserves
+  until observed evidence, and never turn SDK timeout into retry permission.
+- Owner direction permits conservative app-derived exits for settled owned
+  cash-long stock. This uses durable per-fill acquisition tranches matured T+2
+  on the explicit calendar, exact fresh native-position reconciliation, healthy
+  scoped orders and existing pending-exit reservation. It is not a native
+  free-share certificate. StockPosition.yd_quantity and reserve available_share
+  are not substituted for sellability. Non-cash, financed/collateral, external,
+  mismatched, missing-date or unknown scopes remain blocked. SDK rejection is
+  still possible. The automatic stock-availability path remains unchanged.
+- Stock acquisitions and virtual sale receivables are written atomically by the
+  existing fill reducer. Unsettled sale proceeds remain unavailable until T+2
+  from their conservatively observed session. No second fill reducer is added.
+  A missing manual closing baseline keeps cross-day new risk stopped, while a
+  verified settled owned stock exit can still proceed. No previous-close value
+  or calendar fallback is invented.
 
 ## M2-1 / single three-step connection presentation — 2026-11-01
 
@@ -1124,6 +1161,7 @@ Both images retain the LOCAL book, formal connection label and readable readonly
 CA guidance; visual inspection passes and horizontal scrollbar maxima are zero.
 Other scenes and unrelated historical baselines are not regenerated. The capture
 record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
+# M2-2 manual simulation core decisions (2026-11-01)
 
 ## M2-1 / source-identical M2-8 documentation integration and startup
 
@@ -1383,3 +1421,526 @@ new failure or infer the new complete result solely from the focused check.
 ## connection-recovery-budget-verified / final complete source evidence
 
 Publish exactb605466455655b17251122347ba28da202776653 complete discovery 4005/1426.235s with zero new failures after individual actual-cause review. Retain previous failed CI/full attempts and previous successful source evidence. Only documentation changes follow; final runtime blobs must match this full/actual source. Do not reuse historical CI as the new final-head result.
+
+## M2-2 / precise LIVE policy oracle — 2026-11-01
+
+Owner D1 supersedes the earlier controlled LIVE-positive environment fixture.
+Retain both environment setups and the real fixture's validation/research/deploy
+steps. At LIVE submission now assert production_orders_disabled, no port delivery,
+zero broker submissions and no orders/positions. SIM retains every original
+entry/fill/protection/performance assertion, quantity, timeout and risk limit.
+This is an independent baseline commit; no test is removed or skipped. The new
+fake-only guard module additionally checks direct SDK/adapter/service/engine/UI
+stop/cancel/flatten paths and SIM delegation. The source guard is separate.
+
+Before source changes the original environment module passed2/2. With the guard
+and the old oracle it reports exactly one LIVE policy error; its original log
+is .tmp/m2-2-live-old-oracle-red.log. After the precise oracle update both cases
+are required to pass. Graph reports UNKNOWN static callers for the test method;
+direct source and unittest discovery establish its actual invocation.
+
+## M2-2 D1 coordinator oracle baseline
+
+The older coordinator fixture still expected an armed LIVE strategy cycle to
+submit. D1 supersedes only that LIVE-positive expectation. Its independent
+baseline now requires production_orders_disabled, zero production deliveries
+and no submitted order before separately observing a historical order/fill
+seeded only in the local exchange double through the read-only cycle. The
+original SIM branch and all of its quantity/fill/clock assertions remain intact.
+This introduces no production submit caller or permission exception.
+
+## M2-2 confirmed-request preflight rejection
+
+The UI must retain an unknown financial request until matching authoritative
+request evidence arrives. A preflight refusal is therefore journaled as a known
+REJECTED result only after current typed inner/outer native scope validation,
+while holding the existing writer, and only if both the manual request key and
+canonical order key are absent. A healthy writer fence and durable append are
+required. The exact original form hash, scope and request identity are retained;
+no error-code whitelist and no empty broker-cache inference provide certainty.
+Existing known/unknown keys replay unchanged. Sealing the rejected key also
+prevents a delayed original command from later admitting a different outcome.
+
+UiCommand.manual_no_admission defaults to false for existing wire clients. It is
+a deny-only forwarding marker for an outer CAS refusal: after native/account
+scope and existing-book checks it can only reject/seal an absent key. It never
+executes the financial body, even when its version would otherwise be current.
+The runtime/Composite owner preserves the original request scope and handles
+its separate outer-boundary forwarding regressions. Invalid/stale native scope,
+closed/failed storage or lost writer ownership cannot mint known admission
+outcomes. LIVE remains denied independently before any mutation.
+
+## M2-2 / scoped manual intent contracts — 2026-11-01
+
+Manual intents carry context id/epoch, environment/account, shared connection's
+opaque string generation and revision; UiCommand.expected_version remains the
+separate book CAS. A backend must match every accepted scope before execution.
+No submitted object is a grant, ACTIVE strategy or research/OOS evidence.
+
+**M2-2 runtime integration (2026-11-01).**
+
+The query worker materializes one canonical TradingEngine only after explicit
+authenticated account selection. This is composition, not permission to trade:
+each manual book still requires a confirmed application virtual allocation,
+complete fresh account observations, current scope, and the diagnostic policy.
+Canonical 60,000/40,000 application buckets and the global 100,000 limit remain
+unchanged. Broker funds remain unavailable; no zero simulation reply becomes
+positive broker financial evidence.
+
+One execution consumer shares the existing authenticated SDK owner. A narrow
+ExecutionPort wrapper serializes its mutable cache with query collection; it
+only forwards the existing canonical ExecutionService call. SDK observations
+run outside the writer. Collection releases its mutex before adopting reports,
+and a batch collected across a committed book mutation is discarded. Failed
+queries call service.adopt(()) so previous observations cannot remain usable.
+Each collection has an eight-second acceptance bound, without increasing the
+existing SDK, command or intent deadlines. Runtime pumping never calls the
+automatic strategy cycle, automatic exits or legacy financial reconciliation.
+
+ManualScope retains the broker owner's native generation and revision. The
+CompositeFacade projects only the current scope's context identity/epoch;
+preview, pending and result scopes retain their original admission identity.
+The authenticated request account/environment, outer command, inner form,
+accepted account selection and materialized owner stamp must agree. UI-only
+connection revision offsets never become manual authority.
+
+A small version-one Ledger retains masked alias/market facts and typed contract
+bindings needed to reconstruct prior obligations. No native account identifiers
+or credentials are stored there. Reconnection and contract changes preserve all
+books/orders/positions. Missing or unselected historical obligations remain
+blocked rather than disappearing. Observed-time-only resource renewals refresh
+limits/capabilities without rewriting contract economics or silently resuming a
+book. Economic/calendar/cost changes rematerialize and require confirmation.
+
+Simulation readiness is computed for the selected book. READY requires a known
+canceled/unfilled TMF diagnostic in the current native generation and current
+book submission readiness. It does not certify stock or other key permissions.
+The pending-account control host and a LOCAL book cannot borrow another book's
+READY. These computed read models do not advance the native CAS token. LIVE
+remains rejected before manual execution; production readiness remains blocked.
+
+An optional trusted Python sinopac_clock dependency passes through existing host
+composition into the owner's existing Clock port. Defaults and all real UTC
+journal leases/fences remain unchanged; there is no CLI/config/environment
+activation. The positive fake uses an actual covered trading date; the unchanged
+built-in calendar rejects Sunday 2026-11-01. Required real-clock startup remains
+separate and must produce no Sunday orders.
+
+The exact additive submit-caller inventory records only the ExecutionPort
+forwarder (runtime/manual_trading.py, submit, self.adapter). It adds no reservation
+or commit authority: ManualTradingService._submit -> TradingEngine.submit ->
+ExecutionService.commit remains the sole financial admission/journal path.
+Historical v1 submit callers, the sole execution.commit assertion, protected
+files, risk limits and all existing test assertions remain intact.
+
+## M2-2 D1 coordinator oracle baseline
+
+Book allocation is explicitly APP_VIRTUAL_SIMULATION, requires user confirmation
+and fresh verified account observations, and never replaces unknown broker funds
+or automatic daily-baseline rules. Preview returns backend cash/risk/fee amounts
+and sources. Canonical quantities are integer shares/contracts with an explicit
+whole-lot step. stop_price is a sizing estimate, not a placed protection order;
+the view explicitly remains UNPROTECTED. Existing protection/STOP_NEW latches
+cannot be cleared by a manual-book label. Automatic stop/strategy cycles are not
+part of this round.
+
+Pending and last_result retain exact request identity and known/unknown outcome.
+An empty snapshot is not evidence that a timed-out command was never admitted.
+The user-confirmed diagnostic shares the normal submit/cancel path; its purpose
+is narrow, quantities/prices require verified facts, and it never promises no fill
+or automatically retries/reverses partial/full fills. Full dispatch is subsequent
+work; the contract slice starts no SDK, engine or financial operation.
+
+Own pre-edit graph reports CRITICAL for UiAction/UiCommand/UiState and HIGH for
+registry.initialize; warnings and exact source checks are recorded in
+m2-2-verification.md. Four new boundary/codec tests pass, preserving old messages
+and rejecting malformed money/quantity/scope input. The early foundation merge
+missed the own precommit check; its actual postmerge comparison is documented
+without rewriting history or retroactively claiming compliance.
+
+## M2-2 / manual simulation presentation and independent review — 2026-11-01
+
+The manual form uses the existing command worker and public typed contracts.
+Only an accepted SIM context/account/generation/revision may prepare a virtual
+book or order. Decimal prices and backend lot-size conversion preserve canonical
+quantities; Qt does not calculate risk, margin, fees or execution permission.
+The preview discloses app-owned funds, estimated costs, Taipei quote/expiry and
+the absence of an actual protective stop. A diagnostic preparation has no order
+intent; its separate confirmation can submit only the exact backend preview.
+It may fill, so no unfilled promise, automatic retry or reversal is offered.
+Price-only amendments avoid guessing the pinned SDK's ambiguous quantity API.
+
+Confirmation defaults to Cancel and captures book version and connection scope
+before the modal loop. Confirmed mutation requests retain their original identity
+through transport errors, absent projections and subsequent login generations.
+Only a matching server last_result with outcome_known can clear that UI latch;
+even a false operation_failed/state_conflict receipt is not proof of non-admission.
+The UI latch is observation state, not a replacement for the durable backend
+journal. Existing LOCAL automatic controls remain separate; SIM resume always
+requires an explicit unchanged manual book and fresh reconciliation eligibility.
+
+Independent read-only review reproduced missing-projection/unknown-resume,
+unknown arriving inside confirmation, and indistinguishable diagnostic results.
+Four focused regressions were first observed failing (the resume test waits for
+the real worker to avoid a scheduling false positive), then the source was fixed.
+The accepted context identifies retained pending requests even when manual.scope
+is absent; resume rechecks after confirmation; persisted test results/reasons are
+localized. Dynamic catalogue keys were replaced by literal calls and source/model
+codes were moved into tooltips. Strict presentation imports use contracts reexports.
+The first integrated UI batch after these fixes passed84 tests in11.035seconds.
+This is focused fake-Qt evidence, not full-suite or broker acceptance.
+
+Own pre-edit graph: TradingWindow.command/_run CRITICAL (13/17 upstream symbols,
+eight reported flows), catalogue CRITICAL (140 direct importers), translation_parts
+HIGH. Other changed hooks were LOW; dynamic test callers were UNKNOWN and checked
+against source/discovery. Index-wide process extraction has documented coverage
+caps and does not certify absent flows. Complete change detection is required
+before the forthcoming source/baseline commits. New phase63 strings follow the
+frozen M2-1 phase62 ending2877; final merged catalogue/appearance pins will be an
+independent explained baseline commit. The exact LIVE action-set oracle adds all
+six manual actions without deriving expected values from the implementation.
+
+A broad focused run accidentally used the restricted execution context and
+stalled in tempfile._mkstemp_inner while the existing preference test performed
+atomic_write. Its exact owned interpreter was verified by process handle, parent,
+creation time and no descendants before terminating that incomplete QA run.
+It is excluded from passing evidence; normal-user execution completed and exposed
+real primary/help placement failures, subsequently fixed. Future filesystem and
+complete suites use normal user execution. No engine/user app, ACL, deadline,
+assertion, skip, G3 source, SDK pin or PROJECT_STATE was changed by this diagnosis.
+
+The integrated manual transport must retain the accepted context_epoch even when
+the context selector list is empty: the authoritative ManualScope still names
+that epoch. The existing legacy command convention omitted it without navigation
+choices. Restrict the change to the six manual commands and explicit manual-book
+resume; keep unrelated legacy commands intact. A real-window regression exercises
+the actual command builder for all seven intents. It is prepared but not yet run
+while the coordinator's isolated M2-8 complete discovery owns the process window.
+Fresh command#16 impact is CRITICAL:10 direct/13 total symbols,8 flows, with25
+unresolved receiver call sites; source bindings confirm the manual calls. This
+does not justify skipping the subsequent focused/full/runtime checks.
+
+Second UI-only review reproduced three further real-widget defects before
+fixing them: a confirmed virtual amount could differ from a still-editable
+pending input; empty SIM tables navigated to the strategy wizard; and a failed
+read-only poll left prior manual readiness actionable. The accepted amount now
+replaces the input after confirmation, pending/unreachable fields are disabled,
+SIM empty states navigate to manual preparation or connection, and the common
+accepted-scope predicate also requires a reachable engine. A successful fresh
+snapshot restores availability; no financial permission is inferred from this
+presentation predicate. LOCAL strategy navigation remains unchanged.
+
+All20 manual widget/worker tests now pass in2.077s, including the independent
+outer-epoch regression without navigation choices. The three new defect tests
+were first RED; no existing assertion was weakened. Runtime backend authority,
+final integrated catalog pins, full discovery and startup remain separate gates.
+Graph render_manual/matches/trading-page impacts are LOW; resume's dynamic
+binding was UNKNOWN and confirmed at workspaces' actual button callback. These
+checks resumed only after the coordinator's M2-8 retry passed its complete
+smoke-sensitive desktop prefix; no second full suite or engine startup overlapped.
+
+ManualScope is the server's native admission scope. The UI compares its accepted
+context ID, epoch, environment and account to that scope, then forwards its native
+connection generation/revision unchanged. The global connection panel may be
+showing another host and may carry a presentation revision offset; it cannot
+replace or invalidate that native CAS token. Confirmations still compare the
+entire current ManualScope before and after the dialog. Preview and unknown
+request identities remain bound to their original admission scope. Two pure
+projection regressions first failed and then passed; real-window regressions
+also cover an offset panel revision and a native scope change during confirmation.
+
+A confirmed canceled/unfilled micro-Taiwan diagnostic proves only that diagnostic
+for the current SDK generation. Its UI says “微台已通過（其他商品依券商回報）”,
+never that stock permission was independently tested. Stock accounts cannot run
+the TMF diagnostic and display a concrete switch-to-futures instruction. The
+backend remains responsible for each account's actual permissions, observation,
+funds, existing risk limits and native admission checks.
+
+The resulting23 real-widget/worker tests pass in2.556s, with both offset and
+native-scope-change cases exercised. They ran only after full M2-6 had completed
+its desktop smoke prefix. These remain UI fake evidence; no SDK or engine
+process was created and final integration/full discovery is still required.
+
+## M2-2 / integrated manual exit and literal quantity units
+
+Normal merge cf5582e retains the final M2-1 connection projection before manual
+rendering and both command-completion paths. The next normal merge bb7b9c8 retains
+the exact reviewed SDK execution guards, detached-consumer revocation and preview
+quantity metadata. Duplicate contract paragraphs were removed only after exact
+byte comparison proved the same text was already retained elsewhere. Focused
+groups passed96 and40 tests respectively; these are not complete-suite results.
+
+The existing explicit selected-position FLATTEN is the covered manual exit.
+No stock lot is guessed from an instrument and no short cash-stock permission is
+invented. The manual stock SELL form directs users to the position page. An actual
+manual exit carries the reviewed native ManualScope, accepted epoch, target lot
+and confirmed unchanged capital through the existing UiCommand/worker path.
+It allows the backend's risk-reducing exit checks while new entries are halted,
+but refuses an unreachable engine, unknown request, foreign book, or scope change
+during confirmation. Both UI and backend validate ownership independently.
+
+Manual stock sellability is an app-derived conservative estimate on reconciled,
+owned, matured cash lots; it is not a broker-certified free-share field. The
+confirmation says this explicitly and leaves native refusal/partial execution
+possible. The backend retains existing risk/reservation/fence/journal behavior.
+Selected PositionView.strategy_id equals the explicit ManualTradingView.book_id;
+UI does not infer ownership from an order-ID/lot-ID coincidence or string prefix.
+
+Preview text uses server-provided quantity_unit/lot_size: canonical shares display
+in whole lots, futures in contracts, absent units as unknown. New readiness codes
+map to existing literal Chinese manual guidance. A confirmed-not-submitted result
+has its own message; it never clears a different unknown request's identity.
+
+The29 manual real-widget tests initially exposed five failures across scoped
+flatten, units, stock-exit guidance and readiness labels. The corrected integrated
+group passed102 tests in9.156s. Qt converts string-enum item data to a string, so
+the stock-side comparison uses value equality, not Python object identity.
+The additional baseline group passed64 tests in18.598s after pinning exactly71
+phase63 records at2878–2948. Historical locales, aliases and insertion order were
+independently compared after removing only those71 keys. No unrelated appearance,
+page-service or privacy baseline was changed; their original assertions passed.
+Source and catalogue pins are committed separately. Final full discovery,
+actual runtime startup and remote CI remain independent delivery gates.
+
+The final backend allocation check adds one precise readiness explanation:
+lowering current settings below previously confirmed manual capital blocks new
+risk without erasing the book/loss history or legal exits. Both connection and
+manual views map manual_allocation_exceeds_settings to that explanation. Final
+phase63 is72 records at2878–2949 (literal global total2950). The catalogue pins
+were regenerated from the committed parent, again proving every prior value,
+alias and ordering unchanged; both exact catalogue tests pass at72. The64-test
+baseline batch above remains correctly attributed to the preceding71-key source.
+
+A further real-widget regression first failed because a selected SIM position
+kept the shared flatten button enabled while a request was unknown. The manual
+presenter now uses the selected explicit book/account, confirmed capital and
+backend can_mutate flag, together with the existing reachability/busy/scope checks.
+Selection changes refresh this state. The independent action-side checks remain;
+owned halted-book exits still work. The unchanged new assertion and all29 manual
+widget tests passed in2.553s after the correction.
+
+The final72-key state also passed all64 catalogue, aliases, appearance, privacy,
+page-service and architecture baseline checks in17.532s. The global total2950 is
+literal and contiguous. Ruff check and formatting verification passed for all
+seven modified Python sources/tests. These focused checks complement, and do
+not replace, the final integrated full-suite and actual-startup gates.
+
+The complete static pre-push initially found only a CRLF/LF formatting mismatch
+in the changed catalogue-count test. Normalizing to the repository LF rule
+leaves its sole Git difference2878→2950. The repeated static pre-push passed:
+Ruff lint, formatting1166files, Python3.11 syntax1082trackedfiles and the
+unchanged quality gate with zero findings.
+
+## M2-2 / prepared-book exit baseline after final M2-1 integration
+
+The normal M2-1 merge preserves the explicit page-owner API and all full-help
+assertions. Its first93-check batch exposed one obsolete positive expectation:
+leaving LIVE for SIM with the default unconfirmed ManualTradingView expected
+flatten enabled. The implemented owned-book exit gate correctly keeps it disabled.
+Update only that feature oracle to assert unconfirmed and disabled; retain both
+selector acceptance, pending LIVE prohibition and no-command assertions. The
+independent29 real-widget cases prove owned confirmed halted-book exits remain
+possible and unknown/foreign exits remain blocked. The unchanged93-test batch
+then passes in28.500s. Commit this feature baseline independently of the merge;
+no guard, timeout, skip or existing assertion is removed.
+
+UiCommand.manual_no_admission defaults to false for existing wire clients. It is
+a deny-only forwarding marker for an outer CAS refusal: after native/account
+scope and existing-book checks it can only reject/seal an absent key. It never
+executes the financial body, even when its version would otherwise be current.
+The runtime/Composite owner preserves the original request scope and handles
+its separate outer-boundary forwarding regressions. Invalid/stale native scope,
+closed/failed storage or lost writer ownership cannot mint known admission
+outcomes. LIVE remains denied independently before any mutation.
+
+## M2-2 / outer-CAS known-no-admission routing — 2026-11-01
+
+Keep the original confirmed form, request ID, context/epoch and native owner CAS
+when a boundary refuses admission. The default-false manual_no_admission field
+is deny-only: core may seal a proven absent key under its existing writer/fence,
+or replay an existing known/UNKNOWN request unchanged; it cannot execute the
+financial body. A pure helper limits forwarding to typed confirmed SIM submit,
+prepared diagnostic, cancel and amend forms with equal inner/outer scopes.
+Composite uses only its already-held current book or same-native-owner control
+port; it never opens/switches a host for a refusal. The authenticated server
+turns a mismatched envelope into the same deny-only path without rescoping.
+LIVE, malformed markers and unsupported/unconfirmed actions fail before fallback.
+The runtime retains a false-receipt scope only when a matching server-known
+result exists. Transport failures and preexisting UNKNOWN remain uncertain; no
+generic state_conflict whitelist clears pending state or manufactures a result.
+
+## M2-2 / explicit readability debt in the delivery inventory
+
+Record exact file/class/function target exceptions and the required narrow split
+plan for the manual application coordinator and strict-fake fixture. These targets
+are not claimed as met and no limit or privacy assertion is changed. Preserve the
+one canonical writer, journal, admission/absence proof, existing risk/fence and
+all test cases. This is a separate documentation baseline after source integration;
+actual class decomposition is outside this frozen safety handoff.
+
+## M2-2 / six default order columns and exact display units
+
+Visual review found the inherited seven-column order table. Reuse the existing
+column selector with table-sized bounds, six default order columns and an optional
+account column. Persist each choice by merging the dedicated presentation store
+so order, position and future preferences do not erase one another. Keep canonical
+order IDs, hidden full account values and native confirmation account text. Display
+stock total/partial fills in exact fractional lots (500shares=0.5lots), with canonical
+share-count tooltips; futures remain contracts. No financial or scope data changes.
+The six new real-widget tests first failed3/error2 and then passed with the existing
+nine guideline checks (15 total). Two literal phase63 strings use2950/2951; only
+those keys extend the historical catalogue and contiguous total2952 in a separate
+baseline commit. Root takes over this follow-up after the agent usage limit.
+
+
+## 2026-11-01T20:39+08:00 — M2-2 final table evidence and precise inventory
+
+Retain all ordinary parent merges and feature-specific independent baselines.
+The final table component keeps six default columns, canonical quantity/account
+identity and merge-based local preferences. Reject malformed incremental graph
+UIDs and force only the local offline index; no FTS repair/download is requested.
+Verify all13 added qualified definitions and both complete change scopes before
+committing. Inventory line count is measured321, including the extra six LIVE
+manual action entries and one unconfirmed-book assertion; an earlier scratch
+assumption307 failed before editing anything and is not committed as a baseline.
+
+Review consistent synthetic-budget/price visual fixtures only. A first scratch
+capture still used old form inputs while previews were updated; correct the
+capture helper values, rerun it, keep earlier evidence local and publish only
+the consistent repeat. Neither helper alters product code or authenticates a
+broker. The30-scene metrics,13 representative PNGs and checklist are distinct
+from canonical fake order/startup/full-suite proofs. No second-round work is added.
+
+## 2026-11-01T21:49+08:00 — M2-2 inherits confirmed legacy retirement refusal
+
+Normally merge M2-1 sourcea7a6738 and independent inventory897df1b. Preserve all
+manual service, outer-CAS no-admission routing, canonical execution, current
+scope and UI code; source conflicts are absent. Keep both appended decisions
+and readability inventories verbatim, then measure this branch's additional
+bootstrap composition in its own independent baseline. Do not discard the
+M2-1 source-specific evidence or relabel it as a manual execution proof.
+
+Pre-merge exact class impact is LOW13; execute/connect/retirement each LOW3.
+Execute has175 unresolved receiver sites, so its result is a lower bound.
+Constructor hook remains UNKNOWN; the dataclass and two production factories
+plus seven direct test construction sites are confirmed by source. No empty
+caller set is treated as unused. Refresh the sole offline index and require
+complete all/staged identities plus all newly added methods before the merge
+commit. No SDK, catalogue, risk limit, timeout or existing assertion changes.
+
+## M2-2 / prebuilt cleanup integration worktree
+
+To shorten owner-requested delivery, prepare this normal merge in a separate
+worktree while the unchanged799 manual full run finishes. Preserve both additive
+decision histories and every M2-2 inventory row; replace only the old cleanup
+test211-line measurement with its separately committed267-line measurement.
+The only non-documentation delta799 is the exact owned cleanup tool and two new
+regressions from M2-1; all application/runtime/manual/UI/financial blobs remain
+identical. Pre-merge source2 method impact is LOW4 and nine load-probe flows;
+the original tool/test blobs match the reviewed65e7d7f source exactly.
+After the old run ends, fast-forward the official manual branch to this ordinary
+merge without history rewriting, then run complete final discovery in its own
+official checkout. New native/startup/full/CI results remain source-specific.
+
+## M2-2 / native confirmation harness owns its application loop
+
+Intermediate source799efad complete discovery4118/1548.934s has11F22E42skip,
+33 traceback blocks/32 identities, oneNEW: the native confirmation test observes
+no modal dialog. RawSHAfa0f1b2374193cae8d2d54dd3abdcf7668057ce3e3163b18e120ebc98176809e.
+Keep this failed run, not passing acceptance. The new failure precedes owner-time
+index/native preparation in the recorded traversal; overlap alone is not blamed.
+
+Tight loop: original case alone PASS0.148s; a fresh QApplication.exit(0) prefix
+reproduces the exact empty-observation assertion in0.168s. Ranked causes were
+inherited application quit state, expired preview and a leaked confirmation
+patch. The prefix reproduces without either other cause and _preview still
+proves the Submit control enabled. No production defect is inferred from this
+harness-only state; the real application already owns QApplication.exec().
+
+Run the original button click from an owned application-loop callback, schedule
+Escape inside it, then exit that outer loop. Explicitly prefix app.exit(0) to
+lock down the dirty shared-Qt state. Preserve every original assertion and add
+an outer return-code assertion: real QMessageBox, Cancel default, Escape and
+exactly one preview command/no submit. No mocked dialog, skip, deadline, preview
+expiry or financial predicate changes. Prefixed case GREEN0.131s;55 related
+manual/UI-guideline/trading-page/order-report cases PASS5.428s.
+
+Pre-edit method impact is UNKNOWN, not unused: the source was exact to799 and
+the actual failed/controlled unittest invocations prove discovery. Fresh graph
+and qualified new nested-definition coverage are required before commit.
+Only tests/test_m2_manual_ui.py and this decision change; the resulting actual
+module/class line measurements get an independent baseline commit. Product
+GUI/theme/runtime/SDK/financial source remains identical; existing visual and
+positive functional source equivalence remains explicit. Final corrected full
+branch discovery and current-head CI remain required before push/delivery.
+
+## M2-2 / final parent evidence prepared independently
+
+Prepare the completed M2-1 evidence-only parent merge in this separate documentation worktree while the official32ad manual checkout remains frozen for complete discovery. Preserve both appended histories and verify zero non-documentation differences from32ad. Do not commit before actual full-result review and complete graph analysis. No index/native/Qt/static workload overlaps that final manual full.
+
+## manual-cleanup-final / complete corrected source evidence
+
+Publish exact 32ad384 complete discovery 4120/1508.968s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.
+
+## M2-1 / corrected-head installer recovery budget evidence
+
+The a62a110 offline workflow41323736469 passes all35 jobs. Windows installer
+workflow41323736442 attempt1 fails the retained-candidate smoke after a real
+same-version reinstall: recovery_helper_smoke.error_type is
+InsufficientExistingSmokeBudget, timed_out is false and worker_cleanup.verified
+is true. All seven UI operations and market/auth/history/walk-forward smokes
+pass; baseline, interrupted-baseline and recovered-candidate smoke also pass.
+The baseline WAL-workspace refusal deliberately records RuntimeSafetyError;
+that expected refusal is not this failure. Artifact13091592701 preserves the
+actual evidence. The prior65e7d7f installer workflow41316970379 passed all three
+applicable jobs, and packaging source is unchanged between those heads.
+
+Do not declare this a permitted main failure or claim a proven timing cause.
+Retain the failed artifact, rerun the entire workflow with gh run rerun
+41323736442 and require every applicable current-head job to pass. Do not
+extend budgets, omit recovery checks or weaken their assertions. Further
+failures require their own actual evidence review. This is documentation only;
+all non-documentation blobs must remain identical to full-tested32ad384.
+
+## manual-recovery-budget-verified / final complete source evidence
+
+Publish exact7d72c5f38ac32d38709a39bcfb6ecb0ce23c7177 complete discovery 4125/1442.544s with zero new failures after individual actual-cause review. Retain previous failed CI/full attempts and previous successful source evidence. Only documentation changes follow; final runtime blobs must match this full/actual source. Do not reuse historical CI as the new final-head result.
+
+## First-round final delivery and whole-workflow Qt control — 2026-11-02
+
+Keep the already complete-tested M2-1 d2c11f2 program exactly equal to b605466.
+Its real merge-tree against final M2-6 58a233a is clean and produces the same
+non-documentation blobs. Preserve that active installer run; include the latest
+M2-6/M2-8 evidence through a separate normal merge into the final M2-2 report,
+whose program/test/fixture content must stay exactly equal to 7d72c5f. This
+removes redundant documentation-only installer restarts without omitting any
+required CI or complete source validation. Both changed upstream programs
+actually repeated complete discovery and real LOCAL/fake-SIM startup before push.
+
+Retain #132 offline41344493949 attempt1 Linux3.11 Qt segmentation fault at
+command_palette.populate99/toggle137 and the existing real-controls test264.
+Both source/test blobs equal original main0453136; no cause is established.
+Do not call it a fixed bug or add it to the allowed main-host failures. Preserve
+the native trace and rerun the entire workflow with gh run rerun, not one job.
+Attempt2 passes the former crash group; all applicable final-head gates still
+must finish successfully. No assertion, limit, skip or program source changes.
+The original failed attempt remains evidence even if the complete rerun passes.
+
+Latest upstream complete sources5906460 andb39af9c run3916/1422.446s and
+3943/1456.190s, both10F22E42existing skips with zero new identities, all32
+actual occurrences independently reviewed (30/32frames,32/32type chains,
+15/16source files). Original launcher assertion and doubleWin32/.sqlite
+secondary cleanup match main; original installer assertions only change line
+offsets. Actual LOCAL5.692/5.496s and fakeSIM3.718/3.557s return0, real window
+and seven research pages, normal exact-owned cleanup, endpoints removed and
+zero real SDK/financial operations. Final read-only census0 own engines.
+
+Include the final report itself in the final CI head and use live PR Checks
+as the handoff gate. Earlier literal head/run/status rows are historical
+snapshots. Do not create another cosmetic commit merely to copy a green badge
+back into a report and restart validation. No second-round work or main merge.
+
+Final metadata observes an external merge of #130 at2026-11-01T20:34:42Z
+and #131 retargeted to main. Record that actor boundary in the report and
+describe four delivery PRs rather than four open PRs. No main merge was
+performed by this agent; all runtime/test/fixture blobs remain unchanged.

@@ -9,14 +9,17 @@ from desktop_app.strings.catalog import ui_text
 
 
 class PositionColumns(QObject):
-    def __init__(self, table, header, saved, save, notify):
+    def __init__(self, table, header, saved, save, notify, *, defaults=(0, 1, 2, 5, 8, 9), name='position_columns', caption=None, hint=None):
         super().__init__(table)
         self.table, self.save, self.notify = table, save, notify
-        self.selected = (0, 1, 2, 5, 8, 9)
-        if isinstance(saved, (list, tuple)) and saved and 0 in saved and all(type(value) is int and 0 <= value < 12 for value in saved):
+        self.selected = defaults
+        if isinstance(saved, (list, tuple)) and saved and 0 in saved and all(type(value) is int and 0 <= value < table.columnCount() for value in saved):
             self.selected = tuple(sorted(set(saved)))
-        self.button = button('m2t.columns', 'position_columns')
-        self.button.setToolTip(ui_text('m2t.columns_hint'))
+        self.button = button('m2t.columns', name)
+        if caption is not None:
+            self.button.setText(caption)
+            self.button.setAccessibleName(caption)
+        self.button.setToolTip(hint or ui_text('m2t.columns_hint'))
         self.menu = QMenu(self.button)
         self.actions = {}
         for column in range(table.columnCount()):
