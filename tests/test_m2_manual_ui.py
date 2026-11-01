@@ -304,8 +304,16 @@ class ManualUiTests(unittest.TestCase):
             observed.append((isinstance(dialog, QMessageBox), dialog.defaultButton() == dialog.button(QMessageBox.StandardButton.Cancel)))
             QTest.keyClick(dialog, Qt.Key.Key_Escape)
 
-        QTimer.singleShot(0, cancel)
-        self.form.submit.click()
+        def submit_from_application_loop():
+            QTimer.singleShot(0, cancel)
+            self.form.submit.click()
+            self.app.quit()
+
+        # Earlier fixtures may have exited the shared app. A real application
+        # loop resets that state before the native nested confirmation loop.
+        self.app.exit(0)
+        QTimer.singleShot(0, submit_from_application_loop)
+        self.assertEqual(self.app.exec(), 0)
         self.assertEqual(observed, [(True, True)])
         self.assertEqual(len(self.facade.commands), 1)
 

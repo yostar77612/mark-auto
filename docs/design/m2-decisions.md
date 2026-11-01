@@ -1541,3 +1541,35 @@ the original tool/test blobs match the reviewed65e7d7f source exactly.
 After the old run ends, fast-forward the official manual branch to this ordinary
 merge without history rewriting, then run complete final discovery in its own
 official checkout. New native/startup/full/CI results remain source-specific.
+
+## M2-2 / native confirmation harness owns its application loop
+
+Intermediate source799efad complete discovery4118/1548.934s has11F22E42skip,
+33 traceback blocks/32 identities, oneNEW: the native confirmation test observes
+no modal dialog. RawSHAfa0f1b2374193cae8d2d54dd3abdcf7668057ce3e3163b18e120ebc98176809e.
+Keep this failed run, not passing acceptance. The new failure precedes owner-time
+index/native preparation in the recorded traversal; overlap alone is not blamed.
+
+Tight loop: original case alone PASS0.148s; a fresh QApplication.exit(0) prefix
+reproduces the exact empty-observation assertion in0.168s. Ranked causes were
+inherited application quit state, expired preview and a leaked confirmation
+patch. The prefix reproduces without either other cause and _preview still
+proves the Submit control enabled. No production defect is inferred from this
+harness-only state; the real application already owns QApplication.exec().
+
+Run the original button click from an owned application-loop callback, schedule
+Escape inside it, then exit that outer loop. Explicitly prefix app.exit(0) to
+lock down the dirty shared-Qt state. Preserve every original assertion and add
+an outer return-code assertion: real QMessageBox, Cancel default, Escape and
+exactly one preview command/no submit. No mocked dialog, skip, deadline, preview
+expiry or financial predicate changes. Prefixed case GREEN0.131s;55 related
+manual/UI-guideline/trading-page/order-report cases PASS5.428s.
+
+Pre-edit method impact is UNKNOWN, not unused: the source was exact to799 and
+the actual failed/controlled unittest invocations prove discovery. Fresh graph
+and qualified new nested-definition coverage are required before commit.
+Only tests/test_m2_manual_ui.py and this decision change; the resulting actual
+module/class line measurements get an independent baseline commit. Product
+GUI/theme/runtime/SDK/financial source remains identical; existing visual and
+positive functional source equivalence remains explicit. Final corrected full
+branch discovery and current-head CI remain required before push/delivery.
