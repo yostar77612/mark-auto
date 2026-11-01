@@ -1,0 +1,119 @@
+{
+  "head": "8d985640f51646938248726215544611a2cf09b5",
+  "mode": "broker",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_run_window": true,
+  "real_trading_window": true,
+  "real_research_session": true,
+  "local_child_delegates_original": true,
+  "sinopac_host": "owned Thread(serve) with natural factory/secrets/resource ports",
+  "original_local_child_safety_bootstrap": true,
+  "child_guard_proven_before_product": true,
+  "disconnected_host_prepared": true,
+  "secret_reads_before_ui_connect": 0,
+  "research_pages": 7,
+  "after_connect_local_book_unchanged": true,
+  "secret_reads_after_ui_connect": 1,
+  "after_account_selection_local_book_unchanged": true,
+  "explicit_simulation_navigation": true,
+  "environment": "BROKER_SIMULATION",
+  "engine_state": "DISCONNECTED",
+  "window_visible": true,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "widget_count": 2728,
+  "financial_facts_verified": false,
+  "research_released": true,
+  "return_code": 0,
+  "elapsed_seconds": 6.756,
+  "ui_steps": [
+    "initial_local",
+    "ui_save_connect",
+    "ui_select_account",
+    "ui_navigate_simulation",
+    "finish",
+    "closed"
+  ],
+  "original_ensure_calls": [
+    {
+      "sinopac": true,
+      "environment": "BROKER_SIMULATION"
+    },
+    {
+      "sinopac": false,
+      "environment": "LOCAL"
+    },
+    {
+      "sinopac": true,
+      "environment": "BROKER_SIMULATION"
+    },
+    {
+      "sinopac": true,
+      "environment": "BROKER_SIMULATION"
+    }
+  ],
+  "owned_local_processes": 1,
+  "owned_fake_hosts": 1,
+  "fake_sdk": {
+    "constructors": 1,
+    "login_count": 1,
+    "logout_count": 1,
+    "resource_calls": 0,
+    "subscription_count": 2,
+    "ca_calls": 0,
+    "order_constructions": 0,
+    "order_calls": 0
+  },
+  "real_sdk_imported": false,
+  "guard_calls": [],
+  "fake_secret_lookup_count": 1,
+  "local_child_audits": [
+    {
+      "guard_installed": true,
+      "normal_exit": true,
+      "sdk_imported": false,
+      "blocked_calls": 0,
+      "guarded_modules": [
+        "quantlab.trading.adapters.shioaji.sdk_facade",
+        "quantlab.trading.adapters.shioaji.sdk_loader",
+        "quantlab.trading.adapters.shioaji.secrets",
+        "quantlab.trading.runtime.broker"
+      ]
+    }
+  ],
+  "child_guard_handshake": {
+    "exit_code": 0,
+    "audit": {
+      "guard_installed": true,
+      "normal_exit": true,
+      "sdk_imported": false,
+      "blocked_calls": 0,
+      "guarded_modules": []
+    }
+  },
+  "owned_lifetimes": [
+    {
+      "exit_code": null,
+      "thread": "probe-owned-sinopac-server",
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    },
+    {
+      "exit_code": 0,
+      "thread": null,
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    }
+  ],
+  "host_errors": [],
+  "errors": [],
+  "owned_endpoints_removed": true,
+  "passed": true,
+  "raw_result_sha256": "691e505596f15729642eadb80912371ba4c7c4e798b8899d488675d105929b54",
+  "sanitization": "Removed absolute repository/interpreter/owned-root paths and generated PIDs; source identity, counters, guard/normal-exit proofs and result values retained. Raw evidence remains with coordinator."
+}

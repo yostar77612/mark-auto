@@ -2,6 +2,7 @@
 
 from .alerts import ENTRIES as _part_alerts
 from .m2_trading import ENTRIES as _part_m2_trading
+from .sinopac_connection import ENTRIES as _part_sinopac_connection
 from .assistant import ENTRIES as _part_assistant
 from .terminal import ENTRIES as _part_terminal
 from .marketdata import ENTRIES as _part_marketdata
@@ -79,6 +80,7 @@ from .dashboard import ENTRIES as _part_dashboard
 
 PARTS = (
     _part_m2_trading,
+    _part_sinopac_connection,
     _part_alerts,
     _part_terminal,
     _part_marketdata,

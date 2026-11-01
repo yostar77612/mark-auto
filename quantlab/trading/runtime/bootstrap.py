@@ -10,12 +10,12 @@ from typing import Protocol
 from uuid import uuid4
 
 from quantlab.trading.adapters.storage.ledger import Ledger
-from quantlab.trading.application.contracts import TradingFacade, UiAction, UiCommand, UiReceipt, UiState
+from quantlab.trading.application.contracts import AccountView, TradingFacade, UiAction, UiCommand, UiReceipt, UiState
 from quantlab.trading.application.codec import dumps, loads, register
 from quantlab.trading.application.engine import TradingEngine
 from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.application.readiness_session import ReadinessSession
-from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.storage import Journal
 from .broker import FilesystemReferenceInspector, connect_profile_engine
@@ -74,6 +74,9 @@ class RuntimeBundle:
     connect_timeout: float = 8.0
     market_terminal: object | None = None
     alerts: object | None = None
+    sinopac_factory: object | None = None
+    secret_resolver: object | None = None
+    resource_factory: object | None = None
 
     def __post_init__(self) -> None:
         if type(self.connect_timeout) not in (int, float) or not 0 < self.connect_timeout <= 8:
@@ -83,7 +86,19 @@ class RuntimeBundle:
         self.watch_settings = WatchlistSettings(self.launch.root / 'settings.json')
         from .market_connection import MarketConnection
 
-        self.market_connection = MarketConnection(self.launch.root)
+        if self.launch.sinopac:
+            from .sinopac_connection import SinopacConnection, default_factory
+
+            self.market_connection = SinopacConnection(
+                self.launch.root,
+                factory=self.sinopac_factory or default_factory,
+                secrets=self.secret_resolver,
+                resource_factory=self.resource_factory,
+                environment=self.launch.environment,
+            )
+        else:
+            self.market_connection = MarketConnection(self.launch.root)
+        self.sinopac_connection = self.market_connection if self.launch.sinopac else None
         if self.engine is not None:
             self.watch_settings.restore(self.engine)
         self.lock = RLock()
@@ -92,6 +107,9 @@ class RuntimeBundle:
         self.closing = False
         self.resources_closed = False
         self.cleanup_unconfirmed = False
+        self.legacy_disconnected = False
+        self.legacy_disconnecting = False
+        self.legacy_cleanup_unconfirmed = False
         self.control_failed = False
         self.connection_attempt = ''
         self.connection_deadline = 0.0
@@ -108,7 +126,7 @@ class RuntimeBundle:
                     not isinstance(checkpoint, PublicVersionState)
                     or checkpoint.environment is not self.launch.environment
                     or checkpoint.configuration_id != self.configuration_id
-                    or checkpoint.account_refs != self.account_refs
+                    or checkpoint.account_refs != self.checkpoint_accounts
                     or checkpoint.high_water < self.high_water
                 ):
                     raise DomainError('startup_workspace_incompatible', 'runtime public version context changed')
@@ -118,6 +136,8 @@ class RuntimeBundle:
 
     @property
     def configuration_id(self) -> str:
+        if self.launch.sinopac:
+            return 'SINOPAC:' + self.launch.environment.value
         if self.resources is not None:
             return self.resources.profile.source_sha256
         if self.launch.environment is Environment.LOCAL:
@@ -127,7 +147,7 @@ class RuntimeBundle:
     def _checkpoint(self, version: int) -> None:
         if self.version_journal is None or version <= self.high_water:
             return
-        value = PublicVersionState(self.launch.environment, self.configuration_id, self.account_refs, version)
+        value = PublicVersionState(self.launch.environment, self.configuration_id, self.checkpoint_accounts, version)
         try:
             event = self.version_journal.append(
                 'runtime_public_version_published', dumps(value), datetime.now(timezone.utc), expected_sequence=self.version_sequence
@@ -151,7 +171,21 @@ class RuntimeBundle:
                 )
 
     @property
+    def checkpoint_accounts(self) -> tuple[str, ...]:
+        return (self.launch.account_ref,) if self.launch.sinopac else self.account_refs
+
+    @property
     def account_refs(self) -> tuple[str, ...]:
+        if self.launch.sinopac:
+            return tuple(
+                dict.fromkeys(
+                    (
+                        self.launch.account_ref,
+                        *self.sinopac_connection.selected,
+                        *(row['alias'] for row in self.sinopac_connection.preferences.known_accounts()),
+                    )
+                )
+            )
         if self.resources is not None:
             config = self.resources.profile.configuration
             return tuple(ref for ref in (config.stock_account_ref, config.futures_account_ref) if ref)
@@ -195,6 +229,15 @@ class RuntimeBundle:
                 version=version,
                 engine_state='CONNECTING' if self.transitioning else state.engine_state,
                 configuration_id=self.configuration_id,
+                sinopac_connection=self.sinopac_connection.snapshot() if self.sinopac_connection is not None else state.sinopac_connection,
+                accounts=(
+                    tuple(
+                        AccountView(item['alias'], self.launch.environment, Market(item['market']), Decimal('0'), 'EXTERNAL_REQUIRED')
+                        for item in self.sinopac_connection.preferences.known_accounts()
+                    )
+                    if self.sinopac_connection is not None and self.engine is None
+                    else state.accounts
+                ),
             )
 
     @property
@@ -202,6 +245,22 @@ class RuntimeBundle:
         return self.engine.state.engine_closed if self.engine is not None else self.facade.state.engine_closed
 
     def execute(self, command: UiCommand) -> UiReceipt:
+        from .sinopac_connection import SINOPAC_ACTIONS
+
+        if isinstance(command, UiCommand) and command.action in SINOPAC_ACTIONS:
+            with self.lock:
+                if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
+                    return UiReceipt(False, 'state_conflict', '')
+            if self.sinopac_connection is None:
+                if command.action is not UiAction.DISCONNECT_SINOPAC:
+                    return UiReceipt(False, 'state_conflict', '')
+                from .sinopac_legacy import disconnect_legacy
+
+                return disconnect_legacy(self)
+            receipt = self.sinopac_connection.execute(command)
+            if receipt.accepted and self.market_terminal is not None:
+                self.market_terminal.active = True
+            return receipt
         # Keep the composition lock short. A research command can release the
         # engine's writer lock while its owned worker runs; host quoting stays live.
         with self.lock:
@@ -210,6 +269,8 @@ class RuntimeBundle:
             if self.control_failed:
                 return UiReceipt(False, 'journal_failed', '')
             if command.action in (UiAction.SAVE_MARKET_DATA_SETTINGS, UiAction.CONNECT_MARKET_DATA, UiAction.DISCONNECT_MARKET_DATA):
+                if self.legacy_disconnecting or self.legacy_disconnected or self.legacy_cleanup_unconfirmed:
+                    return UiReceipt(False, 'state_conflict', '')
                 if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
                     return UiReceipt(False, 'state_conflict', '')
                 receipt = self.market_connection.execute(command)
@@ -259,6 +320,9 @@ class RuntimeBundle:
             if (
                 self.closing
                 or self.closed
+                or self.legacy_disconnecting
+                or self.legacy_disconnected
+                or self.legacy_cleanup_unconfirmed
                 or self.transitioning
                 or self.connection_threads
                 or command.expected_version != self.facade.snapshot().version + self.version_offset
@@ -518,7 +582,9 @@ class RuntimeBundle:
             raise DomainError('operation_failed', 'owned runtime resource cleanup failed') from errors[0]
 
 
-def build_runtime(launch: RuntimeLaunch, *, engine_factory: EngineFactory | None = None) -> RuntimeBundle:
+def build_runtime(
+    launch: RuntimeLaunch, *, engine_factory: EngineFactory | None = None, sinopac_factory=None, secret_resolver=None, resource_factory=None
+) -> RuntimeBundle:
     if not isinstance(launch, RuntimeLaunch):
         raise DomainError('validation_failed', 'typed runtime launch required')
     if str(launch.root).startswith(('\\\\', '//')):
@@ -564,7 +630,15 @@ def build_runtime(launch: RuntimeLaunch, *, engine_factory: EngineFactory | None
         )
         versions = Ledger(launch.root / 'runtime-control-v2.sqlite', 'runtime-public-version-' + launch.environment.value, datetime.now(timezone.utc))
         bundle = RuntimeBundle(
-            launch, session, (journal, versions), resources=resources, engine_factory=engine_factory or connect_profile_engine, version_journal=versions
+            launch,
+            session,
+            (journal, versions),
+            resources=resources,
+            engine_factory=engine_factory or connect_profile_engine,
+            version_journal=versions,
+            sinopac_factory=sinopac_factory,
+            secret_resolver=secret_resolver,
+            resource_factory=resource_factory,
         )
         from .market_terminal import attach_terminal
 

@@ -309,7 +309,7 @@ class RuntimeContextClientTests(unittest.TestCase):
         self.assertEqual(self.window.dashboard.data_help.button.accessibleDescription(), ui_text('v2.context_facts_pending'))
         self.assertIn('尚未核對', self.window.summary.text())
         with patch.object(self.window, '_confirm', return_value=True):
-            self.window.connect_read_only_button.click()
+            self.window.command(UiAction.CONNECT_READ_ONLY)
         self.drain()
         self.assertNotEqual(self.window.notice.text(), ui_text('v2.completed'))
         self.wait_for_connected_core()

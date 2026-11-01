@@ -12,6 +12,7 @@ from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.validation import DomainError, identity, integer
 from .broker_settings import BrokerReadiness, BrokerSettings
 from .market_settings import MarketDataSettings
+from .sinopac_contracts import SinopacAccountView as SinopacAccountView, SinopacConnectionSettings, SinopacConnectionView, SinopacReadiness as SinopacReadiness
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,10 @@ class UiAction(str, Enum):
     SAVE_MARKET_DATA_SETTINGS = 'save_market_data_settings'
     CONNECT_MARKET_DATA = 'connect_market_data'
     DISCONNECT_MARKET_DATA = 'disconnect_market_data'
+    SAVE_AND_CONNECT_SINOPAC = 'save_and_connect_sinopac'
+    SELECT_SINOPAC_ACCOUNTS = 'select_sinopac_accounts'
+    ACTIVATE_SINOPAC_CA = 'activate_sinopac_ca'
+    DISCONNECT_SINOPAC = 'disconnect_sinopac'
 
 
 @dataclass(frozen=True)
@@ -159,6 +164,10 @@ class UiCommand:
     context_epoch: int | None = None
     watchlist: tuple[str, ...] | None = None
     market_data_settings: MarketDataSettings | None = None
+    sinopac_settings: SinopacConnectionSettings | None = None
+    sinopac_accounts: tuple[str, ...] | None = None
+    connection_revision: int | None = None
+    connection_generation: str = ''
 
 
 @dataclass(frozen=True)
@@ -334,6 +343,7 @@ class UiState:
     today_fill_count: int | None = None
     market_data_settings: MarketDataSettings = MarketDataSettings()
     market_data_error: str = ''
+    sinopac_connection: SinopacConnectionView = SinopacConnectionView()
 
 
 class TradingFacade(Protocol):
@@ -366,3 +376,7 @@ class ContextPort(Protocol):
     def register_profile(self, profile_ref: str, environment: Environment) -> ContextOption: ...
 
     def persist_selection(self, context_id: str, account_ref: str) -> None: ...
+
+    def open_sinopac(self, environment: Environment) -> TradingFacade: ...
+
+    def current_sinopac(self) -> TradingFacade | None: ...

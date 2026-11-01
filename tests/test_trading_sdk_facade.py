@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import unittest
 
 from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
+from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 
 
@@ -192,7 +193,7 @@ class SDKFacadeTests(unittest.TestCase):
             return SimpleNamespace(**values)
 
         self.sdk_module = SimpleNamespace(__version__='1.7.9', Unit=Unit, QuoteType=QuoteType, QuoteVersion=QuoteVersion, Order=order)
-        self.bridge = ShioajiSDKFacade(self.vendor, self.sdk_module)
+        self.bridge = ShioajiSDKFacade(self.vendor, self.sdk_module, environment=Environment.BROKER_SIMULATION)
 
     def test_construction_is_inert_and_does_not_even_access_lazy_contracts(self):
         self.assertEqual(self.vendor._seen, [])
@@ -246,7 +247,7 @@ class SDKFacadeTests(unittest.TestCase):
                 self.bridge.subscribe(contract(), quote_type='tick', version=value)
 
     def test_bounded_history_snapshot_and_order_routes_have_injected_budgets(self):
-        custom = ShioajiSDKFacade(self.vendor, self.sdk_module, query_timeout_ms=1700, order_timeout_ms=8000)
+        custom = ShioajiSDKFacade(self.vendor, self.sdk_module, environment=Environment.BROKER_SIMULATION, query_timeout_ms=1700, order_timeout_ms=8000)
         base = contract()
         custom.kbars(contract=base, start='2026-10-01', end='2026-10-02')
         self.assertEqual(self.vendor._seen[-1][2]['timeout'], 1700)
@@ -294,11 +295,11 @@ class SDKFacadeTests(unittest.TestCase):
     def test_wrong_version_and_noninteger_or_unbounded_budgets_are_rejected(self):
         wrong = SimpleNamespace(__version__='1.5.0')
         with self.assertRaises(DomainError):
-            ShioajiSDKFacade(self.vendor, wrong)
+            ShioajiSDKFacade(self.vendor, wrong, environment=Environment.BROKER_SIMULATION)
         for value in (None, False, 0, -1, 30001, 2.5, '2500'):
             for field in ('query_timeout_ms', 'order_timeout_ms'):
                 with self.subTest(field=field, value=value), self.assertRaises(DomainError):
-                    ShioajiSDKFacade(self.vendor, self.sdk_module, **{field: value})
+                    ShioajiSDKFacade(self.vendor, self.sdk_module, environment=Environment.BROKER_SIMULATION, **{field: value})
 
 
 if __name__ == '__main__':

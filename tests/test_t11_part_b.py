@@ -264,6 +264,6 @@ class SharedErrorTests(unittest.TestCase):
 
 # T5-E6: E3 composition imports and E5 smoke owner extraction change source only.
 # Re-pin the exact body; retain all control-flow, metadata and cleanup checks.
-SMOKE_DIGEST = 'b69ea4fa50829c6303ea9b8ba46c2f84d52a74948d828b8fadd46e54ea4e70cc'
+SMOKE_DIGEST = '3737569e56810e75e96316e518479adf1d7f034f453d4930de2c997aeac93fe4'
 HANDLERS_DIGEST = '538ec585bef484789b7e1bc9a05b942234dee1b82f84bacc2c849cf28ead39de'
 FINALLY_DIGEST = '4ce33993e38dae10a54cda3424e0d354b09a4b8c460af84f4bd4883b6ae9a851'

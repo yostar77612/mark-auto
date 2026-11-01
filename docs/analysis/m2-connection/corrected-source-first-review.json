@@ -1,0 +1,745 @@
+{
+  "source_head": "9f2184ed03c003fb63aa3e4553db5f370026bd8c",
+  "log_sha256": "24f39d16d0ef73f9f4d90081aa06eb09ea4445d2832ac47480fd8c165e9ae185",
+  "records": [
+    {
+      "id": "test_analysis_recovery.RecoveryLedgerTests.test_links_hardlinks_and_oversize_are_rejected",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_managed_hardlink_and_success_symlink_are_rejected",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+      "kind": "ERROR",
+      "subtest": "(name='markauto-3143dabb7f0246de-linked.zip', kind='symlink')",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+      "kind": "ERROR",
+      "subtest": "(name='orphan.zip.tmp', kind='symlink')",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_unsafe_destinations_do_not_write_config",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_chatgpt_auth.AuthTests.test_dpapi_rejects_dangling_links_and_junction_lstat_attributes",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_chatgpt_auth.AuthTests.test_first_use_guard_rejects_prior_host_control_and_partial_vault_evidence",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_downloads.DownloadTests.test_failure_preserves_latest_and_refuses_symlink",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_market.MarketTests.test_cache_rejects_symlink",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_market_history.HistoryBoundaryTests.test_cache_tamper_symlinks_and_bad_policy",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_market_history.HistoryTests.test_cache_tamper_symlinks_and_bad_policy",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_dangling_source_parent_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_destination_file_symlink_fails_preserves_target",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_destination_parent_symlink_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_source_file_symlink_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_source_parent_symlink_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_qt_licenses.QtLicenseTests.test_destination_symlink_preserves_target",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_qt_licenses.QtLicenseTests.test_payload_directory_symlink_fails_before_audit",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_qt_licenses.QtLicenseTests.test_source_symlink_and_simulated_junction_fail",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_reporting.ReportingTests.test_symlink_output_refused",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError"
+      ],
+      "windows_error_codes": [
+        "WinError 1314"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 1314"
+      ]
+    },
+    {
+      "id": "test_research_analysis.AnalysisTests.test_offline_read_rejects_forged_descriptor_plan_binding",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "NEW",
+      "same_frames": false,
+      "same_exception_types": false,
+      "exception_type_chain": [
+        "quantlab.assistant.domain.plan_protocol.PlanError"
+      ],
+      "baseline_exception_type_chain": [],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_test_group.ParallelResearchGroupTests.test_native_windows_natural_parent_exit_with_descendant_cannot_pass",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "native_worker_cleanup_file_lock",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "PermissionError",
+        "PermissionError"
+      ],
+      "baseline_exception_type_chain": [
+        "PermissionError",
+        "PermissionError"
+      ],
+      "windows_error_codes": [
+        "WinError 32",
+        "WinError 32"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 32",
+        "WinError 32"
+      ]
+    },
+    {
+      "id": "test_trading_acceptance_combinations.AcceptanceCombinationTests.test_e06_parent_os_kill_before_submit_and_after_remote_accept_preserves_unknown",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "crash_driver_pid_mismatch",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError",
+        "PermissionError",
+        "PermissionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError",
+        "PermissionError",
+        "PermissionError"
+      ],
+      "windows_error_codes": [
+        "WinError 32",
+        "WinError 32"
+      ],
+      "baseline_windows_error_codes": [
+        "WinError 32",
+        "WinError 32"
+      ]
+    },
+    {
+      "id": "test_desktop_runtime.WindowsRuntimeTests.test_installer_mutex_lifetime",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "named_mutex_visibility",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_desktop_walk_forward_terminal.TerminalSmokeProcessTests.test_join_failure_is_reported_without_fake_cleanup_or_evidence_deletion",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "NEW",
+      "same_frames": false,
+      "same_exception_types": false,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_external_observer_failure_stops_waiting_probe_and_cleans_owned_fixture",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_fixed_matrix_uses_full_commits_real_external_control_and_owned_cleanup",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_wrong_commit_count_cannot_be_certified",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "named_mutex_visibility",
+      "same_frames": false,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "named_mutex_visibility",
+      "same_frames": false,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_gui_death_quiesces_before_test_only_durable_receipt",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "retained_grandchild_handle_invalid",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError",
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError",
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_after_gui_before_quiescence_never_publishes_receipt",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "retained_grandchild_handle_invalid",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError",
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError",
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    },
+    {
+      "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_before_gui_never_publishes_receipt",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "retained_grandchild_handle_invalid",
+      "same_frames": true,
+      "same_exception_types": true,
+      "exception_type_chain": [
+        "OSError",
+        "AssertionError"
+      ],
+      "baseline_exception_type_chain": [
+        "OSError",
+        "AssertionError"
+      ],
+      "windows_error_codes": [],
+      "baseline_windows_error_codes": []
+    }
+  ],
+  "source_checks": [
+    {
+      "file": "quantlab\\assistant\\adapters\\chatgpt\\provider.py",
+      "equal": true
+    },
+    {
+      "file": "quantlab\\assistant\\adapters\\chatgpt\\transport.py",
+      "equal": true
+    },
+    {
+      "file": "quantlab\\assistant\\domain\\plan_protocol.py",
+      "equal": true
+    },
+    {
+      "file": "quantlab\\research_analysis.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\smoke_timeout_diagnostics.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_analysis_recovery.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_automatic_backup.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_chatgpt_auth.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_desktop_runtime.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_desktop_walk_forward_terminal.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_downloads.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_market.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_market_history.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_notice_collector.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_paper_diagnostics.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_qt_licenses.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_reporting.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_research_analysis.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_test_group.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_trading_acceptance_combinations.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_trading_application.py",
+      "equal": true
+    },
+    {
+      "file": "tests\\test_trading_installer_guard.py",
+      "equal": false
+    },
+    {
+      "file": "tests\\test_windows_recovery_feasibility.py",
+      "equal": true
+    }
+  ],
+  "note": "This failed complete attempt has two NEW timeout cases and is not accepted as clean. Full raw traces remain in coordinator scratch; private paths/PIDs and long serialized smoke diagnostics are omitted here."
+}

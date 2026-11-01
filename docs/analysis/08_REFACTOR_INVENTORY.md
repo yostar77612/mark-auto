@@ -288,7 +288,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/trading/ports/storage.py` | 30 | application | `quantlab/trading/ports/storage.py` | port／資料契約，不是服務實作；保留路徑；`Fence`，`quantlab/trading/ports/storage.py:10` |
 | `quantlab/trading/ports/tick_stream.py` | 38 | application | `quantlab/trading/ports/tick_stream.py` | port／資料契約，不是服務實作；保留路徑；`TickLoss`，`quantlab/trading/ports/tick_stream.py:9` |
 | `quantlab/trading/runtime/__init__.py` | 1 | composition | `quantlab/trading/runtime/__init__.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`quantlab/trading/runtime/__init__.py:1` |
-| `quantlab/trading/runtime/bootstrap.py` | 517 | composition | `quantlab/trading/runtime/bootstrap.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WallClock`，`quantlab/trading/runtime/bootstrap.py:26` |
+| `quantlab/trading/runtime/bootstrap.py` | 651 | composition | `quantlab/trading/runtime/bootstrap.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WallClock`，`quantlab/trading/runtime/bootstrap.py:26` |
 | `quantlab/trading/runtime/broker.py` | 353 | composition | `quantlab/trading/runtime/broker.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`_pairs`，`quantlab/trading/runtime/broker.py:31` |
 | `quantlab/trading/runtime/build.py` | 366 | composition | `quantlab/trading/runtime/build.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`SimulationClock`，`quantlab/trading/runtime/build.py:28` |
 | `quantlab/trading/runtime/config.py` | 360 | composition | `quantlab/trading/runtime/config.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`RuntimeLaunch`，`quantlab/trading/runtime/config.py:27` |
@@ -691,7 +691,7 @@ PR E4 market/history owners (content-only):
 | `desktop_app/smoke/history.py` | 184 | tooling | `desktop_app/smoke/history.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
 | `desktop_app/smoke/lifecycle.py` | 43 | tooling | `desktop_app/smoke/lifecycle.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
 | `desktop_app/smoke/market.py` | 173 | tooling | `desktop_app/smoke/market.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
-| `desktop_app/smoke/runner.py` | 276 | tooling | `desktop_app/smoke/runner.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
+| `desktop_app/smoke/runner.py` | 282 | tooling | `desktop_app/smoke/runner.py` | M2 CI: run frozen recovery after the original manager joins, before walk-forward; unchanged 120s outer and 40s recovery caps; no allowlist growth. |
 | `desktop_app/smoke/walk_forward.py` | 176 | tooling | `desktop_app/smoke/walk_forward.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
 | `tools/refactor/e_smoke.py` | 257 | tooling | `tools/refactor/e_smoke.py` | T5-E6: record E owner/tooling assignment; no allowlist growth. |
 
@@ -704,7 +704,6 @@ PR E4 market/history owners (content-only):
 | `desktop_app/components/disclosure.py` | 17 | presentation | `desktop_app/components/disclosure.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/context_header.py` | 44 | presentation | `desktop_app/features/trading/context_header.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/m1_ui.py` | 14 | shared | `desktop_app/strings/m1_ui.py` | M1: reviewed new module; existing rows and layer rules retained. |
-| `desktop_app/features/trading/market_data_panel.py` | 78 | presentation | `desktop_app/features/trading/market_data_panel.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/marketdata.py` | 18 | shared | `desktop_app/strings/marketdata.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/adapters/shioaji/market_session.py` | 267 | infrastructure | `quantlab/trading/adapters/shioaji/market_session.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/adapters/shioaji/symbol_directory.py` | 75 | infrastructure | `quantlab/trading/adapters/shioaji/symbol_directory.py` | M1: reviewed new module; existing rows and layer rules retained. |
@@ -743,7 +742,50 @@ PR E4 market/history owners (content-only):
 | `desktop_app/strings/m2_trading.py` | 57 | shared | `desktop_app/strings/m2_trading.py` | M2-6: 53 additive literal catalogue records through order2805; historical records unchanged. |
 | `desktop_app/features/trading/page_help.py` | 47 | presentation | `desktop_app/features/trading/page_help.py` | M2-6 owner additions: short summaries and fully owned keyboard-accessible plain-text dialogs; no SDK or IO. |
 | `desktop_app/features/trading/trading_page_widgets.py` | 79 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
+
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
+| `quantlab/trading/application/sinopac_contracts.py` | 113 | application | `quantlab/trading/application/sinopac_contracts.py` | M2-1: scoped reference settings, redacted accounts and independent connection read model; no SDK or IO. |
+| `tests/test_sinopac_contracts.py` | 98 | tooling | `tests/test_sinopac_contracts.py` | M2-1: pure boundary and old-wire compatibility checks; no engine or broker. |
+| `tests/test_sinopac_facade_environment.py` | 30 | tooling | `tests/test_sinopac_facade_environment.py` | M2-1: explicit immutable facade environment using inert SDK stand-ins. |
+| `quantlab/trading/adapters/shioaji/account_discovery.py` | 44 | infrastructure | `quantlab/trading/adapters/shioaji/account_discovery.py` | M2-1: full native identity to stable masked alias; no persistence or SDK construction. |
+| `quantlab/trading/adapters/shioaji/shared_session.py` | 199 | infrastructure | `quantlab/trading/adapters/shioaji/shared_session.py` | M2-1: one native owner, independent callback consumers and quote/scanner leases. |
+| `quantlab/trading/runtime/sinopac_calendar.py` | 72 | composition | `quantlab/trading/runtime/sinopac_calendar.py` | M2-1: explicit 2026 common-window dates and versioned source references. |
+| `quantlab/trading/runtime/sinopac_certificate.py` | 35 | composition | `quantlab/trading/runtime/sinopac_certificate.py` | M2-1: optional reference-only CA transition; native person identity remains internal. |
+| `quantlab/trading/runtime/sinopac_classification.py` | 42 | composition | `quantlab/trading/runtime/sinopac_classification.py` | M2-1: bounded public ISIN classification with published date and response hash. |
+| `quantlab/trading/runtime/sinopac_connection.py` | 177 | composition | `quantlab/trading/runtime/sinopac_connection.py` | M2-1: explicit generation/revision owner lifecycle; inert startup and deadline acceptance. |
+| `quantlab/trading/runtime/sinopac_legacy.py` | 54 | composition | `quantlab/trading/runtime/sinopac_legacy.py` | M2-1: bounded confirmed legacy logout barrier before unified login. |
+| `quantlab/trading/runtime/sinopac_resources.py` | 151 | composition | `quantlab/trading/runtime/sinopac_resources.py` | M2-1: generated account-scoped contract/calendar/estimated-fee resources and daily limits. |
+| `quantlab/trading/runtime/sinopac_settings.py` | 110 | composition | `quantlab/trading/runtime/sinopac_settings.py` | M2-1: reference preferences and masked historical alias metadata; no credentials. |
+| `quantlab/trading/runtime/sinopac_transition.py` | 210 | composition | `quantlab/trading/runtime/sinopac_transition.py` | M2-1: owned SDK candidate acceptance/cleanup, discovery, selection and truthful readiness. |
+| `tests/test_sinopac_ca_classification.py` | 48 | tooling | `tests/test_sinopac_ca_classification.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_connection.py` | 182 | tooling | `tests/test_sinopac_connection.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_market_adoption.py` | 41 | tooling | `tests/test_sinopac_market_adoption.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_resources.py` | 72 | tooling | `tests/test_sinopac_resources.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_runtime_routing.py` | 294 | tooling | `tests/test_sinopac_runtime_routing.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_shared_session.py` | 70 | tooling | `tests/test_sinopac_shared_session.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tools/store_sinopac_ca.py` | 30 | tooling | `tools/store_sinopac_ca.py` | M2-1: explicit password-only Windows credential enrollment; never loads SDK or activates CA. |
+
+| `desktop_app/features/trading/sinopac_panel_text.py` | 92 | presentation | `desktop_app/features/trading/sinopac_panel_text.py` | M2-1: literal Chinese phase, signed, certificate and four-readiness rendering; no vendor messages, SDK or IO. |
+| `desktop_app/features/trading/sinopac_ui.py` | 54 | presentation | `desktop_app/features/trading/sinopac_ui.py` | M2-1: connection signal/receipt/snapshot bridge with independent generation/revision; no SDK or IO. |
+| `desktop_app/strings/sinopac_connection.py` | 86 | shared | `desktop_app/strings/sinopac_connection.py` | M2-1: 72 additive literal records, phase62/orders2806–2877; no alias or historical-value changes. |
+| `tests/test_sinopac_panel_ui.py` | 189 | tooling | `tests/test_sinopac_panel_ui.py` | M2-1: reference-only Qt controls, masked account intents, Decimal drafts, CA picker and stale Cancel-confirmation proof. |
+| `tests/test_sinopac_window_ui.py` | 287 | tooling | `tests/test_sinopac_window_ui.py` | M2-1: real TradingWindow with fake async connection facts; independent book/revision and both-size keyboard/layout proofs. |
+
+M2-1 replaces the former M1 `market_data_panel.py` module and the old primary
+twelve-reference BrokerPanel form with the single three-step connection panel.
+The existing BrokerPanel target now has315 lines (class297, no function over50);
+its historical source-path row remains relocation evidence, not a second form.
+Legacy profile import and offline metadata commands remain available. The shared
+backend owner registers sinopac_contracts.py in its own additive inventory commit.
+
+Window remains an inherited624-line orchestration module (TradingWindow533,
+apply_state91). M2-1 moves connection wiring/render/receipt ownership into the
+54-line sinopac_ui.py instead of adding another controller framework. The next
+narrow split is context navigation/confirmation from the remaining window owner;
+financial book validation stays at the application boundary. No size threshold
+or existing assertion changes. The legacy measure_ui_sizes --check diagnostic
+also reports pre-existing historical rows outside this feature; this slice does
+not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 | `tools/affected_tests.py` | 242 | tooling | `tools/affected_tests.py` | R8 開發工具：由 git diff 與 import 圖選出受影響測試模組；只讀來源、不匯入產品碼；既有列與分層規則不變。 |
 | `tools/repin_baselines.py` | 406 | tooling | `tools/repin_baselines.py` | R6 開發工具：重生字串目錄、盤點登記、樣式表雜湊與頁面服務觀察點基準；只產生預期值，不改斷言、不碰 G3 與 r7_base；既有列與分層規則不變。 |
 
@@ -1572,8 +1614,8 @@ since `909fc49`. All current exceptions are listed with exact AST spans.
 | function | `desktop_app/smoke/market.py:9` | `_market_smoke_ui` | 118 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
 | function | `desktop_app/smoke/recovery.py:59` | `_prepare_plan` | 58 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
 | function | `desktop_app/smoke/recovery.py:119` | `run_recovery_smoke` | 147 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
-| function | `desktop_app/smoke/runner.py:15` | `run_smoke` | 262 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
-| function | `desktop_app/smoke/runner.py:60` | `complete_smoke` | 175 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
+| function | `desktop_app/smoke/runner.py:15` | `run_smoke` | 268 | M2 CI: inherit the existing ordered smoke exception; move recovery admission before the walk-forward tail, with timer stop/restart and cleanup evidence; original checks and 120s/40s budgets unchanged. |
+| function | `desktop_app/smoke/runner.py:60` | `complete_smoke` | 181 | M2 CI: inherit the existing timer-callback exception; join the original manager before recovery, then run all walk-forward checks; same outer deadline, recovery admission and final predicates. |
 | function | `desktop_app/smoke/walk_forward.py:6` | `_walk_forward_smoke_fixture` | 56 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
 | function | `desktop_app/smoke/walk_forward.py:64` | `_check_walk_forward_smoke_result` | 113 | T5-E5: complete inherited definition moved verbatim; keep ordered fixtures, validation, timer callbacks and terminal evidence together as section 10 specifies no further function split. |
 | function | `quantlab/assistant/adapters/chatgpt/account_store.py:25` | `_open_account_controls` | 58 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
@@ -1679,3 +1721,32 @@ since `909fc49`. All current exceptions are listed with exact AST spans.
 | function | `tools/ui_snapshot.py:206` | `capture` | 139 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
 | function | `tools/validate_market_history_import.py:25` | `validate` | 63 | Inherited existing lifecycle or tooling responsibility; E4 changes only direct owner references or composed ports; preserve ordered validation and cleanup. |
 | function | `trading_runtime.py:45` | `_run_window` | 59 | Inherited existing lifecycle or tooling responsibility; E adjusts only owner references, composed construction or injected IO ports. Keep ordered validation, persistence and cleanup together. |
+
+
+## M2-1 runtime composition readability exceptions
+
+These are measured current-source exceptions, not raised targets or claimed
+compliance. M2-1 extends the retained LOCAL/legacy-readonly host with shared
+SinoPac composition and explicit old-session retirement. The small final fix
+initializes three internal flags and refuses re-entry after unknown logout;
+no guard, deadline, journal or financial caller changes.
+
+| Kind | Path / symbol | Current lines | Reason |
+| --- | --- | ---: | --- |
+| file | `quantlab/trading/runtime/bootstrap.py` | 651 | Retained three-environment composition, public-version durability and legacy/shared lifecycle admission; narrow split plan below. |
+| class | `bootstrap.py` / `RuntimeBundle` | 517 | One existing lifecycle lock, version journal and writer owner; keep shutdown/UNKNOWN semantics together during this safety handoff. |
+| function | `RuntimeBundle.__post_init__` | 55 | Ordered owner/store restoration and explicit lifecycle initialization. |
+| function | `RuntimeBundle.execute` | 66 | Existing public dispatch, short-lock scope and fail-closed legacy admission. |
+| function | `RuntimeBundle._connect_worker` | 65 | Owned candidate validation, late-completion rejection and close ordering remain atomic in responsibility. |
+| function | `bootstrap.build_runtime` | 67 | Explicit LOCAL, pinned legacy profile and unified host composition share the existing lifecycle owner. |
+
+Required narrow split for the file over600: first move read-only public/market
+snapshot projection to a dedicated runtime projection helper, then the existing
+legacy read-only connect-worker implementation to its runtime owner. Preserve
+the current bundle RLock, version journal, cancellation/closing flags, bounded
+join/cleanup evidence and single engine ownership; do not introduce a second
+lifecycle state machine, generic DI framework, financial commit caller or policy
+fallback. Use existing transition and authenticated-IPC regressions plus a full
+suite/startup check before removing old bodies. This later behavior-preserving
+extraction is outside the final first-round safety correction. The independent
+inventory baseline only updates owned measurements; no test or source cap moves.

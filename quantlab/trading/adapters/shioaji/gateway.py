@@ -146,7 +146,8 @@ class ShioajiAdapter:
 
     def disconnect(self) -> None:
         try:
-            self.client.logout()
+            if self.client.logout() is False:
+                raise DomainError('outcome_unknown', 'broker logout unconfirmed')
         finally:
             self._session_down()
 

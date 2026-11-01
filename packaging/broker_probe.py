@@ -55,11 +55,12 @@ def run_probe(output: Path, info_path: Path, *, require_frozen: bool = True) -> 
     try:
         from quantlab.trading.runtime.broker import ShioajiClientFactory
         from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
+        from quantlab.trading.domain.models import Environment
 
         factory = ShioajiClientFactory(module)
         # Constructor is inert and cannot dereference the injected object. This
         # checks our real boundary while the SDK constructor is actively denied.
-        facade = ShioajiSDKFacade(object(), module)
+        facade = ShioajiSDKFacade(object(), module, environment=Environment.LIVE)
         shape = tuple(
             name
             for name in (

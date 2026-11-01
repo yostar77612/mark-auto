@@ -1,0 +1,92 @@
+{
+  "head": "8d985640f51646938248726215544611a2cf09b5",
+  "mode": "local",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_run_window": true,
+  "real_trading_window": true,
+  "real_research_session": true,
+  "local_child_delegates_original": true,
+  "sinopac_host": "owned Thread(serve) with natural factory/secrets/resource ports",
+  "original_local_child_safety_bootstrap": true,
+  "child_guard_proven_before_product": true,
+  "secret_reads_before_ui_connect": 0,
+  "research_pages": 7,
+  "environment": "LOCAL",
+  "engine_state": "WAITING_RECONCILIATION",
+  "window_visible": true,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "widget_count": 2727,
+  "financial_facts_verified": true,
+  "research_released": true,
+  "return_code": 0,
+  "elapsed_seconds": 6.205,
+  "ui_steps": [
+    "initial_local",
+    "finish",
+    "closed"
+  ],
+  "original_ensure_calls": [
+    {
+      "sinopac": false,
+      "environment": "LOCAL"
+    }
+  ],
+  "owned_local_processes": 1,
+  "owned_fake_hosts": 0,
+  "fake_sdk": {
+    "constructors": 0,
+    "login_count": 0,
+    "logout_count": 0,
+    "resource_calls": 0,
+    "subscription_count": 0,
+    "ca_calls": 0,
+    "order_constructions": 0,
+    "order_calls": 0
+  },
+  "real_sdk_imported": false,
+  "guard_calls": [],
+  "fake_secret_lookup_count": 0,
+  "local_child_audits": [
+    {
+      "guard_installed": true,
+      "normal_exit": true,
+      "sdk_imported": false,
+      "blocked_calls": 0,
+      "guarded_modules": [
+        "quantlab.trading.adapters.shioaji.sdk_facade",
+        "quantlab.trading.adapters.shioaji.sdk_loader",
+        "quantlab.trading.adapters.shioaji.secrets",
+        "quantlab.trading.runtime.broker"
+      ]
+    }
+  ],
+  "child_guard_handshake": {
+    "exit_code": 0,
+    "audit": {
+      "guard_installed": true,
+      "normal_exit": true,
+      "sdk_imported": false,
+      "blocked_calls": 0,
+      "guarded_modules": []
+    }
+  },
+  "owned_lifetimes": [
+    {
+      "exit_code": 0,
+      "thread": null,
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    }
+  ],
+  "host_errors": [],
+  "errors": [],
+  "owned_endpoints_removed": true,
+  "passed": true,
+  "raw_result_sha256": "3d5ebcc1e706ddf480b84e19a698d9687f3bcaa607c71e3e3a9ae7c3d27e6f2d",
+  "sanitization": "Removed absolute repository/interpreter/owned-root paths and generated PIDs; source identity, counters, guard/normal-exit proofs and result values retained. Raw evidence remains with coordinator."
+}

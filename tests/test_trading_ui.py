@@ -460,23 +460,23 @@ class TradingUiTests(unittest.TestCase):
 
     def test_broker_settings_send_only_typed_references_and_never_enable_execution(self):
         panel = self.window.broker_panel
-        self.assertFalse(panel.group.isChecked())
-        panel.fields['profile_alias'].setText('offline-test')
-        panel.fields['stock_account_ref'].setText('stock-alias')
-        panel.fields['broker_secret_ref'].setText('MarkAuto/v2/broker/offline-test')
-        panel._edited()
-        panel._save()
+        self.assertFalse(panel.certificate_group.isChecked())
+        self.assertFalse(panel.fee_group.isChecked())
+        panel.key_ref.setText('MarkAuto/v2/broker/offline-test')
+        panel._changed()
+        panel.save_connect.click()
         self.drain()
         command = self.facade.commands[-1]
-        self.assertEqual(command.action, UiAction.SAVE_BROKER_SETTINGS)
-        self.assertEqual(command.broker_settings.broker_secret_ref, 'MarkAuto/v2/broker/offline-test')
-        self.assertIs(command.broker_settings.environment, Environment.BROKER_SIMULATION)
-        self.assertTrue(command.broker_settings.read_only)
-        self.assertFalse(command.broker_settings.execution_enabled)
+        self.assertEqual(command.action, UiAction.SAVE_AND_CONNECT_SINOPAC)
+        self.assertEqual(command.sinopac_settings.key_ref, 'MarkAuto/v2/broker/offline-test')
+        self.assertIs(command.sinopac_settings.environment, Environment.BROKER_SIMULATION)
+        self.assertEqual(command.sinopac_settings.fee_discount, Decimal('1'))
+        self.assertIsNone(command.broker_settings)
+        self.assertFalse(self.window.state.broker_settings.execution_enabled)
         count = len(self.facade.commands)
-        panel._check()
+        panel.activate_certificate.click()
         self.assertEqual(len(self.facade.commands), count)
-        self.assertEqual(panel.status.text(), ui_text('v2.broker_save_first'))
+        self.assertNotIn(ui_text('m2.connection.connected'), panel.status.text())
 
     def test_broker_metadata_success_is_still_shown_as_external_pending(self):
         settings = self.window.state.broker_settings
@@ -491,18 +491,19 @@ class TradingUiTests(unittest.TestCase):
             ),
             datetime.now(timezone.utc),
         )
-        self.window.broker_panel.apply(settings, readiness)
-        self.assertEqual(self.window.broker_panel.checks.rowCount(), 2)
-        self.assertIn(ui_text('v2.broker_external_pending'), self.window.broker_panel.checks.item(1, 1).text())
-        self.assertIn('不代表', self.window.broker_panel.status.text())
+        self.window.apply_state(replace(self.window.state, broker_settings=settings, broker_readiness=readiness))
+        self.assertTrue(self.window.state.broker_readiness.local_ready)
+        self.assertFalse(self.window.state.broker_readiness.external_verified)
+        self.assertEqual(self.window.broker_panel.status.text(), ui_text('m2.connection.disconnected'))
+        self.assertIn(ui_text('m2.connection.execution_pending'), self.window.broker_panel.readiness_labels['simulation_orders'].text())
 
     def test_raw_secret_pasted_in_reference_field_is_rejected_before_dispatch(self):
         panel = self.window.broker_panel
-        panel.fields['broker_secret_ref'].setText('not-an-os-credential-reference')
-        panel._edited()
-        panel._save()
+        panel.key_ref.setText('not-an-os-credential-reference')
+        panel._changed()
+        panel.save_connect.click()
         self.assertEqual(self.facade.commands, [])
-        self.assertEqual(panel.status.text(), ui_text('v2.broker_form_invalid'))
+        self.assertEqual(panel.status.text(), ui_text('m2.connection.invalid'))
 
     def test_layout_at_logical_100_150_200_percent_and_keyboard_navigation(self):
         for width, height in ((1366, 768), (910, 512), (683, 384)):

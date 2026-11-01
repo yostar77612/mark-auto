@@ -6844,3 +6844,92 @@ No G3, SDK version constant, historical producer profile or PROJECT_STATE change
 is made. One unchanged test observer moves 25 source lines with its SDK fixture;
 only its current line projection and corresponding SHA256 are re-pinned in an
 independent baseline commit, preserving every observer identity and count.
+
+## M2-1 shared connection wire contract (2026-11-01)
+
+Sinopac settings/read models contain scoped secret references, an optional
+local certificate-file reference, fee discount, redacted account aliases and
+independent connection generation/revision. Four typed readiness facts cover
+market, account queries, simulation orders and disabled production orders.
+Signed can remain unknown. No SDK/native account/person_id/secret enters the
+wire DTO. New UiCommand fields and UiState.sinopac_connection are defaulted;
+previous wire documents decode with disconnected, unconfigured defaults.
+The existing trusted registry explicitly includes the new application module.
+
+SAVE_AND_CONNECT_SINOPAC, SELECT_SINOPAC_ACCOUNTS, ACTIVATE_SINOPAC_CA and
+DISCONNECT_SINOPAC are reference-only intents. This contract slice does not
+connect, resolve credentials, switch books, activate CA or enable execution.
+Subsequent runtime acceptance owns connection CAS and SDK result validation;
+the UI mirrors accepted book context independently of its connection draft.
+
+The SDK facade now requires a typed broker environment at construction and
+exposes it read-only, independently of mutable native flags. Existing factory
+and legacy market-session construction supply that environment explicitly.
+The M2-2 execution guard work consumes this same property; no fallback to LOCAL
+or mutable production opt-in is introduced by the connection implementation.
+
+SharedSDKSession is the sole native login/logout owner. Named SharedFacadeView
+consumers retain ShioajiSDKFacade's environment and mutation guards. Consumers
+share callback dispatch and remote quote/scanner leases; detaching one cannot
+logout another. Callback exceptions degrade owner health without exposing SDK
+payloads or preventing other deliveries. MarketSession.attach_authenticated
+adopts a consumer without resolving credentials or constructing another SDK.
+
+The profile-free unified host is explicitly RuntimeLaunch.sinopac=True with a
+stable SINOPAC:environment configuration identity and sinopac-pending process
+seed. Account navigation reuses that host. Connection/market overlay may be
+borrowed by LOCAL; its money, positions, version and context remain LOCAL.
+Environment replacement requires confirmed logout, including legacy-session
+migration. Unknown cleanup cannot be converted to success by a second request.
+Connection CAS uses generation plus monotonic material revision, independent
+of harmless ticks; late owned SDK results never promote after acceptance expiry.
+
+SinopacConnection.resources(alias) returns account-scoped typed catalogue,
+bindings, calendar, estimated fees, native mapping, query-only capabilities and
+optional observed daily limits. Consumers assemble every accepted alias and
+check generation/revision again. One callback owner gets one named shared
+consumer; multiple independent adapters must use distinct names or one shared
+multi-account adapter. Native SDK callback setters and login remain singular.
+Persisted alias metadata does not grant native query/execution capability.
+Selection/discovery must never delete historical manual orders or positions.
+M2-1 never enables automatic strategies or sends broker orders. M2-2 owns the
+canonical manual engine and execution guard; LIVE remains prohibited.
+
+Explicit profile-free broker startup for a known generated alias reuses its
+registered unified environment context and stable process seed/configuration.
+It must not synthesize a second UNCONFIGURED host from that alias. Metadata
+registration never logs in or changes selected book context; legacy profile-free
+aliases without a matching unified registration retain their existing fallback.
+
+Unified CA activation is restricted to BROKER_SIMULATION. LIVE refusal occurs
+before worker creation/password lookup/native activation and leaves accepted
+connection state unchanged. The executor checks the same boundary independently;
+the LIVE UI disables CA controls using the existing formal-readonly reason.
+This restriction does not modify the separately retained legacy CA connector.
+
+## M2-1 unified connection presentation contract (2026-11-01)
+
+Settings exposes one reference-only three-step Sinopac connection panel. Draft
+connection settings and accepted trading-book context remain separate; connect
+never chooses a viewed book. Four connection intents carry the accepted opaque
+generation and connection revision, not merely an engine version. Existing worker
+execution keeps the GUI responsive. Connection snapshots are rendered before
+book-version fast paths, older connection revisions cannot replace newer facts,
+and polls never overwrite dirty key/CA/Decimal-fee drafts. Mutations display only
+accepted account selections. Failed transport makes readiness unknown; messages
+use an explicit Chinese reason map and cannot echo backend/vendor text.
+
+Signed has three display states. Market, accounts, simulation orders and disabled
+production orders remain separate facts; discovery/login/signed cannot infer
+execution permission. Certificate picker returns a local path reference only,
+password is an OS credential reference and person_id has no input. Optional CA
+and fee estimates have complete keyboard help. Native disconnect confirmation
+uses Cancel by default and detects connection replacement during its nested
+modal loop. Existing legacy metadata/import behavior remains at the typed backend
+boundary, while obsolete primary forms and their production module are removed.
+
+Exact screenshot, focused-test and baseline procedures are recorded in
+[connection UI verification](../analysis/m2-connection/verification.md). Source
+and additive baseline changes are separate commits; historical fixture identities,
+class/function caps, protected files and assertions remain intact. Shared-runtime
+integration, actual startup, full discovery and remote CI remain coordinator-owned.

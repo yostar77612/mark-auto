@@ -6,6 +6,10 @@ from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import BROKER_SDK_VERSION
 
 
+class SdkUnavailable(DomainError):
+    """The optional SDK is not installed in this build."""
+
+
 def load_pinned_sdk() -> ModuleType:
     """Load the installed optional module only for an explicit connect request.
 
@@ -15,7 +19,7 @@ def load_pinned_sdk() -> ModuleType:
     try:
         import shioaji
     except ImportError as exc:
-        raise DomainError('capability_missing', 'optional pinned broker SDK is unavailable') from exc
+        raise SdkUnavailable('capability_missing', 'optional pinned broker SDK is unavailable') from exc
     if getattr(shioaji, '__version__', None) != BROKER_SDK_VERSION:
         raise DomainError('capability_missing', 'unsupported broker SDK version')
     return shioaji
