@@ -795,6 +795,8 @@ financial book validation stays at the application boundary. No size threshold
 or existing assertion changes. The legacy measure_ui_sizes --check diagnostic
 also reports pre-existing historical rows outside this feature; this slice does
 not regenerate unrelated rows or claim that diagnostic is a current CI failure.
+| `tools/affected_tests.py` | 242 | tooling | `tools/affected_tests.py` | R8 開發工具：由 git diff 與 import 圖選出受影響測試模組；只讀來源、不匯入產品碼；既有列與分層規則不變。 |
+| `tools/repin_baselines.py` | 406 | tooling | `tools/repin_baselines.py` | R6 開發工具：重生字串目錄、盤點登記、樣式表雜湊與頁面服務觀察點基準；只產生預期值，不改斷言、不碰 G3 與 r7_base；既有列與分層規則不變。 |
 
 | `desktop_app/features/trading/manual_actions.py` | 285 | presentation | `desktop_app/features/trading/manual_actions.py` | M2-2: scope-captured manual confirmation and existing asynchronous command port; no SDK or economic authorization. |
 | `desktop_app/features/trading/manual_form.py` | 91 | presentation | `desktop_app/features/trading/manual_form.py` | M2-2: Decimal inputs and server-provided whole-lot conversion. Readability exception: 58-line constructor keeps one compact form layout together; no execution logic. |

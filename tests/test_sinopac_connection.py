@@ -9,6 +9,7 @@ from unittest.mock import patch
 import unittest
 
 from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
+from quantlab.trading.adapters.shioaji.sdk_loader import SdkUnavailable
 from quantlab.trading.application.contracts import UiAction, UiCommand
 from quantlab.trading.application.sinopac_contracts import SinopacConnectionSettings
 from quantlab.trading.domain.models import Environment
@@ -85,6 +86,17 @@ class UnifiedConnectionTests(unittest.TestCase):
             self.assertEqual(len(self.creations), 1)
         finally:
             reloaded.close()
+
+    def test_missing_sdk_is_reported_as_missing_not_as_login_failure(self):
+        def missing(environment):
+            raise SdkUnavailable('capability_missing', 'optional pinned broker SDK is unavailable')
+
+        self.owner.factory = missing
+        self.owner.execute(self.command(UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=SinopacConnectionSettings()))
+        self.owner.worker.join(2)
+        view = self.owner.snapshot()
+        self.assertEqual((view.phase, view.error_code), ('DISCONNECTED', 'market_sdk_missing'))
+        self.assertEqual(self.secrets.references, [])
 
     def test_failed_logout_blocks_replacement_factory(self):
         self.connect()

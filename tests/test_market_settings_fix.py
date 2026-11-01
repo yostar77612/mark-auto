@@ -18,6 +18,7 @@ from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import SinopacConnectionSettings, SinopacConnectionView
 from quantlab.trading.domain.alerts import AlertKind
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.application.errors import ERROR_TABLE
 
 
 class MarketSettingsUiRegressionTests(unittest.TestCase):
@@ -70,6 +71,7 @@ class MarketSettingsUiRegressionTests(unittest.TestCase):
                     ('CONNECTED', '', ui_text('m2.connection.connected')),
                     ('DISCONNECTED', '', ui_text('m2.connection.disconnected')),
                     ('DISCONNECTED', 'broker_login_failed', ui_text('m2.connection.login_failed')),
+                    ('DISCONNECTED', 'market_sdk_missing', ERROR_TABLE['market_sdk_missing'].explanation + ERROR_TABLE['market_sdk_missing'].action),
                     ('DISCONNECTING', '', ui_text('m2.connection.disconnecting')),
                 ),
                 start=1,

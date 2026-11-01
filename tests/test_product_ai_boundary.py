@@ -127,8 +127,14 @@ class ProductAIBoundaryTests(unittest.TestCase):
             'packaging/test_update_recovery.ps1',
             'packaging/clean_windows_kit.py',
             'packaging/wait_for_gates.py',
+            'SDK import',
         ):
             self.assertIn(required, source)
+        installed = (ROOT / 'packaging/test_unified_installer.ps1').read_text(encoding='utf-8-sig')
+        self.assertIn("'--broker-sdk-probe'", installed)
+        self.assertLess(installed.index("Smoke 'upgraded' $Version"), installed.index("'--broker-sdk-probe'"))
+        for required in ('sdk_version', "'1.7.9'", 'application_sdk_client_constructions', 'broker_login_performed', 'frozen'):
+            self.assertIn(required, installed)
 
 
 class StandaloneTLSGateTests(unittest.TestCase):

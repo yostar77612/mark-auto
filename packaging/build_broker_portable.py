@@ -1,4 +1,4 @@
-"""Opt-in local broker-enabled portable build; default desktop build is unchanged.
+"""Additional local portable output using the default installer's verified SDK flavor.
 
 Run --prepare-only while engineering validation is in progress. A complete
 build requires an explicit --freeze-reviewed-source and a clean Git checkout.

@@ -118,6 +118,8 @@ class ExpiryDataTests(unittest.TestCase):
         import runpy
         import sys
         import types
+        import io
+        import hashlib
 
         captured = {}
         hooks = types.ModuleType('PyInstaller.utils.hooks')
@@ -128,10 +130,24 @@ class ExpiryDataTests(unittest.TestCase):
             captured.update(kwargs)
             return types.SimpleNamespace(pure=[], scripts=[], binaries=[], datas=[])
 
+        # Isolate the new SDK dependency boundary; its real byte verification
+        # is exercised by test_broker_optional_packaging and frozen CI.
+        native_bytes = b'T9-SYNTHETIC-SDK-CORE'
+        sdk_info = {'sdk_native_core_sha256': hashlib.sha256(native_bytes).hexdigest()}
+        configure = Mock(side_effect=lambda selected, *args: selected)
+        installed_sdk = Mock(return_value=(None, None, None, sdk_info))
+        original_run_path = runpy.run_path
+
+        def run_path(path, *args, **kwargs):
+            if Path(path).name == 'broker_package.py':
+                return {'configure_analysis': configure, 'installed_sdk': installed_sdk}
+            return original_run_path(path, *args, **kwargs)
+
         with (
             patch.dict(sys.modules, {'PyInstaller.utils.hooks': hooks}),
             patch('quantlab.sqlite_runtime.verify'),
             patch('quantlab.sqlite_runtime.verify_binaries'),
+            patch.object(runpy, 'run_path', side_effect=run_path),
         ):
             runpy.run_path(
                 str(ROOT / 'packaging/markauto.spec'),
@@ -143,10 +159,17 @@ class ExpiryDataTests(unittest.TestCase):
                     'COLLECT': lambda *a, **kw: None,
                 },
             )
+        configure.assert_called_once()
         self.assertIn((str(ROOT / 'quantlab/data_files/taifex_expiries.json'), 'quantlab/data_files'), captured['datas'])
         manifest = runpy.run_path(str(ROOT / 'packaging/build_manifest.py'))
         outputs = {}
         read_text = Path.read_text
+        open_file = Path.open
+
+        def open_input(path, *args, **kwargs):
+            if path == ROOT / 'dist/MarkAuto/_internal/shioaji/_core.pyd':
+                return io.BytesIO(native_bytes)
+            return open_file(path, *args, **kwargs)
 
         def read(path, *args, **kwargs):
             if path == ROOT / 'dist/validation/sqlite-runtime.json':
@@ -162,10 +185,12 @@ class ExpiryDataTests(unittest.TestCase):
             patch.object(Path, 'write_text', autospec=True, side_effect=write),
             patch.dict(manifest['main'].__globals__, distributions=lambda: []),
             patch('subprocess.check_output', return_value=GOLDEN['head_archive']),
+            patch.object(runpy, 'run_path', side_effect=run_path),
+            patch.object(Path, 'open', autospec=True, side_effect=open_input),
         ):
             manifest['main']()
+        installed_sdk.assert_called_once_with((ROOT / 'build/broker-wheels/shioaji-1.7.9-cp37-abi3-win_amd64.whl').absolute())
         inputs = json.loads(outputs['build-manifest.json'])['inputs_sha256']
-        import hashlib
 
         self.assertEqual(
             inputs['quantlab/data_files/taifex_expiries.json'], hashlib.sha256((ROOT / 'quantlab/data_files/taifex_expiries.json').read_bytes()).hexdigest()
