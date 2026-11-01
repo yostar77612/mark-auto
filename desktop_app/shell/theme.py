@@ -486,3 +486,19 @@ def _apply_terminal_theme(widget):
                 item = table.item(row, column)
                 if item.text() != ui_text('watch.unknown'):
                     item.setForeground(widget._colour(view))
+
+
+_TRADING_PAGE_QSS = '''
+QWidget#trading_execution_page[executionEnvironment="LOCAL"] { border:1px solid #9fb0c5; }
+QWidget#trading_execution_page[executionEnvironment="BROKER_SIMULATION"] { border:1px solid #26854b; }
+QWidget#trading_execution_page[executionEnvironment="LIVE"] { border:2px solid #b52c36; }
+QLabel#trading_environment_notice { padding:8px; border-radius:4px; font-weight:600; }
+QLabel#trading_environment_notice[executionEnvironment="LOCAL"] { background:#e5edf7; color:#31465d; }
+QLabel#trading_environment_notice[executionEnvironment="BROKER_SIMULATION"] { background:#e8f5ec; color:#1b6335; }
+QLabel#trading_environment_notice[executionEnvironment="LIVE"] { background:#fff0f0; color:#9c1b24; }
+'''
+
+
+def _apply_trading_page_theme(window):
+    """Composition-only scoped trading-page styles; historical builders stay exact."""
+    window.setStyleSheet(window.styleSheet() + _TRADING_PAGE_QSS)

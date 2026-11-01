@@ -5,6 +5,7 @@ from quantlab.trading.application.contracts import UiState
 from desktop_app.features.trading.labels import policy_label, state_label
 from desktop_app.features.trading.widgets import rows
 from desktop_app.features.trading.reconciliation_rows import reconciliation_cells
+from desktop_app.features.trading.trading_page import refresh_position_details
 
 
 def render_tables(window, state: UiState, *, state_changed: bool) -> None:
@@ -64,6 +65,7 @@ def _render_positions(self, state: UiState) -> None:
             for item in state.positions
         ),
     )
+    refresh_position_details(self.positions)
 
 
 def _render_orders(self, state: UiState) -> None:

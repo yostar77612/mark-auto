@@ -6660,3 +6660,37 @@ also bind compact-header visibility/height. No action eligibility, execution,
 G3 files, source profiles, OOS/budget/timeouts, PROJECT_STATE or acceptance score
 changed. Offline evidence and before/after screenshots are recorded in
 docs/design/m1-u-notes.md; real-App owner visual verification remains pending.
+
+## M2-6 first round — accepted-state trading-page environments (2026-11-01)
+
+The trading-page environment selector routes through the same settings selector
+and SWITCH_CONTEXT boundary. Both selectors and the environment band reflect
+accepted UiState only; pending, rejected or unavailable navigation cannot display
+a successful switch or merge the old/new books. Existing context epochs and
+application data isolation remain authoritative. No new DTO, session or SDK path.
+
+LOCAL uses grey-blue, BROKER_SIMULATION green, and LIVE a red outline and explicit
+production-order-disabled band. The UI independently rejects DEPLOY, STEP,
+RESUME, CANCEL_ENTRIES and FLATTEN in LIVE and disables their controls; STOP_NEW
+and RECONCILE remain usable. This does not establish M2-2's engine/gateway LIVE
+invariant. Its future manual order intents must extend the UI inventory and tests.
+The current read-only LIVE stop caption describes only the local stop flag;
+LOCAL/SIM retain their existing stop-and-cancel-entry scope. M2-2 must include
+STOP_NEW in its backend operation proof. Navigation captures environment with
+account/context before modal confirmations. First broker-profile import from
+LOCAL explicitly chooses SIM or LIVE before the existing file/import boundary;
+cancelling either prompt emits nothing and never changes the active book.
+
+The position table preserves twelve original values/identities. Compact headings
+retain original tooltips; cells retain complete text and tooltips. The first
+column sizes to actual content, other columns stretch, and populated 1366px tests
+require a zero horizontal scroll maximum, complete first-column text and every
+column within the viewport. Plain-language action hints explain scope.
+
+Scoped QSS is composed only by shell/theme at the runtime entry. The new feature
+module imports no shell, infrastructure or SDK; historical stylesheet builders,
+layer gates and all existing test limits remain unchanged. Catalogue phase61
+adds exactly23 continuous records; baseline pins are a separate commit.
+Performance comparison is deferred to round two under specification section7.
+Focused fake-widget evidence and screenshots are in docs/analysis/m2-trading;
+full suites, actual LOCAL/SIM startup and remote CI remain coordinator work.

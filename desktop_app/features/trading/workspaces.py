@@ -23,6 +23,7 @@ from quantlab.trading.domain.models import Environment
 from desktop_app.features.trading.widgets import button, combo, label, table
 from desktop_app.features.trading.broker_panel import BrokerPanel
 from desktop_app.features.trading.dashboard import DashboardWidget
+from desktop_app.features.trading.trading_page import install_trading_environment, configure_trading_actions, configure_trading_positions
 
 
 PAGE_KEYS = {
@@ -251,6 +252,7 @@ def _market_page(self) -> None:
 
 def _trading_page(self) -> None:
     layout = _page(self, 'trading')
+    install_trading_environment(self, layout)
     layout.addWidget(label('v2.control_hint'))
     _buttons(
         self,
@@ -264,6 +266,7 @@ def _trading_page(self) -> None:
             ('v2.transfer', 'transfer_button', self.transfer_selected),
         ),
     )
+    configure_trading_actions(self)
     layout.addWidget(label('v2.positions'))
     self.positions = table(
         (
@@ -282,6 +285,7 @@ def _trading_page(self) -> None:
         ),
         'positions',
     )
+    configure_trading_positions(self.positions)
     layout.addWidget(self.positions)
     layout.addWidget(label('v2.orders'))
     self.orders = table(('v2.instrument', 'v2.direction', 'v2.quantity', 'v2.filled', 'v2.state', 'v2.order_scope', 'v2.account'), 'orders')
