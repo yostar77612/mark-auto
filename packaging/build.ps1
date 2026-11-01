@@ -1,7 +1,11 @@
-param([string]$Version = '0.2.2', [switch]$RegressionOnly, [string]$RegressionReceipt = '')
+param([string]$Version = '', [switch]$RegressionOnly, [string]$RegressionReceipt = '')
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 & (Join-Path $PSScriptRoot 'validate_powershell.ps1')
+# quantlab/__init__.py is the single version source; -Version may only restate it.
+$projectVersion = ((Get-Content (Join-Path $PSScriptRoot '../quantlab/__init__.py') -Raw) | Select-String '__version__ = "(\d+\.\d+\.\d+)"').Matches[0].Groups[1].Value
+if (-not $Version) { $Version = $projectVersion }
+if ($Version -cne $projectVersion) { throw "Version $Version does not match quantlab.__version__ $projectVersion" }
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be numeric x.y.z' }
 if ($RegressionOnly -and $RegressionReceipt) { throw 'Regression producer and receipt consumer are separate phases' }
 if (-not [Environment]::Is64BitProcess) { throw 'Build requires x64 Python/PowerShell' }
@@ -11,6 +15,10 @@ try {
   if ($LASTEXITCODE) { throw 'Build requires pinned CPython 3.13.16 x64' }
   python packaging/version_resource.py --version $Version --output build/markauto-version.txt
   if ($LASTEXITCODE) { throw 'Project executable version metadata generation failed' }
+  # Bundled build identity shown in Settings: version plus exact source commit.
+  $commit = git rev-parse HEAD
+  if ($LASTEXITCODE -or $commit -notmatch '^[0-9a-f]{40}$') { throw 'Build requires the git source commit' }
+  [IO.File]::WriteAllText((Join-Path (Get-Location) 'build/build-info.json'), (@{ version = $Version; commit = $commit } | ConvertTo-Json))
   # Clone the exact interpreter before installing dependencies; never replace its DLL globally.
   $privateRuntime = Join-Path (Get-Location) 'build/sqlite-python'
   if ($env:GITHUB_PATH) {

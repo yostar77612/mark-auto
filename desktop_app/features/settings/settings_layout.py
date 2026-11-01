@@ -123,7 +123,11 @@ def build_settings(page, layout):
     # Resolve the installed package version when rendering settings.
     from quantlab import __version__
 
-    page.version_label = QLabel(ui_text('ui.settings_page.current_version').format(__version__))
+    # Read the bundled build commit only when rendering settings.
+    from quantlab.build_info import build_commit
+
+    commit = build_commit()
+    page.version_label = QLabel(ui_text('ui.settings_page.current_version').format(f'{__version__} ({commit})' if commit else __version__))
     page.version_label.setWordWrap(True)
     page.maintenance_toggle, _, maintenance = collapsed(about, 'maintenance.options')
     maintenance.addWidget(page.version_label)
