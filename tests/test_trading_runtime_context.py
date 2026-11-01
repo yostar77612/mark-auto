@@ -235,6 +235,36 @@ def close_owned_test_context(client):
     raise DomainError(result.code)
 
 
+def close_owned_test_process(process, facade):
+    """A cleanup hook registered before start/readiness can fail."""
+    if process.pid is None:
+        return
+    try:
+        deadline = elapsed.monotonic() + 15
+        while process.is_alive():
+            try:
+                session = read_session(facade.root)
+            except FileNotFoundError:
+                if elapsed.monotonic() >= deadline:
+                    raise DomainError('startup_failed', 'owned synthetic host has no control endpoint') from None
+                elapsed.sleep(0.02)
+                continue
+            if session.process_id != process.pid:
+                raise DomainError('startup_workspace_busy', 'refuse to close a foreign synthetic host')
+            close_owned_test_context(facade)
+            break
+    finally:
+        process.join(10)
+        if process.is_alive():
+            process.terminate()  # Exact multiprocessing handle created by this test only.
+            process.join(3)
+            raise AssertionError('owned synthetic host required forced cleanup')
+        exit_code = process.exitcode
+        process.close()
+        if exit_code != 0:
+            raise AssertionError(f'owned synthetic host exited {exit_code}')
+
+
 class RuntimeContextConfigurationTests(unittest.TestCase):
     def setUp(self):
         (WORKSPACE / 't').mkdir(exist_ok=True)
@@ -394,28 +424,16 @@ class OwnedBrokerTagHostTests(unittest.TestCase):
     def setUp(self):
         (WORKSPACE / 't').mkdir(exist_ok=True)
         self.temp = tempfile.TemporaryDirectory(prefix='owned-context-ipc-', dir=WORKSPACE / 't')
+        self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.processes = []
 
-    def tearDown(self):
-        for process, facade in self.processes:
-            if process.is_alive():
-                try:
-                    close_owned_test_context(facade)
-                finally:
-                    process.join(10)
-            if process.is_alive():
-                process.terminate()
-                process.join(3)
-            self.assertFalse(process.is_alive(), 'only this test-owned host must finish')
-            process.close()
-        self.temp.cleanup()
-
     def start(self, root, environment, profile, *, failure=False):
         process = multiprocessing.get_context('spawn').Process(target=serve_fixture, args=(root, environment, profile, failure))
-        process.start()
         facade = IpcFacade(root, environment=environment, account_ref='test-stock')
+        self.addCleanup(close_owned_test_process, process, facade)
         self.processes.append((process, facade))
+        process.start()
         deadline = elapsed.monotonic() + 15
         while elapsed.monotonic() < deadline:
             if not process.is_alive():

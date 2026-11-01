@@ -8,7 +8,6 @@ from dataclasses import replace
 import json
 import multiprocessing
 from pathlib import Path
-import subprocess
 import tempfile
 import time
 from types import SimpleNamespace
@@ -28,9 +27,10 @@ from quantlab.trading.application.contracts import UiAction, UiCommand, UiReceip
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.config import RuntimeLaunch, load_profile
-from quantlab.trading.runtime.context_client import ContextIpcFacade, RuntimeContextManager, _STARTED, ensure_engine
+from quantlab.trading.runtime.context_client import ContextIpcFacade, RuntimeContextManager, ensure_engine
 from quantlab.trading.runtime.ipc import read_session
-from test_trading_runtime_context import close_owned_test_context, profile_fixture, serve_fixture
+from test_trading_runtime_context import close_owned_test_context, close_owned_test_process, profile_fixture, serve_fixture
+from tools.owned_trading_engine import OwnedEngineProcesses
 
 
 WORKSPACE = Path(__file__).resolve().parents[1]
@@ -150,6 +150,8 @@ class RuntimeContextClientTests(unittest.TestCase):
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
         (WORKSPACE / 't').mkdir(exist_ok=True)
         self.temp = tempfile.TemporaryDirectory(prefix='context-client-', dir=WORKSPACE / 't')
+        self.addCleanup(self.temp.cleanup)
+        self.enterContext(OwnedEngineProcesses())
         self.root = Path(self.temp.name).resolve()
         self.processes = []
         self.launches = []
@@ -164,32 +166,6 @@ class RuntimeContextClientTests(unittest.TestCase):
             QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
             self.assertFalse(isValid(self.window))
             self.app.processEvents()
-        cleanup_errors = []
-        for launch in reversed(self.launches):
-            try:
-                client = ContextIpcFacade(launch)
-                close_owned_test_context(client)
-            except DomainError as exc:
-                cleanup_errors.append(exc.code)
-            except (OSError, EOFError):
-                pass  # A test may deliberately have closed its owned host.
-        for process in self.processes:
-            process.join(10)
-            if process.is_alive():
-                process.terminate()  # Only this test's explicitly created PID.
-                process.join(5)
-                cleanup_errors.append('owned synthetic host required forced cleanup')
-        for launch in self.launches:
-            process = _STARTED.pop(launch.root, None)
-            if process is not None:
-                try:
-                    process.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    process.terminate()  # Only the Popen created by this case.
-                    process.wait(timeout=5)
-                    cleanup_errors.append('owned local host required forced cleanup')
-        self.temp.cleanup()
-        self.assertEqual(cleanup_errors, [])
 
     def drain(self):
         # Starting a new owned host has the existing 15s startup deadline;
@@ -207,6 +183,7 @@ class RuntimeContextClientTests(unittest.TestCase):
         profile = profile_fixture(folder / 'bundle', environment)
         launch = RuntimeLaunch(folder / 'engine', environment, profile, 'test-stock')
         process = multiprocessing.get_context('spawn').Process(target=serve_fixture, args=(launch.root, environment, profile, failure))
+        self.addCleanup(close_owned_test_process, process, ContextIpcFacade(launch))
         process.start()
         self.processes.append(process)
         self.launches.append(launch)
