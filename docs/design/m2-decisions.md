@@ -940,6 +940,7 @@ Both images retain the LOCAL book, formal connection label and readable readonly
 CA guidance; visual inspection passes and horizontal scrollbar maxima are zero.
 Other scenes and unrelated historical baselines are not regenerated. The capture
 record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
+# M2-2 manual simulation core decisions (2026-11-01)
 
 ## M2-2 / scoped manual intent contracts — 2026-11-01
 
@@ -947,6 +948,63 @@ Manual intents carry context id/epoch, environment/account, shared connection's
 opaque string generation and revision; UiCommand.expected_version remains the
 separate book CAS. A backend must match every accepted scope before execution.
 No submitted object is a grant, ACTIVE strategy or research/OOS evidence.
+
+**M2-2 runtime integration (2026-11-01).**
+
+The query worker materializes one canonical TradingEngine only after explicit
+authenticated account selection. This is composition, not permission to trade:
+each manual book still requires a confirmed application virtual allocation,
+complete fresh account observations, current scope, and the diagnostic policy.
+Canonical 60,000/40,000 application buckets and the global 100,000 limit remain
+unchanged. Broker funds remain unavailable; no zero simulation reply becomes
+positive broker financial evidence.
+
+One execution consumer shares the existing authenticated SDK owner. A narrow
+ExecutionPort wrapper serializes its mutable cache with query collection; it
+only forwards the existing canonical ExecutionService call. SDK observations
+run outside the writer. Collection releases its mutex before adopting reports,
+and a batch collected across a committed book mutation is discarded. Failed
+queries call service.adopt(()) so previous observations cannot remain usable.
+Each collection has an eight-second acceptance bound, without increasing the
+existing SDK, command or intent deadlines. Runtime pumping never calls the
+automatic strategy cycle, automatic exits or legacy financial reconciliation.
+
+ManualScope retains the broker owner's native generation and revision. The
+CompositeFacade projects only the current scope's context identity/epoch;
+preview, pending and result scopes retain their original admission identity.
+The authenticated request account/environment, outer command, inner form,
+accepted account selection and materialized owner stamp must agree. UI-only
+connection revision offsets never become manual authority.
+
+A small version-one Ledger retains masked alias/market facts and typed contract
+bindings needed to reconstruct prior obligations. No native account identifiers
+or credentials are stored there. Reconnection and contract changes preserve all
+books/orders/positions. Missing or unselected historical obligations remain
+blocked rather than disappearing. Observed-time-only resource renewals refresh
+limits/capabilities without rewriting contract economics or silently resuming a
+book. Economic/calendar/cost changes rematerialize and require confirmation.
+
+Simulation readiness is computed for the selected book. READY requires a known
+canceled/unfilled TMF diagnostic in the current native generation and current
+book submission readiness. It does not certify stock or other key permissions.
+The pending-account control host and a LOCAL book cannot borrow another book's
+READY. These computed read models do not advance the native CAS token. LIVE
+remains rejected before manual execution; production readiness remains blocked.
+
+An optional trusted Python sinopac_clock dependency passes through existing host
+composition into the owner's existing Clock port. Defaults and all real UTC
+journal leases/fences remain unchanged; there is no CLI/config/environment
+activation. The positive fake uses an actual covered trading date; the unchanged
+built-in calendar rejects Sunday 2026-11-01. Required real-clock startup remains
+separate and must produce no Sunday orders.
+
+The exact additive submit-caller inventory records only the ExecutionPort
+forwarder (runtime/manual_trading.py, submit, self.adapter). It adds no reservation
+or commit authority: ManualTradingService._submit -> TradingEngine.submit ->
+ExecutionService.commit remains the sole financial admission/journal path.
+Historical v1 submit callers, the sole execution.commit assertion, protected
+files, risk limits and all existing test assertions remain intact.
+## M2-2 D1 coordinator oracle baseline
 
 Book allocation is explicitly APP_VIRTUAL_SIMULATION, requires user confirmation
 and fresh verified account observations, and never replaces unknown broker funds
@@ -1232,3 +1290,28 @@ independent29 real-widget cases prove owned confirmed halted-book exits remain
 possible and unknown/foreign exits remain blocked. The unchanged93-test batch
 then passes in28.500s. Commit this feature baseline independently of the merge;
 no guard, timeout, skip or existing assertion is removed.
+
+UiCommand.manual_no_admission defaults to false for existing wire clients. It is
+a deny-only forwarding marker for an outer CAS refusal: after native/account
+scope and existing-book checks it can only reject/seal an absent key. It never
+executes the financial body, even when its version would otherwise be current.
+The runtime/Composite owner preserves the original request scope and handles
+its separate outer-boundary forwarding regressions. Invalid/stale native scope,
+closed/failed storage or lost writer ownership cannot mint known admission
+outcomes. LIVE remains denied independently before any mutation.
+
+## M2-2 / outer-CAS known-no-admission routing — 2026-11-01
+
+Keep the original confirmed form, request ID, context/epoch and native owner CAS
+when a boundary refuses admission. The default-false manual_no_admission field
+is deny-only: core may seal a proven absent key under its existing writer/fence,
+or replay an existing known/UNKNOWN request unchanged; it cannot execute the
+financial body. A pure helper limits forwarding to typed confirmed SIM submit,
+prepared diagnostic, cancel and amend forms with equal inner/outer scopes.
+Composite uses only its already-held current book or same-native-owner control
+port; it never opens/switches a host for a refusal. The authenticated server
+turns a mismatched envelope into the same deny-only path without rescoping.
+LIVE, malformed markers and unsupported/unconfirmed actions fail before fallback.
+The runtime retains a false-receipt scope only when a matching server-known
+result exists. Transport failures and preexisting UNKNOWN remain uncertain; no
+generic state_conflict whitelist clears pending state or manufactures a result.

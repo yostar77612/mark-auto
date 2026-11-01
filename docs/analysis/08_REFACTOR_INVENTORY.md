@@ -803,6 +803,56 @@ not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 | `desktop_app/strings/m2_manual.py` | 91 | shared | `desktop_app/strings/m2_manual.py` | M2-2: additive phase63 literal catalogue records following the M2-1 phase62. |
 | `tests/test_m2_manual_ui.py` | 560 | tooling | `tests/test_m2_manual_ui.py` | M2-2: actual offscreen controls, asynchronous fake facade and exact intent identity regressions; no SDK/process orders. Readability exception: 560-line test module and 456-line test class group 29 short cases with one owned Qt fixture; no production-class exception. |
 
+
+| `quantlab/trading/runtime/manual_resources.py` | 71 | composition | `quantlab/trading/runtime/manual_resources.py` | M2-2: lazy version-one owned resource Ledger retaining only masked alias markets and typed bindings for prior obligations; no credentials/native accounts. |
+| `quantlab/trading/runtime/manual_trading.py` | 367 | composition | `quantlab/trading/runtime/manual_trading.py` | M2-2: one aggregate manual SIM engine, strict native scope, bounded worker observations, serialized ExecutionPort and pure readiness projections; no automatic cycle. |
+| `tests/test_manual_runtime.py` | 163 | tooling | `tests/test_manual_runtime.py` | M2-2: pure CAS, failed-query, resource-schema, reference-only startup and logical market-clock/real-lease boundaries. |
+| `tests/test_manual_runtime_integration.py` | 364 | tooling | `tests/test_manual_runtime_integration.py` | M2-2: actual bundle/codec/dispatch/canonical engine with strict offline SDK; aggregate aliases, diagnostic/replay, owned authenticated Pipe cleanup and late-resource shutdown. |
+| `tests/test_manual_runtime_scope.py` | 84 | tooling | `tests/test_manual_runtime_scope.py` | M2-2: native revision retained through presentation offsets; only current context epoch projected, admitted result scopes preserved, foreign outer/form denied. |
+
+M2-2 runtime readability audit: the new runtime module is 367 lines and
+ManualRuntime exactly 300; the resource module is 71 and all three new test
+modules are below 400. Function exceptions are _materialize 95 (one ownership
+handoff keeps journal acquisition, restored cursor/order seeding and adoption
+under the same close/generation checks), refresh 53 (visibly separates input
+capture, native waits and writer adoption), and the test fixture setUp 76 (one
+explicit authenticated fake owner/resource/native-query audit fixture shared by
+single-account and aggregate cases). No generic factory/registry is introduced
+to split these short-lived composition transactions.
+
+Existing bootstrap grows 647→693 lines, RuntimeBundle 513→551. Its changed
+function spans are __post_init__ 58, snapshot 62, execute 70 and build_runtime 74;
+the inherited _connect_worker remains 65. The additional code only wires the
+separate ManualRuntime, pure atomic projections and trusted Clock dependency.
+The required plan for this inherited file over 600 lines is to extract the legacy
+read-only connection worker and its attempt/version lifecycle behind the same
+EngineFactory contract in a separate scoped change; the new manual engine/core
+is already outside it. CompositeFacade.execute 78 retains one accepted-intent
+boundary; server _dispatch 63 and inherited _serve 138 retain their authenticated
+request and owned-lifetime boundaries. This slice changes no size threshold.
+
+The independent M2-2 runtime baseline records exactly one additional production
+submit forwarder (runtime/manual_trading.py, submit, self.adapter), after the
+unchanged exhaustive oracle failed on that tuple alone. The v1 caller/writer
+sets, the sole TradingEngine.submit→execution.commit set and all guard-order
+assertions remain exact. These five path rows are additive; historical source
+counts, relocations, fixture hashes and unrelated baselines are not regenerated.
+
+
+| `quantlab/trading/application/manual_routing.py` | 71 | application | `quantlab/trading/application/manual_routing.py` | M2-2 P1: pure confirmed-request deny copy and already-held same-owner facade routing; no host opening, financial call, scope rewriting or new operation. |
+| `tests/test_manual_no_admission_routing.py` | 193 | tooling | `tests/test_manual_no_admission_routing.py` | M2-2 P1: real Composite/bundle/codec/authenticated-Pipe proof for outer-CAS refusal, original identity, no added SDK mutation, current/stale owner and preserved UNKNOWN. |
+
+P1 routing adds only these two Python paths; prior source/fixture identity rows
+remain historical. The new modules have no function over 50 lines and are below
+400 lines. CompositeFacade remains below 300 lines; its execute function grows
+to 86 while preserving one accepted-intent boundary. Existing ManualRuntime
+becomes 306 lines (file 374): the six lines over the readability target keep the
+deny-only action guard and exact authoritative-result scope retention beside
+the same command dispatch, without a second lifecycle owner or result cache.
+Its existing _materialize 95 / refresh 53 exceptions and bootstrap split plan
+remain unchanged. No caller/commit oracle, risk threshold, catalogue or other
+historical baseline is relaxed or repinned by this independent path baseline.
+
 ## 3 跨層匯入違規（GitNexus + AST）
 
 ### 3.1 靜態匯入明細

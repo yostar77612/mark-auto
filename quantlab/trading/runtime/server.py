@@ -14,6 +14,7 @@ from uuid import uuid4
 
 from quantlab.runtime_support import WindowsAppMutex
 from quantlab.trading.application.contracts import UiAction, UiReceipt
+from quantlab.trading.application.manual_routing import refusal_command
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.domain.validation import DomainError
 from .bootstrap import EngineFactory, RuntimeBundle, build_runtime
@@ -46,7 +47,7 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
     if request.environment is not bundle.launch.environment or request.account_ref not in bundle.account_refs:
         raise DomainError('capability_missing', 'explicit running account/environment required')
     if request.operation is Operation.SNAPSHOT:
-        state = bundle.snapshot()
+        state = bundle.snapshot(request.account_ref) if bundle.launch.sinopac else bundle.snapshot()
         return Response(request.request_id, state=replace(state, account_ref=request.account_ref) if bundle.launch.sinopac else state)
     if request.operation is Operation.MARKET_SERIES:
         if bundle.market_terminal is not None and bundle.market_terminal.active:
@@ -72,11 +73,25 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
     if request.operation is Operation.COMMAND:
         if not isinstance(request.command.action, UiAction):
             raise DomainError('validation_failed', 'typed UI action required')
+        if type(request.command.manual_no_admission) is not bool:
+            raise DomainError('validation_failed', 'typed manual refusal marker required')
+        if (
+            bundle.manual_runtime is not None
+            and bundle.manual_runtime.handles(request.command)
+            and request.command.action is not UiAction.RECONCILE
+            and (request.command.account_ref != request.account_ref or request.command.environment is not request.environment)
+        ):
+            denied = refusal_command(request.command)
+            if denied is None:
+                raise DomainError('state_conflict', 'manual command differs from authenticated account envelope')
+            receipt = bundle.execute(denied)
+            state = bundle.snapshot(request.account_ref)
+            return Response(request.request_id, state=replace(state, account_ref=request.account_ref), receipt=receipt)
         if request.command.action.value == 'connect_read_only':
             receipt = bundle.connect_read_only(request.command)
         else:
             receipt = bundle.execute(request.command)
-        state = bundle.snapshot()
+        state = bundle.snapshot(request.account_ref) if bundle.launch.sinopac else bundle.snapshot()
         return Response(request.request_id, state=replace(state, account_ref=request.account_ref) if bundle.launch.sinopac else state, receipt=receipt)
     if request.operation is Operation.QUOTES:
         if len(request.quotes.items) > 1000:
@@ -180,11 +195,12 @@ def serve(
     sinopac_factory=None,
     secret_resolver=None,
     resource_factory=None,
+    sinopac_clock=None,
 ) -> int:
     # Acquire before even the Unix endpoint or engine/workspace is opened.
     # The shared helper is a no-op outside Windows and preserves the v1 name.
     with closing(WindowsAppMutex()):
-        ports = {'sinopac_factory': sinopac_factory, 'secret_resolver': secret_resolver, 'resource_factory': resource_factory}
+        ports = {'sinopac_factory': sinopac_factory, 'secret_resolver': secret_resolver, 'resource_factory': resource_factory, 'sinopac_clock': sinopac_clock}
         if os.name == 'nt':
             return _serve(root, launch=launch, engine_factory=engine_factory, **ports)
         with unix_endpoint(root) as endpoint:
@@ -200,13 +216,19 @@ def _serve(
     sinopac_factory=None,
     secret_resolver=None,
     resource_factory=None,
+    sinopac_clock=None,
 ) -> int:
     root = root.resolve()
     launch = launch or RuntimeLaunch(root)
     if launch.root.resolve() != root:
         raise DomainError('validation_failed', 'launch and server roots differ')
     bundle = build_runtime(
-        launch, engine_factory=engine_factory, sinopac_factory=sinopac_factory, secret_resolver=secret_resolver, resource_factory=resource_factory
+        launch,
+        engine_factory=engine_factory,
+        sinopac_factory=sinopac_factory,
+        secret_resolver=secret_resolver,
+        resource_factory=resource_factory,
+        sinopac_clock=sinopac_clock,
     )
     family = 'AF_PIPE' if os.name == 'nt' else 'AF_UNIX'
     address = '\\\\.\\pipe\\markauto-v2-' + uuid4().hex if os.name == 'nt' else endpoint.address

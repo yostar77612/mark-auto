@@ -6952,6 +6952,16 @@ Exact screenshot, focused-test and baseline procedures are recorded in
 and additive baseline changes are separate commits; historical fixture identities,
 class/function caps, protected files and assertions remain intact. Shared-runtime
 integration, actual startup, full discovery and remote CI remain coordinator-owned.
+M2-2 ManualTradingService accepts typed UI intent and uses one aggregate
+TradingEngine plus its existing journal. Its execute/snapshot/adopt seam keeps
+native observation collection outside the writer. ManualAccountObservation
+contains orders, positions, events and source timing, never fabricated account
+funds. The runtime validates the immutable accepted environment/account/owner
+generation/revision before adoption and command admission. Its manual pump does
+not run automatic strategy cycles or normal financial-baseline reconciliation.
+Internal ManualRiskCapacity is app-owned virtual capital, not a broker balance.
+Only a matching durable manual intent can use the canonical submit branch;
+automatic ACTIVE/OOS/previous-close requirements remain unchanged.
 
 ## M2-2 manual simulation wire contract (2026-11-01)
 
@@ -7010,3 +7020,54 @@ separate baseline commit must record the literal LIVE-action oracle expansion,
 continuous catalogue records and exact feature-specific inventory/fixture delta.
 Final integrated full discovery, actual LOCAL/fake-SIM startup and remote CI are
 independent of the focused real-widget/fake-port tests and are recorded separately.
+
+**M2-2 runtime composition contract (2026-11-01).**
+
+RuntimeBundle owns one ManualRuntime for a unified broker host. Its query worker
+uses one shared execution consumer and one aggregate canonical TradingEngine.
+ManualRuntime.refresh collects typed account observations outside the writer,
+then adopts a complete unchanged-generation batch under the writer. A concurrent
+book mutation discards the batch. A provider failure clears prior observations
+and durably halts through ManualTradingService.adopt(()). Native cache access is
+serialized by ManualExecutionGateway; its submit only forwards the existing
+ExecutionService broker call. No second reservation/commit path exists.
+
+Runtime pumping never runs automatic strategy cycles or financial reconciliation
+for this manual composition. Explicit STOP_NEW/cancel-all remain existing
+risk-reducing controls; RECONCILE reports the manual observation state. Bare
+RESUME and malformed scopes cannot enable manual books. Only confirmed book
+forms authorize capital/resume. All manual forms retain exact native owner CAS
+and authenticated envelope account/environment. CompositeFacade projects only
+the current scope context/epoch and leaves admitted preview/result scopes intact.
+
+ManualResourceStore is a lazy version-one Ledger for masked alias markets and
+explicit bindings; it retains prior obligations without raw account identifiers.
+Each AccountView allocation is its confirmed virtual book capital (zero before
+confirmation), not a duplicated market bucket or broker balance. Broker financial
+facts remain unverified. Computed simulation readiness is selected-book scoped,
+requires current TMF diagnostic proof plus service submission readiness, and
+never advances native CAS or certifies stock key permissions. LIVE is blocked.
+The optional trusted sinopac_clock composition port affects market observations,
+not real UTC leases; defaults, calendars, command/preview/SDK deadlines and
+production policy remain unchanged.
+M2-2 confirmed manual submit/cancel/amend preflight failures expose a durable
+matching known rejection only with validated original scope and proven absent
+manual/canonical key under the existing healthy writer fence. Existing keys
+(including UNKNOWN) replay unchanged; no failure-code whitelist clears them.
+UiCommand.manual_no_admission=False is wire-compatible and deny-only: outer
+CAS forwarding may seal an absent key, never execute its financial command.
+Original admitted scope/id remain on results, independent of current UI epoch.
+
+**M2-2 P1 outer-CAS result contract (2026-11-01).**
+
+manual_routing creates a deny-only copy of the original confirmed financial
+command and routes it through existing facade.execute/COMMAND ports. Only the
+core writer can prove the request key absent from both request/order journals
+and publish its original-scope known refusal. Existing UNKNOWN is replayed and
+never cleared. Composite stale UI epochs/context selections and server envelope
+refusals may use an already-held same-owner port; there is no host activation,
+new action/operation, scope rewriting, financial entry or extra commit authority.
+True markers on unsupported/LOCAL/LIVE/malformed paths cannot fall through.
+Actual bundle/Composite/codec/authenticated-Pipe tests assert zero added SDK
+mutations, no context opening, exact original scope/request IDs and preserved
+UNKNOWN; the old-wire omission defaults false in the core compatibility tests.
