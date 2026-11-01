@@ -6724,3 +6724,31 @@ adds exactly23 continuous records; baseline pins are a separate commit.
 Performance comparison is deferred to round two under specification section7.
 Focused fake-widget evidence and screenshots are in docs/analysis/m2-trading;
 full suites, actual LOCAL/SIM startup and remote CI remain coordinator work.
+
+### M2-6 owner additions — dates, first-start status and explanations
+
+The compact header obtains today from UTC converted to Asia/Taipei. LOCAL
+separately labels its simulated trading day; broker environments omit that date.
+Same-version market updates still refresh the date. Detailed record metadata is
+retained; no application clock, ledger date or financial value is changed.
+
+Only the explicit version1/sole-startup-event empty LOCAL snapshot without
+strategies, orders, positions, issues or differences receives neutral startup
+presentation. Tests render a real initial build_runtime snapshot and its real
+reopened book. Restarted/populated/stopped/error states retain warnings and the
+underlying stopped/unreconciled engine state is never changed by rendering.
+
+The empty dashboard strategy CTA selects the existing strategy workspace and
+opens the existing wizard. Four workspaces use short explanatory summaries with
+owned plain-text help dialogs, retaining complete prior safety and valuation
+copy, accessible names, keyboard activation and Escape closure. Performance
+captions are simplified with original full tooltip definitions; no financial
+projection, comparison or second-round execution behavior is added.
+
+Existing dashboard style application moves into scoped shell theme selectors;
+no new inline QSS or relaxed import rule. The overview cancel/stop controls also
+retain the same LIVE UI safety/wording as trading controls. Twenty further
+literal catalogue records use orders2776–2795; exact presentation pins are an
+independent baseline commit. Market-setting fixes and M2-1/2 sequencing now belong
+to the root team; after prerequisite CI, those phases can stack independently.
+Full discovery/startup/CI evidence must be renewed on this final source head.

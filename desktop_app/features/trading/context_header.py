@@ -1,9 +1,13 @@
 """A single-line trading context with the existing detailed read models in a dialog."""
 
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QToolButton, QVBoxLayout
 
 from desktop_app.strings.catalog import ui_text
+from quantlab.trading.domain.models import Environment
 
 
 def install_context_header(window):
@@ -36,9 +40,11 @@ def refresh_context_header(window, state):
     known = state.financial_facts_verified
     pnl = f'{state.daily_pnl:,.2f} TWD' if known and state.daily_pnl is not None else ui_text('watch.unknown')
     risk = f'{state.remaining_risk:,.2f} TWD' if known and state.remaining_risk is not None else ui_text('watch.unknown')
-    window.compact_context.setText(
-        ui_text('m1u.header').format(
-            window._environment_label(state.environment), state.trading_day[-5:] or ui_text('v2.context_unknown_day'), pnl, risk, len(state.issues)
-        )
-    )
-    window.compact_context.setToolTip('\n'.join(widget.text() for widget in (window.context, window.summary, window.notice)))
+    today = datetime.now(timezone.utc).astimezone(ZoneInfo('Asia/Taipei')).strftime('%m/%d')
+    simulated = state.trading_day[-5:].replace('-', '/') or ui_text('v2.context_unknown_day')
+    dates = ui_text('m2t.local_dates').format(today, simulated) if state.environment is Environment.LOCAL else ui_text('m2t.today').format(today)
+    window.compact_context.setText(ui_text('m2t.header').format(window._environment_label(state.environment), dates, pnl, risk, len(state.issues)))
+    details = [window.compact_context.text(), window.summary.text(), window.notice.text(), state.account_ref]
+    if state.environment is Environment.LOCAL:
+        details.append(ui_text('m1u.header').format(window._environment_label(state.environment), simulated, pnl, risk, len(state.issues)))
+    window.compact_context.setToolTip('\n'.join(details))

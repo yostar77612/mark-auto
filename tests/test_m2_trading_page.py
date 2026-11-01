@@ -197,7 +197,7 @@ class M2TradingPageTests(unittest.TestCase):
         window = self.window
         self.facade.state = replace(window.state, environment=Environment.LIVE, version=2)
         window.apply_state(self.facade.state)
-        for name in ('deploy_button', 'resume_button', 'cancel_entries_button', 'flatten_button', 'overview_step'):
+        for name in ('deploy_button', 'resume_button', 'cancel_entries_button', 'flatten_button', 'overview_step', 'overview_cancel_entries'):
             control = getattr(window, name)
             self.assertFalse(control.isEnabled(), name)
             control.click()
@@ -211,6 +211,8 @@ class M2TradingPageTests(unittest.TestCase):
         self.assertTrue(window.stop_button.isEnabled())
         self.assertEqual(window.stop_button.text(), ui_text('m2t.live_stop'))
         self.assertEqual(window.stop_button.toolTip(), ui_text('m2t.live_stop_hint'))
+        self.assertEqual(window.overview_stop.text(), ui_text('m2t.live_stop'))
+        self.assertTrue(window.overview_stop.isEnabled())
         self.assertTrue(window.reconcile_button.isEnabled())
         window.stop_button.click()
         self.drain()

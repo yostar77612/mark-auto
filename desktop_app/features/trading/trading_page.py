@@ -9,7 +9,7 @@ from quantlab.trading.domain.models import Environment
 
 
 LIVE_ORDER_ACTIONS = frozenset((UiAction.DEPLOY, UiAction.STEP, UiAction.RESUME, UiAction.CANCEL_ENTRIES, UiAction.FLATTEN))
-_ORDER_BUTTONS = ('deploy_button', 'resume_button', 'cancel_entries_button', 'flatten_button')
+_ORDER_BUTTONS = ('deploy_button', 'resume_button', 'cancel_entries_button', 'flatten_button', 'overview_cancel_entries')
 
 
 def install_trading_environment(window, layout):
@@ -50,9 +50,10 @@ def refresh_trading_environment(window, state: UiState):
             selector.setCurrentIndex(selector.findData(state.environment))
     banners = {Environment.LOCAL: ui_text('m2t.local'), Environment.BROKER_SIMULATION: ui_text('m2t.simulation'), Environment.LIVE: ui_text('m2t.live')}
     window.trading_environment_notice.setText(banners[state.environment])
-    window.stop_button.setText(ui_text('m2t.live_stop') if state.environment is Environment.LIVE else ui_text('v2.stop_new'))
-    window.stop_button.setAccessibleName(window.stop_button.text())
-    window.stop_button.setToolTip(ui_text('m2t.live_stop_hint') if state.environment is Environment.LIVE else ui_text('m2t.stop_hint'))
+    for widget in (window.stop_button, window.overview_stop):
+        widget.setText(ui_text('m2t.live_stop') if state.environment is Environment.LIVE else ui_text('v2.stop_new'))
+        widget.setAccessibleName(widget.text())
+        widget.setToolTip(ui_text('m2t.live_stop_hint') if state.environment is Environment.LIVE else ui_text('m2t.stop_hint'))
     for widget in (window.trading_execution_page, window.trading_environment_notice):
         if widget.property('executionEnvironment') != state.environment.value:
             widget.setProperty('executionEnvironment', state.environment.value)
@@ -73,6 +74,8 @@ def configure_trading_actions(window):
         ('reconcile_button', ui_text('m2t.reconcile_hint')),
         ('flatten_button', ui_text('m2t.flatten_hint')),
         ('transfer_button', ui_text('m2t.transfer_hint')),
+        ('overview_cancel_entries', ui_text('m2t.cancel_hint')),
+        ('overview_reconcile', ui_text('m2t.reconcile_hint')),
     ):
         widget = getattr(window, name)
         widget.setToolTip(text)

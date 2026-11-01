@@ -516,6 +516,7 @@ class TradingWindow(QMainWindow):
         if market_only and not freshness_changed:
             self.dashboard.render_market(state)
             self.state = state
+            refresh_context_header(self, state)
             return
         changed_context = (state.context_epoch, state.context_id) != (self.state.context_epoch, self.state.context_id)
         if changed_context:

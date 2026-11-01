@@ -1,0 +1,34 @@
+{
+  "overview-initial-local": {
+    "engine_light": "啟動中，正在對帳",
+    "level": "muted",
+    "red_summary_visible": false,
+    "panel_level": "muted",
+    "strategy_action_visible": true,
+    "header": "本機模擬 · 今天 11/01 · 模擬交易日 10/23 · 淨損益 0.00 TWD · 剩餘風險 10,000.00 TWD · 0 項待處理"
+  },
+  "overview-anomaly": {
+    "engine_light": "引擎：等待對帳",
+    "level": "red",
+    "red_summary_visible": true,
+    "panel_level": "red",
+    "strategy_action_visible": true,
+    "header": "本機模擬 · 今天 11/01 · 模擬交易日 10/23 · 淨損益 0.00 TWD · 剩餘風險 10,000.00 TWD · 1 項待處理"
+  },
+  "performance_explanation": {
+    "summary": "查看策略損益與風險紀錄。",
+    "details": "不同環境、策略版本與持有政策分列。淨損益含費用；本機模擬不是券商或正式交易實測。\n\n已實現成交損益依委託版本歸屬；未實現損益依現持倉原始成本顯示。歸屬淨清算損益與回撤另含移交當下的估值調整、已付費用及預估退出費用與滑價，移交本身不算成交獲利。回撤使用已記錄的估值，不混用訓練研究，也不代表每筆行情間的連續最大值。",
+    "dialog_size": [
+      620,
+      200
+    ]
+  },
+  "settings_context": {
+    "summary": "選擇環境與帳戶，各自保留獨立資料。",
+    "details": "先選環境，再選已登錄設定的帳戶。切換只改目前檢視，不會混合資料、登入券商或停止原引擎。尚未設定時可新增設定檔。登入使用已登錄的設定檔；下方欄位供保存參照與檢查。要更換連線參照，請先關閉該環境的引擎，再更新並重新登錄設定檔。\n\n正式執行預設關閉。本次不進行真實下單。永豐帳戶、行情、交易資格與憑證需逐項完成外部驗證。",
+    "dialog_size": [
+      620,
+      200
+    ]
+  }
+}

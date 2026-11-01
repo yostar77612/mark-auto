@@ -134,3 +134,45 @@ shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
   on the combined source before pushing M2-6. M2-1/M2-2 remain unstarted because
   the expressly required market-settings merge is still absent; no main merge,
   history rewrite or second-round work is authorized here.
+
+## 2026-11-01 13:17 Asia/Taipei — owner-added M2-6 items 6–8
+
+- The owner expanded this same first-round branch with real Taipei dates,
+  first-start overview presentation and plain-language explanations. Normally
+  merged documentation-only main `afc45ea` as `12e484e`; no history rewrite.
+- Today comes from aware UTC converted through `Asia/Taipei`, independently of
+  `UiState.trading_day`. LOCAL labels both dates explicitly; broker environments
+  show only today in the compact header/tooltip. Same-version market-only updates
+  refresh the date so midnight cannot leave yesterday's label behind. Existing
+  detailed book metadata remains available through the context dialog.
+- A real fresh `build_runtime(RuntimeLaunch(...))` snapshot has version1 and the
+  sole `startup_reconciliation_required` event. Only this empty LOCAL state,
+  without strategies/exposure/issues/reconciliation differences, is neutral.
+  The real reopened book has version2/two startup events and still warns. UI
+  tests also retain warnings for populated/stopped/failed cases. Rendering never
+  marks the engine reconciled, resumes it or clears any issue.
+- The empty strategy label is hidden in favor of an explicit first-strategy
+  button, routed to the strategy workspace and the existing wizard. The new CTA
+  changes Dashboard's exact QPushButton inventory from four to five; the separate
+  baseline binds all five names/count, not a relaxed button budget.
+- Complete former explanations remain in plain-text, keyboard-accessible owned
+  QDialogs; short summaries stay visible. This avoids transient popup ownership
+  and retains original safety/valuation text. Performance comparison stays in
+  round two; only its two technical column captions become plain language.
+- Move dashboard's existing inline red/light styling into scoped shell QSS so
+  neutral first-start colors and actual warnings can coexist. Theme File impact
+  remains CRITICAL; other named flows are LOW, constructor/dynamic dispatch
+  UNKNOWN verified against source/call sites. Graph parser/trace caps remain
+  acknowledged; no shared-axis risk waiver or import-gate change.
+- The overview's existing cancel-entry control now follows the same LIVE UI
+  disable rule as its trading-page counterpart; both stop buttons use the precise
+  LIVE read-only caption/help. No backend execution capability changes.
+- Add 20 literal catalogue keys at orders2776–2795 (total2796); all43
+  M2-6 keys across the two slices are additive, with original aliases unchanged.
+- The owner assigned the market-settings prerequisite to the root team. M2-1/2
+  can stack after that fix's CI is green; they are no longer waiting on another
+  person. They remain outside this UI work. The later M2-9 doc addition is
+  explicitly second-round and is not implemented here. M2-8 is another owner.
+- The old queued M2-6 full run was cancelled before starting. Root will rerun
+  complete discovery and both actual LOCAL/fake-SIM starts on the final head.
+  The prior79fc99c startup/full-check evidence does not validate this new source.

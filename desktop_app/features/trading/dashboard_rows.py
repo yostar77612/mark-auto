@@ -21,7 +21,19 @@ class StatusLight:
     label: str
 
 
+def initial_local_reconciliation(state: UiState) -> bool:
+    return (
+        state.environment is Environment.LOCAL
+        and state.engine_state == 'WAITING_RECONCILIATION'
+        and not state.reconciliation_verified
+        and state.version == 1
+        and state.events == ('startup_reconciliation_required',)
+        and not (state.issues or state.reconciliation or state.positions or state.orders or state.strategies)
+    )
+
+
 def status_lights(state: UiState) -> tuple[StatusLight, ...]:
+    starting = initial_local_reconciliation(state)
     connection = {
         'CONNECTED': ('live', ui_text('dashboard.status.connected')),
         'DISCONNECTED': ('red', ui_text('dashboard.status.disconnected')),
@@ -38,14 +50,22 @@ def status_lights(state: UiState) -> tuple[StatusLight, ...]:
     engine_level = (
         'live' if state.engine_state == 'RUNNING' else 'muted' if state.engine_state == 'CLOSED' else 'warning' if state.engine_state == 'CONNECTING' else 'red'
     )
+    if starting:
+        engine_level = 'muted'
     return (
         StatusLight('broker', connection[0], ui_text('dashboard.status.broker').format(connection[1])),
         StatusLight('market', market_level, ui_text('dashboard.status.market').format(market_label)),
-        StatusLight('engine', engine_level, ui_text('dashboard.status.engine').format(state_label(state.engine_state))),
+        StatusLight(
+            'engine', engine_level, ui_text('m2t.starting') if starting else ui_text('dashboard.status.engine').format(state_label(state.engine_state))
+        ),
         StatusLight(
             'reconciliation',
-            'live' if state.reconciliation_verified else 'red',
-            ui_text('dashboard.status.reconciled') if state.reconciliation_verified else ui_text('dashboard.status.pending'),
+            'muted' if starting else 'live' if state.reconciliation_verified else 'red',
+            ui_text('m2t.reconciling')
+            if starting
+            else ui_text('dashboard.status.reconciled')
+            if state.reconciliation_verified
+            else ui_text('dashboard.status.pending'),
         ),
     )
 
