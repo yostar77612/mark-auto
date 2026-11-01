@@ -13,11 +13,27 @@ This entry opens the six-workspace platform with `--platform-v2`; the original
 Mark Auto Start-menu and desktop entries keep their existing research UI.
 First launch defaults to LOCAL simulation and stores v2 data separately at
 `%LOCALAPPDATA%\MarkAuto-v2\local`. Later launches restore the saved v2 context
-without logging in to a broker automatically. The standard installer does not
-bundle the optional broker SDK; its local simulations work offline, while actual
-broker connection and account verification remain pending. Candidate installer
+without logging in to a broker automatically. The standard installer bundles
+Shioaji 1.7.9 through the verified broker flavor described in
+[BROKER_BUILD.md](BROKER_BUILD.md). Local simulations work offline; actual
+broker connection and account verification remain separate. Candidate installer
 CI resolves the new shortcut's exact target, arguments and working directory and
 checks its removal on uninstall; that resolution is not a broker or GUI-flow pass.
+After upgrading the candidate, CI runs the installed `MarkAuto.exe` with
+`--broker-sdk-probe`: actual SDK import/version/native hash must pass without
+constructing a client, logging in, activating CA or making a network request.
+The result is retained as `validation/broker-sdk-installed-no-login.json`.
+
+The SDK comes only from the official Windows wheel hash-pinned in
+`requirements-shioaji-v2.lock`. Its METADATA identifies the homepage and source
+repository as <https://sinotrade.github.io/> and
+<https://github.com/Sinotrade/Shioaji>, but declares no SDK license. Original
+metadata/SBOM are retained under `_internal/licenses/shioaji`; no license or
+redistribution permission is inferred. See [third-party notices](THIRD_PARTY_NOTICES.md).
+The separate `shioaji.exe` CLI/server is excluded, along with the existing
+Streamlit, trader, archives and legacy security exclusions. Bundling does not
+enable LIVE orders. `build-manifest.json` records the verified SDK files and
+actual wheel/native hashes.
 
 ## Repeatable developer build
 

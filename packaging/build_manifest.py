@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import runpy
 import subprocess
 import sys
 
@@ -54,6 +55,14 @@ def main():
         if p.is_file()
     ]
     artifacts = list((root / 'dist/installers').glob('*.exe')) + list((root / 'dist').glob('MarkAuto-*-clean-windows-acceptance.zip'))
+    broker = runpy.run_path(str(root / 'packaging/broker_package.py'))
+    wheel = root / 'build/broker-wheels/shioaji-1.7.9-cp37-abi3-win_amd64.whl'
+    _, _, _, sdk = broker['installed_sdk'](wheel.absolute())
+    bundled_core = root / 'dist/MarkAuto/_internal/shioaji/_core.pyd'
+    if sha256(bundled_core) != sdk['sdk_native_core_sha256']:
+        raise RuntimeError('Bundled broker SDK native core differs from verified wheel')
+    if any(path.name.lower() == 'shioaji.exe' or '.data/scripts' in path.as_posix().lower() for path in (root / 'dist/MarkAuto').rglob('*')):
+        raise RuntimeError('Standalone broker CLI/server must not ship')
     result = {
         'source_commit': os.environ.get('GITHUB_SHA') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
         'python': sys.version,
@@ -66,6 +75,8 @@ def main():
         # exact source, loaded DLL and setup validation alongside Python wheels.
         'sqlite_runtime': json.loads((root / 'dist/validation/sqlite-runtime.json').read_text(encoding='utf-8')),
         'bundled_sqlite_sha256': {p.relative_to(root / 'dist/MarkAuto').as_posix(): sha256(p) for p in (root / 'dist/MarkAuto').rglob('sqlite3.dll')},
+        'sdk': sdk,
+        'bundled_sdk_native_core_sha256': sha256(bundled_core),
         'dependencies': sorted(f"{d.metadata['Name']}=={d.version}" for d in distributions()),
         'inputs_sha256': {p.relative_to(root).as_posix(): sha256(p) for p in sorted(inputs, key=lambda entry: entry.relative_to(root).as_posix())},
         'artifacts_sha256': {p.name: sha256(p) for p in sorted(artifacts)},

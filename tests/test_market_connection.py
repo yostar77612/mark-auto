@@ -5,6 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from quantlab.trading.application.codec import dumps, loads
 from quantlab.trading.application.contracts import UiAction, UiCommand
@@ -12,9 +13,27 @@ from quantlab.trading.application.market_settings import MarketDataSettings
 from quantlab.trading.application.registry import initialize
 from quantlab.trading.runtime.market_connection import MarketConnection
 from quantlab.research_core.adapters.settings_store import SettingsStore
+from quantlab.trading.application.errors import ERROR_TABLE
 
 
 class MarketConnectionTests(unittest.TestCase):
+    def test_actual_missing_sdk_gets_installer_guidance_without_credentials(self):
+        with TemporaryDirectory(dir=Path.cwd()) as folder:
+            controller = MarketConnection(Path(folder))
+            controller.execute(UiCommand(UiAction.SAVE_MARKET_DATA_SETTINGS, 0, market_data_settings=MarketDataSettings(enabled=True)))
+            with (
+                patch.dict('sys.modules', {'shioaji': None}),
+                patch('quantlab.trading.adapters.shioaji.secrets.WindowsSecretResolver.broker_credentials', side_effect=AssertionError('no credentials')),
+            ):
+                self.assertTrue(controller.execute(UiCommand(UiAction.CONNECT_MARKET_DATA, 0)).accepted)
+                controller.worker.join(1)
+            self.assertFalse(controller.worker.is_alive())
+            self.assertEqual(controller.connection_status(), 'DISCONNECTED')
+            self.assertEqual(controller.error, 'market_sdk_missing')
+            text = ERROR_TABLE[controller.error]
+            self.assertEqual(text.explanation + text.action, '此安裝版未包含永豐元件，請安裝新版')
+            self.assertIsNone(controller.session)
+
     def test_reference_settings_preserve_unrelated_preferences_and_no_startup_login(self):
         with TemporaryDirectory(dir=Path.cwd()) as folder:
             root = Path(folder)

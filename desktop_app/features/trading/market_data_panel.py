@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QComboBox, QFormLayout, QGroupBox, QLabel, QLineEd
 
 from desktop_app.strings.catalog import ui_text
 from desktop_app.features.trading.widgets import button
-from quantlab.trading.application.market_settings import MarketDataSettings
+from quantlab.trading.application.market_settings import MarketDataSettings, market_connection_guidance
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 
@@ -77,5 +77,7 @@ class MarketDataPanel(QGroupBox):
             return
         key = {'CONNECTED': 'watch.connected', 'CONNECTING': 'watch.connecting', 'DISCONNECTED': 'watch.disconnected'}
         self.status.setText(ui_text(key.get(connection, 'watch.unknown')))
-        if error_code:
+        if error_code == 'market_sdk_missing':
+            self.status.setText(market_connection_guidance(error_code))
+        elif error_code:
             self.status.setText(ui_text('marketdata.connection_failed'))

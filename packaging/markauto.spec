@@ -7,8 +7,8 @@ root = Path(SPECPATH).parent
 from quantlab.sqlite_runtime import verify, verify_binaries
 # Fail before freezing if dependency analysis would collect an unpinned DLL.
 verify(root / 'packaging/sqlite-runtime.json', Path(sys.base_prefix))
-# Offline remains the original Analysis unchanged. SDK collection is a separate
-# explicit build flavor, never a runtime environment or account-permission flag.
+# Require the existing verified broker flavor before any dependency collection.
+# The flag selects build inputs, never account permissions or runtime execution.
 broker_package = runpy.run_path(str(root / 'packaging/broker_package.py'))
 Analysis = broker_package['configure_analysis'](Analysis, root, copy_metadata)
 analysis = Analysis(
@@ -93,7 +93,7 @@ analysis = Analysis(
                    'cffi', '_cffi_backend', 'pycparser'],
     excludes=['PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets',
               'PySide6.QtVirtualKeyboard', 'PySide6.QtPdf', 'PySide6.QtPdfWidgets',
-              'streamlit', 'shioaji', 'trader', 'archives', 'archives.legacy_autotrading', 'legacy_autotrading', 'gui', 'run', 'PyQt5', 'PyQt6'],
+              'streamlit', 'trader', 'archives', 'archives.legacy_autotrading', 'legacy_autotrading', 'gui', 'run', 'PyQt5', 'PyQt6'],
     noarchive=False,
 )
 # QtGui's upstream hook collects optional plugins regardless of direct imports.

@@ -102,7 +102,8 @@ class MarketConnection:
                 candidate.disconnect()
             with self.lock:
                 self.session = None
-                self.status, self.error = 'DISCONNECTED', exc.code
+                self.status = 'DISCONNECTED'
+                self.error = 'market_sdk_missing' if exc.code == 'capability_missing' else exc.code
         except (OSError, ValueError, RuntimeError):
             if candidate is not None:
                 candidate.disconnect()

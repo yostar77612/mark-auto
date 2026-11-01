@@ -1,4 +1,4 @@
-"""Optional broker build only: explicit no-login proof before Qt initialization."""
+"""Verified broker build: explicit no-login proof before Qt initialization."""
 
 import sys
 

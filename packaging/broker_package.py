@@ -1,8 +1,7 @@
-"""Explicit optional SDK packaging, verified against the complete pinned wheel.
+"""SDK packaging, verified against the complete pinned wheel.
 
-Importing this build helper does not import the SDK. The default spec returns
-its original Analysis callable unchanged. Only a broker-enabled build collects
-the SDK package; the wheel's standalone CLI/server executable is never copied.
+Importing this build helper does not import the SDK. Every desktop build must
+select the verified broker flavor; the standalone CLI/server is never copied.
 """
 
 from hashlib import sha256
@@ -102,7 +101,7 @@ def installed_sdk(wheel, *, sdk_distribution=None):
         'sdk_native_core_bytes': core.stat().st_size,
         'mandatory_sdk_dependencies': [],
         'sdk_license_declaration': 'Not declared in the official wheel METADATA',
-        'distribution_scope': 'local-only; no external distribution clearance asserted',
+        'distribution_scope': 'desktop bundle; no license inferred from absent wheel declaration',
         'default_read_only': True,
         'default_execution_enabled': False,
         'sdk_client_created_by_build': False,
@@ -137,19 +136,32 @@ def retain_notices(package, output, *, verified_files=None):
         target.write_bytes(source.read_bytes())
         retained[name] = digest(target)
     (output / 'SDK-NOTICE.txt').write_text(
-        'Shioaji 1.7.9 is an optional local-only dependency. Its official wheel METADATA does not declare an SDK license. Supplied metadata and native SBOM are retained. This build does not claim external distribution clearance, broker verification, login, CA activation or any asset operation.\n',
+        'Shioaji 1.7.9 is bundled from the hash-pinned official Windows wheel. Its official wheel METADATA does not declare an SDK license. Supplied metadata and native SBOM are retained; no license or redistribution clearance is inferred. Packaging does not authorize broker login, CA activation or any asset operation.\n',
         encoding='utf-8',
     )
     return retained
 
 
+def verify_collected_sdk(analysis, package_root, files):
+    """Check actual freezer inputs, including modules resolved through pathex."""
+    selected = [(name, Path(source)) for name, source, _ in analysis.pure if name == 'shioaji' or name.startswith('shioaji.')]
+    native = [(name.replace('\\', '/'), Path(source)) for name, source, _ in analysis.binaries if name.replace('\\', '/').startswith('shioaji/')]
+    if not any(name == 'shioaji' for name, _ in selected) or not any(name == 'shioaji/_core.pyd' for name, _ in native):
+        raise RuntimeError('Verified SDK package and native core must both be collected')
+    for _, source in [*selected, *native]:
+        source = regular_local(source.absolute())
+        if not source.is_relative_to(package_root):
+            raise RuntimeError('Collected broker SDK source is outside the verified package')
+        record = files.get('shioaji/' + source.relative_to(package_root).as_posix())
+        if record is None or source.stat().st_size != record['bytes'] or digest(source) != record['sha256']:
+            raise RuntimeError('Collected broker SDK source differs from the pinned wheel')
+
+
 def configure_analysis(analysis, root, copy_metadata, *, environment=None):
     environment = os.environ if environment is None else environment
     flag = environment.get(BUILD_FLAG, '0')
-    if flag not in ('', '0', '1'):
-        raise RuntimeError('Broker build flag must be explicitly 0 or 1')
     if flag != '1':
-        return analysis
+        raise RuntimeError('Desktop builds require the verified broker flavor')
     wheel = environment.get(WHEEL_ENV)
     if not wheel:
         raise RuntimeError('Broker-enabled builds require the pinned wheel path')
@@ -176,6 +188,8 @@ def configure_analysis(analysis, root, copy_metadata, *, environment=None):
             (str(notices), 'licenses/shioaji'),
             (str(root / 'packaging/broker_probe.py'), 'packaging'),
         ]
-        return analysis(*args, **options)
+        result = analysis(*args, **options)
+        verify_collected_sdk(result, package_root, info['verified_sdk_files'])
+        return result
 
     return broker_analysis
