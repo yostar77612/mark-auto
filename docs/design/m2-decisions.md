@@ -80,3 +80,18 @@ login, credentials, CA or order operation. Focused checks are recorded in
 [m2-8-verification.md](m2-8-verification.md). Controller schedules the branch full
 suite, final real-window startup and CI independently; they are not inferred
 from focused tests or a tooling-only launch check.
+
+## M2-8 — 2026-11-01 native installer precondition
+
+The controller granted an exclusive native test window after policy full-suite
+completion and normal cleanup of its exact test-owned source engine. The seven
+installer-guard cases ran: five boundary cases pass, and both native cases fail
+their unchanged preexisting-app assertion before any child or fixture creation.
+The controller confirms those same failures in main's complete baseline.
+Read-only inspection found the owner's installed 0.3.0 GUI and LOCAL engine,
+both older than this task, which the source-Python engine scan does not include.
+Choose to preserve the assertions and record the host limitation; never stop
+those non-fixture processes, use a different mutex, add a skip, or claim native
+acceptance passed. No further engine tests run while the controller resumes
+the next full suite. Details and pending full/startup/CI evidence are in
+[m2-8-verification.md](m2-8-verification.md).

@@ -38,8 +38,9 @@ One real reused engine stays alive and responds until its own outer scope closes
 No SDK is loaded, no credentials are read and no orders are sent by these checks.
 
 Logs are local-only under this worktree `.tmp/m2-8-*`; the controller collects
-full-suite, actual-window and CI evidence separately. Native installer-mutex tests are deferred
-while the controller's policy full suite may own the global presence guard.
+full-suite, actual-window and CI evidence separately. The native installer-mutex
+module ran after the controller's policy full suite finished and its known
+test-owned engine was normally closed; the result below remains a host limitation.
 
 All test commands use the provisioned root `.venv/Scripts/python.exe`,
 `PYTHONUTF8=1`, `QT_QPA_PLATFORM=offscreen`, and separate module discovery from
@@ -56,6 +57,7 @@ this checkout. Their child roots are fresh isolated fixtures.
 | `-p test_docs_layering.py -v` | 8 passed, 1.675s |
 | `-p test_repo_layout.py -v` | 29 passed, 3.699s |
 | `-p test_layer_gate.py -v` | 21 passed, 11.835s |
+| `-p test_trading_installer_guard.py -v` | 7 run, 5 passed, 2 preexisting-lifetime failures, 0.010s; neither native case reached child/fixture creation |
 | `powershell -NoProfile -File tools/prepush.ps1` | PASS: Ruff lint/format (1104 files), Python 3.11 syntax (1039), quality gate (0 findings) |
 | `tools/check_layers.py` | PASS, 0 findings |
 
@@ -81,3 +83,31 @@ Per-symbol scope risk is MEDIUM; cleanup and load-probe main are LOW.
 Dynamically registered hooks are UNKNOWN to the graph and were confirmed by
 source references and actual-process tests. No graph extension download was
 attempted.
+
+## Native installer host limitation
+
+On the controller-authorized exclusive window, both existing native cases
+failed their original precondition `A preexisting app lifetime must not be
+disturbed`, before creating any temporary fixture, UI child or engine:
+
+- `WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first`
+- `WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace`
+
+The controller confirmed the same two identities/reasons in the complete main
+baseline. The five boundary cases pass; no assertion, skip, applicability or
+deadline was changed. This is not a passing native-lifetime acceptance claim.
+
+Read-only CIM and visible-window inspection found an already installed 0.3.0
+MarkAuto UI (PID 292468, created 12:41:34 Asia/Taipei) and installed LOCAL engine
+(PID 75892, created 11:29:05) using the user's normal `MarkAuto-v2/local` root.
+Both predate this work and are outside every disposable fixture. A zero scan of
+Python `desktop.py --trading-engine` processes cannot detect a frozen installed
+app. These are consistent lifetime candidates; individual mutex handle ownership
+was not inspected. Neither process or its workspace was controlled, modified
+or shut down. Candidate/log details remain local-only under `.tmp`.
+
+After this result the controller resumed its serial full-suite queue. No further
+engine/native test run was attempted. Source implementation remains commit
+`38da68dc1823aa5d070548e0804f29dbba8eb25d`; this evidence update is documentation
+only. Branch full-suite comparison, final actual startup and all-green CI remain
+controller-scheduled and must be verified separately before delivery.
