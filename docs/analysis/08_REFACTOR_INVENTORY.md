@@ -739,6 +739,8 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/ports/alerts.py` | 22 | application | `quantlab/trading/ports/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_alerts.py` | 137 | composition | `quantlab/trading/runtime/market_alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
+| `tools/affected_tests.py` | 242 | tooling | `tools/affected_tests.py` | R8 開發工具：由 git diff 與 import 圖選出受影響測試模組；只讀來源、不匯入產品碼；既有列與分層規則不變。 |
+| `tools/repin_baselines.py` | 406 | tooling | `tools/repin_baselines.py` | R6 開發工具：重生字串目錄、盤點登記、樣式表雜湊與頁面服務觀察點基準；只產生預期值，不改斷言、不碰 G3 與 r7_base；既有列與分層規則不變。 |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
