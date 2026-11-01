@@ -10,6 +10,7 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'production_orders_disabled': ErrorText('正式環境的下單、改單與撤單尚未啟用。', '此環境可查看行情與帳務；請切換至券商模擬測試委託。'),
     'market_data_not_configured': ErrorText('尚未設定行情連線。', '到設定頁填入環境與 API 金鑰引用名稱。'),
     'market_data_login_failed': ErrorText('行情登入失敗。', '確認金鑰已用 store_sinopac_key.py 存入，並檢查網路後重試。'),
     'market_data_not_connected': ErrorText('行情未連線。', '先連線，或改看本機已有的歷史 K 線。'),

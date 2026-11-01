@@ -92,3 +92,37 @@ byte-identical to af262ab. Own force-refreshed complete precommit detect reports
 partial/truncated flags. HIGH risk remains warned, not waived. Individual fake
 modules passed: immutable environment2,SDK facade11,price bands16,tick stream4;
 strict layers0 findings. No native engine or actual SDK session was started.
+
+## Central LIVE guard slice
+
+One pure domain orders_enabled predicate admits only typed LOCAL and
+BROKER_SIMULATION. Engine execution/exit, ExecutionService commit/cancel, gateway
+inspect/execution and all three SDK mutation sinks consume it. Explicit immutable
+facade environment, not a native simulation flag, controls the final SDK check.
+LIVE STOP_NEW still records the local halt but never dispatches cancel. No risk,
+funding, ownership, durable-intent, OOS or deadline check is removed.
+
+Own pre-edit impact warns HIGH for engine.exit_lot (6 direct callers), LOW for
+the other resolved engine/service/gateway/dispatch methods. SDK sinks and the
+error table have UNKNOWN static callers; text/source confirms gateway submit/
+change, strict SDK tests and error catalogue composition, rather than treating
+empty edges as safe. New policy/test names were absent in graph and source.
+
+New test_live_order_guard:6/6 PASS in0.006s. It exercises the real TradingEngine
+with a test-owned in-memory journal and explicit fake adapter, direct service
+and SDK calls, contradictory LIVE flags/readiness/CA, stop/cancel/flatten, and
+SIM-positive delegation with original2500ms query/10000ms order budgets. No
+native engine, credential, SDK import/login or actual order is involved.
+
+The original environment oracle with guarded source failed only its formerly
+allowed LIVE submission. Its independent D1 baseline keeps the full SIM flow and
+requires zero LIVE delivery after the existing genuine fixture research steps;
+the module now passes2/2 in0.608s. Broader application/full/native runs belong to
+the coordinator; the focused results do not claim first-round completion.
+
+Additional focused results:32 adapter tests,11 SDK facade tests and the3 existing
+AST/catalogue cases passed; unique commit caller, locked risk/reservation/durable
+intent/fence ordering and original submit inventory remain exact. Strict layers
+reported0 findings and changed Python Ruff check/format passed. Complete own
+forced-index detect:44 changed symbols/13 files,LOW,0 empty ids and no partial or
+truncated flag. This does not waive the separately warned HIGH exit_lot impact.

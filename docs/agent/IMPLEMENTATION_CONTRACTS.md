@@ -6857,3 +6857,21 @@ exposes it read-only, independently of mutable native flags. Existing factory
 and legacy market-session construction supply that environment explicitly.
 The M2-2 execution guard work consumes this same property; no fallback to LOCAL
 or mutable production opt-in is introduced by the connection implementation.
+
+## M2-2 production mutation prohibition (2026-11-01, D1)
+
+One pure orders_enabled environment predicate admits typed LOCAL and
+BROKER_SIMULATION only. Engine execution and exits, ExecutionService commit and
+cancel, connector readiness/execution and each final SDK place/update/cancel
+method reject LIVE independently of flags, signed/CA state or native simulation
+properties. SDK scope comes from its explicitly constructed read-only environment.
+LIVE STOP_NEW records the local halt without cancelling a broker order. Queries,
+existing SIM positive controls, all risk/reservation/journal/fence checks and
+the sole state-bearing TradingEngine.submit -> ExecutionService.commit remain.
+
+The earlier controlled LIVE-positive fixture is superseded in an independent
+policy baseline: its validated/researched LIVE case now requires zero deliveries
+and a production_orders_disabled refusal; every original SIM fill/protection/
+performance assertion remains. New real-core/fake-boundary regressions also bind
+SDK sinks, contradictory readiness flags, direct service calls and local stop
+semantics. No real session/credential/order is verification evidence.
