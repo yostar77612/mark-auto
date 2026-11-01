@@ -9,7 +9,6 @@ import os
 from pathlib import Path
 import subprocess
 import stat
-import sys
 import tempfile
 import unittest
 from uuid import uuid4
@@ -21,6 +20,7 @@ from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.ipc import IpcFacade, read_session
 from quantlab.trading.runtime.protocol import Operation, Request, Response
 import trading_runtime
+from tools.owned_trading_engine import OwnedEngineProcesses, source_environment, source_python
 
 
 WORKSPACE = Path(__file__).resolve().parents[2]
@@ -31,23 +31,16 @@ class IndependentEngineRuntimeTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         (WORKSPACE / 't').mkdir(parents=True, exist_ok=True)
         cls.temp = tempfile.TemporaryDirectory(prefix='v2-runtime-', dir=WORKSPACE / 't')
+        cls.addClassCleanup(cls.temp.cleanup)
+        cls.enterClassContext(OwnedEngineProcesses())
         cls.root = Path(cls.temp.name) / 'isolated'
         cls.facade = trading_runtime.ensure_engine(cls.root)
         cls.session = read_session(cls.root)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        process = trading_runtime._STARTED.get(cls.root.resolve())
-        try:
-            if process is not None and process.poll() is None:
-                trading_runtime.shutdown(cls.root)
-            elif process is not None:
-                process.wait(timeout=5)
-        finally:
-            if process is not None and process.poll() is None:
-                process.terminate()
-                process.wait(timeout=5)
-            cls.temp.cleanup()
+    def setUp(self):
+        # Extra engines in individual cases close even if their first assertion
+        # fails; the shared class host remains alive until class cleanup.
+        self.enterContext(OwnedEngineProcesses())
 
     def envelope(self, operation: Operation = Operation.SNAPSHOT, **values: object) -> Request:
         return Request(uuid4().hex, Environment.LOCAL, 'local-stock', datetime.now(timezone.utc) + timedelta(seconds=5), operation, **values)
@@ -142,13 +135,14 @@ class IndependentEngineRuntimeTests(unittest.TestCase):
         self.healthy()
 
     def test_second_engine_process_cannot_steal_active_owner(self) -> None:
-        command = [sys.executable, str(Path(trading_runtime.__file__).with_name('desktop.py')), '--trading-engine', str(self.root)]
+        command = [source_python(), str(Path(trading_runtime.__file__).with_name('desktop.py')), '--trading-engine', str(self.root)]
         result = subprocess.run(
             command,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=15,
+            env=source_environment(),
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
         )
         self.assertNotEqual(result.returncode, 0)
@@ -157,11 +151,12 @@ class IndependentEngineRuntimeTests(unittest.TestCase):
     def test_ui_client_process_can_close_without_shutting_down_engine(self) -> None:
         program = 'from pathlib import Path; from quantlab.trading.runtime.ipc import IpcFacade; import sys; IpcFacade(Path(sys.argv[1])).snapshot()'
         result = subprocess.run(
-            [sys.executable, '-c', program, str(self.root)],
+            [source_python(), '-c', program, str(self.root)],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=15,
+            env=source_environment(),
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
         )
         self.assertEqual(result.returncode, 0, result.stdout.decode(errors='replace'))

@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import sys
 import tempfile
 import time
 import unittest
@@ -16,6 +15,7 @@ from quantlab.runtime_support import RuntimeSafetyError, WINDOWS_APP_MUTEX, Wind
 from quantlab.trading.runtime import server
 from quantlab.trading.runtime.protocol import Operation
 import trading_runtime
+from tools.owned_trading_engine import OwnedEngineProcesses, source_environment, source_python
 
 
 WORKSPACE = Path(__file__).resolve().parents[2]
@@ -134,12 +134,13 @@ trading_runtime._run_window=controlled_body
 raise SystemExit(trading_runtime.run_window(root))
 '''
         process = subprocess.Popen(
-            [sys.executable, '-c', source, str(root)],
+            [source_python(), '-c', source, str(root)],
             cwd=Path(trading_runtime.__file__).parent,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             creationflags=subprocess.CREATE_NO_WINDOW,
+            env=source_environment(),
         )
         try:
             deadline = time.monotonic() + 15
@@ -150,7 +151,11 @@ raise SystemExit(trading_runtime.run_window(root))
             return process, stop
         except BaseException:
             if process.poll() is None:
-                process.terminate()
+                stop.write_text('cleanup own failed UI startup', encoding='utf-8')
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.terminate()
             process.wait(timeout=5)
             raise
 
@@ -175,7 +180,11 @@ raise SystemExit(trading_runtime.run_window(root))
         evidence = []
         for first in ('ui', 'engine'):
             self.assertFalse(self.visible(), 'A preexisting app lifetime must not be disturbed')
-            with self.subTest(first=first), tempfile.TemporaryDirectory(prefix='v2-install-guard-', dir=WORKSPACE / 't') as temporary:
+            with (
+                self.subTest(first=first),
+                tempfile.TemporaryDirectory(prefix='v2-install-guard-', dir=WORKSPACE / 't') as temporary,
+                OwnedEngineProcesses() as engines,
+            ):
                 root = Path(temporary)
                 engine_root = root / 'engine'
                 ui_process = engine_process = None
@@ -218,13 +227,7 @@ raise SystemExit(trading_runtime.run_window(root))
                             ui_process.terminate()
                             ui_process.wait(timeout=5)
                     engine_process = engine_process or trading_runtime._STARTED.get(engine_root.resolve())
-                    if engine_process is not None and engine_process.poll() is None:
-                        try:
-                            trading_runtime.shutdown(engine_root)
-                        finally:
-                            if engine_process.poll() is None:
-                                engine_process.terminate()
-                                engine_process.wait(timeout=5)
+                    engines.close()
                     row['owned_cleanup_verified'] = all(process is None or process.poll() is not None for process in (ui_process, engine_process))
                     evidence.append(row)
         directory = Path(os.environ.get('TEMP', str(WORKSPACE / 't')))
@@ -264,8 +267,13 @@ raise SystemExit(trading_runtime.run_window(root))
                 )
             finally:
                 if process is not None and process.poll() is None:
-                    process.terminate()
-                    process.wait(timeout=5)
+                    (root / 'ui-stop').write_text('cleanup own exceptional UI', encoding='utf-8')
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.terminate()
+                        process.wait(timeout=5)
+                        self.fail('owned UI required forced cleanup')
 
 
 if __name__ == '__main__':
