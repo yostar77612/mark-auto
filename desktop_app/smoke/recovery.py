@@ -142,7 +142,7 @@ def run_recovery_smoke(fixture_paths, campaign_state, *, deadline):
         return report
     started = time.monotonic()
     end = min(deadline, started + CAP_SECONDS)
-    if end - started < CAP_SECONDS:
+    if end < started + CAP_SECONDS:
         report['error_type'] = 'InsufficientExistingSmokeBudget'
         return report
     # Protect the existing outer budget even against a native/bootstrap hang.

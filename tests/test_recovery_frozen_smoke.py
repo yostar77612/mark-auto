@@ -16,6 +16,45 @@ from tests.test_research_analysis import source, write_source
 
 
 class RecoveryFrozenSmokeTests(unittest.TestCase):
+    def test_full_budget_is_admitted_across_float_binade_boundaries(self):
+        from types import SimpleNamespace
+
+        for started in (511.00000000000006, 1023.0000000000001, 2047.0000000000002):
+            with (
+                self.subTest(started=started),
+                patch.object(smoke, 'sys', SimpleNamespace(platform='win32', frozen=True)),
+                patch.object(smoke.time, 'monotonic', return_value=started),
+                patch.object(smoke.threading, 'Timer') as watchdog,
+                patch.object(smoke, '_prepare_plan', side_effect=RuntimeError('admission-only control')) as prepare,
+                patch.object(smoke.mp, 'get_context') as spawn,
+            ):
+                result = smoke.run_recovery_smoke(None, None, deadline=started + 120)
+                prepare.assert_called_once()
+                watchdog.assert_called_once()
+                watchdog.return_value.cancel.assert_called_once()
+                spawn.assert_not_called()
+                self.assertEqual(result['error_type'], 'RuntimeError')
+
+    def test_deadline_before_full_cap_endpoint_still_refuses_without_starting(self):
+        import math
+        from types import SimpleNamespace
+
+        for started in (511.00000000000006, 1023.0000000000001, 2047.0000000000002):
+            with (
+                self.subTest(started=started),
+                patch.object(smoke, 'sys', SimpleNamespace(platform='win32', frozen=True)),
+                patch.object(smoke.time, 'monotonic', return_value=started),
+                patch.object(smoke.threading, 'Timer') as watchdog,
+                patch.object(smoke, '_prepare_plan') as prepare,
+                patch.object(smoke.mp, 'get_context') as spawn,
+            ):
+                deadline = math.nextafter(started + smoke.CAP_SECONDS, -math.inf)
+                result = smoke.run_recovery_smoke(None, None, deadline=deadline)
+                self.assertEqual(result['error_type'], 'InsufficientExistingSmokeBudget')
+                prepare.assert_not_called()
+                watchdog.assert_not_called()
+                spawn.assert_not_called()
+
     def test_nonwindows_is_not_applicable_without_fixture_or_processes(self):
         with patch.object(smoke.sys, 'platform', 'linux'), patch.object(smoke.mp, 'get_context') as spawn:
             result = smoke.run_recovery_smoke(None, None, deadline=0)
