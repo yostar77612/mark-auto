@@ -16,7 +16,6 @@ from unittest.mock import patch
 
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer, Qt
 from PySide6.QtWidgets import QApplication
-from PySide6.QtWidgets import QPushButton
 from shiboken6 import isValid
 
 from desktop_app.strings.catalog import ui_text
@@ -329,23 +328,25 @@ class TradingUiIntegrationTests(unittest.TestCase):
 
     def test_reference_settings_save_restart_and_metadata_check_never_connects_broker(self):
         panel = self.window.broker_panel
-        panel.fields['profile_alias'].setText('offline-reference')
-        panel.fields['stock_account_ref'].setText('stock-masked-alias')
-        panel.fields['broker_secret_ref'].setText('MarkAuto/v2/broker/offline-reference')
-        panel._edited()
+        settings = replace(
+            self.window.state.broker_settings,
+            profile_alias='offline-reference',
+            stock_account_ref='stock-masked-alias',
+            broker_secret_ref='MarkAuto/v2/broker/offline-reference',
+        )
         with patch.object(ShioajiAdapter, 'connect', side_effect=AssertionError('metadata check must not login')):
-            panel._save()
+            self.window.command(UiAction.SAVE_BROKER_SETTINGS, broker_settings=settings)
             self.drain()
             self.assertEqual(self.engine.state.broker_settings.profile_alias, 'offline-reference')
             self.assertTrue(self.engine.state.broker_settings.read_only)
             self.assertFalse(self.engine.state.broker_settings.execution_enabled)
             self.assertFalse(panel.dirty)
-            panel._check()
+            self.window.command(UiAction.CHECK_READINESS)
             self.drain()
         self.assertEqual(len(self.window.state.broker_readiness.checks), 15)
         self.assertFalse(self.window.state.broker_readiness.external_verified)
         self.assertFalse(self.engine.state.orders)
-        self.assertIn('外部驗證', panel.status.text())
+        self.assertEqual(panel.status.text(), ui_text('m2.connection.disconnected'))
         self.window.close()
         self.window.deleteLater()
         self.app.processEvents()
@@ -356,10 +357,11 @@ class TradingUiIntegrationTests(unittest.TestCase):
         self.window = TradingWindow(self.facade, self.facade.snapshot())
         self.window.setProperty('allow_close_for_tests', True)
         self.window.poll.stop()
-        self.assertEqual(self.window.broker_panel.fields['profile_alias'].text(), 'offline-reference')
-        self.assertEqual(self.window.broker_panel.checks.rowCount(), 15)
+        self.assertEqual(self.window.state.broker_settings.profile_alias, 'offline-reference')
+        self.assertEqual(len(self.window.state.broker_readiness.checks), 15)
         self.assertFalse(self.window.state.broker_readiness.external_verified)
-        self.assertIsNotNone(self.window.broker_panel.findChild(QPushButton, 'broker_check_button'))
+        self.assertEqual(self.window.broker_panel.status.text(), ui_text('m2.connection.disconnected'))
+        self.assertIn(ui_text('m2.connection.execution_pending'), self.window.broker_panel.readiness_labels['simulation_orders'].text())
 
     def test_explicit_future_roll_wizard_produces_two_filled_legs_and_new_strategy_version(self):
         def accept_roll(wizard):
