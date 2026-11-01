@@ -6851,3 +6851,9 @@ unknown, default actions disabled and stopped. stop_price is only a sizing
 estimate; UNPROTECTED does not assert a broker stop order or clear existing
 protection locks. Pending/last-result projections retain exact request identity;
 missing cached data cannot discharge UNKNOWN or authorize a new-key retry.
+
+The SDK facade now requires a typed broker environment at construction and
+exposes it read-only, independently of mutable native flags. Existing factory
+and legacy market-session construction supply that environment explicitly.
+The M2-2 execution guard work consumes this same property; no fallback to LOCAL
+or mutable production opt-in is introduced by the connection implementation.

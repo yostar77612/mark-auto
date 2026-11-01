@@ -88,7 +88,7 @@ class MarketSession:
             raise DomainError('market_data_not_configured')
         try:
             client = self.sdk_module.Shioaji(simulation=self.settings.environment is Environment.BROKER_SIMULATION)
-            self.facade = ShioajiSDKFacade(client, self.sdk_module)
+            self.facade = ShioajiSDKFacade(client, self.sdk_module, environment=self.settings.environment)
             credentials = self.secret_resolver.broker_credentials(self.settings.secret_ref)
             self.facade.login(api_key=credentials.api_key, secret_key=credentials.secret_key, subscribe_trade=False)
             del credentials

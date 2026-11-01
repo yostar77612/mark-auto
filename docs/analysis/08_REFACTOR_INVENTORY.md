@@ -746,6 +746,9 @@ PR E4 market/history owners (content-only):
 | `desktop_app/features/trading/trading_page_widgets.py` | 79 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
 
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
+| `quantlab/trading/application/sinopac_contracts.py` | 113 | application | `quantlab/trading/application/sinopac_contracts.py` | M2-1: scoped reference settings, redacted accounts and independent connection read model; no SDK or IO. |
+| `tests/test_sinopac_contracts.py` | 98 | tooling | `tests/test_sinopac_contracts.py` | M2-1: pure boundary and old-wire compatibility checks; no engine or broker. |
+| `tests/test_sinopac_facade_environment.py` | 30 | tooling | `tests/test_sinopac_facade_environment.py` | M2-1: explicit immutable facade environment using inert SDK stand-ins. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

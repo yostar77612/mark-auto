@@ -83,3 +83,12 @@ All subsequent merges use --no-commit and own complete detect before committing.
 The restricted-token CLI status could not read current git identity, reporting
 detached/empty current commit; direct git and MCP metadata confirm own db2335f.
 This status limitation does not authorize skipping an actual freshness check.
+
+The subsequent af262ab environment/fake-fixture normal merge was held with
+--no-commit. Only two append-only documentation hunks conflicted; both sets of
+decisions/contracts were retained. The seven incoming source/fake files remain
+byte-identical to af262ab. Own force-refreshed complete precommit detect reports
+26 symbols/10 incoming files/6 connect flows,HIGH,0 empty ids and no
+partial/truncated flags. HIGH risk remains warned, not waived. Individual fake
+modules passed: immutable environment2,SDK facade11,price bands16,tick stream4;
+strict layers0 findings. No native engine or actual SDK session was started.
