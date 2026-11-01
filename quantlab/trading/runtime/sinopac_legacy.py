@@ -7,9 +7,9 @@ from quantlab.trading.application.contracts import UiReceipt
 
 def disconnect_legacy(bundle):
     with bundle.lock:
-        if getattr(bundle, 'legacy_disconnected', False):
+        if bundle.legacy_disconnected:
             return UiReceipt(True, 'completed', '')
-        if getattr(bundle, 'legacy_disconnecting', False) or getattr(bundle, 'legacy_cleanup_unconfirmed', False):
+        if bundle.legacy_disconnecting or bundle.legacy_cleanup_unconfirmed:
             return UiReceipt(False, 'outcome_unknown', '')
         bundle.legacy_disconnecting = True
         bundle.query_caches = ()

@@ -978,3 +978,52 @@ Exact probe impact is LOW (2 nodes, one packaging caller); its nine existing
 checks pass0.426s after the correction. Record the failed complete run rather than
 waiving it. A new complete suite follows on the corrected source. No SDK pin,
 execution guard, test limit, skip or real credential/broker operation changes.
+
+
+## 2026-11-01T21:26+08:00 — M2-1 legacy unknown-logout admission closure
+
+A separate read-only Standards review found three internal lifecycle flags were
+read through getattr defaults instead of initialized, contrary to CONTRIBUTING
+section4. Initialize legacy_disconnected, legacy_disconnecting and
+legacy_cleanup_unconfirmed in RuntimeBundle.__post_init__ and read them directly.
+The class impact is LOW13; the generated dataclass constructor gives UNKNOWN
+for __post_init__, so confirm its two production factories and seven direct
+unit-test construction sites by text, rather than treating an empty graph as
+unused. Exact execute/connect/legacy-retirement impacts each resolve3 nodes;
+execute retains97 unresolved receiver sites, so these are lower-bound results.
+The pre-change indexed bootstrap/legacy files equal the current9f source blobs;
+metadata lag is documentation/probe history, not a different lifecycle body.
+
+A Spec follow-up then confirmed a functional gap: after unconfirmed legacy
+logout, retirement clears the session and latches cleanup_unconfirmed but the
+old CONNECT_MARKET_DATA and profile CONNECT_READ_ONLY gates checked only the
+other two flags. The latter is reachable with valid legacy resources and no
+engine yet. An old public command could therefore reopen an SDK session before
+release was proved. Include the existing unknown-cleanup latch in both refusal
+gates; do not clear it, retry login, create another owner or change any deadline.
+The old group of market commands remains uniformly blocked during retirement.
+
+Two exact fake regressions were first RED (five failure occurrences, including
+three market-command subtests and the profile path), then pass5.093s. The47-case
+existing routing/readiness/market transport group passes40.057s without native
+processes, real SDK or credentials. Test formatting preserves the complete AST.
+No old assertion, skip, risk rule, timeout or SDK pin changes. This is a new source
+correction; prior9f full/startup results remain historical, and both actual starts
+plus full discovery must be repeated before push. The pending event-wait helper
+was stopped before native probes; its earlier identity/PowerShell syntax errors
+are harness-only and not product startup evidence.
+
+The duplicate lock-order pattern is retained as an explicit safety sequence;
+its P3 smell is a nonblocking maintenance judgement, not a standards violation.
+Record the actual bootstrap/readability measurements and routing test count in
+an independent inventory baseline, with a narrow future split plan; no limit is
+raised. No second-round feature or actual broker operation is added.
+
+
+The additional gateway-return hypothesis was checked against the real port:
+ReadOnlyGatewayCache.disconnect forwards ShioajiAdapter.disconnect, which turns
+native logout False into DomainError(outcome_unknown); the cache does not swallow
+it. ConnectionPort.disconnect returns None by contract. Keep that existing safe
+boundary and do not add a redundant internal False fallback based on an invalid
+fake gateway. The confirmed defects are the two old admission gates above, not
+the gateway's already-protected logout result handling.
