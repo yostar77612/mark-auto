@@ -368,3 +368,72 @@ Exact clean source `897df1ba9b21f88f512420caaf4ccb7cf740c207` completes **3998 t
 The20 symlink occurrences retain WinError1314; the worker-log lock retains WinError32; the three mutex/preexisting-application assertions and three retained-grandchild Errno6 chains match. The four paper diagnostics retain the same early probe exit/assertions; parent-PID attribution relies on previously retained diagnostic controls, not this traceback alone. The unchanged E06 driver first fails its launcher/native PID assertion, as on main. Its secondary cleanup differs: current WinError5 on .sqlite-shm versus main WinError32 on .sqlite. The same ID/type does not establish identical secondary cleanup causes.
 
 Raw full log SHA256: `0a2958bb938490f2aa8e27584aa5d6ff430a6fcd99bb70207705dfb312c0cec1`. Sanitized occurrence accounting: [final-full-comparison.json](final-full-comparison.json). Full discovery used the required provisioned venv, offscreen Qt and UTF-8, with unchanged clean HEAD before and after. This acceptance run was serialized without coordinator indexing, static scans, Qt captures or native probes. Remote CI on the pushed documentation head remains a separate gate.
+
+
+## Corrected owned-process cleanup and final sourcef77d2b0 verification
+
+PR132 first CI head65e7d7f exposes a real duplicate-shutdown endpoint race:
+offline Windows3.11 core-trading job124878999508 runs422 cases in393.130s and
+fails only the original runtime-context CAS cleanup case. The three failing
+coverage/overall jobs are verified dependent aggregates. Its independent Windows
+installer workflow41316970379 passes static/security, complete desktop regression
+and installer build/validation; release is correctly skipped on an unmerged PR.
+That installer success remains attributed to65e7d7f, not relabelled final-head CI.
+
+Source1ebc27e catches only FileNotFoundError at the authenticated cleanup IPC
+boundary, after matching the retained process identity. The unchanged15s wait
+must observe native exit0; a live/abnormal process still fails and foreign
+sessions receive no shutdown. No current-version CAS or financial guard changes.
+Two new methods cover both snapshot/execute removal and live/abnormal refusal:
+RED two error subtests/0.005s, GREEN four boundaries/0.003s. The original real
+IPC/CAS case plus11 cleanup cases pass12/24.115s. Independent f77d2b0 only measures
+tool128->134/test211->267 lines, without target/limit/assertion/skip changes.
+
+Whole-project checks pass onf77: Ruff lint,1154 formatted files,1071 Python3.11
+syntax files and static/credential gate0 findings. Fresh all/staged graph checks
+cover10 nonempty unique symbols/3files, LOW, with all3 new qualified definitions
+and both required symbols mapped; baseline-only3symbols/1file is complete.
+
+The exact clean sourcef77d2b07f5ed24bd276f42c520b26efc033f6f49 repeats original
+private-interpreter `_run_window` with its original LOCAL child safety guard:
+
+| Path | Return | Time | Evidence |
+| --- | --- | --- | --- |
+| LOCAL |0|5.835s|[local](connection-local-f77d2b0.json)|
+| Save/connect, keyboard account selection, explicit SIM |0|6.661s|[UI](connection-ui-f77d2b0.json)|
+| Direct fake BROKER_SIMULATION |0|3.621s|[direct](connection-direct-f77d2b0.json)|
+
+All owned lifetimes close normally, research releases and endpoints disappear.
+No real SDK/key/CA/order is used. This remains a shared-connection composition
+check with resource_calls0, not M2-2 manual-resource/order acceptance. These
+startup/native checks overlap the retained older799 intermediate manual full;
+no whole-run isolation is claimed. The final corrected connection full starts
+only after that complete intermediate run ends. Its initial preparation period
+overlaps independent source2 Qt/index work, which stops before the sensitive
+terminal/research cases; no second complete suite runs simultaneously. Preserve
+this scheduling fact rather than retroactively labelling the entire run quiet.
+
+The first corrected-source full attempt on unchangedf77 completes4000 tests in
+1471.674s,10F23E42skip,33blocks/32identities. Cleanup/CAS is fixed, but one NEW
+AlertServiceTests.test_rules_persist_enable_delete_and_scanners_only_enabled fails
+os.replace with WinError5 on alert_rules.json.tmp -> alert_rules.json. Keep this
+failed attempt, rawSHA0ebec12d6e52dee6c0ea49170cc591e6efa9d6a17513976ed1c48ec34b0c09c3.
+Its alert application/store/test blobs equal origin/main. However,100 unchanged
+main controls PASS0.712s and100 source controls PASS0.701s do not reproduce it;
+source equality and that pass are not proof of an inherited cause. Do not add it
+to the allowed main baseline or implement speculative storage retries. Run the
+same complete frozen source again, starting with0 other full/index processes
+and no coordinator native/index/Qt/static work throughout this final retry.
+No code/assertion/timeout/skip change separates the failed attempt and retry.
+
+Exact frozen source `f77d2b07f5ed24bd276f42c520b26efc033f6f49` completes 4000 tests in 1436.847s: `FAILED (failures=10, errors=22, skipped=42)`. All32 actual traceback occurrences/31 distinct identities are reviewed against original main, with zero new failures. This is a nonzero FAILED local suite with recorded inherited host limitations, not a passing claim. Ordered frames match 30/32; all exception type chains match.
+
+The20 symlink privilege occurrences retain WinError1314; worker-log lock retains WinError32. Mutex/preexisting-app and retained-grandchild Errno6 chains match. Four paper cases retain the same early probe failures; parent-PID attribution uses previously retained controls, not current tracebacks alone. E06 first fails the unchanged launcher/native PID assertion; current secondary cleanup retains main WinError32/.sqlite.
+
+Raw SHA256: `6c3f6e05332ab30fbf107039caa1873f94047d639bc1cf0d9011ab289a1af313`. Sanitized occurrence details: [corrected-cleanup-full-comparison.json](corrected-cleanup-full-comparison.json).
+
+Current pushed-head offline/installer CI is required before handoff; its final
+status is recorded in the PR and first-round run report. Original failed local
+attempts, original main controls, first CI failure and the intermediate799 manual
+Qt-harness failure are retained, not waived. All product/runtime/GUI/financial
+blobs remain unchanged by the final evidence-only publication.

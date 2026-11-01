@@ -1573,3 +1573,16 @@ module/class line measurements get an independent baseline commit. Product
 GUI/theme/runtime/SDK/financial source remains identical; existing visual and
 positive functional source equivalence remains explicit. Final corrected full
 branch discovery and current-head CI remain required before push/delivery.
+
+## connection-cleanup-retry / complete corrected source evidence
+
+Publish exact f77d2b0 complete discovery 4000/1436.847s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.
+The prior4000-case attempt has one new M1 alert-store WinError5. Neither100 main nor100 unchanged-source controls reproduce it. Keep it outside the allowed main baseline and avoid speculative production storage retries; acceptance requires this actual complete unchanged-source retry to have zero new failures. Both failed attempt and successful controls remain retained.
+
+## M2-2 / final parent evidence prepared independently
+
+Prepare the completed M2-1 evidence-only parent merge in this separate documentation worktree while the official32ad manual checkout remains frozen for complete discovery. Preserve both appended histories and verify zero non-documentation differences from32ad. Do not commit before actual full-result review and complete graph analysis. No index/native/Qt/static workload overlaps that final manual full.
+
+## manual-cleanup-final / complete corrected source evidence
+
+Publish exact 32ad384 complete discovery 4120/1508.968s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.

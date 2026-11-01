@@ -361,3 +361,78 @@ Earlier inconsistent scratch captures are retained locally, not published here.
 Actual LOCAL/fake-SIM startup and full discovery must now be recorded against
 the final integrated source; earlier edcdc40 actual flow evidence remains
 attributed to its original source, not relabeled as this version.
+
+
+## Final corrected manual source32ad384 verification
+
+Normal merge232b3ce inherits M2-1's owned endpoint-removal cleanup correction and
+its independent measurement. Additional0cad8bd corrects only the native Cancel
+test's shared QApplication lifetime; independent32ad384 measures its module568 /
+test class464 lines instead of560/456, preserving29 cases and all targets.
+The only non-documentation delta from799efad is the owned cleanup tool and its
+two new regressions plus the manual confirmation test. All application/runtime/
+GUI/theme/SDK/financial code blobs remain identical to799efad. GUI/theme blobs
+specifically also match published visual sourcee833622. There is no new economic
+or execution path.
+
+The original799 complete attempt runs4118 tests/1548.934s,11F22E42skip,
+33 blocks/32 identities, with one NEW native-confirmation observation failure.
+Keep rawSHAfa0f1b2374193cae8d2d54dd3abdcf7668057ce3e3163b18e120ebc98176809e.
+Original case alone passes0.148s; a fresh QApplication.exit prefix reproduces
+the exact empty-observation assertion in0.168s. Running the unchanged submit /
+Escape assertions inside the real application loop fixes that state; the test
+now explicitly prefixes a prior exit and additionally asserts outer return0.
+Prefixed case passes0.131s;55 related manual/guideline/trading-page/order-report
+cases pass5.428s. Real QMessageBox, Cancel default, Escape and no-submit assertions
+remain intact. No skip, expiry, deadline or production confirmation changes.
+
+Whole-project prepush passes Ruff lint,1181 formatted files,1094 Python3.11
+syntax files and static/credential gate0 findings. Prebuilt integration all/staged
+graph checks cover21 unique symbols/13files; the Qt correction covers6/2, with
+the new qualified nested callback mapped. Independent baseline covers3/1. All
+are complete LOW results without partial/truncation/empty IDs; UNKNOWN unittest
+impact is confirmed by actual failing/passing invocations, not treated as unused.
+The official branch normally fast-forwards to the same reviewed32ad384 commit;
+no history rewrite or source conflict resolution changes product code.
+
+The exact clean source32ad38428e5da8959c18aad9fa403e15edbce55d repeats the
+original private-interpreter `_run_window`, original LOCAL child safety guard,
+real window/research session and authenticated owned fake broker host:
+
+| Path | Return | Time | Evidence |
+| --- | --- | --- | --- |
+| LOCAL |0|5.952s|[local](../analysis/m2-manual/manual-local-32ad384.json)|
+| Direct fake SIM, actual Sunday wall clock |0|3.669s|[direct](../analysis/m2-manual/manual-direct-32ad384.json)|
+| UI -> authenticated IPC -> canonical fake orders/reports |0|7.417s|[functional](../analysis/m2-manual/manual-positive-32ad384.json)|
+
+LOCAL performs0 SDK/secret calls. Direct SIM materializes ManualTradingService /
+resources but remains closed under the real Sunday calendar, with0 order calls.
+The positive case explicitly uses the covered October fake market/UI clock;
+real UTC leases and existing deadlines remain unchanged. It confirms virtual
+capital40000, rejects the31s-expired preview, sends the backend-minted minimum
+far TMF diagnostic and cancels it known-unfilled, then submits/amends/cancels one
+normal fake order. Exactly2 order constructions,2 placements,1 amendment,2 cancels
+and2 canonical submit->ExecutionService.commit chains are observed. All five
+native dangerous confirmations default Cancel before deliberate fake acceptance.
+Resource_calls1, two subscriptions, one fake login/logout, financial_query_calls0,
+CA_calls0; broker financial facts remain unknown/unverified. This does not claim
+actual Sunday availability, broker funds, actual permissions or real/SIM orders.
+
+All owned LOCAL processes exit normally, fake host threads join, research
+releases and endpoints disappear. No real SDK is imported and no real key/CA is
+used. These final actual checks finish before the final unchangedf77 connection
+retry and final manual full begin. The older799 attempt's independent preparation
+overlap remains explicitly intermediate; no such native/index/Qt/static work is
+scheduled during the final manual complete run. Screenshots retain their exact
+visual source and are not relabelled as broker/IPC acceptance.
+
+Exact frozen source `32ad38428e5da8959c18aad9fa403e15edbce55d` completes 4120 tests in 1508.968s: `FAILED (failures=10, errors=22, skipped=42)`. All32 actual traceback occurrences/31 distinct identities are reviewed against original main, with zero new failures. This is a nonzero FAILED local suite with recorded inherited host limitations, not a passing claim. Ordered frames match 30/32; all exception type chains match.
+
+The20 symlink privilege occurrences retain WinError1314; worker-log lock retains WinError32. Mutex/preexisting-app and retained-grandchild Errno6 chains match. Four paper cases retain the same early probe failures; parent-PID attribution uses previously retained controls, not current tracebacks alone. E06 first fails the unchanged launcher/native PID assertion. Its secondary cleanup is current WinError5/.sqlite-shm versus main WinError32/.sqlite; this difference is explicit and is not called an identical cause.
+
+Raw SHA256: `393d28bd1c61cb5ac703594a853d87aaca7014cbc14cc191f02a056524e203f1`. Sanitized occurrence details: [corrected-cleanup-full-comparison.json](../analysis/m2-manual/corrected-cleanup-full-comparison.json).
+
+Only evidence/report documents follow the exact tested source; verify every
+non-documentation Git blob identical. The final current-head PR CI remains a
+separate required delivery gate, including the bundled final first-round report.
+No main merge, second-round functionality or actual broker operation is included.
