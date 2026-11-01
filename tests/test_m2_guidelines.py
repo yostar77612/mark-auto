@@ -17,6 +17,7 @@ from desktop_app.features.trading.widgets import button
 from desktop_app.strings.catalog import ui_text
 from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.trading.application.contracts import UiAction
+from quantlab.trading.domain.models import Environment
 from tests import test_m2_trading_page as support
 
 
@@ -146,3 +147,29 @@ class M2GuidelinesTests(unittest.TestCase):
         self.assertEqual(self.facade.commands, [])
         self.assertTrue(self.window.dashboard.strategy_summary.isVisibleTo(self.window.pages.widget(0)))
         self.assertEqual(self.window.dashboard.strategy_setup.property('role'), 'primary')
+
+    def test_unknown_disconnected_broker_snapshot_does_not_claim_account_has_zero_exposure(self):
+        for environment, account in ((Environment.BROKER_SIMULATION, 'sim-futures'), (Environment.LIVE, 'live-stock')):
+            with self.subTest(environment=environment):
+                self.window.apply_state(
+                    replace(
+                        self.window.state,
+                        version=self.window.state.version + 1,
+                        environment=environment,
+                        account_ref=account,
+                        engine_state='DISCONNECTED',
+                        market_connection='DISCONNECTED',
+                        financial_facts_verified=False,
+                        positions=(),
+                        orders=(),
+                    )
+                )
+                self.assertFalse(self.window.state.financial_facts_verified)
+                for overlay in (self.window.positions_empty, self.window.orders_empty):
+                    self.assertTrue(overlay.isVisible())
+                    self.assertIn('尚無可顯示的', overlay.reason.text())
+                    self.assertNotIn('目前沒有', overlay.reason.text())
+                    self.assertNotIn('策略', overlay.reason.text())
+                    self.assertEqual(overlay.reason.accessibleName(), overlay.reason.text())
+                    self.assertTrue(overlay.next.isEnabled())
+                self.assertEqual(self.facade.commands, [])

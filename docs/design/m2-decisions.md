@@ -199,3 +199,15 @@ shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
 - Add10 catalogue records2796–2805 (total2806). Source and the exact changed
   presentation/confirmation-aware test baseline remain separate commits.
   Full discovery, actual LOCAL/fake-SIM starts and remote CI remain root-owned.
+
+### 2026-11-01 — Empty projections do not establish zero broker exposure
+
+- Root review identified that empty position/order views can mean missing or
+  unverified broker data. Replace only the two existing empty-table messages
+  with "尚無可顯示的…資料" wording and direct next-step context. Do not introduce a
+  false zero, an automatic-strategy prerequisite or a new framework/state flag.
+- Retain both current strategy-navigation CTAs for this slice; M2-2 owns later
+  manual-order navigation. Test accepted disconnected SIM/LIVE snapshots with
+  unknown financial facts, and refresh both empty screenshot sizes.
+- Catalogue maximum stays2805; exactly two existing values change in a separate
+  baseline commit. Root repeats actual startup/full checks after this head.

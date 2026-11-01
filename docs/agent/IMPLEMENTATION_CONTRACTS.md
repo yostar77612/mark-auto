@@ -6769,3 +6769,9 @@ navigate to strategy without creating rows/orders. Actual keyboard, colors,
 Cancel-default and preference-restart tests supplement all previous M2-6
 regressions. Exactly10 further strings use2796–2805 (total2806), with an independent
 precise baseline commit. Full UX-1 and second-round work are not implemented.
+
+Empty trade projections describe absence of displayable position/order data,
+not verified zero exposure. This wording applies equally to disconnected or
+unverified SIM/LIVE snapshots, retains the existing CTA and causes no command,
+readiness or financial-state mutation. Only the two existing catalogue values
+change; order/key counts and aliases remain exact, with separate baseline pins.
