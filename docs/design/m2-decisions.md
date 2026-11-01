@@ -486,3 +486,29 @@ process-focused tests. Full discovery/startup/push/CI belong to the coordinator.
 Next freeze typed Sinopac connection DTO/actions for parallel UI and manual SIM
 implementation. No connection or execution behavior is claimed delivered by
 this foundation commit.
+
+## M2-1 / shared wire contract first — 2026-11-01
+
+Freeze reference-only SinopacConnectionSettings, masked SinopacAccountView,
+four SinopacReadiness facts and SinopacConnectionView in a separate application
+module, reexported by contracts.py and explicitly registered in the trusted
+codec. New command fields and UiState.sinopac_connection have defaults, so
+old wire documents decode without introducing a connection or changing books.
+Connection revision/generation are independent of the engine book version;
+subsequent runtime acceptance checks them. The only settings are environment,
+key reference, optional certificate file/secret reference and fee discount.
+No person_id, raw account identity or secret value belongs in these DTOs.
+
+The four actions are save-and-connect, account selection, optional CA activation
+and disconnect. A draft SIM environment does not imply changing an accepted
+LOCAL trading book. Initial account signed state can be unknown; execution
+readiness remains blocked pending dependent M2-2. Reason codes are presentation
+keys, never native exception text. The UI agent owns all new catalog strings
+from order2806, and the manual agent owns separate manual_contracts.py DTOs.
+
+Pre-edit impact is CRITICAL for UiAction/UiCommand/UiState (37 direct,73 total)
+and HIGH for registry initialize (6 direct,19 total). New names were absent in
+graph and text. Four pure boundary/codec tests went RED on the missing module,
+then passed in0.003s, including old-field omission and malformed settings. This
+slice starts no engine, SDK or child process. Inventory/baseline registration
+is a separate precise commit; broader runtime implementation is still pending.

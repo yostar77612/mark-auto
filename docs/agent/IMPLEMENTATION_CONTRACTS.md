@@ -6817,3 +6817,20 @@ initialization has the same normal shutdown and truthful failure reporting.
 Production lifecycle/ownership/security, broker gates, deadlines and applicability
 are unchanged. Exact focused and pending controller evidence is recorded in
 docs/design/m2-8-verification.md.
+
+## M2-1 shared connection wire contract (2026-11-01)
+
+Sinopac settings/read models contain scoped secret references, an optional
+local certificate-file reference, fee discount, redacted account aliases and
+independent connection generation/revision. Four typed readiness facts cover
+market, account queries, simulation orders and disabled production orders.
+Signed can remain unknown. No SDK/native account/person_id/secret enters the
+wire DTO. New UiCommand fields and UiState.sinopac_connection are defaulted;
+previous wire documents decode with disconnected, unconfigured defaults.
+The existing trusted registry explicitly includes the new application module.
+
+SAVE_AND_CONNECT_SINOPAC, SELECT_SINOPAC_ACCOUNTS, ACTIVATE_SINOPAC_CA and
+DISCONNECT_SINOPAC are reference-only intents. This contract slice does not
+connect, resolve credentials, switch books, activate CA or enable execution.
+Subsequent runtime acceptance owns connection CAS and SDK result validation;
+the UI mirrors accepted book context independently of its connection draft.
