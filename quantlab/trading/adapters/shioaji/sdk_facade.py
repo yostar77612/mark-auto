@@ -258,10 +258,15 @@ class ShioajiSDKFacade:
         _contract_identity(contract)
         return _callable(self._client, 'place_order')(contract, order, timeout=self.order_timeout_ms)
 
-    def update_order(self, trade: object, *, price: float, qty: int) -> object:
+    def update_order(self, trade: object, *, price: float | None = None, qty: int | None = None) -> object:
         if not orders_enabled(self.environment):
             raise DomainError('production_orders_disabled')
-        return _callable(self._client, 'update_order')(trade, price=price, qty=qty, timeout=self.order_timeout_ms)
+        # Pinned 1.7.9 accepts either field independently. Omitting quantity is
+        # required for a price-only amendment; it must not become a quantity edit.
+        fields = {key: value for key, value in (('price', price), ('qty', qty)) if value is not None}
+        if not fields:
+            raise DomainError('validation_failed', 'amendment field required')
+        return _callable(self._client, 'update_order')(trade, timeout=self.order_timeout_ms, **fields)
 
     def cancel_order(self, trade: object) -> object:
         if not orders_enabled(self.environment):

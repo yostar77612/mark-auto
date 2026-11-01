@@ -135,3 +135,27 @@ The risk is warned, not waived. Current own LIVE wall tests6/6 and incoming tiny
 shared-session fake tests3/3 pass. No new index/native/Qt tests are run during
 the coordinating agent's isolated full8 window; subsequent source work remains
 uncommitted until its own complete review is possible.
+
+## Revoked shared execution consumer and preview units
+
+The strict offline regression first failed three assertions and one signature:
+detached/closed execution views still reached the native mutation methods,
+active SIM calls did not hold the lifecycle lock, and price-only updates required
+an unintended quantity argument. The repaired view holds the existing operation
+lock from active-consumer validation through each of the three SDK calls. The
+base immutable-environment LIVE guard still runs; native SIM/signed/CA flags do
+not override it. Query and order budgets remain 2500/10000 ms.
+
+The pinned 1.7.9 stub permits optional price/quantity. Price-only update omits
+the quantity keyword entirely, verified by a strict fake rejecting that keyword.
+Preview quantity_unit and lot_size are appended defaulted fields; actual core
+previews supply the instrument specification, and unknown units remain unknown.
+
+Pre-edit graph: SharedFacadeView LOW (one direct caller), ManualPreviewView
+MEDIUM (two). Dynamic SDK update_order/SDKClient and new methods are UNKNOWN;
+source/text confirms gateway._change delegation, protocol use and the absence
+of these new overrides. This is not interpreted as unused or low risk.
+Five new consumer cases and the existing DTO/shared-session/LIVE/SDK cases pass:
+29 tests in 0.013 seconds. RED and GREEN logs remain in ignored .tmp. These are
+pure in-memory fakes, with no SDK import, native client, Qt or engine process.
+The pending manual core is deliberately not part of this small source commit.
