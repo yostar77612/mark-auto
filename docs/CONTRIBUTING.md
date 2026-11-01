@@ -253,3 +253,33 @@ composes both services with a plain dict registry and create functions. Widgets
 receive read ports through PageHost; explicit network consent, injected transport,
 JSON encoding, digests and error messages are preserved. The old history location
 has no implementation exports or compatibility re-exports.
+
+
+## 開發加速工具（R6／R8）
+
+規則見 [Codex 作業規則](design/codex-work-rules.md) R6、R8。兩支工具都不取代 CI：CI 的完整測試不變。
+
+**`tools/affected_tests.py`（R8，受影響測試選取）**：依 `git diff`（預設對 `origin/main` 的 merge base，含未提交與未追蹤檔）
+與 import 圖（沿用分層閘門的模組索引，含函式內 import、父套件初始化檔、`patch('pkg.mod.x')` 字串與以路徑讀取的來源／fixture）
+選出要跑的測試模組，並輸出可直接執行的指令；選取理由寫到 stderr。靜態規則：字串目錄、檔案登記、樣式表、頁面服務變動時一律加入對應的釘選測試；
+改到打包、安裝程式、workflow、G3 鎖定檔（含 `quantlab/saved_candidate_pool.py`）或分層規則時改為完整測試。
+
+```bash
+python tools/affected_tests.py            # 例：python -m unittest tests.test_a tests.test_b
+python tools/affected_tests.py --discover # 逐模組的 discover 形式（上文建議的寫法）
+eval "$(python tools/affected_tests.py -q)"
+```
+
+**`tools/repin_baselines.py`（R6，基準重生）**：預設 dry-run，逐項列出差異摘要；`--write` 才寫入，且寫入後會跑該基準的測試模組，仍失敗就還原。
+只重生**預期值**，不改斷言邏輯，也不碰 G3 鎖定檔、`tests/fixtures/r7_base.json` 與以雜湊凍結的 `tests/fixtures/layered_paths/*`。
+涵蓋：`catalog`（字串目錄 fixture 與連續筆數）、`inventory`（本文件第 2 節的新檔登記）、`stylesheet`（樣式表雜湊）、
+`observers`（頁面服務觀察點行號，寫入 `download_auto_import_ui_delta.json` 的 `m1_*` 區段）。
+底層若有非基準問題（編號不連續、字串重複、圖層未指定、頁面服務實際變動）則顯示 BLOCKED 並拒絕寫入。
+既有字串被改文字、刪除或換序時，須人工審閱後加 `--accept-changed`。
+產生結果仍須放進獨立的 `test(baseline)` commit，並在訊息逐項說明原因（R4）。
+
+```bash
+python tools/repin_baselines.py                  # dry-run；有過期基準時結束碼 1，被擋時 2
+python tools/repin_baselines.py --write          # 套用並驗證
+python tools/repin_baselines.py --only catalog --accept-changed --write
+```
