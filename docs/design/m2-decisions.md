@@ -529,3 +529,19 @@ assertions and expected requests remain intact. Those fixture edits and new
 module inventory rows are a separate commit. Source impacts: facade MEDIUM
 (10 direct), factory LOW(4), MarketSession LOW(2). UNKNOWN test/helper file
 impacts were confirmed via direct imports and unittest discovery references.
+
+## M2-1 / precise constructor fixtures and inventory — 2026-11-01
+
+This independent fixture commit adds only explicit BROKER_SIMULATION arguments
+at the six existing fake facade construction sites across the shared tick fake,
+SDK facade and price-band fixtures, plus the required Environment import. All
+old assertions, timeout cases, request expectations and failure paths remain.
+Register only the three reviewed new DTO/environment-test modules in inventory;
+no historical producer hash, appearance baseline, string or SDK pin is repinned.
+
+Complete source/fixture change detection reports16 symbols across9 files and
+CRITICAL graph risk with613 listed affected processes, dominated by the shared
+tick_gateway test-helper node. Source search confirms its direct consumers are
+the tick fixture modules; this does not waive the CRITICAL warning or replace
+tests. All33 relevant fake tests passed. Future source PR notes retain this
+warning and the index's dynamic receiver/process-cap limitations explicitly.
