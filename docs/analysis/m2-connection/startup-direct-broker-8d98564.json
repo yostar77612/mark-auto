@@ -1,0 +1,80 @@
+{
+  "head": "8d985640f51646938248726215544611a2cf09b5",
+  "mode": "broker-startup",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_run_window": true,
+  "real_trading_window": true,
+  "real_research_session": true,
+  "local_child_delegates_original": true,
+  "sinopac_host": "owned Thread(serve) with natural factory/secrets/resource ports",
+  "original_local_child_safety_bootstrap": true,
+  "disconnected_host_prepared": true,
+  "direct_preparation": "actual owner connect/discover/select and context persist APIs",
+  "direct_simulation_startup": true,
+  "direct_startup_reused_prepared_login": true,
+  "research_pages": 7,
+  "environment": "BROKER_SIMULATION",
+  "engine_state": "DISCONNECTED",
+  "window_visible": true,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "widget_count": 2728,
+  "financial_facts_verified": false,
+  "research_released": true,
+  "return_code": 0,
+  "elapsed_seconds": 3.937,
+  "ui_steps": [
+    "initial_direct_sim",
+    "finish",
+    "closed"
+  ],
+  "original_ensure_calls": [
+    {
+      "sinopac": true,
+      "environment": "BROKER_SIMULATION"
+    },
+    {
+      "sinopac": true,
+      "environment": "BROKER_SIMULATION"
+    },
+    {
+      "sinopac": true,
+      "environment": "BROKER_SIMULATION"
+    }
+  ],
+  "owned_local_processes": 0,
+  "owned_fake_hosts": 1,
+  "fake_sdk": {
+    "constructors": 1,
+    "login_count": 1,
+    "logout_count": 1,
+    "resource_calls": 0,
+    "subscription_count": 2,
+    "ca_calls": 0,
+    "order_constructions": 0,
+    "order_calls": 0
+  },
+  "real_sdk_imported": false,
+  "guard_calls": [],
+  "fake_secret_lookup_count": 1,
+  "local_child_audits": [],
+  "child_guard_handshake": null,
+  "owned_lifetimes": [
+    {
+      "exit_code": null,
+      "thread": "probe-owned-sinopac-server",
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    }
+  ],
+  "host_errors": [],
+  "errors": [],
+  "owned_endpoints_removed": true,
+  "passed": true,
+  "raw_result_sha256": "4afb58a9b9259a342c4fd7f38df2cbfe741d3dba66d6328fd5b76c39e2e76478",
+  "sanitization": "Removed absolute repository/interpreter/owned-root paths and generated PIDs; source identity, counters, guard/normal-exit proofs and result values retained. Raw evidence remains with coordinator."
+}

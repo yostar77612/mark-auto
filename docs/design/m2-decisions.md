@@ -831,3 +831,43 @@ Both images retain the LOCAL book, formal connection label and readable readonly
 CA guidance; visual inspection passes and horizontal scrollbar maxima are zero.
 Other scenes and unrelated historical baselines are not regenerated. The capture
 record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
+
+## M2-8 — 2026-11-01 complete-run evidence boundary
+
+Retain the first complete run's NEW positive-smoke timeout as a real failure,
+even though the exact unchanged case subsequently passes sequentially on main
+(15.027s) and M2-8 (13.915s). The unchanged full retry completes 3909 tests in
+1487.114s with 10 failures, 22 errors, 42 existing skips and no new failed IDs
+versus main. Only its smoke-sensitive prefix was quiescent; other-worktree index
+and small Qt/metadata checks resumed later. Do not claim full-run isolation,
+prove a latency cause from correlation, raise deadlines or label the first
+failure a waived flake. Raw review retains the E06 cleanup WinError/path
+difference even though exception types and failed IDs match. Normal actual
+LOCAL/fake-SIM startup passes at the same source head are independent evidence;
+they do not turn failed native-host suites into acceptance. Commit only reviewed,
+sanitized evidence and documentation; leave executable/test/tool bytes unchanged
+from `8f03a9905c337680f2f963ba284bed5bf3638bcb`. Controller owns push and CI.
+
+## M2-8 — latest-main normal integration
+
+Merge main `67249dc126423212bbcced2048992c4c50a1be48` normally into the M2-8
+branch, preserving all market, policy and cleanup decision/contract blocks.
+Keep every inherited source/test/baseline blob exact; resolve only appended
+documentation, with no rebase, source rewrite or new baseline change. The
+result combines separately tested sources and needs new full discovery and
+actual startup at the final head. Preserve earlier failed-run evidence under
+its original `8f03a99` scope; do not present it as final composite acceptance.
+Controller serializes native/engine/full validation after M2-6 completes.
+
+## M2-1 / source-identical M2-8 documentation integration and startup
+
+Normally merge final M2-8 `fdfde06` into M2-1 `8d98564`, retaining every M2-1,
+M2-6, policy, market and cleanup decision/contract section. Resolve only the two
+documentation conflicts. All 1202 non-documentation checkout byte hashes and
+all non-documentation Git blobs remain identical to `8d98564`; no fixture or
+source change is introduced. Review and sanitize the three actual startup result
+JSONs, retaining their original source identity, guard/cleanup facts and explicit
+resource_calls=0 limitation. Their source-equivalent applicability is stated;
+they are not falsely described as rerun on the new documentation commit. Full
+discovery and current-head CI remain separate coordinator gates. No engine,
+native lifetime, Qt or startup test is executed for this documentation merge.
