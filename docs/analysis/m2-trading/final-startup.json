@@ -1,0 +1,70 @@
+{
+  "source_head": "4fd1f6e36d28315b871db66322ad78666fe18055",
+  "runner": ".runtime-sqlite/python.exe -S with checkout/tests/root .venv site-packages",
+  "modes": [
+    {
+      "head": "4fd1f6e36d28315b871db66322ad78666fe18055",
+      "mode": "LOCAL",
+      "no_site": true,
+      "sqlite": "3.54.0",
+      "real_window_constructor": true,
+      "real_runtime_composition": true,
+      "instrumentation_delegates_original": true,
+      "window_type": "TradingWindow",
+      "window_visible": true,
+      "research_type": "EmbeddedWindow",
+      "research_pages": 7,
+      "widget_count": 2781,
+      "rendered_size": [
+        780,
+        720
+      ],
+      "environment": "LOCAL",
+      "engine_state": "WAITING_RECONCILIATION",
+      "financial_facts_verified": true,
+      "return_code": 0,
+      "research_released": true,
+      "real_sdk_imported": false,
+      "engine_shutdown_clean": true,
+      "elapsed_seconds": 6.075,
+      "errors": [],
+      "raw_result_sha256": "5fc228ccf6917f9f56dd68a8d4a0cb473c6974f521aff722909b0d96eb5003a8"
+    },
+    {
+      "head": "4fd1f6e36d28315b871db66322ad78666fe18055",
+      "mode": "BROKER_SIMULATION",
+      "no_site": true,
+      "sqlite": "3.54.0",
+      "real_window_constructor": true,
+      "real_runtime_composition": true,
+      "instrumentation_delegates_original": true,
+      "broker_host": "real authenticated named-pipe server in owned thread",
+      "window_type": "TradingWindow",
+      "window_visible": true,
+      "research_type": "EmbeddedWindow",
+      "research_pages": 7,
+      "widget_count": 2781,
+      "rendered_size": [
+        780,
+        720
+      ],
+      "environment": "BROKER_SIMULATION",
+      "engine_state": "WAITING_RECONCILIATION",
+      "financial_facts_verified": false,
+      "return_code": 0,
+      "research_released": true,
+      "real_sdk_imported": false,
+      "engine_shutdown_clean": true,
+      "fake_sdk": {
+        "login_count": 1,
+        "logout_count": 1,
+        "subscription_count": 2,
+        "order_constructions": 0,
+        "orders": 0
+      },
+      "elapsed_seconds": 3.969,
+      "errors": [],
+      "raw_result_sha256": "b412d6b818b16761802e933dd1126092fe7cbcc8557429abc1806c6aa0c266c2"
+    }
+  ]
+}

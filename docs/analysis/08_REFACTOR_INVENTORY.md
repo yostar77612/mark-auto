@@ -787,6 +787,11 @@ or existing assertion changes. The legacy measure_ui_sizes --check diagnostic
 also reports pre-existing historical rows outside this feature; this slice does
 not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 
+| `tests/test_trading_engine_cleanup.py` | 211 | tooling | `tests/test_trading_engine_cleanup.py` | M2-8: retained-owned-process success/failure/timeout cleanup and foreign-host preservation regressions; fake SDK only. |
+| `tests/test_m2_guidelines.py` | 175 | tooling | `tests/test_m2_guidelines.py` | M2-6: title/help placement, button roles, Cancel-default confirmations, column persistence, units and keyboard acceptance; no SDK or engine process. |
+| `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
+| `tests/test_m2_trading_page.py` | 306 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
+
 ## 3 跨層匯入違規（GitNexus + AST）
 
 ### 3.1 靜態匯入明細

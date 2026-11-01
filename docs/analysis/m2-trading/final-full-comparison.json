@@ -1,0 +1,92 @@
+{
+  "complete": true,
+  "count": 3941,
+  "seconds": 1543.784,
+  "result": "FAILED (failures=10, errors=22, skipped=42)",
+  "failure_ids": [
+    "test_analysis_recovery.RecoveryLedgerTests.test_links_hardlinks_and_oversize_are_rejected",
+    "test_automatic_backup.AutomaticBackupTests.test_managed_hardlink_and_success_symlink_are_rejected",
+    "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+    "test_automatic_backup.AutomaticBackupTests.test_unsafe_destinations_do_not_write_config",
+    "test_chatgpt_auth.AuthTests.test_dpapi_rejects_dangling_links_and_junction_lstat_attributes",
+    "test_chatgpt_auth.AuthTests.test_first_use_guard_rejects_prior_host_control_and_partial_vault_evidence",
+    "test_desktop_runtime.WindowsRuntimeTests.test_installer_mutex_lifetime",
+    "test_downloads.DownloadTests.test_failure_preserves_latest_and_refuses_symlink",
+    "test_market.MarketTests.test_cache_rejects_symlink",
+    "test_market_history.HistoryBoundaryTests.test_cache_tamper_symlinks_and_bad_policy",
+    "test_market_history.HistoryTests.test_cache_tamper_symlinks_and_bad_policy",
+    "test_notice_collector.ZipCollectorTests.test_dangling_source_parent_fails",
+    "test_notice_collector.ZipCollectorTests.test_destination_file_symlink_fails_preserves_target",
+    "test_notice_collector.ZipCollectorTests.test_destination_parent_symlink_fails",
+    "test_notice_collector.ZipCollectorTests.test_source_file_symlink_fails",
+    "test_notice_collector.ZipCollectorTests.test_source_parent_symlink_fails",
+    "test_paper_diagnostics.ConnectionDiagnosticTests.test_external_observer_failure_stops_waiting_probe_and_cleans_owned_fixture",
+    "test_paper_diagnostics.ConnectionDiagnosticTests.test_fixed_matrix_uses_full_commits_real_external_control_and_owned_cleanup",
+    "test_paper_diagnostics.ConnectionDiagnosticTests.test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture",
+    "test_paper_diagnostics.ConnectionDiagnosticTests.test_wrong_commit_count_cannot_be_certified",
+    "test_qt_licenses.QtLicenseTests.test_destination_symlink_preserves_target",
+    "test_qt_licenses.QtLicenseTests.test_payload_directory_symlink_fails_before_audit",
+    "test_qt_licenses.QtLicenseTests.test_source_symlink_and_simulated_junction_fail",
+    "test_reporting.ReportingTests.test_symlink_output_refused",
+    "test_test_group.ParallelResearchGroupTests.test_native_windows_natural_parent_exit_with_descendant_cannot_pass",
+    "test_trading_acceptance_combinations.AcceptanceCombinationTests.test_e06_parent_os_kill_before_submit_and_after_remote_accept_preserves_unknown",
+    "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+    "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace",
+    "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_gui_death_quiesces_before_test_only_durable_receipt",
+    "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_after_gui_before_quiescence_never_publishes_receipt",
+    "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_before_gui_never_publishes_receipt"
+  ],
+  "traceback_blocks": 32,
+  "encoding": "utf-16",
+  "raw_sha256": "c1b1f6232656f48ce95ac9448ba497fa3e622efc91bb8b96e166d049392ec9aa",
+  "source": "4fd1f6e36d28315b871db66322ad78666fe18055",
+  "new_failure_ids": [],
+  "baseline_failure_ids_not_seen": [
+    "test_runtime_context_client_v2.RuntimeContextClientTests.test_failed_profile_target_retains_current_data_and_selector",
+    "test_runtime_context_client_v2.RuntimeContextClientTests.test_owned_cleanup_handles_real_ipc_version_change_without_bypassing_cas",
+    "test_runtime_context_client_v2.RuntimeContextClientTests.test_standard_disconnected_launch_without_profile_keeps_financial_facts_unknown",
+    "test_runtime_context_client_v2.RuntimeContextClientTests.test_three_environments_use_real_ipc_and_never_mix_books_or_implicitly_connect",
+    "test_trading_runtime.IndependentEngineRuntimeTests.setUpClass"
+  ],
+  "schema": 1,
+  "main_baseline": "045313634a6fe4c33aeacfc972182d00e83cd58e",
+  "failure_review": {
+    "traceback_blocks": 32,
+    "exception_type_chains_equal": 32,
+    "test_source_occurrences_equal_main": 30,
+    "test_source_occurrences_total": 32,
+    "changed_test_source": "tests/test_trading_installer_guard.py: inherited M2-8 owned-cleanup change; both identical preexisting-app assertions fail before their fixture starts",
+    "category_counts": {
+      "symlink_privilege_1314": 20,
+      "native_worker_cleanup_file_lock": 1,
+      "crash_driver_pid_mismatch": 1,
+      "named_mutex_visibility": 3,
+      "paper_probe_parent_pid_guard": 4,
+      "retained_grandchild_handle_invalid": 3
+    },
+    "cause_notes": {
+      "symlink_privilege_1314": "Both fail creating symbolic links with WinError1314; temporary names differ.",
+      "native_worker_cleanup_file_lock": "Both retain worker-0.log and raise WinError32 in cleanup.",
+      "crash_driver_pid_mismatch": "Both assert actual native PID differs from launcher PID, followed by WinError32 cleanup on simulated-exchange-v2.sqlite; temporary fixture/PID values differ.",
+      "named_mutex_visibility": "One nonzero named-mutex handle assertion and two unchanged preexisting-app lifetime assertions; do not disturb external apps.",
+      "paper_probe_parent_pid_guard": "Same two missing-error_type and two return-code assertions; incomplete probe records do not prove an additional child-exit cause.",
+      "retained_grandchild_handle_invalid": "Both retain Errno6 handle transfer failures and unconfirmed cooperative-cleanup assertions."
+    }
+  },
+  "raw_format": {
+    "bom": "FFFE",
+    "byte_encoding": "UTF-16-LE",
+    "newline": "CRCRLF from Windows PowerShell5 native stderr formatting",
+    "output_width": 119,
+    "identity_header_folding_only": true,
+    "old_utf8_comparator_result": "False incomplete; not used as the complete-run result"
+  },
+  "limits": [
+    "Local full suite remains FAILED, not all-green acceptance.",
+    "No exact traceback-frame equality is claimed because body lines wrap at119 columns.",
+    "Only the smoke-sensitive prefix was quiescent; other-worktree indexes and tiny Qt/metadata work resumed afterward.",
+    "Original first full run and its four new failures remain documented.",
+    "Final full/startup source is4fd1f6e; subsequent delivery changes only documentation/inventory.",
+    "Remote CI must be checked on the pushed head."
+  ]
+}
