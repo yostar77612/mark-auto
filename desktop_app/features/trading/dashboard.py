@@ -15,7 +15,7 @@ from desktop_app.features.trading.page_help import HelpText
 
 
 class DashboardWidget(QWidget):
-    def __init__(self, command, parent=None):
+    def __init__(self, command, parent=None, *, help_header=None):
         super().__init__(parent)
         self._identify(self, 'overview_dashboard', ui_text('v2.overview'))
         layout = QVBoxLayout(self)
@@ -41,7 +41,7 @@ class DashboardWidget(QWidget):
                 (UiAction.RECONCILE, 'v2.reconcile', 'overview_reconcile'),
             )
         ):
-            control = button(key, name)
+            control = button(key, name, role='secondary' if action is UiAction.RECONCILE else 'danger')
             control.clicked.connect(lambda checked=False, action=action: command(action))
             operations.addWidget(control, index // 2, index % 2)
             self.operation_buttons[action] = control
@@ -58,14 +58,14 @@ class DashboardWidget(QWidget):
             lights.addWidget(light)
             self.lights[name] = light
         layout.addLayout(lights)
-        self.data_help = HelpText(ui_text('dashboard.data_status'), '', 'overview_status', self)
+        self.data_help = HelpText(ui_text('dashboard.data_status'), '', 'overview_status', self, header=help_header)
         self.status = self.data_help.summary
         layout.addWidget(self.data_help)
         self.today = self._label('dashboard_today', ui_text('dashboard.today'))
         layout.addWidget(self.today)
         self.strategy_summary = self._label('overview_strategy_summary', ui_text('v2.strategies'))
         layout.addWidget(self.strategy_summary)
-        self.strategy_setup = button('m2t.empty_strategy', 'dashboard_new_strategy')
+        self.strategy_setup = button('m2t.empty_strategy', 'dashboard_new_strategy', role='primary')
         layout.addWidget(self.strategy_setup)
         self.strategies = self._table(
             'dashboard_strategies',
@@ -175,8 +175,7 @@ class DashboardWidget(QWidget):
         rows(self.positions, display.position_rows(state))
         if not state_changed:
             return
-        self.strategy_summary.setText(display.strategy_summary_text(state))
-        self.strategy_summary.setVisible(bool(state.strategies))
+        self.strategy_summary.setText(display.strategy_summary_text(state) if state.strategies else ui_text('m2t.empty_strategy_reason'))
         self.strategy_setup.setVisible(not state.strategies)
         rows(self.strategies, display.strategy_rows(state))
         self.issue_details.clear()

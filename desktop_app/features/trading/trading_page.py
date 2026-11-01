@@ -1,7 +1,11 @@
 """Trading-page presentation; accepted application state owns the environment."""
 
+from datetime import datetime
+from decimal import Decimal
+from zoneinfo import ZoneInfo
+
 from PySide6.QtCore import QSignalBlocker, Qt
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QHeaderView, QLabel
+from PySide6.QtWidgets import QComboBox, QHeaderView, QLabel
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction, UiState
@@ -15,9 +19,7 @@ _ORDER_BUTTONS = ('deploy_button', 'resume_button', 'cancel_entries_button', 'fl
 def install_trading_environment(window, layout):
     window.trading_execution_page = layout.parentWidget()
     window.trading_execution_page.setObjectName('trading_execution_page')
-    title = layout.takeAt(0).widget()
-    header = QHBoxLayout()
-    header.addWidget(title, 1)
+    header = window.page_headers['trading']
     caption = QLabel(ui_text('v2.environment'))
     header.addWidget(caption)
     window.trading_environment = QComboBox()
@@ -32,7 +34,6 @@ def install_trading_environment(window, layout):
     ):
         window.trading_environment.addItem(text, environment)
     header.addWidget(window.trading_environment)
-    layout.insertLayout(0, header)
     window.trading_environment_notice = QLabel()
     window.trading_environment_notice.setObjectName('trading_environment_notice')
     window.trading_environment_notice.setTextFormat(Qt.TextFormat.PlainText)
@@ -67,6 +68,9 @@ def refresh_trading_environment(window, state: UiState):
 
 
 def configure_trading_actions(window):
+    for name in ('stop_button', 'cancel_entries_button', 'flatten_button'):
+        getattr(window, name).setProperty('role', 'danger')
+    window.reconcile_button.setProperty('role', 'primary')
     for name, text in (
         ('stop_button', ui_text('m2t.stop_hint')),
         ('cancel_entries_button', ui_text('m2t.cancel_hint')),
@@ -87,7 +91,7 @@ def configure_trading_actions(window):
 def configure_trading_positions(widget):
     for column, text in (
         (1, ui_text('m2t.quantity')),
-        (2, ui_text('m2t.sellable')),
+        (2, ui_text('m2t.sellable_units')),
         (3, ui_text('m2t.policy')),
         (5, ui_text('m2t.strategy')),
         (6, ui_text('m2t.entry')),
@@ -118,4 +122,41 @@ def refresh_position_details(widget):
         for column in range(widget.columnCount()):
             item = widget.item(row, column)
             item.setToolTip(item.text())
+            if column in (1, 2, 7):
+                item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     widget.resizeRowsToContents()
+
+
+def confirm_trading_action(window, action):
+    if action not in (UiAction.STOP_NEW, UiAction.CANCEL_ENTRIES):
+        window.command(action)
+        return
+    state = window.state
+    scope = (state.context_epoch, state.version, state.context_id, state.account_ref, state.environment)
+    caption = window.stop_button.text() if action is UiAction.STOP_NEW else window.cancel_entries_button.text()
+    detail = window.stop_button.toolTip() if action is UiAction.STOP_NEW else window.cancel_entries_button.toolTip()
+    if not window._confirm(ui_text('m2t.confirm_operation').format(window._environment_label(state.environment), state.account_ref, caption, detail)):
+        return
+    current = window.state
+    if scope != (current.context_epoch, current.version, current.context_id, current.account_ref, current.environment):
+        window._feedback(ui_text('v2.state_conflict'))
+        return
+    window.command(action)
+
+
+def position_quantity(value, unit):
+    if value is None:
+        return ui_text('watch.unknown')
+    quantity = Decimal(value) / (1000 if unit.value == 'SHARE' else 1)
+    text = f'{quantity:,.3f}'.rstrip('0').rstrip('.')
+    return text + ' ' + (ui_text('m2t.lots') if unit.value == 'SHARE' else ui_text('v2.contracts'))
+
+
+def position_time(value):
+    if not value:
+        return ui_text('watch.unknown')
+    try:
+        parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    except ValueError:
+        return ui_text('watch.unknown')
+    return parsed.astimezone(ZoneInfo('Asia/Taipei')).strftime('%m/%d %H:%M') if parsed.tzinfo is not None else ui_text('watch.unknown')

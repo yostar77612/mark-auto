@@ -69,10 +69,11 @@ def label(key: str) -> QLabel:
     return widget
 
 
-def button(key: str, name: str) -> QPushButton:
+def button(key: str, name: str, *, role: str = 'secondary') -> QPushButton:
     widget = QPushButton(ui_text(key))
     widget.setObjectName(name)
     widget.setAccessibleName(ui_text(key))
+    widget.setProperty('role', role)
     widget.setMinimumHeight(36)
     return widget
 

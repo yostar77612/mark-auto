@@ -5,7 +5,7 @@ from quantlab.trading.application.contracts import UiState
 from desktop_app.features.trading.labels import policy_label, state_label
 from desktop_app.features.trading.widgets import rows
 from desktop_app.features.trading.reconciliation_rows import reconciliation_cells
-from desktop_app.features.trading.trading_page import refresh_position_details
+from desktop_app.features.trading.trading_page import refresh_position_details, position_quantity, position_time
 
 
 def render_tables(window, state: UiState, *, state_changed: bool) -> None:
@@ -49,8 +49,8 @@ def _render_positions(self, state: UiState) -> None:
                 item.lot_id,
                 (
                     item.instrument_id,
-                    f'{ui_text("v2.long" if item.direction.value == "BUY" else "v2.short")} · {item.quantity} {self._unit_label(item.unit.value)}',
-                    str(item.sellable_quantity),
+                    f'{ui_text("v2.long" if item.direction.value == "BUY" else "v2.short")} · {position_quantity(item.quantity, item.unit)}',
+                    position_quantity(item.sellable_quantity, item.unit).split(' ')[0],
                     policy_label(item.policy_label),
                     item.account_ref,
                     f'{item.strategy_id} · v{item.strategy_version}',
@@ -59,7 +59,7 @@ def _render_positions(self, state: UiState) -> None:
                     state_label(item.exit_window),
                     state_label(item.protection),
                     state_label(item.source),
-                    item.quote_time,
+                    position_time(item.quote_time),
                 ),
             )
             for item in state.positions

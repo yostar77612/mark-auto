@@ -176,3 +176,26 @@ shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
 - The old queued M2-6 full run was cancelled before starting. Root will rerun
   complete discovery and both actual LOCAL/fake-SIM starts on the final head.
   The prior79fc99c startup/full-check evidence does not validate this new source.
+
+### 2026-11-01 — M2-6 scoped adoption of merged UI guidelines (PR127)
+
+- Owner explicitly authorized this follow-up before the first M2-6 full run.
+  Normally merge documentation-only main; keep full UX-1, header badges and
+  complete overview redesign deferred. Preserve this round's date/first-start
+  behavior and all prior financial/safety evidence.
+- Put the changed explanations' existing help controls at each page title's
+  right. Preserve separate complete PlainText content and owned dialog lifetime.
+- Reuse theme's role convention: secondary by default, one trade reconcile
+  primary, overview empty-strategy primary; stop/cancel/flatten danger. Require
+  native Cancel-default confirmation. Reject context/account/environment/book
+  changes during the dialog; do not silently retarget the confirmed operation.
+- Six default position columns retain product, quantity, sellable, strategy,
+  exit and protection. Optional columns remain selectable and fully populated.
+  Composition injects a dedicated atomic presentation preference file; UI owns
+  no file IO. Failed writes preserve previous choices and explain failure.
+- Empty trade tables get explanation and a strategy navigation action, without
+  manufacturing rows; retain the overview wizard action and add its reason.
+  Display stock lots and Taipei timestamps only; no model/financial conversion.
+- Add10 catalogue records2796–2805 (total2806). Source and the exact changed
+  presentation/confirmation-aware test baseline remain separate commits.
+  Full discovery, actual LOCAL/fake-SIM starts and remote CI remain root-owned.

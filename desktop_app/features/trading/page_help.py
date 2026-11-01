@@ -7,7 +7,7 @@ from desktop_app.strings.catalog import ui_text
 
 
 class HelpText(QWidget):
-    def __init__(self, short_text, full_text, name, parent=None):
+    def __init__(self, short_text, full_text, name, parent=None, *, header=None):
         super().__init__(parent)
         self.setObjectName(name + '_help_row')
         layout = QHBoxLayout(self)
@@ -23,7 +23,7 @@ class HelpText(QWidget):
         self.button.setAccessibleName(ui_text('help.accessible'))
         self.button.setProperty('tradingHelp', True)
         self.button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignTop)
+        (header or layout).addWidget(self.button, alignment=Qt.AlignmentFlag.AlignTop)
         self.dialog = QDialog(self)
         self.dialog.setObjectName(name + '_help_details')
         self.dialog.setWindowTitle(ui_text('help.accessible'))

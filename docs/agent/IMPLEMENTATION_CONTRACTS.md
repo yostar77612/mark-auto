@@ -6752,3 +6752,20 @@ literal catalogue records use orders2776–2795; exact presentation pins are an
 independent baseline commit. Market-setting fixes and M2-1/2 sequencing now belong
 to the root team; after prerequisite CI, those phases can stack independently.
 Full discovery/startup/CI evidence must be renewed on this final source head.
+
+M2-6 UI-guideline follow-up (owner-authorized after PR127): changed help
+controls are at page-title right with complete owned PlainText dialogs retained.
+Button role defaults secondary; trade reconcile and the overview empty CTA are
+the only primaries on their pages. Stop/cancel/flatten use danger styling and
+native Cancel-default confirmation. Confirmed stop/cancel preserve the existing
+command/priority path and reject any changed account/context/environment/book
+version while the dialog is open.
+
+Positions retain12 data columns but default to exactly0,1,2,5,8,9. Product stays
+visible; a native checkable menu persists optional columns through composition's
+dedicated atomic SettingsStore, with failed-save rollback. UI performs no file
+IO and changes no financial fact. Empty trade tables explain the absence and
+navigate to strategy without creating rows/orders. Actual keyboard, colors,
+Cancel-default and preference-restart tests supplement all previous M2-6
+regressions. Exactly10 further strings use2796–2805 (total2806), with an independent
+precise baseline commit. Full UX-1 and second-round work are not implemented.

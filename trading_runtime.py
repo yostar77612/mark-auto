@@ -61,6 +61,7 @@ def _run_window(
     from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
+    from quantlab.research_core.adapters.settings_store import SettingsStore
     from desktop_app.features.market.workspace import WorkspacePanel
     from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme, _apply_trading_page_theme
 
@@ -122,7 +123,18 @@ def _run_window(
         alerts_panel=alerts.panel,
         style_terminal=_apply_terminal_theme,
     )
-    window = TradingWindow(facade, initial, market_watch=terminal)
+    presentation_store = SettingsStore((root or default_root()) / 'trading-presentation-v1.json')
+    try:
+        position_columns = presentation_store.load().get('position_columns')
+    except (OSError, ValueError, RuntimeError):
+        position_columns = None
+    window = TradingWindow(
+        facade,
+        initial,
+        market_watch=terminal,
+        position_columns=position_columns,
+        save_position_columns=lambda values: presentation_store.save({'position_columns': list(values)}),
+    )
     _apply_trading_page_theme(window)
     from desktop_app.research_session import ResearchSession, UnifiedResearch
 

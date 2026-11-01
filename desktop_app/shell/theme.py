@@ -489,6 +489,11 @@ def _apply_terminal_theme(widget):
 
 
 _TRADING_PAGE_QSS = '''
+QMainWindow#multi_market_window QPushButton[role="primary"] { background:#185db8; color:white; border:1px solid #185db8; }
+QMainWindow#multi_market_window QPushButton[role="danger"] { background:#9b1c1c; color:white; border:1px solid #9b1c1c; }
+QMainWindow#multi_market_window QPushButton[role="danger"]:disabled,
+QMainWindow#multi_market_window QPushButton[role="primary"]:disabled { background:#eef1f5; color:#697587; border:1px solid #b3c4d9; }
+QLabel[workspaceTitle="true"] { font-size:20px; font-weight:600; }
 QWidget#trading_execution_page[executionEnvironment="LOCAL"] { border:1px solid #9fb0c5; }
 QWidget#trading_execution_page[executionEnvironment="BROKER_SIMULATION"] { border:1px solid #26854b; }
 QWidget#trading_execution_page[executionEnvironment="LIVE"] { border:2px solid #b52c36; }

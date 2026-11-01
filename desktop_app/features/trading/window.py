@@ -92,11 +92,12 @@ class TradingWindow(QMainWindow):
     legacy_requested = Signal(str)
     close_ui_requested = Signal()
 
-    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None, *, market_watch=None):
+    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None, *, market_watch=None, position_columns=None, save_position_columns=None):
         super().__init__(parent)
         self.facade = facade
         self.state = initial_state
         self.market_watch = market_watch
+        self._position_columns, self._save_position_columns = position_columns, save_position_columns
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
@@ -565,6 +566,8 @@ class TradingWindow(QMainWindow):
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
         render_tables(self, state, state_changed=state_changed)
+        self.positions_empty.setVisible(not state.positions)
+        self.orders_empty.setVisible(not state.orders)
         self.dashboard.render(state, state_changed=state_changed)
         if not state_changed:
             return

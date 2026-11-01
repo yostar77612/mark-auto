@@ -738,9 +738,10 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/domain/alerts.py` | 270 | domain | `quantlab/trading/domain/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/alerts.py` | 22 | application | `quantlab/trading/ports/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_alerts.py` | 137 | composition | `quantlab/trading/runtime/market_alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
-| `desktop_app/features/trading/trading_page.py` | 121 | presentation | `desktop_app/features/trading/trading_page.py` | M2-6: accepted-state environment controls and position-table presentation; no SDK or IO. |
-| `desktop_app/strings/m2_trading.py` | 47 | shared | `desktop_app/strings/m2_trading.py` | M2-6: 43 additive literal catalogue records across both owner-authorized slices; historical records unchanged. |
+| `desktop_app/features/trading/trading_page.py` | 162 | presentation | `desktop_app/features/trading/trading_page.py` | M2-6: accepted-state environment controls, scoped confirmations and position-table presentation; no SDK or IO. |
+| `desktop_app/strings/m2_trading.py` | 57 | shared | `desktop_app/strings/m2_trading.py` | M2-6: 53 additive literal catalogue records through order2805; historical records unchanged. |
 | `desktop_app/features/trading/page_help.py` | 47 | presentation | `desktop_app/features/trading/page_help.py` | M2-6 owner additions: short summaries and fully owned keyboard-accessible plain-text dialogs; no SDK or IO. |
+| `desktop_app/features/trading/trading_page_widgets.py` | 79 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
