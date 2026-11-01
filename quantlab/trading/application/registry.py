@@ -3,7 +3,7 @@
 from dataclasses import is_dataclass
 from enum import Enum
 
-from . import broker_settings, contracts, lifecycle_models, market_settings, performance, provenance, state, sessions, sinopac_contracts
+from . import broker_settings, contracts, lifecycle_models, manual_contracts, market_settings, performance, provenance, state, sessions, sinopac_contracts
 from .codec import register
 from quantlab.trading.domain import calendar, costs, lifecycle, live_bars, models, risk, strategy, watch
 from quantlab.trading.ports import contracts as port_contracts
@@ -22,6 +22,7 @@ def initialize() -> None:
         broker_settings,
         market_settings,
         sinopac_contracts,
+        manual_contracts,
         watch,
         contracts,
         lifecycle_models,

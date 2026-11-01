@@ -711,6 +711,7 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/adapters/storage/kline_store.py` | 195 | infrastructure | `quantlab/trading/adapters/storage/kline_store.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/history_sync.py` | 282 | application | `quantlab/trading/application/history_sync.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/market_settings.py` | 24 | application | `quantlab/trading/application/market_settings.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/manual_contracts.py` | 177 | application | `quantlab/trading/application/manual_contracts.py` | M2-2: immutable manual SIM intents and read models; accepted context/account/generation scope, app virtual funds provenance, unknown receipt identity and unprotected risk estimates; no execution authority or SDK. |
 | `quantlab/trading/application/market_terminal_service.py` | 326 | application | `quantlab/trading/application/market_terminal_service.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/market_terminal_views.py` | 57 | application | `quantlab/trading/application/market_terminal_views.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/watch.py` | 41 | domain | `quantlab/trading/domain/watch.py` | M1: reviewed new module; existing rows and layer rules retained. |

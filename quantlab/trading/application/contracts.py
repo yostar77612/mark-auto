@@ -12,6 +12,17 @@ from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.validation import DomainError, identity, integer
 from .broker_settings import BrokerReadiness, BrokerSettings
 from .market_settings import MarketDataSettings
+from .manual_contracts import (
+    ManualBookForm,
+    ManualInstrumentView as ManualInstrumentView,
+    ManualMutationForm,
+    ManualOrderForm,
+    ManualPendingView as ManualPendingView,
+    ManualPreviewView as ManualPreviewView,
+    ManualPurpose as ManualPurpose,
+    ManualScope as ManualScope,
+    ManualTradingView,
+)
 from .sinopac_contracts import SinopacAccountView as SinopacAccountView, SinopacConnectionSettings, SinopacConnectionView, SinopacReadiness as SinopacReadiness
 
 
@@ -91,6 +102,12 @@ class MarketSeriesPage:
 
 
 class UiAction(str, Enum):
+    ENABLE_MANUAL_BOOK = 'enable_manual_book'
+    PREVIEW_MANUAL = 'preview_manual'
+    SUBMIT_MANUAL = 'submit_manual'
+    CANCEL_MANUAL = 'cancel_manual'
+    AMEND_MANUAL = 'amend_manual'
+    TEST_SIM_ORDER = 'test_sim_order'
     CREATE_STRATEGY = 'create_strategy'
     VALIDATE = 'validate'
     RESEARCH = 'research'
@@ -168,6 +185,9 @@ class UiCommand:
     sinopac_accounts: tuple[str, ...] | None = None
     connection_revision: int | None = None
     connection_generation: str = ''
+    manual_book: ManualBookForm | None = None
+    manual_order: ManualOrderForm | None = None
+    manual_mutation: ManualMutationForm | None = None
 
 
 @dataclass(frozen=True)
@@ -344,6 +364,7 @@ class UiState:
     market_data_settings: MarketDataSettings = MarketDataSettings()
     market_data_error: str = ''
     sinopac_connection: SinopacConnectionView = SinopacConnectionView()
+    manual: ManualTradingView = ManualTradingView()
 
 
 class TradingFacade(Protocol):

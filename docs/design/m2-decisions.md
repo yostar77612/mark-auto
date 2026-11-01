@@ -512,3 +512,33 @@ graph and text. Four pure boundary/codec tests went RED on the missing module,
 then passed in0.003s, including old-field omission and malformed settings. This
 slice starts no engine, SDK or child process. Inventory/baseline registration
 is a separate precise commit; broader runtime implementation is still pending.
+
+## M2-2 / scoped manual intent contracts — 2026-11-01
+
+Manual intents carry context id/epoch, environment/account, shared connection's
+opaque string generation and revision; UiCommand.expected_version remains the
+separate book CAS. A backend must match every accepted scope before execution.
+No submitted object is a grant, ACTIVE strategy or research/OOS evidence.
+
+Book allocation is explicitly APP_VIRTUAL_SIMULATION, requires user confirmation
+and fresh verified account observations, and never replaces unknown broker funds
+or automatic daily-baseline rules. Preview returns backend cash/risk/fee amounts
+and sources. Canonical quantities are integer shares/contracts with an explicit
+whole-lot step. stop_price is a sizing estimate, not a placed protection order;
+the view explicitly remains UNPROTECTED. Existing protection/STOP_NEW latches
+cannot be cleared by a manual-book label. Automatic stop/strategy cycles are not
+part of this round.
+
+Pending and last_result retain exact request identity and known/unknown outcome.
+An empty snapshot is not evidence that a timed-out command was never admitted.
+The user-confirmed diagnostic shares the normal submit/cancel path; its purpose
+is narrow, quantities/prices require verified facts, and it never promises no fill
+or automatically retries/reverses partial/full fills. Full dispatch is subsequent
+work; the contract slice starts no SDK, engine or financial operation.
+
+Own pre-edit graph reports CRITICAL for UiAction/UiCommand/UiState and HIGH for
+registry.initialize; warnings and exact source checks are recorded in
+m2-2-verification.md. Four new boundary/codec tests pass, preserving old messages
+and rejecting malformed money/quantity/scope input. The early foundation merge
+missed the own precommit check; its actual postmerge comparison is documented
+without rewriting history or retroactively claiming compliance.
