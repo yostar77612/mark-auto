@@ -512,3 +512,20 @@ graph and text. Four pure boundary/codec tests went RED on the missing module,
 then passed in0.003s, including old-field omission and malformed settings. This
 slice starts no engine, SDK or child process. Inventory/baseline registration
 is a separate precise commit; broader runtime implementation is still pending.
+
+## M2-1 / immutable facade environment — 2026-11-01
+
+Require ShioajiSDKFacade(client,module,environment=Environment...) explicitly;
+neither native simulation flags nor a LOCAL default establish execution scope.
+Expose a getter-only environment property; factory and retained legacy market
+construction pass their immutable configured environment. The manual-execution
+agent owns guards in the three existing mutation bodies and a central predicate,
+so this slice does not replace those bodies or add a second order path.
+
+Two pure tests went RED before implementation and now pass. With existing fake
+facade, tick-stream and price-band cases,33 tests passed in4.573s. Existing fake
+constructor sites receive only explicit BROKER_SIMULATION arguments; original
+assertions and expected requests remain intact. Those fixture edits and new
+module inventory rows are a separate commit. Source impacts: facade MEDIUM
+(10 direct), factory LOW(4), MarketSession LOW(2). UNKNOWN test/helper file
+impacts were confirmed via direct imports and unittest discovery references.

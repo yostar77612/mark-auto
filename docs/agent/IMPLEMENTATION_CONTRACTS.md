@@ -6834,3 +6834,9 @@ DISCONNECT_SINOPAC are reference-only intents. This contract slice does not
 connect, resolve credentials, switch books, activate CA or enable execution.
 Subsequent runtime acceptance owns connection CAS and SDK result validation;
 the UI mirrors accepted book context independently of its connection draft.
+
+The SDK facade now requires a typed broker environment at construction and
+exposes it read-only, independently of mutable native flags. Existing factory
+and legacy market-session construction supply that environment explicitly.
+The M2-2 execution guard work consumes this same property; no fallback to LOCAL
+or mutable production opt-in is introduced by the connection implementation.
