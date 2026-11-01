@@ -141,3 +141,49 @@ Final document/layout checks pass 37 cases in 2.791s. The separate two-oracle
 baseline's complete all/staged graph checks report seven symbols/three files,
 LOW risk, zero affected processes and no error/partial/truncation flags or empty
 IDs; inherited production/cleanup behavior remains unchanged.
+
+## Final source-equivalent validation
+
+Final source `4fd1f6e36d28315b871db66322ad78666fe18055` completes 3941 tests in
+1543.784s: FAILED, 10 failures, 22 errors, 42 existing skips. The BOM-aware
+[comparison](final-full-comparison.json) records all 32 traceback occurrences,
+31 distinct failed IDs and zero new IDs versus main `0453136`; five prior
+runtime/startup failure identities no longer occur. This is a nonzero local
+suite with reviewed existing host limitations, not an all-green suite claim.
+
+All 32 actual exception-type chains match main. Manual cause review retains
+20 symbolic-link privilege failures (WinError1314), one retained worker-log
+WinError32 cleanup, the original crash-driver native/launcher PID assertion
+followed by WinError32 on the same simulated-exchange database, three mutex/
+preexisting-app assertions, four incomplete diagnostic-probe assertions and
+three invalid retained-grandchild-handle/cleanup failures. Temporary paths,
+PIDs and timing differ. The 30/32 traceback occurrences with unchanged test
+files are byte-identical to main; the other two come from the inherited cleanup
+fixture update, with the identical preexisting-app guard failing before fixture
+creation. Incomplete diagnostic records are not proof of another child cause.
+
+The raw log SHA256 is
+`c1b1f6232656f48ce95ac9448ba497fa3e622efc91bb8b96e166d049392ec9aa`.
+Windows PowerShell5 emitted UTF-16-LE/BOM, CRCRLF and width119 wrapping. Decode
+the BOM, normalize CRCRLF, fold only unittest failure-identifier headers and
+assert 32 parsed blocks equals footer failures+errors. The older UTF8 comparator's
+INCOMPLETE output is retained as a parser mismatch, not a missing full run.
+Do not globally join traceback bodies or claim exact frame equality from wrapped
+lines. Only the smoke-sensitive prefix was quiescent; other-worktree indexes and
+small Qt/metadata checks resumed later. No deadline, skip or test cap changed.
+
+Both actual `_run_window` starts at the same source return0: LOCAL6.075s and
+fake BROKER_SIMULATION3.969s. [Startup facts](final-startup.json) retain real
+window/research/runtime composition, research release and normal engine
+shutdown. SIM uses one fake login/logout and zero order constructions/orders;
+no Shioaji module or real credentials are used. The two runtime short-copy test
+bodies previously hidden by startup failure now execute in complete discovery.
+
+Normal merge of final M2-8 documentation/inventory `868da0c` preserves the tested
+source. Final delivery is documentation only: all1192 non-documentation Git
+entries remain exact at4fd1f6e. Three existing M2-6 test-module registrations are
+committed independently; inherited cleanup registration comes from M2-8. Remote
+CI is checked on the pushed PR head and remains pending at this evidence commit.
+Earlier PENDING statements above describe their original verification stage;
+this section is the final local full/startup record. First-run failures remain
+in their original source scope and are not waived by this later result.

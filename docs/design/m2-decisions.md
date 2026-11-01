@@ -557,3 +557,37 @@ the active M2-8 full suite. Preserve every other context/finance/ownership and
 no-engine-creation assertion and all cleanup behavior; no cap, skip, timeout or
 catalogue change. Stop the audit after all actual changed-copy references are
 accounted for. Final full discovery/startup/CI remain root's serialized gates.
+
+## M2-8 / final composite full and startup evidence
+
+Record finalfdf3914/1593.006s10F22E42skip honestly as a nonzero local suite with
+zero new failures. Review all32 actual blocks, including finalE06 WinError32
+matching main rather than borrowing the earlier WinError5 cause. Retain original
+smoke failure/retry evidence. Both final actual startups return0 with normal owned
+cleanup and fake-only broker operations. This commit is documentation only; CI
+is checked on the pushed head. No source, assertions, thresholds or skips change.
+
+## M2-8 / explicit new-test inventory registration
+
+A final all-new-Python-path audit found the new cleanup regression module was
+not explicitly listed in section2, although architecture tests already passed.
+Register only that existing test file and its measured line count in a separate
+inventory baseline commit. Test code and every other non-doc blob stay unchanged;
+the completed full/startup results remain source-equivalent. This repairs the
+specification documentation requirement without changing any test assertion.
+
+## M2-6 / final source-equivalent evidence and omitted test registration
+
+Final4fd1f6e complete discovery is3941/1543.784s10F22E42skip,32blocks/31IDs and
+zero new failure identities versus main. Preserve the nonzero result, all actual
+cause differences and the original four-new-failure run. The Windows PowerShell5
+raw log is UTF-16-LE/BOM with CRCRLF/width119 wrapping; use BOM-aware parsing and
+fold only failure identifiers, requiring parsed block count to equal the footer.
+An old UTF8 parser's false INCOMPLETE is not the test outcome. Both actual LOCAL
+and fake-SIM starts return0 with research/engine shutdown and no real SDK import.
+
+Merge final8 documentation868da0c normally, retaining both appended decision
+histories. Keep all1192 non-documentation entries exact at tested4fd1f6e. Repair
+only the missing three existing M2-6 test-file registrations in an independent
+inventory baseline commit; no Python body, fixture, timing, size limit, skip or
+assertion changes. CI must be fully green on the pushed stacked PR; no main merge.
