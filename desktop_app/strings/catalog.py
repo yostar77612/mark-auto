@@ -216,6 +216,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[58])
 # Lane M2-6: trading-page environment and plain-language controls.
 ZH_TW.update(_ZH_TW_CHUNKS[61])
 
+# Lane M2-2: explicitly confirmed manual simulation intents.
+ZH_TW.update(_ZH_TW_CHUNKS[63])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

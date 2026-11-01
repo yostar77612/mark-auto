@@ -6851,3 +6851,44 @@ unknown, default actions disabled and stopped. stop_price is only a sizing
 estimate; UNPROTECTED does not assert a broker stop order or clear existing
 protection locks. Pending/last-result projections retain exact request identity;
 missing cached data cannot discharge UNKNOWN or authorize a new-key retry.
+
+## M2-2 manual simulation presentation contract
+
+The Trading page exposes manual intents only for the accepted broker-simulation
+book. The existing asynchronous command worker carries the current book version,
+context/epoch, account, immutable environment and connection generation/revision.
+An empty navigation-choice list does not erase a manual command's accepted epoch.
+LIVE widget/programmatic intents remain disabled, and the application/backend
+separately owns the execution invariant. Presentation never imports a broker SDK
+or calculates a risk/fee/margin permission.
+
+Preparing a virtual book requires explicit confirmation and displays application
+simulation provenance, not a claim about broker funds. Pending preparation locks
+the input; an accepted value becomes the displayed value. Inputs express whole
+stock lots and futures contracts; the typed instrument supplies conversion to
+canonical quantity. Preview and confirmation show server estimates, quote time,
+expiry, sources and absence of a protective stop. An edited draft, changed book,
+account, generation, revision or expired preview cannot authorize a submission.
+
+The diagnostic has separate preparation and explicit confirmation; preparing it
+does not submit. Its capability is distinct from normal manual submission so the
+initial required test is reachable. Cancel/amend act only on an owned selected
+order; amendment is price-only. Native dangerous-action dialogs default to Cancel,
+and nested-event-loop changes are rechecked before dispatch. STOP_NEW, reconciliation
+and the application's existing order/position tables retain their existing roles.
+
+An admitted request keeps its original identity through an IPC error, a false
+receipt, an empty projection and a new login generation. Only a matching server
+result with a known outcome clears that UI observation latch. A failed read-only
+poll also disables prior readiness until a successful snapshot returns. Explicit
+manual resume requires the unchanged confirmed book and fresh current facts; it
+cannot reset losses or an unknown operation. No automatic strategy cycle, synthetic
+research evidence or replacement broker journal is introduced.
+
+New copy belongs to catalogue phase63, after M2-1's phase62. Empty SIM tables guide
+the user to manual preparation or connection; LOCAL retains strategy navigation.
+The existing semantic button roles and centralized theme remain in use. The
+separate baseline commit must record the literal LIVE-action oracle expansion,
+continuous catalogue records and exact feature-specific inventory/fixture delta.
+Final integrated full discovery, actual LOCAL/fake-SIM startup and remote CI are
+independent of the focused real-widget/fake-port tests and are recorded separately.

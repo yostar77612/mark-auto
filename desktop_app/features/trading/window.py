@@ -29,6 +29,7 @@ from desktop_app.features.trading.workspaces import build
 from desktop_app.features.trading.wizard import StrategyWizard
 from desktop_app.features.trading.context_header import install_context_header, refresh_context_header
 from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, refresh_trading_environment
+from desktop_app.features.trading.manual_intents import MANUAL_ACTIONS
 
 
 class _Operation(QThread):
@@ -160,9 +161,17 @@ class TradingWindow(QMainWindow):
         context_id: str | None = None,
         profile_ref: str = '',
         market_data_settings=None,
+        manual_book=None,
+        manual_order=None,
+        manual_mutation=None,
+        connection_revision=None,
+        connection_generation='',
     ) -> None:
         if self.state.environment is Environment.LIVE and action in LIVE_ORDER_ACTIONS:
             self._feedback(ui_text('m2t.orders_disabled'))
+            return
+        if action in MANUAL_ACTIONS and self.state.environment is not Environment.BROKER_SIMULATION:
+            self._feedback(ui_text('m2m.simulation_only'))
             return
         self._run(
             UiCommand(
@@ -177,8 +186,13 @@ class TradingWindow(QMainWindow):
                 broker_settings,
                 self.state.context_id if context_id is None else context_id,
                 profile_ref,
-                self.state.context_epoch if self.state.contexts else None,
+                self.state.context_epoch if self.state.contexts or action in MANUAL_ACTIONS or manual_book is not None else None,
                 market_data_settings=market_data_settings,
+                manual_book=manual_book,
+                manual_order=manual_order,
+                manual_mutation=manual_mutation,
+                connection_revision=connection_revision,
+                connection_generation=connection_generation,
             )
         )
 
@@ -236,6 +250,8 @@ class TradingWindow(QMainWindow):
             operation.deleteLater()
 
     def _result(self, state: UiState, receipt: UiReceipt | None, action: UiAction | None) -> None:
+        operation = self._operation if action is not UiAction.STOP_NEW else self._priority_operation
+        self.manual_controls.received(operation.command if operation is not None else None, state, receipt)
         if self._stamp(state) < self._stamp(self.state):
             return
         self._engine_reachable = True
@@ -279,6 +295,7 @@ class TradingWindow(QMainWindow):
         self._operation = None
         if operation is not None:
             operation.deleteLater()
+        self.manual_controls.render(self.state)
 
     def new_strategy(self) -> None:
         self._wizard('')
@@ -498,6 +515,7 @@ class TradingWindow(QMainWindow):
     def apply_state(self, state: UiState) -> None:
         if self._stamp(state) < self._stamp(self.state):
             return
+        self.manual_controls.render(state)
         market_changed = state.market_revision != self.state.market_revision
         market_only = (
             self._rendered_version is not None
@@ -557,6 +575,7 @@ class TradingWindow(QMainWindow):
         )
         refresh_context_header(self, state)
         refresh_trading_environment(self, state)
+        self.manual_controls.render(state)
         self.overview_step.setEnabled(state.environment == Environment.LOCAL)
         self.connect_read_only_button.setEnabled(state.environment is not Environment.LOCAL and state.engine_state == 'DISCONNECTED')
         self.add_context_button.setVisible(bool(state.contexts))
@@ -566,6 +585,7 @@ class TradingWindow(QMainWindow):
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
         render_tables(self, state, state_changed=state_changed)
+        self.manual_controls.render(state)
         self.positions_empty.setVisible(not state.positions)
         self.orders_empty.setVisible(not state.orders)
         self.dashboard.render(state, state_changed=state_changed)
