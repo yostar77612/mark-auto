@@ -221,6 +221,23 @@ without bypassing navigation guards or starting jobs. Evidence:
 tests/test_wf_wizard.py and docs/analysis/t8_snapshot_numbers.json.
 
 <!-- CURRENT_STATUS_START -->
+## M2-8 test/developer engine ownership (2026-11-01)
+
+Disposable source-engine owners register cleanup before startup can fail. The
+tooling-only launcher selects the actual Python interpreter and the same
+installed package paths, preserving production's exact retained-PID/session
+guard. Normal authenticated SHUTDOWN_ENGINE, bounded exit wait and endpoint
+removal prove closure; reused or differently owned hosts receive no command.
+Class/setup/body/teardown exceptions and caller startup timeout still run the
+registered cleanup. Each synthetic host has an independent pre-start hook.
+Cleanup errors remain failures, attempt remaining owned handles, and never
+authorize broad termination, other processes or data deletion. Load-probe partial
+initialization has the same normal shutdown and truthful failure reporting.
+Production lifecycle/ownership/security, broker gates, deadlines and applicability
+are unchanged. Exact focused, complete-run comparison and actual-window evidence,
+including retained first-run failure and pending CI, is recorded in
+docs/design/m2-8-verification.md.
+
 ## 目前交付對帳（2026-10-10 23:42 UTC）
 
 0.2.2 unsigned preview 已從產品來源 `9d35c7d7` 發布；exact-main Quantlab 12 jobs、Windows native／frozen TLS／安裝升級復原與公開下載驗證均 PASS。M4 依原 §19 條件取得 20 點，現行 **230/300＝76.67%，剩餘23.33%**；其他固定權重與未通過項目不變。
@@ -6802,22 +6819,31 @@ strength remain authoritative. Decisions and verification ownership are in
 docs/design/m2-decisions.md. Real broker operations, G3/SDK pin/PROJECT_STATE,
 OOS, budgets, deadlines and source profiles remain untouched.
 
-## M2-8 test/developer engine ownership (2026-11-01)
+## Verified SDK in the default installer (2026-11-01)
 
-Disposable source-engine owners register cleanup before startup can fail. The
-tooling-only launcher selects the actual Python interpreter and the same
-installed package paths, preserving production's exact retained-PID/session
-guard. Normal authenticated SHUTDOWN_ENGINE, bounded exit wait and endpoint
-removal prove closure; reused or differently owned hosts receive no command.
-Class/setup/body/teardown exceptions and caller startup timeout still run the
-registered cleanup. Each synthetic host has an independent pre-start hook.
-Cleanup errors remain failures, attempt remaining owned handles, and never
-authorize broad termination, other processes or data deletion. Load-probe partial
-initialization has the same normal shutdown and truthful failure reporting.
-Production lifecycle/ownership/security, broker gates, deadlines and applicability
-are unchanged. Exact focused, complete-run comparison and actual-window evidence,
-including retained first-run failure and pending CI, is recorded in
-docs/design/m2-8-verification.md.
+The default Windows installer reuses `broker_package.py` and the official
+Shioaji 1.7.9 Windows wheel in `requirements-shioaji-v2.lock`. Both the wheel
+and every installed package/metadata input are verified before collection;
+unverified/disabled broker flavors fail before Analysis. All other security
+exclusions remain, and the separate vendor CLI/server is never shipped.
+The standard manifest records verified SDK inputs and the actual bundled native
+core hash. Vendor metadata/SBOM and accurate absent-license/source notices are
+retained. Packaging authorizes no login, CA or financial operation.
+
+After installing/upgrading the candidate, Windows CI invokes the installed
+`MarkAuto.exe --broker-sdk-probe` with developer tools absent from PATH. Actual
+frozen import, module/distribution version 1.7.9, selected-runtime containment
+and native hash must pass; no SDK client, login or asset operation is performed.
+The existing TLS, full regression, lifecycle and recovery checks remain required.
+
+In the market-connection composition, loader `capability_missing` becomes
+`market_sdk_missing`, rendered from application ErrorText as
+「此安裝版未包含永豐元件，請安裝新版」. Other capability errors retain their
+existing semantics. Saving settings/startup remains inert; LIVE stays hard-disabled.
+No G3, SDK version constant, historical producer profile or PROJECT_STATE change
+is made. One unchanged test observer moves 25 source lines with its SDK fixture;
+only its current line projection and corresponding SHA256 are re-pinned in an
+independent baseline commit, preserving every observer identity and count.
 
 ## M2-1 shared connection wire contract (2026-11-01)
 
@@ -6841,6 +6867,82 @@ exposes it read-only, independently of mutable native flags. Existing factory
 and legacy market-session construction supply that environment explicitly.
 The M2-2 execution guard work consumes this same property; no fallback to LOCAL
 or mutable production opt-in is introduced by the connection implementation.
+
+SharedSDKSession is the sole native login/logout owner. Named SharedFacadeView
+consumers retain ShioajiSDKFacade's environment and mutation guards. Consumers
+share callback dispatch and remote quote/scanner leases; detaching one cannot
+logout another. Callback exceptions degrade owner health without exposing SDK
+payloads or preventing other deliveries. MarketSession.attach_authenticated
+adopts a consumer without resolving credentials or constructing another SDK.
+
+The profile-free unified host is explicitly RuntimeLaunch.sinopac=True with a
+stable SINOPAC:environment configuration identity and sinopac-pending process
+seed. Account navigation reuses that host. Connection/market overlay may be
+borrowed by LOCAL; its money, positions, version and context remain LOCAL.
+Environment replacement requires confirmed logout, including legacy-session
+migration. Unknown cleanup cannot be converted to success by a second request.
+Connection CAS uses generation plus monotonic material revision, independent
+of harmless ticks; late owned SDK results never promote after acceptance expiry.
+
+SinopacConnection.resources(alias) returns account-scoped typed catalogue,
+bindings, calendar, estimated fees, native mapping, query-only capabilities and
+optional observed daily limits. Consumers assemble every accepted alias and
+check generation/revision again. One callback owner gets one named shared
+consumer; multiple independent adapters must use distinct names or one shared
+multi-account adapter. Native SDK callback setters and login remain singular.
+Persisted alias metadata does not grant native query/execution capability.
+Selection/discovery must never delete historical manual orders or positions.
+M2-1 never enables automatic strategies or sends broker orders. M2-2 owns the
+canonical manual engine and execution guard; LIVE remains prohibited.
+
+Explicit profile-free broker startup for a known generated alias reuses its
+registered unified environment context and stable process seed/configuration.
+It must not synthesize a second UNCONFIGURED host from that alias. Metadata
+registration never logs in or changes selected book context; legacy profile-free
+aliases without a matching unified registration retain their existing fallback.
+
+Unified CA activation is restricted to BROKER_SIMULATION. LIVE refusal occurs
+before worker creation/password lookup/native activation and leaves accepted
+connection state unchanged. The executor checks the same boundary independently;
+the LIVE UI disables CA controls using the existing formal-readonly reason.
+This restriction does not modify the separately retained legacy CA connector.
+
+## M2-1 unified connection presentation contract (2026-11-01)
+
+Settings exposes one reference-only three-step Sinopac connection panel. Draft
+connection settings and accepted trading-book context remain separate; connect
+never chooses a viewed book. Four connection intents carry the accepted opaque
+generation and connection revision, not merely an engine version. Existing worker
+execution keeps the GUI responsive. Connection snapshots are rendered before
+book-version fast paths, older connection revisions cannot replace newer facts,
+and polls never overwrite dirty key/CA/Decimal-fee drafts. Mutations display only
+accepted account selections. Failed transport makes readiness unknown; messages
+use an explicit Chinese reason map and cannot echo backend/vendor text.
+
+Signed has three display states. Market, accounts, simulation orders and disabled
+production orders remain separate facts; discovery/login/signed cannot infer
+execution permission. Certificate picker returns a local path reference only,
+password is an OS credential reference and person_id has no input. Optional CA
+and fee estimates have complete keyboard help. Native disconnect confirmation
+uses Cancel by default and detects connection replacement during its nested
+modal loop. Existing legacy metadata/import behavior remains at the typed backend
+boundary, while obsolete primary forms and their production module are removed.
+
+Exact screenshot, focused-test and baseline procedures are recorded in
+[connection UI verification](../analysis/m2-connection/verification.md). Source
+and additive baseline changes are separate commits; historical fixture identities,
+class/function caps, protected files and assertions remain intact. Shared-runtime
+integration, actual startup, full discovery and remote CI remain coordinator-owned.
+M2-2 ManualTradingService accepts typed UI intent and uses one aggregate
+TradingEngine plus its existing journal. Its execute/snapshot/adopt seam keeps
+native observation collection outside the writer. ManualAccountObservation
+contains orders, positions, events and source timing, never fabricated account
+funds. The runtime validates the immutable accepted environment/account/owner
+generation/revision before adoption and command admission. Its manual pump does
+not run automatic strategy cycles or normal financial-baseline reconciliation.
+Internal ManualRiskCapacity is app-owned virtual capital, not a broker balance.
+Only a matching durable manual intent can use the canonical submit branch;
+automatic ACTIVE/OOS/previous-close requirements remain unchanged.
 
 ## M2-2 production mutation prohibition (2026-11-01, D1)
 
@@ -6925,43 +7027,6 @@ before worker creation/password lookup/native activation and leaves accepted
 connection state unchanged. The executor checks the same boundary independently;
 the LIVE UI disables CA controls using the existing formal-readonly reason.
 This restriction does not modify the separately retained legacy CA connector.
-
-## M2-1 unified connection presentation contract (2026-11-01)
-
-Settings exposes one reference-only three-step Sinopac connection panel. Draft
-connection settings and accepted trading-book context remain separate; connect
-never chooses a viewed book. Four connection intents carry the accepted opaque
-generation and connection revision, not merely an engine version. Existing worker
-execution keeps the GUI responsive. Connection snapshots are rendered before
-book-version fast paths, older connection revisions cannot replace newer facts,
-and polls never overwrite dirty key/CA/Decimal-fee drafts. Mutations display only
-accepted account selections. Failed transport makes readiness unknown; messages
-use an explicit Chinese reason map and cannot echo backend/vendor text.
-
-Signed has three display states. Market, accounts, simulation orders and disabled
-production orders remain separate facts; discovery/login/signed cannot infer
-execution permission. Certificate picker returns a local path reference only,
-password is an OS credential reference and person_id has no input. Optional CA
-and fee estimates have complete keyboard help. Native disconnect confirmation
-uses Cancel by default and detects connection replacement during its nested
-modal loop. Existing legacy metadata/import behavior remains at the typed backend
-boundary, while obsolete primary forms and their production module are removed.
-
-Exact screenshot, focused-test and baseline procedures are recorded in
-[connection UI verification](../analysis/m2-connection/verification.md). Source
-and additive baseline changes are separate commits; historical fixture identities,
-class/function caps, protected files and assertions remain intact. Shared-runtime
-integration, actual startup, full discovery and remote CI remain coordinator-owned.
-M2-2 ManualTradingService accepts typed UI intent and uses one aggregate
-TradingEngine plus its existing journal. Its execute/snapshot/adopt seam keeps
-native observation collection outside the writer. ManualAccountObservation
-contains orders, positions, events and source timing, never fabricated account
-funds. The runtime validates the immutable accepted environment/account/owner
-generation/revision before adoption and command admission. Its manual pump does
-not run automatic strategy cycles or normal financial-baseline reconciliation.
-Internal ManualRiskCapacity is app-owned virtual capital, not a broker balance.
-Only a matching durable manual intent can use the canonical submit branch;
-automatic ACTIVE/OOS/previous-close requirements remain unchanged.
 
 ## M2-2 manual simulation wire contract (2026-11-01)
 

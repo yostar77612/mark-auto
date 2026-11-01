@@ -1,5 +1,154 @@
 # M2 autonomous decisions
 
+## M2-8 — 2026-11-01 13:09 Asia/Taipei
+
+Problem: on this Windows host the venv executable is a redirector. The retained
+Popen PID is the redirector, while the authenticated engine session correctly
+publishes the native Python child's PID. `ensure_engine` rejects that mismatch
+and times out; a failed unittest `setUpClass` never calls `tearDownClass`.
+The completed main and M2-6 runs demonstrated healthy LOCAL engines left alive
+with locked SQLite files. Both were separately shut down through authenticated
+IPC after verifying their exact fixture path and session/child identity.
+
+Options: weaken the production PID comparison, change production ownership
+semantics, or correct test/developer launching and register cleanup before setup.
+Choose the last option. `tools/owned_trading_engine.py` scopes only the source
+launcher reference in `context_client`: it uses `sys._base_executable` with the
+already installed import paths. It does not mutate global `sys.executable` or
+the subprocess module, replace a runtime facade, or bypass any PID, account,
+environment, authenticated-IPC, engine-owner, handle or installer guard.
+Product runtime files remain unchanged.
+
+Each scope records the actual native Popen before startup can fail. It closes
+only those handles, validates the session PID before any control command, sends
+normal SHUTDOWN_ENGINE, waits for exit, and removes only matching `_STARTED`
+entries. A reused host is not registered and is not closed. A failed shutdown
+does not prevent attempting the remaining owned children. An unresponsive own
+native child may require the retained handle's terminate as failure containment;
+that always raises and cannot produce passing acceptance. No process discovery,
+broad kill, user-data deletion, timeout extension, skip or applicability change
+is used to manufacture a pass.
+
+Class cleanup uses `addClassCleanup`/`enterClassContext`; per-case engines use
+`enterContext`. Temp cleanup is registered first, so engine cleanup runs before
+fixture data cleanup. Synthetic multiprocessing hosts register their individual
+authenticated cleanup hook before `start` and readiness assertions, independently
+of UI `tearDown` or other host cleanup failures. The load probe establishes its
+owner scope before `ensure_engine`, including partial initialization and report
+writing failures; its source identity also includes the new launcher helper.
+
+Tracked launcher coverage:
+
+| Owner | Coverage |
+|---|---|
+| `tests/test_trading_runtime.py` | Shared class host; per-case shutdown/deep roots; second-owner rejection and standalone UI client use native Python with the same packages. All prior protocol/identity/transport assertions remain. |
+| `tests/test_runtime_context_client_v2.py` | Context-manager-created LOCAL/pending hosts use a scope registered in setUp. Synthetic hosts each register separate cleanup before start. Cleanup still runs if UI drain/teardown fails. |
+| `tests/test_trading_runtime_context.py` | Every retained synthetic multiprocessing host has a cleanup hook before start; one failure cannot abort cleanup of another hook. |
+| `tests/test_trading_installer_guard.py` | Engine scope encloses each guard-lifetime case before temporary-directory cleanup; controlled UI entry uses native Python and cooperative stop before exact-handle failure containment. |
+| `tools/trading_load_probe.py` | Scope starts before initialization, normal IPC cleanup in finally even without a returned facade; cleanup failure marks report FAIL. |
+| `tests/test_runtime_context_cli_v2.py` | Routing-only calls mock `serve`/`run_window`; no child or engine is launched. |
+
+`git grep -- '--trading-engine'` and all `ensure_engine`/`open_context`/`_run_window`
+test/tool references were reviewed after graph discovery. The second-owner
+subprocess deliberately cannot acquire an existing root; its direct native
+Popen in `subprocess.run` cannot strand a venv grandchild on timeout.
+
+Graph: the new worktree was indexed locally (19,469 nodes, 51,711 edges). Existing
+symbols were impacted before edits; test lifecycle dispatch is UNKNOWN in the
+graph, so direct source and text references confirmed unittest entry points and
+fixture consumers. `start_ui_entry` and load-probe helpers are LOW; synthetic
+`start` is MEDIUM with unresolved dynamic receiver sites, cross-checked by text.
+No HIGH/CRITICAL pre-edit change was reported. New untracked symbols initially return
+UNKNOWN/not-found; they require final indexed change analysis, not an unaffected
+claim. Initial discovery used the already indexed source-identical main probe
+while the worktree index built; relevant source diff against main was empty.
+
+Final graph analysis is HIGH: 64 changed symbols, 12 files and nine affected
+execution flows, all belonging to the existing developer load-probe main entry.
+The new scope has five test/tool importers (MEDIUM); its cleanup and load-probe
+main are LOW. Callable cleanup/launcher hooks remain UNKNOWN to static dispatch
+and were confirmed in the source and real-process tests. The complete result
+has no partial/truncated flag or empty IDs. Review covers the launcher binding,
+all registered cleanup hooks and truthful load-report failure paths; production
+files have no diff. The initial incremental rebuild lost method IDs and falsely
+reported CRITICAL/603 unrelated flows. A local-only forced rebuild restored all
+IDs and the complete result above; no source/test semantics were changed to
+work around the index defect, and no FTS extension was downloaded.
+
+Evidence boundary: offline LOCAL and injected synthetic ports only, no real SDK
+login, credentials, CA or order operation. Focused checks are recorded in
+[m2-8-verification.md](m2-8-verification.md). Controller schedules the branch full
+suite, final real-window startup and CI independently; they are not inferred
+from focused tests or a tooling-only launch check.
+
+## M2-8 — 2026-11-01 native installer precondition
+
+The controller granted an exclusive native test window after policy full-suite
+completion and normal cleanup of its exact test-owned source engine. The seven
+installer-guard cases ran: five boundary cases pass, and both native cases fail
+their unchanged preexisting-app assertion before any child or fixture creation.
+The controller confirms those same failures in main's complete baseline.
+Read-only inspection found the owner's installed 0.3.0 GUI and LOCAL engine,
+both older than this task, which the source-Python engine scan does not include.
+Choose to preserve the assertions and record the host limitation; never stop
+those non-fixture processes, use a different mutex, add a skip, or claim native
+acceptance passed. No further engine tests run while the controller resumes
+the next full suite. Details and pending full/startup/CI evidence are in
+[m2-8-verification.md](m2-8-verification.md).
+
+## M2-8 — 2026-11-01 complete-run evidence boundary
+
+Retain the first complete run's NEW positive-smoke timeout as a real failure,
+even though the exact unchanged case subsequently passes sequentially on main
+(15.027s) and M2-8 (13.915s). The unchanged full retry completes 3909 tests in
+1487.114s with 10 failures, 22 errors, 42 existing skips and no new failed IDs
+versus main. Only its smoke-sensitive prefix was quiescent; other-worktree index
+and small Qt/metadata checks resumed later. Do not claim full-run isolation,
+prove a latency cause from correlation, raise deadlines or label the first
+failure a waived flake. Raw review retains the E06 cleanup WinError/path
+difference even though exception types and failed IDs match. Normal actual
+LOCAL/fake-SIM startup passes at the same source head are independent evidence;
+they do not turn failed native-host suites into acceptance. Commit only reviewed,
+sanitized evidence and documentation; leave executable/test/tool bytes unchanged
+from `8f03a9905c337680f2f963ba284bed5bf3638bcb`. Controller owns push and CI.
+
+## M2-8 — latest-main normal integration
+
+Merge main `67249dc126423212bbcced2048992c4c50a1be48` normally into the M2-8
+branch, preserving all market, policy and cleanup decision/contract blocks.
+Keep every inherited source/test/baseline blob exact; resolve only appended
+documentation, with no rebase, source rewrite or new baseline change. The
+result combines separately tested sources and needs new full discovery and
+actual startup at the final head. Preserve earlier failed-run evidence under
+its original `8f03a99` scope; do not present it as final composite acceptance.
+Controller serializes native/engine/full validation after M2-6 completes.
+
+## M2-8 / final composite full and startup evidence
+
+Record finalfdf3914/1593.006s10F22E42skip honestly as a nonzero local suite with
+zero new failures. Review all32 actual blocks, including finalE06 WinError32
+matching main rather than borrowing the earlier WinError5 cause. Retain original
+smoke failure/retry evidence. Both final actual startups return0 with normal owned
+cleanup and fake-only broker operations. This commit is documentation only; CI
+is checked on the pushed head. No source, assertions, thresholds or skips change.
+
+## M2-8 / explicit new-test inventory registration
+
+A final all-new-Python-path audit found the new cleanup regression module was
+not explicitly listed in section2, although architecture tests already passed.
+Register only that existing test file and its measured line count in a separate
+inventory baseline commit. Test code and every other non-doc blob stay unchanged;
+the completed full/startup results remain source-equivalent. This repairs the
+specification documentation requirement without changing any test assertion.
+
+## M2-8 / final documentation integration audit (2026-11-02)
+
+Move the M2-8 addenda before the inherited sections and retain main PR #133's
+packaging records verbatim at the original append location. This separates
+independent documentation edits without importing any program, test or baseline
+changes. All previously verified source blobs are unchanged. Require fresh CI
+on this documentation head and verify stacked mergeability independently.
+
 ## M2-0 / prerequisite evidence — 2026-11-01 12:04–12:12 Asia/Taipei
 
 - Evidence supplied by the coordinating agent: after `git fetch origin`, main
@@ -64,153 +213,6 @@
   six tests in 2.041 seconds. Exact baseline assertions are intentionally
   updated only in the following, separate D1 baseline commit.
 
-## 2026-11-01 12:20 Asia/Taipei — M2-6 first-round trading page
-
-- **Environment authority:** reuse the existing settings `environment` selector,
-  `_environment_selected` and `UiAction.SWITCH_CONTEXT`. The new
-  `trading_environment` mirrors accepted `UiState.environment`. Both selectors
-  revert immediately while a switch is pending; rejection/unavailable accounts
-  retain the old book and environment. No new DTO, session or backend settings.
-- **LIVE UI safety:** reject the current order-capable UI intents DEPLOY, STEP,
-  RESUME, CANCEL_ENTRIES and FLATTEN at `TradingWindow.command`, and disable their
-  controls. STOP_NEW and RECONCILE remain usable. This is UI protection only;
-  M2-2 must implement the engine/gateway LIVE invariant and extend the independent
-  intent inventory when it adds manual order actions. No SDK/login/order test ran.
-- **Layout:** preserve all twelve position columns and their original values.
-  Keep the first column sized to actual contents; stretch the other columns,
-  shorten headings with original-heading tooltips and preserve full cell text in
-  tooltips. Full-data geometry tests require a zero horizontal scroll range,
-  complete first-column text width and all columns inside the viewport at 1366.
-- **Styles:** put scoped LOCAL grey-blue, SIM green and LIVE red rules only in
-  `desktop_app/shell/theme.py`; apply them at `_run_window` composition. Feature
-  widgets set semantic properties without importing the shell or adding inline
-  QSS. Historical stylesheet builders and import gates remain unchanged.
-- **Delivery:** performance comparison is explicitly deferred to round two,
-  as permitted by M2 specification section 7. No M2-3/4/5/7 work is included.
-  Full-suite runs, actual LOCAL/SIM fake-SDK startup, push/PR and CI are owned by
-  the root coordinator and remain pending this focused delivery.
-- **Catalogue:** phase 61 orders 2753–2775 add exactly 23 keys. Pin current
-  catalogue output and the exact count in a separate baseline-only commit;
-  retain all historical values, aliases, identity checks and assertions.
-- **Graph:** explicit-worktree command impact is CRITICAL (13 known upstream,
-  eight flows, 22 unresolved receivers); catalogue/theme File risks are CRITICAL,
-  translation-parts HIGH. Page/render/startup changes are LOW; signal dispatch
-  and new helpers are UNKNOWN and were checked by text and direct source.
-  Index flow/callable candidate caps remain a limitation; tests supplement them.
-
-Affected sources: trading `trading_page`, `workspaces`, `window`, `rendering`;
-shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
-`trading_runtime.py`. Offline evidence is in `docs/analysis/m2-trading/`.
-
-### Follow-up boundary verification — same delivery
-
-- Reproduced a nested-confirmation poll emitting the inconsistent tuple
-  `(LOCAL, sim-futures, sim)`. Capture the requested environment together with
-  account/context before either confirmation, so an accepted-state poll cannot
-  change only one field. The exact failing scenario now passes.
-- Accepted-state selectors initially blocked first broker-profile import in a
-  LOCAL-only registry. `add_context` now explicitly asks SIM or LIVE when current
-  state is LOCAL, then uses the unchanged file chooser and ADD_CONTEXT boundary.
-  It never uses a hidden pending target. Cancelling either choice emits nothing.
-- STOP_NEW is not universally state-only: normal executable contexts also cancel
-  entry orders. Preserve that original LOCAL/SIM caption and scope; in the current
-  read-only LIVE context show only “停止新倉” and explain the local stop flag.
-  M2-2 must still verify STOP_NEW in its complete engine/gateway LIVE inventory.
-- `_switch_context` pre-edit impact LOW; `add_context` UNKNOWN, confirmed by its
-  workspace button reference and source. Added independent regression coverage.
-
-## 2026-11-01T12:30+08:00 — first-round PR stack and merge
-
-- Merge M2-0 into M2-6 with a normal merge, preserving both source and separate
-  baseline commits. M2-6 will target `codex/m2-0-policy`. This removes the
-  competing new decision files and retains one exact text/catalog baseline.
-- Preserve the common frozen implementation contracts byte-for-byte, then append
-  both M2-0 and M2-6 contracts. Preserve both phases' decision history below one
-  document heading. No new product behavior is introduced by conflict resolution.
-- The catalog combines D1's two approved existing badge changes with M2-6's
-  23 additive records (orders 2753–2775). All other existing records, aliases,
-  historical identities and exact test assertions stay intact.
-- Run full discovery and both actual LOCAL/fake BROKER_SIMULATION startup checks
-  on the combined source before pushing M2-6. M2-1/M2-2 remain unstarted because
-  the expressly required market-settings merge is still absent; no main merge,
-  history rewrite or second-round work is authorized here.
-
-## 2026-11-01 13:17 Asia/Taipei — owner-added M2-6 items 6–8
-
-- The owner expanded this same first-round branch with real Taipei dates,
-  first-start overview presentation and plain-language explanations. Normally
-  merged documentation-only main `afc45ea` as `12e484e`; no history rewrite.
-- Today comes from aware UTC converted through `Asia/Taipei`, independently of
-  `UiState.trading_day`. LOCAL labels both dates explicitly; broker environments
-  show only today in the compact header/tooltip. Same-version market-only updates
-  refresh the date so midnight cannot leave yesterday's label behind. Existing
-  detailed book metadata remains available through the context dialog.
-- A real fresh `build_runtime(RuntimeLaunch(...))` snapshot has version1 and the
-  sole `startup_reconciliation_required` event. Only this empty LOCAL state,
-  without strategies/exposure/issues/reconciliation differences, is neutral.
-  The real reopened book has version2/two startup events and still warns. UI
-  tests also retain warnings for populated/stopped/failed cases. Rendering never
-  marks the engine reconciled, resumes it or clears any issue.
-- The empty strategy label is hidden in favor of an explicit first-strategy
-  button, routed to the strategy workspace and the existing wizard. The new CTA
-  changes Dashboard's exact QPushButton inventory from four to five; the separate
-  baseline binds all five names/count, not a relaxed button budget.
-- Complete former explanations remain in plain-text, keyboard-accessible owned
-  QDialogs; short summaries stay visible. This avoids transient popup ownership
-  and retains original safety/valuation text. Performance comparison stays in
-  round two; only its two technical column captions become plain language.
-- Move dashboard's existing inline red/light styling into scoped shell QSS so
-  neutral first-start colors and actual warnings can coexist. Theme File impact
-  remains CRITICAL; other named flows are LOW, constructor/dynamic dispatch
-  UNKNOWN verified against source/call sites. Graph parser/trace caps remain
-  acknowledged; no shared-axis risk waiver or import-gate change.
-- The overview's existing cancel-entry control now follows the same LIVE UI
-  disable rule as its trading-page counterpart; both stop buttons use the precise
-  LIVE read-only caption/help. No backend execution capability changes.
-- Add 20 literal catalogue keys at orders2776–2795 (total2796); all43
-  M2-6 keys across the two slices are additive, with original aliases unchanged.
-- The owner assigned the market-settings prerequisite to the root team. M2-1/2
-  can stack after that fix's CI is green; they are no longer waiting on another
-  person. They remain outside this UI work. The later M2-9 doc addition is
-  explicitly second-round and is not implemented here. M2-8 is another owner.
-- The old queued M2-6 full run was cancelled before starting. Root will rerun
-  complete discovery and both actual LOCAL/fake-SIM starts on the final head.
-  The prior79fc99c startup/full-check evidence does not validate this new source.
-
-### 2026-11-01 — M2-6 scoped adoption of merged UI guidelines (PR127)
-
-- Owner explicitly authorized this follow-up before the first M2-6 full run.
-  Normally merge documentation-only main; keep full UX-1, header badges and
-  complete overview redesign deferred. Preserve this round's date/first-start
-  behavior and all prior financial/safety evidence.
-- Put the changed explanations' existing help controls at each page title's
-  right. Preserve separate complete PlainText content and owned dialog lifetime.
-- Reuse theme's role convention: secondary by default, one trade reconcile
-  primary, overview empty-strategy primary; stop/cancel/flatten danger. Require
-  native Cancel-default confirmation. Reject context/account/environment/book
-  changes during the dialog; do not silently retarget the confirmed operation.
-- Six default position columns retain product, quantity, sellable, strategy,
-  exit and protection. Optional columns remain selectable and fully populated.
-  Composition injects a dedicated atomic presentation preference file; UI owns
-  no file IO. Failed writes preserve previous choices and explain failure.
-- Empty trade tables get explanation and a strategy navigation action, without
-  manufacturing rows; retain the overview wizard action and add its reason.
-  Display stock lots and Taipei timestamps only; no model/financial conversion.
-- Add10 catalogue records2796–2805 (total2806). Source and the exact changed
-  presentation/confirmation-aware test baseline remain separate commits.
-  Full discovery, actual LOCAL/fake-SIM starts and remote CI remain root-owned.
-
-### 2026-11-01 — Empty projections do not establish zero broker exposure
-
-- Root review identified that empty position/order views can mean missing or
-  unverified broker data. Replace only the two existing empty-table messages
-  with "尚無可顯示的…資料" wording and direct next-step context. Do not introduce a
-  false zero, an automatic-strategy prerequisite or a new framework/state flag.
-- Retain both current strategy-navigation CTAs for this slice; M2-2 owns later
-  manual-order navigation. Test accepted disconnected SIM/LIVE snapshots with
-  unknown financial facts, and refresh both empty screenshot sizes.
-- Catalogue maximum stays2805; exactly two existing values change in a separate
-  baseline commit. Root repeats actual startup/full checks after this head.
 
 ## M2-0 / completed verification and owner follow-up — 2026-11-01T14:57+08:00
 
@@ -234,15 +236,6 @@ shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
   docs/analysis/m2-policy/verification.md and its companion files.
 - This commit adds verification documentation only. No product/test/fixture
   behavior, G3 source, SDK pin, PROJECT_STATE or acceptance score changes.
-
-## M2-6 / final policy evidence merge — 2026-11-01 Asia/Taipei
-
-- Normally merge the completed M2-0 verification documentation, preserving
-  both decision histories. No product, test, tool, catalogue or fixture content
-  changes from tested M2-6 source5285742. No history rewrite or main merge.
-- M2-6 actual LOCAL/fake-SIM startup checks already passed on5285742 with
-  clean normal release. Final branch full discovery is still scheduled after
-  the active M2-8 full suite; no focused/startup pass substitutes for it.
 
 ## Market-settings prerequisite fix / owner steering — 2026-11-01 Asia/Taipei
 
@@ -395,6 +388,322 @@ refresh completed; complete change analysis reported 10 document symbols,
 12 evidence files and LOW risk with no partial/truncation flag. No graph
 absence is used to waive tests or the full-run native-cause limits above.
 
+## Installer SDK inclusion / autonomous decisions — 2026-11-01 20:36 Asia/Taipei
+
+- Scope: owner-requested `codex/package-sdk`, based on `origin/main` 67249dc.
+  Reuse the existing broker flavor for the default installer rather than create
+  a second SDK packager. `build.ps1` downloads/installs only the hashed official
+  1.7.9 Windows wheel and validates installed files; Analysis requires that same
+  flavor and wheel. An absent/disabled build flag now fails before collection,
+  closing the arbitrary-installed-SDK gap when removing the spec exclusion.
+  Check actual Analysis Python/native inputs too, rejecting shadow modules
+  selected through pathex, changed bytes and a missing native core. This check
+  is at the freezer input boundary; it does not add runtime trading gates.
+- Keep all other spec exclusions and original installer lifecycle sections.
+  The existing early `--broker-sdk-probe` runs after candidate upgrade through
+  the installed shortcut's actual executable, without developer PATH entries.
+  Require frozen 1.7.9 import/native-hash evidence, zero SDK clients and no
+  login/CA/asset operations. Failure is an installer CI failure; the existing
+  full regression, TLS, upgrade/recovery and clean-client gates remain required.
+- Keep `requirements-desktop.lock` separate from the existing SDK lock. Include
+  the SDK in Windows dependency audit and default regression runtime, and record
+  verified wheel/file hashes plus the actual frozen native-core digest in the
+  standard manifest. No independently distributed Shioaji CLI/server is selected.
+- Preserve the loader's sanitized `capability_missing` contract. In the market
+  connection composition only, map it to the new application ErrorText
+  `market_sdk_missing`; the panel displays its exact installation guidance.
+  Account capability errors elsewhere and all existing login behavior remain.
+  Reuse application error copy instead of adding/re-pinning UI catalog fixtures.
+- License/source facts were read from the exact SHA256-verified wheel METADATA:
+  no SDK license field/expression/file/classifier is declared; homepage is
+  sinotrade.github.io and repository is github.com/Sinotrade/Shioaji. Retain
+  original metadata and SBOM; do not infer Apache licensing or redistribution
+  clearance from MarkAuto. README, BROKER_BUILD and THIRD_PARTY_NOTICES record
+  these facts. This task adds no legal approval gate or guessed license.
+- No new tracked files are required. One mechanical observer-line baseline
+  update is described below and will be committed separately. All tests remain
+  enabled; existing assertions for auth provenance, Qt/SQLite, legacy exclusions,
+  lifecycle sections and financial safety are retained. G3 files,
+  BROKER_SDK_VERSION, PROJECT_STATE and LIVE execution are unchanged.
+- Initial focused verification: 111 tests across nine modules passed. Actual
+  `_run_window` with the private interpreter and `-S` returned 0 for LOCAL
+  (14.599 s) and fake BROKER_SIMULATION (32.702 s), showing seven embedded research
+  pages and 2,726 widgets. Both released research/engine normally; fake SDK
+  counts were 1 login/1 logout/2 subscriptions/0 order constructors/0 orders.
+  Real SDK import and real credential access were forbidden in these launches.
+  Complete main/head discovery and remote Windows installer CI are still
+  required; this initial focused result does not claim those passed.
+
+### SDK packaging / local frozen verification — 2026-11-01 20:53 Asia/Taipei
+
+- Final focused checks now cover 112 SDK/packaging/market/lifecycle cases and
+  72 expiry/bootstrap/layout/version/language cases, all passing. The existing
+  expiry provenance harness receives an isolated SDK fixture while retaining
+  its original packaged-data and exact source-hash assertions. Final prepush
+  passed Ruff check/format, 1,038-source syntax, zero static findings and all
+  66 selected changed-module tests. No skip or baseline fixture was added.
+- A local real PyInstaller build using the final spec passed actual collection
+  source verification. Its `MarkAuto.exe --broker-sdk-probe` returned 0 with
+  frozen/module/distribution version 1.7.9, the pinned wheel/native hashes,
+  selected-runtime containment and zero clients/login/CA/asset operations.
+  This is supplementary local frozen evidence, not installed CI acceptance.
+- The first local frozen probe failed because the simultaneously running spec
+  unit harness wrote synthetic `broker-build.json` into the real build folder.
+  Move that harness's broker outputs into its own TemporaryDirectory; retain
+  all spec/provenance assertions. Rebuilding after this isolation produced the
+  successful real frozen probe above. No production verification was bypassed.
+- Supplementary local Qt audit remains nonzero: this developer private Python
+  supplies OpenSSL 3.0.18 (`libcrypto-3.dll` SHA256
+  e03dd02fdcfb791981c9962827cfcf495f2a47a514c1526efb57f847a9df514a),
+  whereas the unchanged installer notice contract requires reviewed 3.5.9
+  (75495fe0e079ab00d49be740d3c710a0b94e3f74f9648cb7cc9f768fc7f52319).
+  The collected DLL exactly matches `.runtime-sqlite/DLLs/libcrypto-3.dll`;
+  it is not an SDK-supplied DLL. Preserve the Qt audit/pins and all exclusions.
+  Canonical CI must still build from pinned CPython 3.13.16 and pass its full
+  native notice/TLS/installed-import gates; do not call the local payload a
+  releasable installer or the supplementary Qt audit passed.
+
+### SDK packaging / complete-discovery corrections — 2026-11-01 22:01 Asia/Taipei
+
+- Main 67249dc completed 3,893 tests in 2,568.762 s: 11 failures, 27 errors,
+  42 skips. One additional main-only failure is the existing ignored legacy
+  `archives/legacy_autotrading/trader` residue in the original checkout. It is
+  absent from this clean worktree; the user's original directory is preserved.
+- First head discovery completed 3,895 tests in 2,019.876 s: 14 failures,
+  27 errors, 42 skips. Every shared failing ID had identical normalized traceback
+  frames and exception-type chains. Four new failures were NOT accepted:
+  two layer/inventory checks observed the root scratch comparison script;
+  trading architecture rejected the panel's direct private error-table import;
+  page-service inventory observed an existing test patch point moving 25 lines.
+- Move the scratch script under ignored build/sdk-qa (not a new tracked module).
+  Provide `market_connection_guidance` through the existing public
+  application.market_settings boundary and keep the panel free of private
+  error-table dependencies. No dependency gate or allowed-layer list changes.
+  MarketDataSettings fields/validation/serialization remain unchanged.
+- The only baseline update is the existing `host.history` assignment in
+  tests/test_t9_expiry_inputs.py moving from line 374 to 399 because the SDK
+  packaging fixture above it gained 25 lines. In a separate baseline commit,
+  update only that addition's line in e6_service_relocations.json and its exact
+  canonical SHA256 guard in tests/page_services_inventory.py. All observer
+  identities, multiplicities, services, aliases and state copies stay pinned;
+  the historical page_services_inventory.json is untouched.
+- Pre-edit GitNexus reported CRITICAL for project_e6_service_refs (75 direct
+  references, 152 total, five process groups); this warning was surfaced before
+  changing the pin. The literal source consumers were also inspected: the
+  reviewed_inventory projection and its exact-regeneration test. This narrow
+  two-line update does not waive the warning or any tests. Full discovery is
+  repeated after the corrections; the first nonzero head run is not a pass.
+- The baseline and first-head leftover LOCAL fixtures were shut down through
+  their normal authenticated IPC command. The user's preexisting installed
+  application remains untouched; no test data or original directory was erased.
+
+### SDK packaging / final local verification — 2026-11-01 22:41 Asia/Taipei
+
+- Final complete discovery: 3,895 tests in 2,048.750 s, exit 1 with 10 failures,
+  27 errors and the same 42 existing skips. Main's 3,893-test baseline has
+  11 failures/27 errors/42 skips. There are no new failing IDs or increased
+  occurrences; all 36 shared failing identities have identical normalized
+  traceback frames and exception-type chains. They are the existing Windows
+  symlink/retained-handle/native-process-source/active-application limitations.
+  The only removed ID is main's stale ignored legacy-directory failure. This
+  is a complete nonzero local run with no new failures, not a claim that every
+  local test passed. The final owned LOCAL leftover also shut down normally via
+  authenticated IPC; the user's installed application and data were preserved.
+- The actual 19 affected test modules independently pass all 229 cases, including
+  settings concurrency, layer gates and exact page-service regeneration. One
+  earlier manual invocation used a nonexistent module name; it was corrected,
+  its error log retained, and every real module rerun successfully. No existing
+  test was removed or skipped. Final prepush passes Ruff check/format, the
+  1,038-source syntax scan, zero static findings and 67 selected tests.
+- Final actual `_run_window` checks both return 0: LOCAL 8.340 s and fake
+  BROKER_SIMULATION 5.185 s, seven research pages/2,726 widgets, normal research
+  and engine release. Fake counts remain 1 login/1 logout/2 subscriptions and
+  zero order constructors/orders. No real SDK/credential access is involved.
+- Rebuilding the final spec and running the actual frozen EXE again passes
+  the no-login SDK probe: 1.7.9, selected-runtime containment, pinned wheel/core
+  hashes and zero clients/login/CA/asset operations. This does not override the
+  supplementary developer-runtime Qt audit limitation documented above.
+- A forced offline GitNexus rebuild restores the precise test-helper UID.
+  Excluding test callers gives UNKNOWN and is not a safety conclusion. Including
+  tests reports HIGH: one direct caller (`reviewed_inventory`), nine total
+  symbols and one refactor-tool flow rooted in tools/refactor/split_ui_r3d.py.
+  The earlier CRITICAL warning and this HIGH warning were both disclosed.
+  `riskSharedAxes: LOW` is not used to waive HIGH. Literal consumers, unchanged
+  observer identities/counts, exact regeneration and full discovery were checked;
+  only the fixture line and corresponding checksum will be committed separately.
+- Remote Windows installer/installed-import and all required PR CI remain pending
+  until their actual run results exist. No merge or production/broker acceptance
+  is claimed by these local checks.
+
+### SDK packaging CI syntax correction (2026-11-01)
+
+- PR #133's Windows workflow initially failed to parse before any job started:
+  the hash-pinned audit command's `--only-binary=:all:` ended a plain YAML
+  scalar with a colon. Use a literal command block, preserving the exact command,
+  dependency audit and security requirements. No product source, fixture or
+  baseline changes are involved in this correction.
+- GitNexus cannot resolve the workflow file (UNKNOWN); direct workflow and
+  packaging-test references were inspected instead. Validate YAML with the
+  existing local parser, rerun affected packaging checks and prepush, then
+  require fresh CI on the corrected head, including the Windows installer.
+
+## 2026-11-01 12:20 Asia/Taipei — M2-6 first-round trading page
+
+- **Environment authority:** reuse the existing settings `environment` selector,
+  `_environment_selected` and `UiAction.SWITCH_CONTEXT`. The new
+  `trading_environment` mirrors accepted `UiState.environment`. Both selectors
+  revert immediately while a switch is pending; rejection/unavailable accounts
+  retain the old book and environment. No new DTO, session or backend settings.
+- **LIVE UI safety:** reject the current order-capable UI intents DEPLOY, STEP,
+  RESUME, CANCEL_ENTRIES and FLATTEN at `TradingWindow.command`, and disable their
+  controls. STOP_NEW and RECONCILE remain usable. This is UI protection only;
+  M2-2 must implement the engine/gateway LIVE invariant and extend the independent
+  intent inventory when it adds manual order actions. No SDK/login/order test ran.
+- **Layout:** preserve all twelve position columns and their original values.
+  Keep the first column sized to actual contents; stretch the other columns,
+  shorten headings with original-heading tooltips and preserve full cell text in
+  tooltips. Full-data geometry tests require a zero horizontal scroll range,
+  complete first-column text width and all columns inside the viewport at 1366.
+- **Styles:** put scoped LOCAL grey-blue, SIM green and LIVE red rules only in
+  `desktop_app/shell/theme.py`; apply them at `_run_window` composition. Feature
+  widgets set semantic properties without importing the shell or adding inline
+  QSS. Historical stylesheet builders and import gates remain unchanged.
+- **Delivery:** performance comparison is explicitly deferred to round two,
+  as permitted by M2 specification section 7. No M2-3/4/5/7 work is included.
+  Full-suite runs, actual LOCAL/SIM fake-SDK startup, push/PR and CI are owned by
+  the root coordinator and remain pending this focused delivery.
+- **Catalogue:** phase 61 orders 2753–2775 add exactly 23 keys. Pin current
+  catalogue output and the exact count in a separate baseline-only commit;
+  retain all historical values, aliases, identity checks and assertions.
+- **Graph:** explicit-worktree command impact is CRITICAL (13 known upstream,
+  eight flows, 22 unresolved receivers); catalogue/theme File risks are CRITICAL,
+  translation-parts HIGH. Page/render/startup changes are LOW; signal dispatch
+  and new helpers are UNKNOWN and were checked by text and direct source.
+  Index flow/callable candidate caps remain a limitation; tests supplement them.
+
+Affected sources: trading `trading_page`, `workspaces`, `window`, `rendering`;
+shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
+`trading_runtime.py`. Offline evidence is in `docs/analysis/m2-trading/`.
+
+### Follow-up boundary verification — same delivery
+
+- Reproduced a nested-confirmation poll emitting the inconsistent tuple
+  `(LOCAL, sim-futures, sim)`. Capture the requested environment together with
+  account/context before either confirmation, so an accepted-state poll cannot
+  change only one field. The exact failing scenario now passes.
+- Accepted-state selectors initially blocked first broker-profile import in a
+  LOCAL-only registry. `add_context` now explicitly asks SIM or LIVE when current
+  state is LOCAL, then uses the unchanged file chooser and ADD_CONTEXT boundary.
+  It never uses a hidden pending target. Cancelling either choice emits nothing.
+- STOP_NEW is not universally state-only: normal executable contexts also cancel
+  entry orders. Preserve that original LOCAL/SIM caption and scope; in the current
+  read-only LIVE context show only “停止新倉” and explain the local stop flag.
+  M2-2 must still verify STOP_NEW in its complete engine/gateway LIVE inventory.
+- `_switch_context` pre-edit impact LOW; `add_context` UNKNOWN, confirmed by its
+  workspace button reference and source. Added independent regression coverage.
+
+## 2026-11-01T12:30+08:00 — first-round PR stack and merge
+
+- Merge M2-0 into M2-6 with a normal merge, preserving both source and separate
+  baseline commits. M2-6 will target `codex/m2-0-policy`. This removes the
+  competing new decision files and retains one exact text/catalog baseline.
+- Preserve the common frozen implementation contracts byte-for-byte, then append
+  both M2-0 and M2-6 contracts. Preserve both phases' decision history below one
+  document heading. No new product behavior is introduced by conflict resolution.
+- The catalog combines D1's two approved existing badge changes with M2-6's
+  23 additive records (orders 2753–2775). All other existing records, aliases,
+  historical identities and exact test assertions stay intact.
+- Run full discovery and both actual LOCAL/fake BROKER_SIMULATION startup checks
+  on the combined source before pushing M2-6. M2-1/M2-2 remain unstarted because
+  the expressly required market-settings merge is still absent; no main merge,
+  history rewrite or second-round work is authorized here.
+
+## 2026-11-01 13:17 Asia/Taipei — owner-added M2-6 items 6–8
+
+- The owner expanded this same first-round branch with real Taipei dates,
+  first-start overview presentation and plain-language explanations. Normally
+  merged documentation-only main `afc45ea` as `12e484e`; no history rewrite.
+- Today comes from aware UTC converted through `Asia/Taipei`, independently of
+  `UiState.trading_day`. LOCAL labels both dates explicitly; broker environments
+  show only today in the compact header/tooltip. Same-version market-only updates
+  refresh the date so midnight cannot leave yesterday's label behind. Existing
+  detailed book metadata remains available through the context dialog.
+- A real fresh `build_runtime(RuntimeLaunch(...))` snapshot has version1 and the
+  sole `startup_reconciliation_required` event. Only this empty LOCAL state,
+  without strategies/exposure/issues/reconciliation differences, is neutral.
+  The real reopened book has version2/two startup events and still warns. UI
+  tests also retain warnings for populated/stopped/failed cases. Rendering never
+  marks the engine reconciled, resumes it or clears any issue.
+- The empty strategy label is hidden in favor of an explicit first-strategy
+  button, routed to the strategy workspace and the existing wizard. The new CTA
+  changes Dashboard's exact QPushButton inventory from four to five; the separate
+  baseline binds all five names/count, not a relaxed button budget.
+- Complete former explanations remain in plain-text, keyboard-accessible owned
+  QDialogs; short summaries stay visible. This avoids transient popup ownership
+  and retains original safety/valuation text. Performance comparison stays in
+  round two; only its two technical column captions become plain language.
+- Move dashboard's existing inline red/light styling into scoped shell QSS so
+  neutral first-start colors and actual warnings can coexist. Theme File impact
+  remains CRITICAL; other named flows are LOW, constructor/dynamic dispatch
+  UNKNOWN verified against source/call sites. Graph parser/trace caps remain
+  acknowledged; no shared-axis risk waiver or import-gate change.
+- The overview's existing cancel-entry control now follows the same LIVE UI
+  disable rule as its trading-page counterpart; both stop buttons use the precise
+  LIVE read-only caption/help. No backend execution capability changes.
+- Add 20 literal catalogue keys at orders2776–2795 (total2796); all43
+  M2-6 keys across the two slices are additive, with original aliases unchanged.
+- The owner assigned the market-settings prerequisite to the root team. M2-1/2
+  can stack after that fix's CI is green; they are no longer waiting on another
+  person. They remain outside this UI work. The later M2-9 doc addition is
+  explicitly second-round and is not implemented here. M2-8 is another owner.
+- The old queued M2-6 full run was cancelled before starting. Root will rerun
+  complete discovery and both actual LOCAL/fake-SIM starts on the final head.
+  The prior79fc99c startup/full-check evidence does not validate this new source.
+
+### 2026-11-01 — M2-6 scoped adoption of merged UI guidelines (PR127)
+
+- Owner explicitly authorized this follow-up before the first M2-6 full run.
+  Normally merge documentation-only main; keep full UX-1, header badges and
+  complete overview redesign deferred. Preserve this round's date/first-start
+  behavior and all prior financial/safety evidence.
+- Put the changed explanations' existing help controls at each page title's
+  right. Preserve separate complete PlainText content and owned dialog lifetime.
+- Reuse theme's role convention: secondary by default, one trade reconcile
+  primary, overview empty-strategy primary; stop/cancel/flatten danger. Require
+  native Cancel-default confirmation. Reject context/account/environment/book
+  changes during the dialog; do not silently retarget the confirmed operation.
+- Six default position columns retain product, quantity, sellable, strategy,
+  exit and protection. Optional columns remain selectable and fully populated.
+  Composition injects a dedicated atomic presentation preference file; UI owns
+  no file IO. Failed writes preserve previous choices and explain failure.
+- Empty trade tables get explanation and a strategy navigation action, without
+  manufacturing rows; retain the overview wizard action and add its reason.
+  Display stock lots and Taipei timestamps only; no model/financial conversion.
+- Add10 catalogue records2796–2805 (total2806). Source and the exact changed
+  presentation/confirmation-aware test baseline remain separate commits.
+  Full discovery, actual LOCAL/fake-SIM starts and remote CI remain root-owned.
+
+### 2026-11-01 — Empty projections do not establish zero broker exposure
+
+- Root review identified that empty position/order views can mean missing or
+  unverified broker data. Replace only the two existing empty-table messages
+  with "尚無可顯示的…資料" wording and direct next-step context. Do not introduce a
+  false zero, an automatic-strategy prerequisite or a new framework/state flag.
+- Retain both current strategy-navigation CTAs for this slice; M2-2 owns later
+  manual-order navigation. Test accepted disconnected SIM/LIVE snapshots with
+  unknown financial facts, and refresh both empty screenshot sizes.
+- Catalogue maximum stays2805; exactly two existing values change in a separate
+  baseline commit. Root repeats actual startup/full checks after this head.
+
+## M2-6 / final policy evidence merge — 2026-11-01 Asia/Taipei
+
+- Normally merge the completed M2-0 verification documentation, preserving
+  both decision histories. No product, test, tool, catalogue or fixture content
+  changes from tested M2-6 source5285742. No history rewrite or main merge.
+- M2-6 actual LOCAL/fake-SIM startup checks already passed on5285742 with
+  clean normal release. Final branch full discovery is still scheduled after
+  the active M2-8 full suite; no focused/startup pass substitutes for it.
+
 ## M2-6 / first complete-run corrections and cleanup prerequisite
 
 Retain the first complete run's 3914/1638.307s, 14 failures, 27 errors and 42
@@ -419,101 +728,36 @@ No real key, CA, broker operation, installed-app control or git-history rewrite
 is performed. Detailed focused evidence and the retained first-run comparison
 are in [M2-6 verification](../analysis/m2-trading/verification.md).
 
-## M2-8 — 2026-11-01 13:09 Asia/Taipei
+## M2-6 / exact cleanup inheritance and two runtime copy oracles
 
-Problem: on this Windows host the venv executable is a redirector. The retained
-Popen PID is the redirector, while the authenticated engine session correctly
-publishes the native Python child's PID. `ensure_engine` rejects that mismatch
-and times out; a failed unittest `setUpClass` never calls `tearDownClass`.
-The completed main and M2-6 runs demonstrated healthy LOCAL engines left alive
-with locked SQLite files. Both were separately shut down through authenticated
-IPC after verifying their exact fixture path and session/child identity.
+Normal merge `dc58096` preserves all seven M2-8 source/test/tool files exactly.
+Only afterward apply a separately authorized presentation-baseline delta to
+two RuntimeContextClientTests cases: expect the existing short facts-pending
+label, while retaining the complete original warning and its no-empty-exposure
+meaning in actual help/accessibility assertions. Their prior startup-PID errors
+had hidden these body assertions. Real SIM/LIVE widget surrogates reproduce the
+old expectation failure and verify the corrected text plus unknown financial
+facts and zero commands. Do not claim the native IPC bodies were rerun alongside
+the active M2-8 full suite. Preserve every other context/finance/ownership and
+no-engine-creation assertion and all cleanup behavior; no cap, skip, timeout or
+catalogue change. Stop the audit after all actual changed-copy references are
+accounted for. Final full discovery/startup/CI remain root's serialized gates.
 
-Options: weaken the production PID comparison, change production ownership
-semantics, or correct test/developer launching and register cleanup before setup.
-Choose the last option. `tools/owned_trading_engine.py` scopes only the source
-launcher reference in `context_client`: it uses `sys._base_executable` with the
-already installed import paths. It does not mutate global `sys.executable` or
-the subprocess module, replace a runtime facade, or bypass any PID, account,
-environment, authenticated-IPC, engine-owner, handle or installer guard.
-Product runtime files remain unchanged.
+## M2-6 / final source-equivalent evidence and omitted test registration
 
-Each scope records the actual native Popen before startup can fail. It closes
-only those handles, validates the session PID before any control command, sends
-normal SHUTDOWN_ENGINE, waits for exit, and removes only matching `_STARTED`
-entries. A reused host is not registered and is not closed. A failed shutdown
-does not prevent attempting the remaining owned children. An unresponsive own
-native child may require the retained handle's terminate as failure containment;
-that always raises and cannot produce passing acceptance. No process discovery,
-broad kill, user-data deletion, timeout extension, skip or applicability change
-is used to manufacture a pass.
+Final4fd1f6e complete discovery is3941/1543.784s10F22E42skip,32blocks/31IDs and
+zero new failure identities versus main. Preserve the nonzero result, all actual
+cause differences and the original four-new-failure run. The Windows PowerShell5
+raw log is UTF-16-LE/BOM with CRCRLF/width119 wrapping; use BOM-aware parsing and
+fold only failure identifiers, requiring parsed block count to equal the footer.
+An old UTF8 parser's false INCOMPLETE is not the test outcome. Both actual LOCAL
+and fake-SIM starts return0 with research/engine shutdown and no real SDK import.
 
-Class cleanup uses `addClassCleanup`/`enterClassContext`; per-case engines use
-`enterContext`. Temp cleanup is registered first, so engine cleanup runs before
-fixture data cleanup. Synthetic multiprocessing hosts register their individual
-authenticated cleanup hook before `start` and readiness assertions, independently
-of UI `tearDown` or other host cleanup failures. The load probe establishes its
-owner scope before `ensure_engine`, including partial initialization and report
-writing failures; its source identity also includes the new launcher helper.
-
-Tracked launcher coverage:
-
-| Owner | Coverage |
-|---|---|
-| `tests/test_trading_runtime.py` | Shared class host; per-case shutdown/deep roots; second-owner rejection and standalone UI client use native Python with the same packages. All prior protocol/identity/transport assertions remain. |
-| `tests/test_runtime_context_client_v2.py` | Context-manager-created LOCAL/pending hosts use a scope registered in setUp. Synthetic hosts each register separate cleanup before start. Cleanup still runs if UI drain/teardown fails. |
-| `tests/test_trading_runtime_context.py` | Every retained synthetic multiprocessing host has a cleanup hook before start; one failure cannot abort cleanup of another hook. |
-| `tests/test_trading_installer_guard.py` | Engine scope encloses each guard-lifetime case before temporary-directory cleanup; controlled UI entry uses native Python and cooperative stop before exact-handle failure containment. |
-| `tools/trading_load_probe.py` | Scope starts before initialization, normal IPC cleanup in finally even without a returned facade; cleanup failure marks report FAIL. |
-| `tests/test_runtime_context_cli_v2.py` | Routing-only calls mock `serve`/`run_window`; no child or engine is launched. |
-
-`git grep -- '--trading-engine'` and all `ensure_engine`/`open_context`/`_run_window`
-test/tool references were reviewed after graph discovery. The second-owner
-subprocess deliberately cannot acquire an existing root; its direct native
-Popen in `subprocess.run` cannot strand a venv grandchild on timeout.
-
-Graph: the new worktree was indexed locally (19,469 nodes, 51,711 edges). Existing
-symbols were impacted before edits; test lifecycle dispatch is UNKNOWN in the
-graph, so direct source and text references confirmed unittest entry points and
-fixture consumers. `start_ui_entry` and load-probe helpers are LOW; synthetic
-`start` is MEDIUM with unresolved dynamic receiver sites, cross-checked by text.
-No HIGH/CRITICAL pre-edit change was reported. New untracked symbols initially return
-UNKNOWN/not-found; they require final indexed change analysis, not an unaffected
-claim. Initial discovery used the already indexed source-identical main probe
-while the worktree index built; relevant source diff against main was empty.
-
-Final graph analysis is HIGH: 64 changed symbols, 12 files and nine affected
-execution flows, all belonging to the existing developer load-probe main entry.
-The new scope has five test/tool importers (MEDIUM); its cleanup and load-probe
-main are LOW. Callable cleanup/launcher hooks remain UNKNOWN to static dispatch
-and were confirmed in the source and real-process tests. The complete result
-has no partial/truncated flag or empty IDs. Review covers the launcher binding,
-all registered cleanup hooks and truthful load-report failure paths; production
-files have no diff. The initial incremental rebuild lost method IDs and falsely
-reported CRITICAL/603 unrelated flows. A local-only forced rebuild restored all
-IDs and the complete result above; no source/test semantics were changed to
-work around the index defect, and no FTS extension was downloaded.
-
-Evidence boundary: offline LOCAL and injected synthetic ports only, no real SDK
-login, credentials, CA or order operation. Focused checks are recorded in
-[m2-8-verification.md](m2-8-verification.md). Controller schedules the branch full
-suite, final real-window startup and CI independently; they are not inferred
-from focused tests or a tooling-only launch check.
-
-## M2-8 — 2026-11-01 native installer precondition
-
-The controller granted an exclusive native test window after policy full-suite
-completion and normal cleanup of its exact test-owned source engine. The seven
-installer-guard cases ran: five boundary cases pass, and both native cases fail
-their unchanged preexisting-app assertion before any child or fixture creation.
-The controller confirms those same failures in main's complete baseline.
-Read-only inspection found the owner's installed 0.3.0 GUI and LOCAL engine,
-both older than this task, which the source-Python engine scan does not include.
-Choose to preserve the assertions and record the host limitation; never stop
-those non-fixture processes, use a different mutex, add a skip, or claim native
-acceptance passed. No further engine tests run while the controller resumes
-the next full suite. Details and pending full/startup/CI evidence are in
-[m2-8-verification.md](m2-8-verification.md).
+Merge final8 documentation868da0c normally, retaining both appended decision
+histories. Keep all1192 non-documentation entries exact at tested4fd1f6e. Repair
+only the missing three existing M2-6 test-file registrations in an independent
+inventory baseline commit; no Python body, fixture, timing, size limit, skip or
+assertion changes. CI must be fully green on the pushed stacked PR; no main merge.
 
 ## M2-1 / authorized foundation — 2026-11-01
 
@@ -600,23 +844,6 @@ tick_gateway test-helper node. Source search confirms its direct consumers are
 the tick fixture modules; this does not waive the CRITICAL warning or replace
 tests. All33 relevant fake tests passed. Future source PR notes retain this
 warning and the index's dynamic receiver/process-cap limitations explicitly.
-
-## M2-2 / precise LIVE policy oracle — 2026-11-01
-
-Owner D1 supersedes the earlier controlled LIVE-positive environment fixture.
-Retain both environment setups and the real fixture's validation/research/deploy
-steps. At LIVE submission now assert production_orders_disabled, no port delivery,
-zero broker submissions and no orders/positions. SIM retains every original
-entry/fill/protection/performance assertion, quantity, timeout and risk limit.
-This is an independent baseline commit; no test is removed or skipped. The new
-fake-only guard module additionally checks direct SDK/adapter/service/engine/UI
-stop/cancel/flatten paths and SIM delegation. The source guard is separate.
-
-Before source changes the original environment module passed2/2. With the guard
-and the old oracle it reports exactly one LIVE policy error; its original log
-is .tmp/m2-2-live-old-oracle-red.log. After the precise oracle update both cases
-are required to pass. Graph reports UNKNOWN static callers for the test method;
-direct source and unittest discovery establish its actual invocation.
 
 ## M2-1 / shared native owner — 2026-11-01
 
@@ -763,37 +990,6 @@ structured flag/UID summary are in ignored .tmp/m2-backend-detect files.
   verified settled owned stock exit can still proceed. No previous-close value
   or calendar fallback is invented.
 
-## M2-2 D1 coordinator oracle baseline
-
-The older coordinator fixture still expected an armed LIVE strategy cycle to
-submit. D1 supersedes only that LIVE-positive expectation. Its independent
-baseline now requires production_orders_disabled, zero production deliveries
-and no submitted order before separately observing a historical order/fill
-seeded only in the local exchange double through the read-only cycle. The
-original SIM branch and all of its quantity/fill/clock assertions remain intact.
-This introduces no production submit caller or permission exception.
-
-## M2-2 confirmed-request preflight rejection
-
-The UI must retain an unknown financial request until matching authoritative
-request evidence arrives. A preflight refusal is therefore journaled as a known
-REJECTED result only after current typed inner/outer native scope validation,
-while holding the existing writer, and only if both the manual request key and
-canonical order key are absent. A healthy writer fence and durable append are
-required. The exact original form hash, scope and request identity are retained;
-no error-code whitelist and no empty broker-cache inference provide certainty.
-Existing known/unknown keys replay unchanged. Sealing the rejected key also
-prevents a delayed original command from later admitting a different outcome.
-
-UiCommand.manual_no_admission defaults to false for existing wire clients. It is
-a deny-only forwarding marker for an outer CAS refusal: after native/account
-scope and existing-book checks it can only reject/seal an absent key. It never
-executes the financial body, even when its version would otherwise be current.
-The runtime/Composite owner preserves the original request scope and handles
-its separate outer-boundary forwarding regressions. Invalid/stale native scope,
-closed/failed storage or lost writer ownership cannot mint known admission
-outcomes. LIVE remains denied independently before any mutation.
-
 ## M2-1 / single three-step connection presentation — 2026-11-01
 
 Use one visible BrokerPanel for environment/key save-and-connect, discovered
@@ -850,7 +1046,6 @@ remain unchanged. Its named helper impact is CRITICAL (45 upstream sites,
 waived by the graph's shared-name/dynamic gaps. Final backend accounts_unavailable
 and callback_failed reasons map to existing Chinese next-step copy, with explicit
 unknown-readiness tests; no new catalogue records were needed.
-
 ## M2-1 / explicit unified broker startup identity — 2026-11-01
 
 Static review of the prepared actual-startup probe found a genuine entry-path
@@ -940,6 +1135,313 @@ CA guidance; visual inspection passes and horizontal scrollbar maxima are zero.
 Other scenes and unrelated historical baselines are not regenerated. The capture
 record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
 # M2-2 manual simulation core decisions (2026-11-01)
+
+## M2-1 / source-identical M2-8 documentation integration and startup
+
+Normally merge final M2-8 `fdfde06` into M2-1 `8d98564`, retaining every M2-1,
+M2-6, policy, market and cleanup decision/contract section. Resolve only the two
+documentation conflicts. All 1202 non-documentation checkout byte hashes and
+all non-documentation Git blobs remain identical to `8d98564`; no fixture or
+source change is introduced. Review and sanitize the three actual startup result
+JSONs, retaining their original source identity, guard/cleanup facts and explicit
+resource_calls=0 limitation. Their source-equivalent applicability is stated;
+they are not falsely described as rerun on the new documentation commit. Full
+discovery and current-head CI remain separate coordinator gates. No engine,
+native lifetime, Qt or startup test is executed for this documentation merge.
+
+## M2-1 / inherit the final M2-6 full-suite corrections
+
+Normally merge M2-6 `4fd1f6e` into M2-1. Only six non-documentation paths
+change: the explicit trading page owner, its real Qt regression and five
+feature-specific visible-label oracles (four test files). Preserve full help,
+unknown financial facts, ownership and no-implicit-connection assertions. All
+other source/test/tool blobs remain the exact M2-1 parent; workspaces retains
+its connection wiring plus only the explicit page argument. The runtime test
+retains M2-1s existing programmatic legacy command after its obsolete button was
+removed; this merge adds only the two reviewed short-copy/full-help changes.
+Resolve three doc conflicts additively and remove only two exactly duplicated
+decision sections. Exact blob audit covers1215 non-doc paths using NUL-delimited
+Git paths, including non-ASCII filenames.
+
+Pre-merge install/helper impacts resolve the build caller at LOW risk (3/2
+nodes, one flow); unchanged test methods are unittest-discovered boundaries,
+not unused code when no callers resolve. The84 affected Qt, connection, page
+boundary, document and layer tests pass in29.786s. Prior M2-1 startup evidence
+remains source-specific. New complete discovery and actual startup follow on
+this composite; no old full/startup evidence is relabeled.
+
+## M2-1 / complete-discovery frozen-probe correction
+
+The first final M2-1 full run completed3996 tests in1416.477s with10 failures,
+23 errors and42 existing skips. One NEW error was a real compatibility omission:
+packaging/broker_probe.py still constructed ShioajiSDKFacade without the newly
+required immutable environment. Its existing strict mocked frozen test reproduces
+the TypeError; no assertion changes are needed. Pass Environment.LIVE explicitly
+in this inert metadata-only probe: the SDK constructor remains replaced by the
+existing denial function, and the test proves zero construction/login/operations.
+Exact probe impact is LOW (2 nodes, one packaging caller); its nine existing
+checks pass0.426s after the correction. Record the failed complete run rather than
+waiving it. A new complete suite follows on the corrected source. No SDK pin,
+execution guard, test limit, skip or real credential/broker operation changes.
+
+
+## 2026-11-01T21:26+08:00 — M2-1 legacy unknown-logout admission closure
+
+A separate read-only Standards review found three internal lifecycle flags were
+read through getattr defaults instead of initialized, contrary to CONTRIBUTING
+section4. Initialize legacy_disconnected, legacy_disconnecting and
+legacy_cleanup_unconfirmed in RuntimeBundle.__post_init__ and read them directly.
+The class impact is LOW13; the generated dataclass constructor gives UNKNOWN
+for __post_init__, so confirm its two production factories and seven direct
+unit-test construction sites by text, rather than treating an empty graph as
+unused. Exact execute/connect/legacy-retirement impacts each resolve3 nodes;
+execute retains97 unresolved receiver sites, so these are lower-bound results.
+The pre-change indexed bootstrap/legacy files equal the current9f source blobs;
+metadata lag is documentation/probe history, not a different lifecycle body.
+
+A Spec follow-up then confirmed a functional gap: after unconfirmed legacy
+logout, retirement clears the session and latches cleanup_unconfirmed but the
+old CONNECT_MARKET_DATA and profile CONNECT_READ_ONLY gates checked only the
+other two flags. The latter is reachable with valid legacy resources and no
+engine yet. An old public command could therefore reopen an SDK session before
+release was proved. Include the existing unknown-cleanup latch in both refusal
+gates; do not clear it, retry login, create another owner or change any deadline.
+The old group of market commands remains uniformly blocked during retirement.
+
+Two exact fake regressions were first RED (five failure occurrences, including
+three market-command subtests and the profile path), then pass5.093s. The47-case
+existing routing/readiness/market transport group passes40.057s without native
+processes, real SDK or credentials. Test formatting preserves the complete AST.
+No old assertion, skip, risk rule, timeout or SDK pin changes. This is a new source
+correction; prior9f full/startup results remain historical, and both actual starts
+plus full discovery must be repeated before push. The pending event-wait helper
+was stopped before native probes; its earlier identity/PowerShell syntax errors
+are harness-only and not product startup evidence.
+
+The duplicate lock-order pattern is retained as an explicit safety sequence;
+its P3 smell is a nonblocking maintenance judgement, not a standards violation.
+Record the actual bootstrap/readability measurements and routing test count in
+an independent inventory baseline, with a narrow future split plan; no limit is
+raised. No second-round feature or actual broker operation is added.
+
+
+The additional gateway-return hypothesis was checked against the real port:
+ReadOnlyGatewayCache.disconnect forwards ShioajiAdapter.disconnect, which turns
+native logout False into DomainError(outcome_unknown); the cache does not swallow
+it. ConnectionPort.disconnect returns None by contract. Keep that existing safe
+boundary and do not add a redundant internal False fallback based on an invalid
+fake gateway. The confirmed defects are the two old admission gates above, not
+the gateway's already-protected logout result handling.
+
+## M2-1 / final source-specific acceptance evidence
+
+2026-11-01/02 Asia/Taipei. Publish exact 897df1b complete discovery 3998/2123.797s and all 32 manually reviewed inherited failure occurrences honestly, with zero new failures. Preserve failed prior attempts and raw SHA256. Final private-interpreter LOCAL/fake-SIM starts close every owned lifetime normally; fake clock functional order flow is explicitly separate from real Sunday availability. No real SDK/key/CA/actual real or SIM order. This evidence-only finalization changes no executable/test/tool/fixture bytes. Source-equivalence audit and complete graph detection precede commit; current pushed head CI is still an independent required gate.
+
+## 2026-11-01 — M2-1 CI / owned shutdown endpoint race
+
+- CI for PR132 head65e7d7f, offline run41316970314/job124878999508, fails one
+  of422 cases after393.130s: RuntimeContextClientTests' original CAS cleanup
+  test completes its explicit shutdown, then its registered owned cleanup
+  observes FileNotFoundError. Preserve this first failure; do not call it a
+  timeout or waive it merely because the prior complete local run had no new IDs.
+- Rank possible timing paths: normal shutdown removes its endpoint before native
+  exit becomes visible; a snapshot/command version-conflict retry reaches that
+  removed endpoint; an endpoint disappears while the owned process stays alive.
+  Reproduce the exact error at both snapshot and execute boundaries with fake
+  retained processes: four boundary tests initially have two error subtests in
+  0.005s. The unchanged original native IPC/CAS test remains required later.
+- At the IPC/filesystem boundary only, catch FileNotFoundError and join the exact
+  retained process under the unchanged15s allowance. Passing still requires
+  observed exit0. An alive process/timeout or abnormal exit remains FAILED with
+  the original owned-handle containment and explicit cleanup error. Foreign PID
+  refusal and current-version CAS remain unchanged; no financial path changes.
+- Both new methods plus the existing two pure boundaries pass in0.003s. This is
+  a deterministic fake seam, not a claim that native or complete discovery has
+  already been repeated. Defer native tests/index/static scans until the active
+  source799efad manual full suite ends naturally; preserve that intermediate run,
+  then repeat complete discovery on both branches after inheriting this fix.
+- Pre-edit exact method impact is LOW: close -> context-manager cleanup / load
+  probe, four resolved symbols and nine load-probe flows. Boundary test class
+  impact is UNKNOWN; direct source search and the actual four-case invocation
+  prove unittest discovery usage, not an unused-class assumption.
+- Files: tools/owned_trading_engine.py, tests/test_trading_engine_cleanup.py;
+  measured inventory changes will use a separate explained baseline commit.
+  G3/PROJECT_STATE/SDK1.7.9/acceptance, existing assertions/timeouts/skips and all
+  product application/runtime files stay untouched by this correction.
+
+### Owner time constraint / verification scheduling
+
+After the owner requested completion within one hour, prepare the two-file
+formatting and graph/commit work during the older799 manual run, which must
+therefore be labelled intermediate and not fully isolated. The scoped native
+cleanup group and static/index preparation overlap this intermediate attempt;
+no second full suite does. Final corrected full suites remain serialized and quiet.
+Bundle the final run report in the last PR's final CI head; validate that exact
+head before delivery, rather than wait for a green feature head and only then
+start another whole CI run for the report. Record only results actually known
+when written and link the final PR/checks as the authoritative final CI evidence.
+
+The original CI IPC/CAS case plus the11-case cleanup module now pass12/24.115s
+using real owned processes and the existing fake broker fixtures. All original
+assertions remain, including foreign-host preservation and cleanup failures.
+Whole-project prepush passes Ruff lint,1154 formatted/1071 Python3.11 syntax
+files and credential/static gate0 findings. Fresh offline all/staged graph
+checks each return10 unique symbols/3files, LOW, no error/partial/truncation;
+all3 added qualified definitions and the required method/class are represented.
+No final corrected complete discovery or current-head CI is claimed yet.
+
+## connection-cleanup-retry / complete corrected source evidence
+
+Publish exact f77d2b0 complete discovery 4000/1436.847s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.
+The prior4000-case attempt has one new M1 alert-store WinError5. Neither100 main nor100 unchanged-source controls reproduce it. Keep it outside the allowed main baseline and avoid speculative production storage retries; acceptance requires this actual complete unchanged-source retry to have zero new failures. Both failed attempt and successful controls remain retained.
+
+## M2-1 / schedule frozen recovery within the unchanged shared budget
+
+2026-11-02 Asia/Taipei: corrected-head Windows installer41323736442 fails
+twice with InsufficientExistingSmokeBudget. Attempt1 fails retained-candidate
+smoke (artifact13091592701); attempt2 fails recovered-candidate smoke
+(artifact13092473832). Both have successful seven original UI operations,
+market/auth/history/walk-forward checks and verified worker cleanup. The
+expected released0.2.1 WAL-workspace refusal is unrelated. Neither failure is
+added to the main allowance or described as accepted CI.
+
+Ranked hypotheses: variable earlier worker time, recovery scheduled after the
+walk-forward tail, or bad deadline arithmetic. Actual runner callback control
+with completed original/history work at70s and walk-forward at102s reproduces
+the failed final status under the unchanged120s deadline in0.209s. Admission
+needs its existing full40s even though successful native recovery often takes
+about1s. Running only after the tail therefore makes successful earlier work
+consume the reservation. The controlled positive case is RED; existing
+insufficient-budget and total-timeout cases remain negative.
+
+Move the exact recovery call to the existing original-manager close boundary
+before creating the walk-forward manager. Stop/restart the Qt timer around the
+same synchronous hook; retain uncertain-cleanup evidence. Reuse the verified
+original completed campaign and cache the report for final aggregation. Keep
+every original/manual/history/walk-forward operation and validation; keep the
+120s outer deadline,40s recovery cap,6s preparation cap and actual frozen/zero
+exit/cleanup requirements. Do not extend deadlines, reduce the fixture or add
+skips. No G3 or broker path changes.
+
+The same callback control becomes GREEN. Three new scheduling controls prove
+ordering after joined original work, insufficient-budget refusal and unchanged
+total timeout. Related modules:29 tests OK with4 existing skips in14.966s;
+inventory/layer/page/M2 readability:43 PASS11.414s. These are source/mocked
+scheduling evidence, not actual frozen proof; new complete discovery, actual
+fake-SDK startup and current-head installer CI are still required.
+
+Pre-edit GitNexus run_smoke upstream risk LOW: desktop.run_gui is its direct
+caller,11 upstream symbols,1 affected process. complete_smoke risk LOW with1
+direct timer-guard caller. Index differs only by documentation from the inspected
+smoke blobs. Fresh complete graph and added-definition coverage precede commit;
+measured runner size deltas get a separate explained baseline commit.
+
+## M2-1 / actual installer failure: floating-point endpoint comparison
+
+2026-11-02 Asia/Taipei: attempt2 retry-install.log closes at17:07:07.695 UTC;
+the recovered executable fails by17:07:38.054 UTC. Its entire lifetime is at
+most30.359s, so ordinary exhaustion of the120s smoke budget down below40s
+cannot explain that actual CI guard result. The earlier callback control
+establishes a possible late-admission scheduling failure, not this actual
+installer root cause. Keep that small joined-manager ordering improvement and
+its unchanged-budget negative controls, but do not claim it alone fixes CI.
+
+The original admission arithmetic is independently red-capable: started
+511.00000000000006 and end=min(started+120,started+40)=551.0 produce
+end-started=39.99999999999994, falsely below40. The same error occurs across
+the1024 and2048 exponent boundaries. The actual installed uptime was not
+recorded; these are controlled exact inputs, not claimed CI measurements.
+Actual function controls stop before any native preparation: all three full
+budget subcases are RED under the original condition (2methods/0.004s),
+while deadline=nextafter(started+40,-infinity) still correctly refuses.
+
+Change only the predicate to end < started + CAP_SECONDS. Keep the exact same
+end=min(deadline,started+40), watchdog end,40s helper cap,6s preparation cap
+and120s outer deadline. Compare the clamped endpoints instead of subtracting
+nearly equal floats; add no epsilon, grace time, retry or fallback. The exact
+three full-budget controls become admitted, and all three immediately-shorter
+endpoints still fail before timer/preparation/process creation. GREEN2methods
+0.061s; the injected preparation error proves admission without native work.
+
+Interrupt only the stale db1ccd5 validation session after identifying this
+additional root cause; retain its partial raw log and never count it as a
+complete full suite. A read-only census immediately after interruption finds
+zero full-run Python processes and zero known M2-worktree trading engines.
+New exact-source complete discovery and actual fake startup are required for
+both branches. No raw log or history is rewritten. Recovery module/function
+line counts are unchanged, so this one-line fix needs no unrelated baseline
+refresh. Pre-edit recovery upstream impact LOW:4 direct callers,5 total,
+with the shared timer flow still separately treated as HIGH.
+
+## M2-1 / independent smoke AST baseline and full repeat
+
+Exact caa6636 complete discovery4005/1427.181s records11 failures,22 errors,
+42 existing skips. Its sole new failed identity is the locked canonical smoke
+AST fingerprint in test_t11_part_b; the deliberate earlier joined-manager
+recovery call/timer stop-restart/cached report changed that exact body. Keep the
+whole raw run SHA2566a630a4a425fdedea69cb7fda9271299656829b198d6ea3f64f1103c991a68cd
+as failed history, not a zero-new-failure acceptance claim.
+
+Use an independent fixture-only commit to change ONLY SMOKE_DIGEST from
+b69ea4fa50829c6303ea9b8ba46c2f84d52a74948d828b8fadd46e54ea4e70cc to
+3737569e56810e75e96316e518479adf1d7f034f453d4930de2c997aeac93fe4.
+The original equality assertion, canonicalization, metadata expected counts,
+handler and terminal-finally hashes, budgets and all skip conditions stay
+unchanged. All11 startup-contract tests PASS0.180s after the baseline update.
+Repeat complete discovery on both final branches before push; do not waive this
+new failure or infer the new complete result solely from the focused check.
+
+## connection-recovery-budget-verified / final complete source evidence
+
+Publish exactb605466455655b17251122347ba28da202776653 complete discovery 4005/1426.235s with zero new failures after individual actual-cause review. Retain previous failed CI/full attempts and previous successful source evidence. Only documentation changes follow; final runtime blobs must match this full/actual source. Do not reuse historical CI as the new final-head result.
+
+## M2-2 / precise LIVE policy oracle — 2026-11-01
+
+Owner D1 supersedes the earlier controlled LIVE-positive environment fixture.
+Retain both environment setups and the real fixture's validation/research/deploy
+steps. At LIVE submission now assert production_orders_disabled, no port delivery,
+zero broker submissions and no orders/positions. SIM retains every original
+entry/fill/protection/performance assertion, quantity, timeout and risk limit.
+This is an independent baseline commit; no test is removed or skipped. The new
+fake-only guard module additionally checks direct SDK/adapter/service/engine/UI
+stop/cancel/flatten paths and SIM delegation. The source guard is separate.
+
+Before source changes the original environment module passed2/2. With the guard
+and the old oracle it reports exactly one LIVE policy error; its original log
+is .tmp/m2-2-live-old-oracle-red.log. After the precise oracle update both cases
+are required to pass. Graph reports UNKNOWN static callers for the test method;
+direct source and unittest discovery establish its actual invocation.
+
+## M2-2 D1 coordinator oracle baseline
+
+The older coordinator fixture still expected an armed LIVE strategy cycle to
+submit. D1 supersedes only that LIVE-positive expectation. Its independent
+baseline now requires production_orders_disabled, zero production deliveries
+and no submitted order before separately observing a historical order/fill
+seeded only in the local exchange double through the read-only cycle. The
+original SIM branch and all of its quantity/fill/clock assertions remain intact.
+This introduces no production submit caller or permission exception.
+
+## M2-2 confirmed-request preflight rejection
+
+The UI must retain an unknown financial request until matching authoritative
+request evidence arrives. A preflight refusal is therefore journaled as a known
+REJECTED result only after current typed inner/outer native scope validation,
+while holding the existing writer, and only if both the manual request key and
+canonical order key are absent. A healthy writer fence and durable append are
+required. The exact original form hash, scope and request identity are retained;
+no error-code whitelist and no empty broker-cache inference provide certainty.
+Existing known/unknown keys replay unchanged. Sealing the rejected key also
+prevents a delayed original command from later admitting a different outcome.
+
+UiCommand.manual_no_admission defaults to false for existing wire clients. It is
+a deny-only forwarding marker for an outer CAS refusal: after native/account
+scope and existing-book checks it can only reject/seal an absent key. It never
+executes the financial body, even when its version would otherwise be current.
+The runtime/Composite owner preserves the original request scope and handles
+its separate outer-boundary forwarding regressions. Invalid/stale native scope,
+closed/failed storage or lost writer ownership cannot mint known admission
+outcomes. LIVE remains denied independently before any mutation.
 
 ## M2-2 / scoped manual intent contracts — 2026-11-01
 
@@ -1202,82 +1704,6 @@ leaves its sole Git difference2878→2950. The repeated static pre-push passed:
 Ruff lint, formatting1166files, Python3.11 syntax1082trackedfiles and the
 unchanged quality gate with zero findings.
 
-## M2-8 — 2026-11-01 complete-run evidence boundary
-
-Retain the first complete run's NEW positive-smoke timeout as a real failure,
-even though the exact unchanged case subsequently passes sequentially on main
-(15.027s) and M2-8 (13.915s). The unchanged full retry completes 3909 tests in
-1487.114s with 10 failures, 22 errors, 42 existing skips and no new failed IDs
-versus main. Only its smoke-sensitive prefix was quiescent; other-worktree index
-and small Qt/metadata checks resumed later. Do not claim full-run isolation,
-prove a latency cause from correlation, raise deadlines or label the first
-failure a waived flake. Raw review retains the E06 cleanup WinError/path
-difference even though exception types and failed IDs match. Normal actual
-LOCAL/fake-SIM startup passes at the same source head are independent evidence;
-they do not turn failed native-host suites into acceptance. Commit only reviewed,
-sanitized evidence and documentation; leave executable/test/tool bytes unchanged
-from `8f03a9905c337680f2f963ba284bed5bf3638bcb`. Controller owns push and CI.
-
-## M2-8 — latest-main normal integration
-
-Merge main `67249dc126423212bbcced2048992c4c50a1be48` normally into the M2-8
-branch, preserving all market, policy and cleanup decision/contract blocks.
-Keep every inherited source/test/baseline blob exact; resolve only appended
-documentation, with no rebase, source rewrite or new baseline change. The
-result combines separately tested sources and needs new full discovery and
-actual startup at the final head. Preserve earlier failed-run evidence under
-its original `8f03a99` scope; do not present it as final composite acceptance.
-Controller serializes native/engine/full validation after M2-6 completes.
-
-## M2-1 / source-identical M2-8 documentation integration and startup
-
-Normally merge final M2-8 `fdfde06` into M2-1 `8d98564`, retaining every M2-1,
-M2-6, policy, market and cleanup decision/contract section. Resolve only the two
-documentation conflicts. All 1202 non-documentation checkout byte hashes and
-all non-documentation Git blobs remain identical to `8d98564`; no fixture or
-source change is introduced. Review and sanitize the three actual startup result
-JSONs, retaining their original source identity, guard/cleanup facts and explicit
-resource_calls=0 limitation. Their source-equivalent applicability is stated;
-they are not falsely described as rerun on the new documentation commit. Full
-discovery and current-head CI remain separate coordinator gates. No engine,
-native lifetime, Qt or startup test is executed for this documentation merge.
-
-## M2-6 / exact cleanup inheritance and two runtime copy oracles
-
-Normal merge `dc58096` preserves all seven M2-8 source/test/tool files exactly.
-Only afterward apply a separately authorized presentation-baseline delta to
-two RuntimeContextClientTests cases: expect the existing short facts-pending
-label, while retaining the complete original warning and its no-empty-exposure
-meaning in actual help/accessibility assertions. Their prior startup-PID errors
-had hidden these body assertions. Real SIM/LIVE widget surrogates reproduce the
-old expectation failure and verify the corrected text plus unknown financial
-facts and zero commands. Do not claim the native IPC bodies were rerun alongside
-the active M2-8 full suite. Preserve every other context/finance/ownership and
-no-engine-creation assertion and all cleanup behavior; no cap, skip, timeout or
-catalogue change. Stop the audit after all actual changed-copy references are
-accounted for. Final full discovery/startup/CI remain root's serialized gates.
-
-## M2-1 / inherit the final M2-6 full-suite corrections
-
-Normally merge M2-6 `4fd1f6e` into M2-1. Only six non-documentation paths
-change: the explicit trading page owner, its real Qt regression and five
-feature-specific visible-label oracles (four test files). Preserve full help,
-unknown financial facts, ownership and no-implicit-connection assertions. All
-other source/test/tool blobs remain the exact M2-1 parent; workspaces retains
-its connection wiring plus only the explicit page argument. The runtime test
-retains M2-1s existing programmatic legacy command after its obsolete button was
-removed; this merge adds only the two reviewed short-copy/full-help changes.
-Resolve three doc conflicts additively and remove only two exactly duplicated
-decision sections. Exact blob audit covers1215 non-doc paths using NUL-delimited
-Git paths, including non-ASCII filenames.
-
-Pre-merge install/helper impacts resolve the build caller at LOW risk (3/2
-nodes, one flow); unchanged test methods are unittest-discovered boundaries,
-not unused code when no callers resolve. The84 affected Qt, connection, page
-boundary, document and layer tests pass in29.786s. Prior M2-1 startup evidence
-remains source-specific. New complete discovery and actual startup follow on
-this composite; no old full/startup evidence is relabeled.
-
 ## M2-2 / prepared-book exit baseline after final M2-1 integration
 
 The normal M2-1 merge preserves the explicit page-owner API and all full-help
@@ -1325,53 +1751,6 @@ one canonical writer, journal, admission/absence proof, existing risk/fence and
 all test cases. This is a separate documentation baseline after source integration;
 actual class decomposition is outside this frozen safety handoff.
 
-## M2-8 / final composite full and startup evidence
-
-Record finalfdf3914/1593.006s10F22E42skip honestly as a nonzero local suite with
-zero new failures. Review all32 actual blocks, including finalE06 WinError32
-matching main rather than borrowing the earlier WinError5 cause. Retain original
-smoke failure/retry evidence. Both final actual startups return0 with normal owned
-cleanup and fake-only broker operations. This commit is documentation only; CI
-is checked on the pushed head. No source, assertions, thresholds or skips change.
-
-## M2-8 / explicit new-test inventory registration
-
-A final all-new-Python-path audit found the new cleanup regression module was
-not explicitly listed in section2, although architecture tests already passed.
-Register only that existing test file and its measured line count in a separate
-inventory baseline commit. Test code and every other non-doc blob stay unchanged;
-the completed full/startup results remain source-equivalent. This repairs the
-specification documentation requirement without changing any test assertion.
-
-## M2-6 / final source-equivalent evidence and omitted test registration
-
-Final4fd1f6e complete discovery is3941/1543.784s10F22E42skip,32blocks/31IDs and
-zero new failure identities versus main. Preserve the nonzero result, all actual
-cause differences and the original four-new-failure run. The Windows PowerShell5
-raw log is UTF-16-LE/BOM with CRCRLF/width119 wrapping; use BOM-aware parsing and
-fold only failure identifiers, requiring parsed block count to equal the footer.
-An old UTF8 parser's false INCOMPLETE is not the test outcome. Both actual LOCAL
-and fake-SIM starts return0 with research/engine shutdown and no real SDK import.
-
-Merge final8 documentation868da0c normally, retaining both appended decision
-histories. Keep all1192 non-documentation entries exact at tested4fd1f6e. Repair
-only the missing three existing M2-6 test-file registrations in an independent
-inventory baseline commit; no Python body, fixture, timing, size limit, skip or
-assertion changes. CI must be fully green on the pushed stacked PR; no main merge.
-
-## M2-1 / complete-discovery frozen-probe correction
-
-The first final M2-1 full run completed3996 tests in1416.477s with10 failures,
-23 errors and42 existing skips. One NEW error was a real compatibility omission:
-packaging/broker_probe.py still constructed ShioajiSDKFacade without the newly
-required immutable environment. Its existing strict mocked frozen test reproduces
-the TypeError; no assertion changes are needed. Pass Environment.LIVE explicitly
-in this inert metadata-only probe: the SDK constructor remains replaced by the
-existing denial function, and the test proves zero construction/login/operations.
-Exact probe impact is LOW (2 nodes, one packaging caller); its nine existing
-checks pass0.426s after the correction. Record the failed complete run rather than
-waiving it. A new complete suite follows on the corrected source. No SDK pin,
-execution guard, test limit, skip or real credential/broker operation changes.
 ## M2-2 / six default order columns and exact display units
 
 Visual review found the inherited seven-column order table. Reuse the existing
@@ -1405,55 +1784,6 @@ the consistent repeat. Neither helper alters product code or authenticates a
 broker. The30-scene metrics,13 representative PNGs and checklist are distinct
 from canonical fake order/startup/full-suite proofs. No second-round work is added.
 
-## 2026-11-01T21:26+08:00 — M2-1 legacy unknown-logout admission closure
-
-A separate read-only Standards review found three internal lifecycle flags were
-read through getattr defaults instead of initialized, contrary to CONTRIBUTING
-section4. Initialize legacy_disconnected, legacy_disconnecting and
-legacy_cleanup_unconfirmed in RuntimeBundle.__post_init__ and read them directly.
-The class impact is LOW13; the generated dataclass constructor gives UNKNOWN
-for __post_init__, so confirm its two production factories and seven direct
-unit-test construction sites by text, rather than treating an empty graph as
-unused. Exact execute/connect/legacy-retirement impacts each resolve3 nodes;
-execute retains97 unresolved receiver sites, so these are lower-bound results.
-The pre-change indexed bootstrap/legacy files equal the current9f source blobs;
-metadata lag is documentation/probe history, not a different lifecycle body.
-
-A Spec follow-up then confirmed a functional gap: after unconfirmed legacy
-logout, retirement clears the session and latches cleanup_unconfirmed but the
-old CONNECT_MARKET_DATA and profile CONNECT_READ_ONLY gates checked only the
-other two flags. The latter is reachable with valid legacy resources and no
-engine yet. An old public command could therefore reopen an SDK session before
-release was proved. Include the existing unknown-cleanup latch in both refusal
-gates; do not clear it, retry login, create another owner or change any deadline.
-The old group of market commands remains uniformly blocked during retirement.
-
-Two exact fake regressions were first RED (five failure occurrences, including
-three market-command subtests and the profile path), then pass5.093s. The47-case
-existing routing/readiness/market transport group passes40.057s without native
-processes, real SDK or credentials. Test formatting preserves the complete AST.
-No old assertion, skip, risk rule, timeout or SDK pin changes. This is a new source
-correction; prior9f full/startup results remain historical, and both actual starts
-plus full discovery must be repeated before push. The pending event-wait helper
-was stopped before native probes; its earlier identity/PowerShell syntax errors
-are harness-only and not product startup evidence.
-
-The duplicate lock-order pattern is retained as an explicit safety sequence;
-its P3 smell is a nonblocking maintenance judgement, not a standards violation.
-Record the actual bootstrap/readability measurements and routing test count in
-an independent inventory baseline, with a narrow future split plan; no limit is
-raised. No second-round feature or actual broker operation is added.
-
-
-The additional gateway-return hypothesis was checked against the real port:
-ReadOnlyGatewayCache.disconnect forwards ShioajiAdapter.disconnect, which turns
-native logout False into DomainError(outcome_unknown); the cache does not swallow
-it. ConnectionPort.disconnect returns None by contract. Keep that existing safe
-boundary and do not add a redundant internal False fallback based on an invalid
-fake gateway. The confirmed defects are the two old admission gates above, not
-the gateway's already-protected logout result handling.
-
-
 ## 2026-11-01T21:49+08:00 — M2-2 inherits confirmed legacy retirement refusal
 
 Normally merge M2-1 sourcea7a6738 and independent inventory897df1b. Preserve all
@@ -1470,63 +1800,6 @@ plus seven direct test construction sites are confirmed by source. No empty
 caller set is treated as unused. Refresh the sole offline index and require
 complete all/staged identities plus all newly added methods before the merge
 commit. No SDK, catalogue, risk limit, timeout or existing assertion changes.
-
-## M2-1 / final source-specific acceptance evidence
-
-2026-11-01/02 Asia/Taipei. Publish exact 897df1b complete discovery 3998/2123.797s and all 32 manually reviewed inherited failure occurrences honestly, with zero new failures. Preserve failed prior attempts and raw SHA256. Final private-interpreter LOCAL/fake-SIM starts close every owned lifetime normally; fake clock functional order flow is explicitly separate from real Sunday availability. No real SDK/key/CA/actual real or SIM order. This evidence-only finalization changes no executable/test/tool/fixture bytes. Source-equivalence audit and complete graph detection precede commit; current pushed head CI is still an independent required gate.
-
-## 2026-11-01 — M2-1 CI / owned shutdown endpoint race
-
-- CI for PR132 head65e7d7f, offline run41316970314/job124878999508, fails one
-  of422 cases after393.130s: RuntimeContextClientTests' original CAS cleanup
-  test completes its explicit shutdown, then its registered owned cleanup
-  observes FileNotFoundError. Preserve this first failure; do not call it a
-  timeout or waive it merely because the prior complete local run had no new IDs.
-- Rank possible timing paths: normal shutdown removes its endpoint before native
-  exit becomes visible; a snapshot/command version-conflict retry reaches that
-  removed endpoint; an endpoint disappears while the owned process stays alive.
-  Reproduce the exact error at both snapshot and execute boundaries with fake
-  retained processes: four boundary tests initially have two error subtests in
-  0.005s. The unchanged original native IPC/CAS test remains required later.
-- At the IPC/filesystem boundary only, catch FileNotFoundError and join the exact
-  retained process under the unchanged15s allowance. Passing still requires
-  observed exit0. An alive process/timeout or abnormal exit remains FAILED with
-  the original owned-handle containment and explicit cleanup error. Foreign PID
-  refusal and current-version CAS remain unchanged; no financial path changes.
-- Both new methods plus the existing two pure boundaries pass in0.003s. This is
-  a deterministic fake seam, not a claim that native or complete discovery has
-  already been repeated. Defer native tests/index/static scans until the active
-  source799efad manual full suite ends naturally; preserve that intermediate run,
-  then repeat complete discovery on both branches after inheriting this fix.
-- Pre-edit exact method impact is LOW: close -> context-manager cleanup / load
-  probe, four resolved symbols and nine load-probe flows. Boundary test class
-  impact is UNKNOWN; direct source search and the actual four-case invocation
-  prove unittest discovery usage, not an unused-class assumption.
-- Files: tools/owned_trading_engine.py, tests/test_trading_engine_cleanup.py;
-  measured inventory changes will use a separate explained baseline commit.
-  G3/PROJECT_STATE/SDK1.7.9/acceptance, existing assertions/timeouts/skips and all
-  product application/runtime files stay untouched by this correction.
-
-### Owner time constraint / verification scheduling
-
-After the owner requested completion within one hour, prepare the two-file
-formatting and graph/commit work during the older799 manual run, which must
-therefore be labelled intermediate and not fully isolated. The scoped native
-cleanup group and static/index preparation overlap this intermediate attempt;
-no second full suite does. Final corrected full suites remain serialized and quiet.
-Bundle the final run report in the last PR's final CI head; validate that exact
-head before delivery, rather than wait for a green feature head and only then
-start another whole CI run for the report. Record only results actually known
-when written and link the final PR/checks as the authoritative final CI evidence.
-
-The original CI IPC/CAS case plus the11-case cleanup module now pass12/24.115s
-using real owned processes and the existing fake broker fixtures. All original
-assertions remain, including foreign-host preservation and cleanup failures.
-Whole-project prepush passes Ruff lint,1154 formatted/1071 Python3.11 syntax
-files and credential/static gate0 findings. Fresh offline all/staged graph
-checks each return10 unique symbols/3files, LOW, no error/partial/truncation;
-all3 added qualified definitions and the required method/class are represented.
-No final corrected complete discovery or current-head CI is claimed yet.
 
 ## M2-2 / prebuilt cleanup integration worktree
 
@@ -1574,11 +1847,6 @@ GUI/theme/runtime/SDK/financial source remains identical; existing visual and
 positive functional source equivalence remains explicit. Final corrected full
 branch discovery and current-head CI remain required before push/delivery.
 
-## connection-cleanup-retry / complete corrected source evidence
-
-Publish exact f77d2b0 complete discovery 4000/1436.847s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.
-The prior4000-case attempt has one new M1 alert-store WinError5. Neither100 main nor100 unchanged-source controls reproduce it. Keep it outside the allowed main baseline and avoid speculative production storage retries; acceptance requires this actual complete unchanged-source retry to have zero new failures. Both failed attempt and successful controls remain retained.
-
 ## M2-2 / final parent evidence prepared independently
 
 Prepare the completed M2-1 evidence-only parent merge in this separate documentation worktree while the official32ad manual checkout remains frozen for complete discovery. Preserve both appended histories and verify zero non-documentation differences from32ad. Do not commit before actual full-result review and complete graph analysis. No index/native/Qt/static workload overlaps that final manual full.
@@ -1606,106 +1874,6 @@ Retain the failed artifact, rerun the entire workflow with gh run rerun
 extend budgets, omit recovery checks or weaken their assertions. Further
 failures require their own actual evidence review. This is documentation only;
 all non-documentation blobs must remain identical to full-tested32ad384.
-
-## M2-1 / schedule frozen recovery within the unchanged shared budget
-
-2026-11-02 Asia/Taipei: corrected-head Windows installer41323736442 fails
-twice with InsufficientExistingSmokeBudget. Attempt1 fails retained-candidate
-smoke (artifact13091592701); attempt2 fails recovered-candidate smoke
-(artifact13092473832). Both have successful seven original UI operations,
-market/auth/history/walk-forward checks and verified worker cleanup. The
-expected released0.2.1 WAL-workspace refusal is unrelated. Neither failure is
-added to the main allowance or described as accepted CI.
-
-Ranked hypotheses: variable earlier worker time, recovery scheduled after the
-walk-forward tail, or bad deadline arithmetic. Actual runner callback control
-with completed original/history work at70s and walk-forward at102s reproduces
-the failed final status under the unchanged120s deadline in0.209s. Admission
-needs its existing full40s even though successful native recovery often takes
-about1s. Running only after the tail therefore makes successful earlier work
-consume the reservation. The controlled positive case is RED; existing
-insufficient-budget and total-timeout cases remain negative.
-
-Move the exact recovery call to the existing original-manager close boundary
-before creating the walk-forward manager. Stop/restart the Qt timer around the
-same synchronous hook; retain uncertain-cleanup evidence. Reuse the verified
-original completed campaign and cache the report for final aggregation. Keep
-every original/manual/history/walk-forward operation and validation; keep the
-120s outer deadline,40s recovery cap,6s preparation cap and actual frozen/zero
-exit/cleanup requirements. Do not extend deadlines, reduce the fixture or add
-skips. No G3 or broker path changes.
-
-The same callback control becomes GREEN. Three new scheduling controls prove
-ordering after joined original work, insufficient-budget refusal and unchanged
-total timeout. Related modules:29 tests OK with4 existing skips in14.966s;
-inventory/layer/page/M2 readability:43 PASS11.414s. These are source/mocked
-scheduling evidence, not actual frozen proof; new complete discovery, actual
-fake-SDK startup and current-head installer CI are still required.
-
-Pre-edit GitNexus run_smoke upstream risk LOW: desktop.run_gui is its direct
-caller,11 upstream symbols,1 affected process. complete_smoke risk LOW with1
-direct timer-guard caller. Index differs only by documentation from the inspected
-smoke blobs. Fresh complete graph and added-definition coverage precede commit;
-measured runner size deltas get a separate explained baseline commit.
-
-## M2-1 / actual installer failure: floating-point endpoint comparison
-
-2026-11-02 Asia/Taipei: attempt2 retry-install.log closes at17:07:07.695 UTC;
-the recovered executable fails by17:07:38.054 UTC. Its entire lifetime is at
-most30.359s, so ordinary exhaustion of the120s smoke budget down below40s
-cannot explain that actual CI guard result. The earlier callback control
-establishes a possible late-admission scheduling failure, not this actual
-installer root cause. Keep that small joined-manager ordering improvement and
-its unchanged-budget negative controls, but do not claim it alone fixes CI.
-
-The original admission arithmetic is independently red-capable: started
-511.00000000000006 and end=min(started+120,started+40)=551.0 produce
-end-started=39.99999999999994, falsely below40. The same error occurs across
-the1024 and2048 exponent boundaries. The actual installed uptime was not
-recorded; these are controlled exact inputs, not claimed CI measurements.
-Actual function controls stop before any native preparation: all three full
-budget subcases are RED under the original condition (2methods/0.004s),
-while deadline=nextafter(started+40,-infinity) still correctly refuses.
-
-Change only the predicate to end < started + CAP_SECONDS. Keep the exact same
-end=min(deadline,started+40), watchdog end,40s helper cap,6s preparation cap
-and120s outer deadline. Compare the clamped endpoints instead of subtracting
-nearly equal floats; add no epsilon, grace time, retry or fallback. The exact
-three full-budget controls become admitted, and all three immediately-shorter
-endpoints still fail before timer/preparation/process creation. GREEN2methods
-0.061s; the injected preparation error proves admission without native work.
-
-Interrupt only the stale db1ccd5 validation session after identifying this
-additional root cause; retain its partial raw log and never count it as a
-complete full suite. A read-only census immediately after interruption finds
-zero full-run Python processes and zero known M2-worktree trading engines.
-New exact-source complete discovery and actual fake startup are required for
-both branches. No raw log or history is rewritten. Recovery module/function
-line counts are unchanged, so this one-line fix needs no unrelated baseline
-refresh. Pre-edit recovery upstream impact LOW:4 direct callers,5 total,
-with the shared timer flow still separately treated as HIGH.
-
-## M2-1 / independent smoke AST baseline and full repeat
-
-Exact caa6636 complete discovery4005/1427.181s records11 failures,22 errors,
-42 existing skips. Its sole new failed identity is the locked canonical smoke
-AST fingerprint in test_t11_part_b; the deliberate earlier joined-manager
-recovery call/timer stop-restart/cached report changed that exact body. Keep the
-whole raw run SHA2566a630a4a425fdedea69cb7fda9271299656829b198d6ea3f64f1103c991a68cd
-as failed history, not a zero-new-failure acceptance claim.
-
-Use an independent fixture-only commit to change ONLY SMOKE_DIGEST from
-b69ea4fa50829c6303ea9b8ba46c2f84d52a74948d828b8fadd46e54ea4e70cc to
-3737569e56810e75e96316e518479adf1d7f034f453d4930de2c997aeac93fe4.
-The original equality assertion, canonicalization, metadata expected counts,
-handler and terminal-finally hashes, budgets and all skip conditions stay
-unchanged. All11 startup-contract tests PASS0.180s after the baseline update.
-Repeat complete discovery on both final branches before push; do not waive this
-new failure or infer the new complete result solely from the focused check.
-
-## connection-recovery-budget-verified / final complete source evidence
-
-Publish exactb605466455655b17251122347ba28da202776653 complete discovery 4005/1426.235s with zero new failures after individual actual-cause review. Retain previous failed CI/full attempts and previous successful source evidence. Only documentation changes follow; final runtime blobs must match this full/actual source. Do not reuse historical CI as the new final-head result.
 
 ## manual-recovery-budget-verified / final complete source evidence
 

@@ -137,3 +137,17 @@ e833622，沒有把視覺 fake DTO 當成真實 IPC 或券商驗收。
 原41323736442 attempt1／2分別在 retained-candidate／recovered-candidate 自測回報 InsufficientExistingSmokeBudget，artifact13091592701／13092473832均保留，未歸入main允許失敗。實際attempt2新程式執行最多30.359秒，排除一般預算耗盡；原浮點減法會將40秒誤算為39.99999999999994。三個指數邊界的實際函式控制先RED後GREEN；改比較相同期限端點，不加epsilon或寬限，短一個浮點單位仍拒絕。實際callback以70s前段、102s尾段在原120s總期限內重現失敗，再將原復原呼叫移到原工作manager.join/close後、walk-forward manager建立前，控制案例轉綠。40s復原、6s準備、120s總期限與全部原檢查不變。順序控制證明可能的晚啟動問題，不能單獨歸因為實際CI根因；舊db1候選的中斷測試未當作完整結果。共五個新案例保留不足預算與總時限失敗；31項相關測試完成含4個既有skip，另43項分層／頁面檢查通過。caa首輪4005項／1427.181s另發現自測AST指紋尚未更新；獨立基準提交僅重釘SMOKE_DIGEST，原相等斷言、metadata計數、handler／finally指紋、預算與skip不變；11項啟動契約通過後再完整重測，該失敗輪未放行。此為來源／fake時間證據，最終實際frozen安裝復原仍由最新Head CI確認，不能用過去成功或同名失敗代替。
 
 新完整測試後保留原先完整結果與raw SHA；兩分支實際啟動重新驗證且均正常零退出、owned清理與端點移除。修正沒有改券商／金融寫入／GUI樣式或G3。新force graph all／staged完整，排程的9個與期限比較的2個新增定義都對應實際UID；共用smoke流程HIGH風險已記錄。runner276→282、run_smoke262→268、complete_smoke175→181的當前量測以獨立基準提交記錄；歷史列、限制值、舊斷言與skip不變。
+
+## Final documentation integration audit — 2026-11-02
+
+After the initial six-PR green gate, main PR #133 introduced two append-only
+document conflicts. Preserve its historical packaging records and all original
+M2 records, reorganizing addenda through normal stacked merges. Restore the
+M2-1 wire-contract continuation retained by the connection branch as well. No
+code, tests, fixtures, protected files or SDK pins change from the final
+complete-suite and actual-startup sources identified above. All original
+evidence remains valid within those explicit source scopes; this is not a new
+program integration with the packaging implementation. GitNexus checks are
+complete and LOW risk. The live PR Checks links above are the final delivery
+gate for the resulting documentation heads; earlier literal head hashes remain
+historical snapshots. Verify main and each stacked base for merge conflicts.
