@@ -65,8 +65,10 @@ class ManualForm(QGroupBox):
         actions = QHBoxLayout()
         self.preview_button = button('m2m.preview', 'manual_preview')
         self.submit = button('m2m.submit', 'manual_submit', role='primary')
+        self.positions_button = button('m2m.open_positions', 'manual_positions')
         actions.addWidget(self.preview_button)
         actions.addWidget(self.submit)
+        actions.addWidget(self.positions_button)
         actions.addStretch()
         layout.addLayout(actions)
 

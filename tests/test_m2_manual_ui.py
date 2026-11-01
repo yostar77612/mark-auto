@@ -69,6 +69,7 @@ class ManualFacade(support.RecordingFacade):
                 raise TimeoutError('fake release missing')
         if command.action is UiAction.PREVIEW_MANUAL or command.action is UiAction.TEST_SIM_ORDER and command.manual_order is None:
             order = command.manual_order
+            instrument = next((item for item in self.state.manual.instruments if order and item.instrument_id == order.instrument_id), None)
             now = datetime.now(timezone.utc)
             preview = ManualPreviewView(
                 self.state.manual.scope,
@@ -89,6 +90,8 @@ class ManualFacade(support.RecordingFacade):
                 'fake-cost-v1',
                 now,
                 now + timedelta(seconds=30),
+                quantity_unit=instrument.quantity_unit if instrument else QuantityUnit.CONTRACT if order is None else None,
+                lot_size=instrument.lot_size if instrument else 1,
             )
             self.state = replace(self.state, manual=replace(self.state.manual, preview=preview))
             return UiReceipt(True, 'completed', '', preview.preview_id)
@@ -467,3 +470,91 @@ class ManualUiTests(unittest.TestCase):
         self.window.apply_state(replace(self.window.state, manual=replace(manual, test_status='PASSED', reasons=())))
         self.assertIn('微台已通過', self.form.status.text())
         self.assertIn('其他商品依券商回報', self.form.status.text())
+
+    def test_preview_uses_supplied_stock_lots_futures_contracts_and_unknown_units(self):
+        from desktop_app.features.trading.manual_presenter import preview_text
+
+        self.form.quantity.setValue(2)
+        self._preview()
+        preview = self.window.state.manual.preview
+        self.assertIn('2 張', self.form.preview.text())
+        self.assertNotIn('2000 股／口', self.form.preview.text())
+        self.assertIn('1 口', preview_text(replace(preview, quantity=1, quantity_unit=QuantityUnit.CONTRACT, lot_size=1)))
+        self.assertIn(ui_text('watch.unknown'), preview_text(replace(preview, quantity_unit=None)))
+
+    def test_cash_stock_sell_guides_to_explicit_position_exit(self):
+        self.form.side.setCurrentIndex(self.form.side.findData(Side.SELL))
+        self.assertFalse(self.form.preview_button.isEnabled())
+        self.assertIn('部位頁', self.form.contract_details.text())
+        self.controls._preview()
+        self.assertEqual(self.facade.commands, [])
+        self.form.positions_button.click()
+        self.assertEqual(self.window.navigation.currentRow(), 2)
+
+    def _owned_exit_position(self):
+        manual = replace(self.facade.state.manual, halted=True, can_submit=False, can_mutate=True)
+        position = replace(self.facade.state.positions[0], account_ref=manual.scope.account_ref, strategy_id=manual.book_id, sellable_quantity=1000)
+        self.facade.state = replace(self.facade.state, version=2, manual=manual, positions=(position,), financial_facts_verified=False)
+        self.window.apply_state(self.facade.state)
+        self.window.positions.selectRow(0)
+        self.assertTrue(self.window.flatten_button.isEnabled())
+        return position
+
+    def test_halted_manual_flatten_keeps_explicit_book_native_scope_and_target(self):
+        position = self._owned_exit_position()
+        with patch.object(self.window, '_confirm', return_value=True) as confirm:
+            self.window.flatten_selected()
+        self.drain()
+        command = self.facade.commands[-1]
+        self.assertIs(command.action, UiAction.FLATTEN)
+        self.assertEqual(command.target_id, position.lot_id)
+        self.assertIs(command.environment, Environment.BROKER_SIMULATION)
+        self.assertEqual(command.manual_book.scope, self.facade.state.manual.scope)
+        self.assertTrue(command.manual_book.confirmed)
+        self.assertEqual(command.manual_book.capital, self.facade.state.manual.capital)
+        self.assertEqual(command.connection_revision, 2)
+        self.assertEqual(command.context_epoch, 1)
+        self.assertIn('本機帳本保守估算', confirm.call_args.args[0])
+
+    def test_manual_flatten_rejects_unknown_request_or_foreign_lot(self):
+        position = self._owned_exit_position()
+        self.controls.intents.pending['unknown-exit'] = self.window.state.manual.scope
+        self.controls.render(self.window.state)
+        self.assertFalse(self.window.flatten_button.isEnabled())
+        with patch.object(self.window, '_confirm') as confirm:
+            self.window.flatten_selected()
+            confirm.assert_not_called()
+        self.controls.intents.pending.clear()
+        foreign = replace(position, strategy_id='foreign-book')
+        self.window.apply_state(replace(self.window.state, version=3, positions=(foreign,)))
+        self.window.positions.selectRow(0)
+        self.assertFalse(self.window.flatten_button.isEnabled())
+        with patch.object(self.window, '_confirm') as confirm:
+            self.window.flatten_selected()
+            confirm.assert_not_called()
+        self.assertEqual(self.facade.commands, [])
+
+    def test_manual_flatten_rechecks_nested_scope_change(self):
+        self._owned_exit_position()
+
+        def changed(_text):
+            manual = self.window.state.manual
+            self.window.apply_state(replace(self.window.state, manual=replace(manual, scope=replace(manual.scope, connection_revision=3))))
+            return True
+
+        with patch.object(self.window, '_confirm', side_effect=changed):
+            self.window.flatten_selected()
+        self.assertEqual(self.facade.commands, [])
+
+    def test_connection_readiness_explains_manual_preparation_and_risk_gates(self):
+        from desktop_app.features.trading.sinopac_panel_text import reason_text
+
+        for code, key in (
+            ('manual_book_not_enabled', 'm2m.need_book'),
+            ('manual_futures_test_required', 'm2m.need_futures_test'),
+            ('manual_unprotected_position', 'm2m.unprotected'),
+            ('stale_quote', 'm2m.stale_quote'),
+            ('session_closed', 'm2m.session_closed'),
+            ('risk_rejected', 'm2m.risk_rejected'),
+        ):
+            self.assertEqual(reason_text(code), ui_text(key), code)

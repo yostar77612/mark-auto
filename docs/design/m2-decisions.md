@@ -981,3 +981,73 @@ The resulting23 real-widget/worker tests pass in2.556s, with both offset and
 native-scope-change cases exercised. They ran only after full M2-6 had completed
 its desktop smoke prefix. These remain UI fake evidence; no SDK or engine
 process was created and final integration/full discovery is still required.
+
+## M2-2 / integrated manual exit and literal quantity units
+
+Normal merge cf5582e retains the final M2-1 connection projection before manual
+rendering and both command-completion paths. The next normal merge bb7b9c8 retains
+the exact reviewed SDK execution guards, detached-consumer revocation and preview
+quantity metadata. Duplicate contract paragraphs were removed only after exact
+byte comparison proved the same text was already retained elsewhere. Focused
+groups passed96 and40 tests respectively; these are not complete-suite results.
+
+The existing explicit selected-position FLATTEN is the covered manual exit.
+No stock lot is guessed from an instrument and no short cash-stock permission is
+invented. The manual stock SELL form directs users to the position page. An actual
+manual exit carries the reviewed native ManualScope, accepted epoch, target lot
+and confirmed unchanged capital through the existing UiCommand/worker path.
+It allows the backend's risk-reducing exit checks while new entries are halted,
+but refuses an unreachable engine, unknown request, foreign book, or scope change
+during confirmation. Both UI and backend validate ownership independently.
+
+Manual stock sellability is an app-derived conservative estimate on reconciled,
+owned, matured cash lots; it is not a broker-certified free-share field. The
+confirmation says this explicitly and leaves native refusal/partial execution
+possible. The backend retains existing risk/reservation/fence/journal behavior.
+Selected PositionView.strategy_id equals the explicit ManualTradingView.book_id;
+UI does not infer ownership from an order-ID/lot-ID coincidence or string prefix.
+
+Preview text uses server-provided quantity_unit/lot_size: canonical shares display
+in whole lots, futures in contracts, absent units as unknown. New readiness codes
+map to existing literal Chinese manual guidance. A confirmed-not-submitted result
+has its own message; it never clears a different unknown request's identity.
+
+The29 manual real-widget tests initially exposed five failures across scoped
+flatten, units, stock-exit guidance and readiness labels. The corrected integrated
+group passed102 tests in9.156s. Qt converts string-enum item data to a string, so
+the stock-side comparison uses value equality, not Python object identity.
+The additional baseline group passed64 tests in18.598s after pinning exactly71
+phase63 records at2878–2948. Historical locales, aliases and insertion order were
+independently compared after removing only those71 keys. No unrelated appearance,
+page-service or privacy baseline was changed; their original assertions passed.
+Source and catalogue pins are committed separately. Final full discovery,
+actual runtime startup and remote CI remain independent delivery gates.
+
+The final backend allocation check adds one precise readiness explanation:
+lowering current settings below previously confirmed manual capital blocks new
+risk without erasing the book/loss history or legal exits. Both connection and
+manual views map manual_allocation_exceeds_settings to that explanation. Final
+phase63 is72 records at2878–2949 (literal global total2950). The catalogue pins
+were regenerated from the committed parent, again proving every prior value,
+alias and ordering unchanged; both exact catalogue tests pass at72. The64-test
+baseline batch above remains correctly attributed to the preceding71-key source.
+
+A further real-widget regression first failed because a selected SIM position
+kept the shared flatten button enabled while a request was unknown. The manual
+presenter now uses the selected explicit book/account, confirmed capital and
+backend can_mutate flag, together with the existing reachability/busy/scope checks.
+Selection changes refresh this state. The independent action-side checks remain;
+owned halted-book exits still work. The unchanged new assertion and all29 manual
+widget tests passed in2.553s after the correction.
+
+The final72-key state also passed all64 catalogue, aliases, appearance, privacy,
+page-service and architecture baseline checks in17.532s. The global total2950 is
+literal and contiguous. Ruff check and formatting verification passed for all
+seven modified Python sources/tests. These focused checks complement, and do
+not replace, the final integrated full-suite and actual-startup gates.
+
+The complete static pre-push initially found only a CRLF/LF formatting mismatch
+in the changed catalogue-count test. Normalizing to the repository LF rule
+leaves its sole Git difference2878→2950. The repeated static pre-push passed:
+Ruff lint, formatting1166files, Python3.11 syntax1082trackedfiles and the
+unchanged quality gate with zero findings.

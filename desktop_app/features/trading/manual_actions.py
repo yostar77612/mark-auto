@@ -13,7 +13,7 @@ from desktop_app.features.trading.widgets import button, selected_id
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.application.contracts import ManualBookForm, ManualMutationForm, ManualOrderForm, ManualPurpose
-from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.models import Environment, Market, Side
 from quantlab.trading.domain.validation import DomainError
 
 
@@ -36,6 +36,7 @@ class ManualActions:
         self.form.preview_button.clicked.connect(self._preview)
         self.form.submit.clicked.connect(self._submit)
         self.form.test_order.clicked.connect(self._test)
+        self.form.positions_button.clicked.connect(lambda: window.navigation.setCurrentRow(2))
         self.cancel.clicked.connect(lambda: self._mutate(False))
         self.amend.clicked.connect(lambda: self._mutate(True))
         self.form.instrument.currentIndexChanged.connect(self._changed)
@@ -44,6 +45,7 @@ class ManualActions:
         self.form.price.textEdited.connect(self._changed)
         self.form.stop.textEdited.connect(self._changed)
         window.orders.itemSelectionChanged.connect(lambda: self.render(window.state))
+        window.positions.itemSelectionChanged.connect(lambda: self.render(window.state))
 
     def busy(self):
         return self.window._operation is not None or self.window._priority_operation is not None
@@ -125,11 +127,12 @@ class ManualActions:
             return False
         return True
 
-    def _send(self, action, *, order=None, book=None, mutation=None):
+    def _send(self, action, *, order=None, book=None, mutation=None, target_id=''):
         state = self.window.state
         scope = state.manual.scope
         self.window.command(
             action,
+            target_id,
             environment=scope.environment,
             account_ref=scope.account_ref,
             manual_order=order,
@@ -163,6 +166,9 @@ class ManualActions:
         state = self.window.state
         instrument = next((item for item in state.manual.instruments if item.instrument_id == self.form.instrument.currentData()), None)
         if instrument is None or not instrument.tradable:
+            return
+        if instrument.market is Market.STOCK and self.form.side.currentData() == Side.SELL:
+            self.window._feedback(ui_text('m2m.stock_exit_hint'))
             return
         try:
             order = self.form.order(state.manual.scope, instrument, str(uuid4()))
@@ -261,3 +267,19 @@ class ManualActions:
                 and current.manual.capital == book.capital
             ):
                 self._send(UiAction.RESUME, book=book)
+
+    def flatten(self, position, summary):
+        state, manual = self.window.state, self.window.state.manual
+        if (
+            not self._ready('can_mutate')
+            or not manual.confirmed
+            or manual.capital is None
+            or (position.account_ref, position.strategy_id) != (state.account_ref, manual.book_id)
+        ):
+            return
+        book = ManualBookForm(manual.scope, manual.capital, True)
+        if self._confirm(summary + '\n' + ui_text('m2m.exit_source')) and self._ready('can_mutate'):
+            if selected_id(self.window.positions) != position.lot_id or self.window.state.manual.capital != book.capital:
+                self.window._feedback(ui_text('v2.state_conflict'))
+                return
+            self._send(UiAction.FLATTEN, book=book, target_id=position.lot_id)

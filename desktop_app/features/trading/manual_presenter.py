@@ -1,12 +1,14 @@
 """Render server-owned manual simulation facts without calculating authority."""
 
 from zoneinfo import ZoneInfo
+from decimal import Decimal
 
 from PySide6.QtCore import QSignalBlocker
 
+from desktop_app.features.trading.widgets import selected_id
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import ManualPurpose
-from quantlab.trading.domain.models import Environment, QuantityUnit, Side
+from quantlab.trading.domain.models import Environment, Market, QuantityUnit, Side
 
 
 def money(value):
@@ -18,10 +20,16 @@ def clock(value):
 
 
 def preview_text(preview):
+    if preview.quantity_unit is QuantityUnit.SHARE:
+        quantity = f'{Decimal(preview.quantity) / preview.lot_size:,.3f}'.rstrip('0').rstrip('.') + ' ' + ui_text('m2t.lots')
+    elif preview.quantity_unit is QuantityUnit.CONTRACT:
+        quantity = f'{preview.quantity:,} ' + ui_text('v2.contracts')
+    else:
+        quantity = ui_text('watch.unknown')
     values = ui_text('m2m.preview_details').format(
         preview.instrument_id,
         ui_text('m2m.buy') if preview.side is Side.BUY else ui_text('m2m.sell'),
-        preview.quantity,
+        quantity,
         preview.limit_price,
         preview.stop_price,
         money(preview.total_cash),
@@ -53,6 +61,8 @@ def reason_text(code):
         'manual_restarted': ui_text('m2m.restarted'),
         'manual_day_baseline_required': ui_text('m2m.need_day_baseline'),
         'manual_quantity_amend_unsupported': ui_text('m2m.amend_hint'),
+        'manual_not_submitted': ui_text('m2m.not_submitted'),
+        'manual_allocation_exceeds_settings': ui_text('m2m.allocation_exceeds_settings'),
         'production_orders_disabled': ui_text('m2t.orders_disabled'),
         'insufficient_funds': ui_text('m2m.insufficient_funds'),
         'risk_rejected': ui_text('m2m.risk_rejected'),
@@ -113,6 +123,9 @@ def render_manual(controller, state):
         )
     else:
         form.contract_details.setText(ui_text('m2m.not_ready'))
+    stock_sell = instrument is not None and instrument.market is Market.STOCK and form.side.currentData() == Side.SELL
+    if stock_sell:
+        form.contract_details.setText(form.contract_details.text() + '\n' + ui_text('m2m.stock_exit_hint'))
     unresolved = controller.unresolved(state)
     status = (
         ui_text('m2m.pending')
@@ -157,7 +170,7 @@ def render_manual(controller, state):
         widget.setEnabled(ready)
     form.prepare.setEnabled(ready and manual.can_prepare and not manual.confirmed)
     form.test_order.setEnabled(ready and manual.can_test)
-    form.preview_button.setEnabled(ready and manual.can_preview and instrument is not None and instrument.tradable)
+    form.preview_button.setEnabled(ready and manual.can_preview and instrument is not None and instrument.tradable and not stock_sell)
     preview = controller.preview(state)
     form.preview.setText(
         preview_text(preview) + ('\n' + ' '.join(reason_text(code) for code in preview.reasons) if preview.reasons else '')
@@ -170,6 +183,14 @@ def render_manual(controller, state):
     controller.cancel.setEnabled(ready and manual.can_mutate and controller.selected_order() is not None)
     controller.amend.setEnabled(controller.cancel.isEnabled())
     if simulation:
+        position_id = selected_id(controller.window.positions)
+        owned = any(
+            position.lot_id == position_id and position.account_ref == state.account_ref and position.strategy_id == manual.book_id
+            for position in state.positions
+        )
+        can_exit = ready and manual.can_mutate and manual.confirmed and manual.capital is not None and owned
+        controller.window.flatten_button.setEnabled(can_exit)
+        controller.window.flatten_button.setToolTip(ui_text('m2m.exit_source' if can_exit else 'm2m.not_ready'))
         controller.window.resume_button.setText(ui_text('m2m.resume'))
         controller.window.resume_button.setEnabled(ready and manual.confirmed and manual.halted and manual.capital is not None)
     else:

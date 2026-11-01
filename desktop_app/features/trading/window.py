@@ -397,6 +397,9 @@ class TradingWindow(QMainWindow):
             state_label(position.source),
         )
         summary += '\n' + ui_text('v2.flatten_direction').format(ui_text('v2.long' if position.direction.value == 'BUY' else 'v2.short'))
+        if self.state.environment is Environment.BROKER_SIMULATION:
+            self.manual_controls.flatten(position, summary)
+            return
         if self._confirm(summary):
             self.command(UiAction.FLATTEN, identity)
 

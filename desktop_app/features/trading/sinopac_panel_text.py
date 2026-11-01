@@ -33,6 +33,23 @@ def reason_text(code):
         'state_conflict': ui_text('m2.connection.state_conflict'),
         'operation_failed': ui_text('m2.connection.operation_failed'),
         'journal_failed': ui_text('m2.connection.journal_failed'),
+        'manual_book_not_enabled': ui_text('m2m.need_book'),
+        'manual_allocation_exceeds_settings': ui_text('m2m.allocation_exceeds_settings'),
+        'manual_restarted': ui_text('m2m.restarted'),
+        'manual_day_baseline_required': ui_text('m2m.need_day_baseline'),
+        'manual_unprotected_position': ui_text('m2m.unprotected'),
+        'manual_test_required': ui_text('m2m.need_test'),
+        'manual_futures_test_required': ui_text('m2m.need_futures_test'),
+        'manual_account_observation_required': ui_text('m2m.need_observation'),
+        'reconciliation_required': ui_text('m2m.need_observation'),
+        'risk_rejected': ui_text('m2m.risk_rejected'),
+        'risk_resized': ui_text('m2m.risk_resized'),
+        'insufficient_funds': ui_text('m2m.insufficient_funds'),
+        'instrument_unresolved': ui_text('m2m.instrument_unknown'),
+        'calendar_missing': ui_text('m2m.calendar_missing'),
+        'stale_quote': ui_text('m2m.stale_quote'),
+        'session_closed': ui_text('m2m.session_closed'),
+        'capability_missing': ui_text('m2m.not_ready'),
     }.get(code, ui_text('m2.connection.operation_failed'))
 
 
