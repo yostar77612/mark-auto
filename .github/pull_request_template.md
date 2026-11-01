@@ -30,7 +30,7 @@ Check each after reviewing the diff; explain any affected area below.
 
 - [ ] G3 locked files reviewed: unchanged, or explicit owner approval linked.
 - [ ] Gate, OOS one-time consumption, irreversible budget and timeout changes reviewed; none loosened.
-- [ ] Live-trading path reviewed: live trading remains permanently disabled; no real order path added.
+- [ ] Execution policy reviewed: v1 real orders remain permanently prohibited; v2 production orders are disabled by default and hard-disabled throughout M2, with future enablement requiring a separate explicit owner decision. No production order path or LIVE opt-in added; any broker-simulation change is separately authorized and verified.
 - [ ] ACCEPTANCE score change reviewed: score remains 230/300; no higher score claimed.
 
 Affected areas, owner approval evidence, remaining risks and unverified work:

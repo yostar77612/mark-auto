@@ -1,7 +1,7 @@
 """Traditional Chinese feature literals; ordered records preserve the original catalog."""
 
 ENTRIES = (
-    (19, 1626, 'header.live_disabled', '\u7814\u7a76\u6a21\u5f0f\u30fb\u5be6\u76e4\u505c\u7528'),
+    (19, 1626, 'header.live_disabled', '\u7814\u7a76\u6a21\u5f0f\u30fb\u6b63\u5f0f\u4e0b\u55ae\u505c\u7528'),
     (19, 1627, 'header.help', '\u8aaa\u660e'),
     (19, 1628, 'header.clock', '{0}'),
     (19, 1629, 'header.no_data', '\u8cc7\u6599\uff1a\u5c1a\u7121'),
