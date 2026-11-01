@@ -204,6 +204,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[55])
 # Lane M1-U: reviewed presentation corrections.
 ZH_TW.update(_ZH_TW_CHUNKS[60])
 
+# Lane M1-1: independent market connection.
+ZH_TW.update(_ZH_TW_CHUNKS[57])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

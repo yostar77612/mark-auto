@@ -80,6 +80,21 @@ class IpcFacade:
             raise DomainError('validation_failed', 'missing market series page')
         return response.series
 
+    def symbol_directory(self):
+        return self.request(Operation.SYMBOL_DIRECTORY).instruments
+
+    def select_market_instrument(self, instrument_id: str, period: str = '1m') -> bool:
+        response = self.request(Operation.MARKET_SELECT, series=MarketSeriesQuery(instrument_id, period))
+        if not isinstance(response.receipt, UiReceipt) or response.receipt.reference not in ('LIVE', 'HISTORY'):
+            raise DomainError('validation_failed', 'missing market selection receipt')
+        return response.receipt.reference == 'LIVE'
+
+    def market_status(self):
+        return self.request(Operation.MARKET_STATUS).market_status
+
+    def market_preferences(self) -> str:
+        return self.request(Operation.MARKET_PREFERENCES).market_selected
+
     def snapshot(self) -> UiState:
         if self.closed_state is not None:
             return self.closed_state

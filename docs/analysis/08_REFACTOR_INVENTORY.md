@@ -701,6 +701,22 @@ PR E4 market/history owners (content-only):
 | `desktop_app/components/disclosure.py` | 17 | presentation | `desktop_app/components/disclosure.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/context_header.py` | 44 | presentation | `desktop_app/features/trading/context_header.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/m1_ui.py` | 14 | shared | `desktop_app/strings/m1_ui.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/market_data_panel.py` | 78 | presentation | `desktop_app/features/trading/market_data_panel.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/strings/marketdata.py` | 18 | shared | `desktop_app/strings/marketdata.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/shioaji/market_session.py` | 267 | infrastructure | `quantlab/trading/adapters/shioaji/market_session.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/shioaji/symbol_directory.py` | 75 | infrastructure | `quantlab/trading/adapters/shioaji/symbol_directory.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/storage/kline_store.py` | 195 | infrastructure | `quantlab/trading/adapters/storage/kline_store.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/history_sync.py` | 282 | application | `quantlab/trading/application/history_sync.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/market_settings.py` | 24 | application | `quantlab/trading/application/market_settings.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/market_terminal_service.py` | 326 | application | `quantlab/trading/application/market_terminal_service.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/market_terminal_views.py` | 57 | application | `quantlab/trading/application/market_terminal_views.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/watch.py` | 41 | domain | `quantlab/trading/domain/watch.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/ports/history.py` | 49 | application | `quantlab/trading/ports/history.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/ports/market_settings.py` | 11 | application | `quantlab/trading/ports/market_settings.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/market_connection.py` | 129 | composition | `quantlab/trading/runtime/market_connection.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/market_terminal.py` | 72 | composition | `quantlab/trading/runtime/market_terminal.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/market_terminal_settings.py` | 42 | composition | `quantlab/trading/runtime/market_terminal_settings.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `tools/m1_connection_snapshot.py` | 41 | tooling | `tools/m1_connection_snapshot.py` | M1: reviewed new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
