@@ -1,5 +1,28 @@
 # M2 autonomous decisions
 
+## M2-8 / backport the verified endpoint-removal fix (2026-11-02)
+
+Final documentation-head CI41342046048 exposed RuntimeContextClientTests
+.test_owned_cleanup_handles_real_ipc_version_change_without_bypassing_cas: the
+normal shutdown removed its endpoint before the owned-process cleanup snapshot.
+This is the same FileNotFoundError race already fixed in downstream commit
+1ebc27e; leaving that verified fix only in M2-1 was an integration omission.
+Backport the identical two source/test blobs to M2-8, then inherit them through
+M2-6. The new snapshot/execute control reproduces two errors in0.002s before
+the fix; all12 real-process and boundary tests pass in23.693s afterward.
+Retained PID/session identity, state-conflict CAS, original15s exit bound and
+zero-exit verification remain mandatory; live/abnormal/foreign processes still
+fail. No production runtime, assertion, skip or timeout changes.
+
+GitNexus with test callers reports class MEDIUM (five direct importers, seven
+total); cleanup method LOW (two direct callers, six total, existing load-probe
+flows). Test class UNKNOWN is confirmed through unittest discovery and direct
+source references, never treated as unused. The offline index is refreshed;
+flow enumeration/callable caps are lower bounds, not evidence of absent calls.
+Record the two inventory measurements separately. Repeat complete discovery
+and actual LOCAL/fake-SIM launches on both changed branches before pushing;
+M2-1/M2-2 already contain these exact corrected blobs and remain source-equivalent.
+
 ## M2-8 — 2026-11-01 13:09 Asia/Taipei
 
 Problem: on this Windows host the venv executable is a redirector. The retained
