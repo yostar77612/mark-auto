@@ -23,6 +23,10 @@ Record the two inventory measurements separately. Repeat complete discovery
 and actual LOCAL/fake-SIM launches on both changed branches before pushing;
 M2-1/M2-2 already contain these exact corrected blobs and remain source-equivalent.
 
+Latest M2-8 acceptance source `590646058aa73f7084ed310b63dd4b0acad6d491`: complete3916/1422.446s, FAILED (failures=10, errors=22, skipped=42), zero new identities; all32 actual blocks reviewed. Real LOCAL/fake-SIM launches both return0, normal owned cleanup and zero external financial operations. Fresh CI remains a separate gate.
+
+Latest M2-6 acceptance source `b39af9c9e7a148661dfb1bd254c3f4e34157a11a`: complete3943/1456.190s, FAILED (failures=10, errors=22, skipped=42), zero new identities; all32 actual blocks reviewed. Real LOCAL/fake-SIM launches both return0, normal owned cleanup and zero external financial operations. Fresh CI remains a separate gate.
+
 ## M2-8 — 2026-11-01 13:09 Asia/Taipei
 
 Problem: on this Windows host the venv executable is a redirector. The retained
@@ -1901,3 +1905,37 @@ all non-documentation blobs must remain identical to full-tested32ad384.
 ## manual-recovery-budget-verified / final complete source evidence
 
 Publish exact7d72c5f38ac32d38709a39bcfb6ecb0ce23c7177 complete discovery 4125/1442.544s with zero new failures after individual actual-cause review. Retain previous failed CI/full attempts and previous successful source evidence. Only documentation changes follow; final runtime blobs must match this full/actual source. Do not reuse historical CI as the new final-head result.
+
+## First-round final delivery and whole-workflow Qt control — 2026-11-02
+
+Keep the already complete-tested M2-1 d2c11f2 program exactly equal to b605466.
+Its real merge-tree against final M2-6 58a233a is clean and produces the same
+non-documentation blobs. Preserve that active installer run; include the latest
+M2-6/M2-8 evidence through a separate normal merge into the final M2-2 report,
+whose program/test/fixture content must stay exactly equal to 7d72c5f. This
+removes redundant documentation-only installer restarts without omitting any
+required CI or complete source validation. Both changed upstream programs
+actually repeated complete discovery and real LOCAL/fake-SIM startup before push.
+
+Retain #132 offline41344493949 attempt1 Linux3.11 Qt segmentation fault at
+command_palette.populate99/toggle137 and the existing real-controls test264.
+Both source/test blobs equal original main0453136; no cause is established.
+Do not call it a fixed bug or add it to the allowed main-host failures. Preserve
+the native trace and rerun the entire workflow with gh run rerun, not one job.
+Attempt2 passes the former crash group; all applicable final-head gates still
+must finish successfully. No assertion, limit, skip or program source changes.
+The original failed attempt remains evidence even if the complete rerun passes.
+
+Latest upstream complete sources5906460 andb39af9c run3916/1422.446s and
+3943/1456.190s, both10F22E42existing skips with zero new identities, all32
+actual occurrences independently reviewed (30/32frames,32/32type chains,
+15/16source files). Original launcher assertion and doubleWin32/.sqlite
+secondary cleanup match main; original installer assertions only change line
+offsets. Actual LOCAL5.692/5.496s and fakeSIM3.718/3.557s return0, real window
+and seven research pages, normal exact-owned cleanup, endpoints removed and
+zero real SDK/financial operations. Final read-only census0 own engines.
+
+Include the final report itself in the final CI head and use live PR Checks
+as the handoff gate. Earlier literal head/run/status rows are historical
+snapshots. Do not create another cosmetic commit merely to copy a green badge
+back into a report and restart validation. No second-round work or main merge.

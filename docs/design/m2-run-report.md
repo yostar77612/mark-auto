@@ -1,5 +1,63 @@
 # M2 第一輪實作與驗證報告
 
+## 最新補正驗證與交付基準（2026-11-02T04:43+08:00）
+
+功能範圍已全部完成；交付須以四個開放 PR 最新 Head 的全部適用 CI 成功為準。
+此段取代下方較早的 Head／CI 快照；舊失敗、重跑與原始來源記錄均保留。
+本報告本身包含在最後提交的 CI 中，因此最終綠燈以每列 Checks 連結為準。
+
+| 工作 | 最終實作來源／發布版本 | 完整本機測試與實際啟動 | 最終 CI |
+| --- | --- | --- | --- |
+| 行情設定 #129 | 34673c2／2d8319b（他人已合併） | 3893 項、2094.353s；無新增失敗；既錄 LOCAL／fake SIM 啟動 | [35/35 成功](https://github.com/yostar77612/mark-auto/pull/129/checks) |
+| M2-0 #128 | 66c3957／e7e3e13（他人已合併） | 3888 項、2380.898s；無新增失敗；既錄兩種啟動 | [35/35 成功](https://github.com/yostar77612/mark-auto/pull/128/checks) |
+| M2-8 #130 | 5906460／8b55c3d | 3916 項、1422.446s；LOCAL5.692s／fake SIM3.718s | [35/35 成功；run41345845844](https://github.com/yostar77612/mark-auto/pull/130/checks) |
+| M2-6 #131 | b39af9c／58a233a | 3943 項、1456.190s；LOCAL5.496s／fake SIM3.557s | [最新版本 CI 為必要交付檢查；run41348100137](https://github.com/yostar77612/mark-auto/pull/131/checks) |
+| M2-1 #132 | b605466／d2c11f2 | 4005 項、1426.235s；原有三項真實視窗啟動來源不變 | [離線全工作流程重跑及安裝驗證](https://github.com/yostar77612/mark-auto/pull/132/checks) |
+| M2-2 #136 | 7d72c5f／本報告所屬最後文件提交 | 4125 項、1442.544s；原有三項啟動／功能流程來源不變 | [最後報告版本須全綠後交付](https://github.com/yostar77612/mark-auto/pull/136/checks) |
+
+上述最新四個實作來源的本機完整結果均為10F22E42既有skip，屬非零結果，
+不是宣稱本機全數通過。每次全部32筆／31個失敗身份的實際原因逐項與原main0453136
+比對：20項symlink1314、worker-log32、原生啟動PID、三項既存mutex、四項提早結束
+paper probe、三項retained-grandchild Errno6。最新 M2-8／M2-6 的E06次要清理為
+兩次WinError32/.sqlite，與main相同；較早來源的WinError5/.sqlite-shm差異仍保留。
+兩次新完整測試的30/32 frame、32/32例外型別鏈、15/16來源相同；只有原installer
+斷言因既有清理fixture移行，未改斷言。沒有擴大main失敗允許清單。
+
+M2-8完整原始log SHA256：`3686f198b4d8c60fffcedd6cc43b91b72783822deb838e600b4b0fb9599c7e28`。
+M2-6完整原始log SHA256：`56c77a6fe6dbe361a10f5e8dc88fc994a5fe84453fcd47094f69f33fa51ec40b`。
+詳見 [M2-8補正比對](m2-8-endpoint-backport-full-comparison.json)、
+[M2-8啟動](m2-8-endpoint-backport-startup.json)、
+[M2-6補正比對](../analysis/m2-trading/endpoint-backport-full-comparison.json)、
+[M2-6啟動](../analysis/m2-trading/endpoint-backport-startup.json)。
+兩次實際啟動都走原始 `_run_window`、真正視窗與七頁研究介面，正常關閉自有程序／
+執行緒及端點。SIM為自有執行緒中的真正認證IPC伺服器加fake SDK；零真實SDK登入、
+CA或外部委託。最後唯讀檢查時間2026-11-01T20:42:24.3580699Z：0個本工作交易引擎。
+
+補正原因：#130文件版CI41342046048的Windows3.11清理案例，暴露正常關閉先移除
+端點的競態。已驗證的1ebc27e原先只在M2-1，漏回補上游；現已原樣回補M2-8／6，
+新增兩個方法涵蓋snapshot／execute與仍存活／異常退出反例。RED為2個子案例錯誤；
+GREEN為12個實際程序／邊界案例。原15s、保留PID、CAS與零退出仍嚴格；兩項清冊
+測量128→134、211→267已獨立提交。兩個上游分支實際重新完成全測後才推送。
+
+M2-1 d2c11f2的所有非docs內容與完整驗證的b605466逐位元相同；對最新M2-6
+58a233a做真正三方merge-tree可無衝突，合併後所有非docs內容仍相同。保留此版本
+的安裝驗證持續執行。M2-2正常合入M2-1及最新上游證據，所有非docs內容仍等同
+已完整測試且實際啟動的7d72c5f；不因文件重組重跑相同程式的本機全測。
+最終報告提交仍實際跑完整遠端CI。全部正常merge，沒有rebase、force或main合併。
+
+另保留 #132 run41344493949 attempt1：Linux3.11 Qt原生程序在
+`CommandPalette.populate` line99（toggle137，原測試264）崩潰，exit139；另三個
+紅燈為相依彙總。該模組及測試與原main逐位元相同。原因尚未證實，未宣稱已修好或
+列成main允許失敗；完整保存trace，依指示重跑整個工作流程attempt2。原失敗分組
+已在attempt2成功，其餘工作及獨立安裝結果仍以最新Checks為準。沒有skip、放寬斷言
+或只重跑失敗job。較早已取代／取消的同Head工作不作最終成功證據。
+
+LIVE送單／改單／撤單仍硬性停用；G3、SDK1.7.9與鎖檔、PROJECT_STATE、ACCEPTANCE
+及candidate pool均無變動。第一輪外的M2-3／4／5／7／9沒有開始；真實帳戶SDK／CA／
+模擬券商時序與回報屬擁有者D8驗收，fake證據不冒充實際券商委託。
+
+---
+
 報告時間：2026-11-02T03:02+08:00（Asia/Taipei；含兩次安裝復原失敗後的預算判斷與順序修正）。
 
 本輪涵蓋行情設定前置修正、M2-0、M2-8、M2-6（含擁有者追加第6–8點）、

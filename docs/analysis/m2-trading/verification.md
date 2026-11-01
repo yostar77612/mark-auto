@@ -187,3 +187,31 @@ CI is checked on the pushed PR head and remains pending at this evidence commit.
 Earlier PENDING statements above describe their original verification stage;
 this section is the final local full/startup record. First-run failures remain
 in their original source scope and are not waived by this later result.
+
+
+## Upstream endpoint-cleanup backport verification — 2026-11-02
+
+Exact frozen source `b39af9c9e7a148661dfb1bd254c3f4e34157a11a` completed 3943 tests in
+1456.190s: FAILED (failures=10, errors=22, skipped=42). This is a nonzero local
+suite with zero new failed identities versus original main0453136, not an
+all-passing local result. All32 occurrences were individually reviewed;
+30/32 ordered frames and
+32/32 exception chains match.
+Per-occurrence Windows/SQLite secondary differences, source comparisons and
+raw log SHA256 are retained in `endpoint-backport-full-comparison.json`. No expanded main allowance.
+
+The pre-fix CI FileNotFoundError is a real endpoint-removal race, not waived:
+the same downstream correction was backported unchanged with its two methods
+and snapshot/execute plus live/abnormal negative controls. Retained PID, CAS,
+zero exit and15s bound remain. The original actual failing IPC case and
+all12 focused process/boundary checks pass; original RED evidence is retained.
+
+Actual original `_run_window` LOCAL5.496s and
+fake BROKER_SIMULATION3.557s both return0,
+render the real trading window and seven research pages, release research
+and normally close exact owned lifetimes with endpoints removed. The SIM
+host is an authenticated server in an owned thread, not a real broker:
+fake login/logout1 each, zero order constructors/orders, no real SDK import.
+Whitelisted source/PNG hashes and launch facts: `endpoint-backport-startup.json`.
+Full and startup evidence are tied to this source; final documentation
+heads retain identical program/test blobs and require fresh remote CI.
