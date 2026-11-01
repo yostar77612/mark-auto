@@ -1,0 +1,32 @@
+{
+  "authority": "Owner decision D1, 2026-11-01; M2-0 policy only.",
+  "scope": "One banner wording delta: 研究模式・實盤停用 -> 研究模式・正式下單停用. Preserve historical R7 data, exact row multiplicity, visibility/enabled flags, painter pixels/counts, calls, errors and all eight result snapshots.",
+  "focus": {
+    "removed": [
+      {
+        "row": ["research_mode_status", "研究模式・實盤停用", ""],
+        "count": 1
+      }
+    ],
+    "added": [
+      {
+        "row": ["research_mode_status", "研究模式・正式下單停用", ""],
+        "count": 1
+      }
+    ]
+  },
+  "refresh_states": {
+    "removed": [
+      {
+        "row": ["header_live_disabled", "研究模式・實盤停用", true, false],
+        "count": 1
+      }
+    ],
+    "added": [
+      {
+        "row": ["header_live_disabled", "研究模式・正式下單停用", true, false],
+        "count": 1
+      }
+    ]
+  }
+}

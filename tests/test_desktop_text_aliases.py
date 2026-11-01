@@ -111,6 +111,10 @@ class DesktopTextAliasTests(unittest.TestCase):
     def test_every_historical_string_and_utf8_byte_sequence(self):
         for old, expected in self.old.items():
             new = strings.TEXT_ALIASES[old]
+            if old == 'ui.__init__.text_3':
+                # Owner D1 (2026-11-01): one reviewed banner wording delta.
+                self.assertEqual(expected, '研究模式・實盤停用')
+                expected = '研究模式・正式下單停用'
             with self.subTest(old=old, new=new):
                 for locale in (None, strings.DEFAULT_LOCALE, 'unknown-locale'):
                     actual = strings.ui_text(old, locale)
@@ -135,7 +139,11 @@ class DesktopTextAliasTests(unittest.TestCase):
 
     def test_existing_catalog_patches_and_registries_are_preserved(self):
         previous = self.fixture['preserved']
-        self.assertEqual({key: strings.ZH_TW[key] for key in previous['catalog']}, previous['catalog'])
+        # Preserve the historical snapshot and admit only D1's equivalent badge.
+        expected = previous['catalog'].copy()
+        self.assertEqual(expected['header.live_disabled'], '研究模式・實盤停用')
+        expected['header.live_disabled'] = '研究模式・正式下單停用'
+        self.assertEqual({key: strings.ZH_TW[key] for key in previous['catalog']}, expected)
         for name, value in previous['registries'].items():
             self.assertEqual(json.loads(json.dumps(getattr(strings, name))), value, name)
         # New catalog entries belong only to trailing, explicitly marked Lane
