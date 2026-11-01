@@ -23,6 +23,8 @@ Record the two inventory measurements separately. Repeat complete discovery
 and actual LOCAL/fake-SIM launches on both changed branches before pushing;
 M2-1/M2-2 already contain these exact corrected blobs and remain source-equivalent.
 
+Latest M2-8 acceptance source `590646058aa73f7084ed310b63dd4b0acad6d491`: complete3916/1422.446s, FAILED (failures=10, errors=22, skipped=42), zero new identities; all32 actual blocks reviewed. Real LOCAL/fake-SIM launches both return0, normal owned cleanup and zero external financial operations. Fresh CI remains a separate gate.
+
 ## M2-8 — 2026-11-01 13:09 Asia/Taipei
 
 Problem: on this Windows host the venv executable is a redirector. The retained
