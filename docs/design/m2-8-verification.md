@@ -247,3 +247,40 @@ The earlier 3909-test retry and startup JSONs remain evidence only for source
 `8f03a99`; none is relabeled as validation of the final merge head. The user
 requires the new complete run after latest-main integration, so prior full-run
 evidence does not replace it.
+
+
+## Final composite validation — 2026-11-01
+
+The pending composite gates above are now completed on exact source
+`fdfde06f66fb65271af80ac4fb29f4dd362ca91e`. Complete discovery ran3914 tests
+in1593.006s: FAILED (10 failures,22 errors,42 existing skips),31 failed IDs and
+32 traceback blocks, zero new identities against the measured main baseline.
+This nonzero local result is not described as a passing suite. All32 raw blocks
+were reviewed:20 symlink privilege errors, one worker-log lock, one native/launcher
+PID assertion with SQLite cleanup, three lifetime/mutex assertions, four paper
+parent/probe assertions and three retained-grandchild-handle failures.
+30/32 ordered frame sequences and all32 exception type chains match main;15/16
+referenced blobs are identical. Only the intended installer fixture changes its
+two assertion line offsets. Final E06 secondary cleanup is WinError32 on.sqlite,
+matching main; the earlier retry's WinError5 on.sqlite-shm remains retained as
+separate evidence. Generated paths/PIDs/handle values differ. The five previously
+listed main failures are absent; this does not establish a general host fix.
+
+Actual final LOCAL startup returned0 in5.304s and fake SIM returned0
+in3.089s. Both render the actual window and seven research pages, release research
+and shut down their owned engine normally. Fake SIM uses an authenticated server in an owned thread,
+not a broker child-process boot: one login/logout, two subscriptions, zero order
+constructors/orders, no real SDK import. Both result JSONs have no errors.
+The complete run isolated its smoke-sensitive prefix; subsequent small Qt/fake
+checks and a serialized index resumed. Whole-run isolation is not claimed.
+
+The log SHA256 and sanitized composite comparison are retained in the companion
+JSON. The earlier first-run new40-second smoke failure and its successful
+unchanged targeted/retry checks remain part of the history, not waived. Remote
+CI remains a separate gate to be recorded after push. No product/test/tool bytes
+change in this evidence-only finalization.
+
+Final evidence-only docs checks passed8 tests in0.622s. A read-only CIM census
+after complete discovery found zero Python engine commands belonging to this
+exact checkout. It did not stop or adopt any process and does not claim global
+absence of the owners installed application or unrelated worker fixtures.

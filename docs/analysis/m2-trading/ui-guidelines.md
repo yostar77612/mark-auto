@@ -75,3 +75,10 @@ Full discovery, both actual `_run_window` starts and remote CI are still root
 coordination after the final source/baseline head. Earlier79fc99c startup
 measurements do not validate this source. No real login, CA activation, SDK
 import, order or background engine was used for these UI captures/tests.
+
+Final4fd1f6e full/startup evidence supersedes the earlier pending stage:3941tests
+with zero new failure IDs, actual LOCAL6.075s/fake-SIM3.969s both return0 and clean
+research/engine shutdown. The local full suite remains nonzero on reviewed main
+host limitations; remote CI is separately required on the pushed PR head. See
+[final comparison](final-full-comparison.json), [startup facts](final-startup.json)
+and [the final verification section](verification.md#final-source-equivalent-validation).
