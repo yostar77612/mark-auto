@@ -21,6 +21,8 @@ Audience: implementing agent (Codex). Owner decisions dated 2026-11-01.
    新 .py 檔登記於 `docs/analysis/08_REFACTOR_INVENTORY.md` 第 2 節與 `tools/layer_map.json`（若為 quantlab 根目錄檔）。
    樣式只放 `desktop_app/shell/theme.py`。
 4. 每個 PR 的 CI 必須全綠才算完成；偶發逾時用 `gh run rerun <run-id>` 重跑整輪。不得合併到 main。
+5. 所有新畫面與改版畫面遵守 [介面設計準則](ui-guidelines.md)（擁有者 2026-11-01），PR 附準則第 10 節檢查清單。
+   第二輪的總覽頁改版（M2-5、M2-3）依 [UX-1 規格](ux1-ui-consistency-spec.md) 第 3 節做成儀表板。
 
 ## 1. 擁有者決定（2026-11-01）
 
