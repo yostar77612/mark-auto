@@ -1,0 +1,71 @@
+{
+  "head": "897df1ba9b21f88f512420caaf4ccb7cf740c207",
+  "mode": "broker",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_run_window": true,
+  "real_trading_window": true,
+  "real_research_session": true,
+  "local_child_delegates_original": true,
+  "sinopac_host": "owned Thread(serve) with natural factory/secrets/resource ports",
+  "original_local_child_safety_bootstrap": true,
+  "child_guard_proven_before_product": true,
+  "secret_reads_before_ui_connect": 0,
+  "research_pages": 7,
+  "environment": "BROKER_SIMULATION",
+  "engine_state": "DISCONNECTED",
+  "window_visible": true,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "widget_count": 2728,
+  "financial_facts_verified": false,
+  "research_released": true,
+  "return_code": 0,
+  "elapsed_seconds": 8.718,
+  "ui_steps": [
+    "initial_local",
+    "ui_save_connect",
+    "ui_select_account",
+    "ui_navigate_simulation",
+    "finish",
+    "closed"
+  ],
+  "owned_local_processes": 1,
+  "owned_fake_hosts": 1,
+  "fake_sdk": {
+    "constructors": 1,
+    "login_count": 1,
+    "logout_count": 1,
+    "resource_calls": 0,
+    "subscription_count": 2,
+    "ca_calls": 0,
+    "order_constructions": 0,
+    "order_calls": 0
+  },
+  "real_sdk_imported": false,
+  "fake_secret_lookup_count": 1,
+  "owned_endpoints_removed": true,
+  "passed": true,
+  "owned_lifetimes": [
+    {
+      "exit_code": null,
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    },
+    {
+      "exit_code": 0,
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    }
+  ],
+  "errors": [],
+  "host_errors": [],
+  "raw_sha256": "3e90742d1c988fba826d19368c106eb7b235d866a3e46039b5a230901cbe3e02",
+  "redactions": [
+    "Private checkout/workspace paths, PIDs, process command lines and local stack paths omitted; only whitelist facts retained. Broker values/counters come exclusively from injected fake ports."
+  ]
+}

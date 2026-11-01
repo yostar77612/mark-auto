@@ -1027,3 +1027,7 @@ it. ConnectionPort.disconnect returns None by contract. Keep that existing safe
 boundary and do not add a redundant internal False fallback based on an invalid
 fake gateway. The confirmed defects are the two old admission gates above, not
 the gateway's already-protected logout result handling.
+
+## M2-1 / final source-specific acceptance evidence
+
+2026-11-01/02 Asia/Taipei. Publish exact 897df1b complete discovery 3998/2123.797s and all 32 manually reviewed inherited failure occurrences honestly, with zero new failures. Preserve failed prior attempts and raw SHA256. Final private-interpreter LOCAL/fake-SIM starts close every owned lifetime normally; fake clock functional order flow is explicitly separate from real Sunday availability. No real SDK/key/CA/actual real or SIM order. This evidence-only finalization changes no executable/test/tool/fixture bytes. Source-equivalence audit and complete graph detection precede commit; current pushed head CI is still an independent required gate.
