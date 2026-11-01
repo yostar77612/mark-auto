@@ -575,3 +575,20 @@ tick_gateway test-helper node. Source search confirms its direct consumers are
 the tick fixture modules; this does not waive the CRITICAL warning or replace
 tests. All33 relevant fake tests passed. Future source PR notes retain this
 warning and the index's dynamic receiver/process-cap limitations explicitly.
+
+## M2-2 / precise LIVE policy oracle — 2026-11-01
+
+Owner D1 supersedes the earlier controlled LIVE-positive environment fixture.
+Retain both environment setups and the real fixture's validation/research/deploy
+steps. At LIVE submission now assert production_orders_disabled, no port delivery,
+zero broker submissions and no orders/positions. SIM retains every original
+entry/fill/protection/performance assertion, quantity, timeout and risk limit.
+This is an independent baseline commit; no test is removed or skipped. The new
+fake-only guard module additionally checks direct SDK/adapter/service/engine/UI
+stop/cancel/flatten paths and SIM delegation. The source guard is separate.
+
+Before source changes the original environment module passed2/2. With the guard
+and the old oracle it reports exactly one LIVE policy error; its original log
+is .tmp/m2-2-live-old-oracle-red.log. After the precise oracle update both cases
+are required to pass. Graph reports UNKNOWN static callers for the test method;
+direct source and unittest discovery establish its actual invocation.
