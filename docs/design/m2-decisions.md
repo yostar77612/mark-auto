@@ -635,3 +635,21 @@ The new calendar builder's first symbol lookup occurred after initial creation;
 this local workflow miss is retained rather than represented as a pre-edit
 check. Subsequent source review, fake boundary tests and full change detection
 cover the resulting definition. No FTS/vector extension was installed.
+
+## M2-1 / exact inventory baseline — 2026-11-01
+
+The source commit e640eb0 is followed by an independent inventory-only change
+for the seventeen new backend/test/tool modules since af262ab. Each row retains
+its actual path, line count and reviewed layer. The three DTO/environment rows
+already added by af262ab remain unchanged. Historical rows/producer hashes and
+all existing assertions remain intact; no appearance/catalog baseline is reset.
+The existing bootstrap module remains an explicit composition boundary rather
+than moving its public lifecycle during this feature; new owner/resource modules
+are bounded and their functions meet the50-line readability target.
+
+Complete source detect reported130symbols/29files/608flows at CRITICAL risk,
+with no partial/truncated flags. One existing desktop.py parse_args record has
+an empty graph UID (its pre-edit impact still reported187direct callers). This
+is retained as an index limitation, not an unused/unaffected claim. Actual parser
+source and existing CLI tests were independently verified. Raw CLI report and
+structured flag/UID summary are in ignored .tmp/m2-backend-detect files.
