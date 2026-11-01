@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
 from quantlab.trading.application.contextnavigation import CompositeFacade
-from quantlab.trading.application.contracts import ContextNavigationRequest, ContextOption, UiAction, UiCommand
+from quantlab.trading.application.contracts import ContextNavigationRequest, ContextOption, UiAction, UiCommand, UiReceipt
 from quantlab.trading.application.sinopac_contracts import SinopacConnectionSettings
 from quantlab.trading.application.market_settings import MarketDataSettings
 from quantlab.trading.domain.models import Environment
@@ -190,6 +190,52 @@ class ConnectionRoutingTests(unittest.TestCase):
             self.assertFalse(receipt.accepted)
             self.assertEqual(receipt.code, 'outcome_unknown')
         self.assertEqual(self.calls, [])
+
+    def test_unknown_legacy_logout_blocks_old_market_commands(self):
+        connection = self.local.market_connection
+        connection.settings = MarketDataSettings(enabled=True)
+        connection.status = 'CONNECTED'
+        connection.session = SimpleNamespace(connected=True, disconnect=lambda: False)
+        receipt = self.client.execute(self.command(UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=SinopacConnectionSettings()))
+        self.assertFalse(receipt.accepted)
+        self.assertEqual(receipt.code, 'outcome_unknown')
+        with patch.object(connection, 'execute', return_value=UiReceipt(True, 'connection_pending', '')) as legacy:
+            for action in (UiAction.SAVE_MARKET_DATA_SETTINGS, UiAction.CONNECT_MARKET_DATA, UiAction.DISCONNECT_MARKET_DATA):
+                with self.subTest(action=action):
+                    receipt = self.client.execute(self.command(action, market_data_settings=MarketDataSettings(enabled=True)))
+                    self.assertFalse(receipt.accepted)
+                    self.assertEqual(receipt.code, 'state_conflict')
+            legacy.assert_not_called()
+        self.assertEqual(self.calls, [])
+
+    def test_unknown_legacy_logout_blocks_profile_login_without_an_engine(self):
+        from test_trading_runtime_context import profile_fixture
+
+        root = Path(self.temp.name) / 'legacy-profile'
+        profile = profile_fixture(root / 'resources', Environment.BROKER_SIMULATION)
+        with patch('quantlab.trading.runtime.broker.ShioajiClientFactory.create', side_effect=AssertionError('No real SDK')):
+            with patch(
+                'quantlab.trading.runtime.bootstrap.connect_profile_engine', side_effect=AssertionError('No profile login after unknown logout')
+            ) as factory:
+                bundle = build_runtime(RuntimeLaunch(root / 'engine', Environment.BROKER_SIMULATION, profile, 'test-stock'), engine_factory=factory)
+                self.addCleanup(bundle.close)
+                self.assertIsNone(bundle.engine)
+                self.assertIsNotNone(bundle.resources)
+                connection = bundle.market_connection
+                connection.settings = MarketDataSettings(enabled=True)
+                connection.status = 'CONNECTED'
+                connection.session = SimpleNamespace(connected=True, disconnect=lambda: False)
+                host = HostView(bundle, 'test-stock')
+                receipt = host.execute(UiCommand(UiAction.DISCONNECT_SINOPAC, host.snapshot().version))
+                self.assertFalse(receipt.accepted)
+                self.assertEqual(receipt.code, 'outcome_unknown')
+                receipt = host.execute(UiCommand(UiAction.CONNECT_READ_ONLY, host.snapshot().version))
+                for worker in tuple(bundle.connection_threads):
+                    worker.join(2)
+                self.assertFalse(receipt.accepted)
+                self.assertEqual(receipt.code, 'state_conflict')
+                factory.assert_not_called()
+                self.assertFalse(bundle.connection_threads)
 
 
 class UnifiedRegistryTests(unittest.TestCase):

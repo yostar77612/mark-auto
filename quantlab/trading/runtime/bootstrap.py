@@ -115,6 +115,9 @@ class RuntimeBundle:
         self.closing = False
         self.resources_closed = False
         self.cleanup_unconfirmed = False
+        self.legacy_disconnected = False
+        self.legacy_disconnecting = False
+        self.legacy_cleanup_unconfirmed = False
         self.control_failed = False
         self.connection_attempt = ''
         self.connection_deadline = 0.0
@@ -300,7 +303,7 @@ class RuntimeBundle:
             if self.control_failed:
                 return UiReceipt(False, 'journal_failed', '')
             if command.action in (UiAction.SAVE_MARKET_DATA_SETTINGS, UiAction.CONNECT_MARKET_DATA, UiAction.DISCONNECT_MARKET_DATA):
-                if getattr(self, 'legacy_disconnecting', False) or getattr(self, 'legacy_disconnected', False):
+                if self.legacy_disconnecting or self.legacy_disconnected or self.legacy_cleanup_unconfirmed:
                     return UiReceipt(False, 'state_conflict', '')
                 if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
                     return UiReceipt(False, 'state_conflict', '')
@@ -351,8 +354,9 @@ class RuntimeBundle:
             if (
                 self.closing
                 or self.closed
-                or getattr(self, 'legacy_disconnecting', False)
-                or getattr(self, 'legacy_disconnected', False)
+                or self.legacy_disconnecting
+                or self.legacy_disconnected
+                or self.legacy_cleanup_unconfirmed
                 or self.transitioning
                 or self.connection_threads
                 or command.expected_version != self.facade.snapshot().version + self.version_offset
