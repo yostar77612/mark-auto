@@ -203,3 +203,28 @@ methods were reviewed before edits; new symbols were UNKNOWN/absent and source
 confirmed, never treated as an all-clear. Full fresh indexed all/staged change
 analysis precedes each source/baseline commit; complete runtime/full/CI evidence
 must still be supplied after composition.
+
+**Runtime integration offline evidence (2026-11-01).**
+
+On the isolated runtime checkout, 44 focused pure/fake cases passed in 11.753s,
+plus two real authenticated same-process Pipe cases in 0.242s. These exercise
+canonical book confirmation, TMF preview/place/cancel confirmation, normal
+submission and exact replay, stock/futures aggregate ownership, retained
+unselected book obligations, strict native scope and request envelope checks,
+query failure halting, concurrent-control observation discard, late resource
+completion after owned shutdown, pure snapshots and unchanged LOCAL navigation.
+Native account/status/position/quote queries assert that they do not own the
+writer lock. Pipe cases use the real server authentication/handler/codec and
+verify owned connection closure and an empty handler thread set; they create no
+child, acquire no installed-app mutex and place no native order.
+
+The broker SDK in every case is an offline test double. Financial API use is
+forbidden, login is counted once, actual financial read models remain unknown,
+and automatic run_cycle is rejected by the fake oracle. The trusted logical
+Clock test uses a covered October trading date and separately confirms that
+Sunday 2026-11-01 is closed under the unchanged built-in calendar; real UTC lease
+heartbeats remain valid. Ruff, Python 3.11 AST parsing and the trading architecture
+gate pass. No complete suite, actual desktop startup or remote CI is claimed
+by these focused results; the coordinator owns those separate gates. The initial
+core merge is dcdbaef (adopting 4c2f15f), with the final readiness/restart follow-up
+still to be normally merged before final composition acceptance.

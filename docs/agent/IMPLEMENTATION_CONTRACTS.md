@@ -6959,3 +6959,33 @@ subtracts pending owned exits once. A confirmed canceled/unfilled current-owner
 TMF diagnostic is the shared first-attempt proof; UNKNOWN or a fill cannot pass.
 Restart, missing closing evidence, lost scope, external orders or degraded
 observations halt new risk without resetting the confirmed book or retry key.
+
+**M2-2 runtime composition contract (2026-11-01).**
+
+RuntimeBundle owns one ManualRuntime for a unified broker host. Its query worker
+uses one shared execution consumer and one aggregate canonical TradingEngine.
+ManualRuntime.refresh collects typed account observations outside the writer,
+then adopts a complete unchanged-generation batch under the writer. A concurrent
+book mutation discards the batch. A provider failure clears prior observations
+and durably halts through ManualTradingService.adopt(()). Native cache access is
+serialized by ManualExecutionGateway; its submit only forwards the existing
+ExecutionService broker call. No second reservation/commit path exists.
+
+Runtime pumping never runs automatic strategy cycles or financial reconciliation
+for this manual composition. Explicit STOP_NEW/cancel-all remain existing
+risk-reducing controls; RECONCILE reports the manual observation state. Bare
+RESUME and malformed scopes cannot enable manual books. Only confirmed book
+forms authorize capital/resume. All manual forms retain exact native owner CAS
+and authenticated envelope account/environment. CompositeFacade projects only
+the current scope context/epoch and leaves admitted preview/result scopes intact.
+
+ManualResourceStore is a lazy version-one Ledger for masked alias markets and
+explicit bindings; it retains prior obligations without raw account identifiers.
+Each AccountView allocation is its confirmed virtual book capital (zero before
+confirmation), not a duplicated market bucket or broker balance. Broker financial
+facts remain unverified. Computed simulation readiness is selected-book scoped,
+requires current TMF diagnostic proof plus service submission readiness, and
+never advances native CAS or certifies stock key permissions. LIVE is blocked.
+The optional trusted sinopac_clock composition port affects market observations,
+not real UTC leases; defaults, calendars, command/preview/SDK deadlines and
+production policy remain unchanged.

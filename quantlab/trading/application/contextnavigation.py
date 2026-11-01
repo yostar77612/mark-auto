@@ -5,6 +5,7 @@ from threading import RLock
 
 from .contracts import ContextNavigationRequest, ContextPort, TradingFacade, UiAction, UiCommand, UiReceipt, UiState
 from .errors import ERROR_TABLE
+from .manual_contracts import ManualBookForm, ManualOrderForm, ManualMutationForm
 from quantlab.trading.domain.validation import DomainError, identity
 from quantlab.trading.domain.models import Environment
 
@@ -50,6 +51,16 @@ class CompositeFacade:
         if connection is not None:
             connected = connection.snapshot()
             view = connected.sinopac_connection
+            native_scope = state.manual.scope
+            if native_scope is not None and (state.environment, state.account_ref, native_scope.connection_generation, native_scope.connection_revision) == (
+                view.environment,
+                native_scope.account_ref,
+                view.generation,
+                view.revision,
+            ):
+                # The control host's pending-account view cannot borrow another
+                # book's diagnostic readiness. Preserve this selected book only.
+                view = replace(view, readiness=state.sinopac_connection.readiness)
             projected = view.revision + offset
             with self._lock:
                 if connection is not self._connection or offset != self._connection_offset or projected < self._connection_high:
@@ -66,7 +77,12 @@ class CompositeFacade:
                 market_data_error=connected.market_data_error,
                 watchlist=connected.watchlist,
             )
-        return replace(state, context_id=context_id, context_epoch=epoch, contexts=self.contexts.list_contexts())
+        manual = state.manual
+        if manual.scope is not None:
+            # Owner CAS is native to the broker host. Presentation connection
+            # offsets must never rebase an admitted preview or pending result.
+            manual = replace(manual, scope=replace(manual.scope, context_id=context_id, context_epoch=epoch))
+        return replace(state, manual=manual, context_id=context_id, context_epoch=epoch, contexts=self.contexts.list_contexts())
 
     def market_series(self, query):
         with self._lock:
@@ -133,6 +149,40 @@ class CompositeFacade:
                         raise DomainError('state_conflict', 'refresh before registering a profile')
                     added = self.contexts.register_profile(command.profile_ref, command.environment)
                     return UiReceipt(True, 'completed', '', added.context_id)
+                if command.action in (
+                    UiAction.ENABLE_MANUAL_BOOK,
+                    UiAction.PREVIEW_MANUAL,
+                    UiAction.SUBMIT_MANUAL,
+                    UiAction.TEST_SIM_ORDER,
+                    UiAction.CANCEL_MANUAL,
+                    UiAction.AMEND_MANUAL,
+                ) or (command.action in (UiAction.RESUME, UiAction.FLATTEN) and facade.snapshot().manual.scope is not None):
+                    accepted = self.snapshot().manual.scope
+                    form = command.manual_book or command.manual_order or command.manual_mutation
+                    if form is not None and not isinstance(form, (ManualBookForm, ManualOrderForm, ManualMutationForm)):
+                        raise DomainError('validation_failed', 'typed manual intent required')
+                    if (
+                        accepted is None
+                        or (
+                            command.context_id,
+                            command.context_epoch,
+                            command.environment,
+                            command.account_ref,
+                            command.connection_generation,
+                            command.connection_revision,
+                        )
+                        != (
+                            accepted.context_id,
+                            accepted.context_epoch,
+                            accepted.environment,
+                            accepted.account_ref,
+                            accepted.connection_generation,
+                            accepted.connection_revision,
+                        )
+                        or form is not None
+                        and form.scope != accepted
+                    ):
+                        raise DomainError('state_conflict', 'manual intent must retain its accepted native scope')
                 return facade.execute(command)
             finally:
                 with self._lock:

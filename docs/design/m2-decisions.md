@@ -915,3 +915,59 @@ record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
   A missing manual closing baseline keeps cross-day new risk stopped, while a
   verified settled owned stock exit can still proceed. No previous-close value
   or calendar fallback is invented.
+
+**M2-2 runtime integration (2026-11-01).**
+
+The query worker materializes one canonical TradingEngine only after explicit
+authenticated account selection. This is composition, not permission to trade:
+each manual book still requires a confirmed application virtual allocation,
+complete fresh account observations, current scope, and the diagnostic policy.
+Canonical 60,000/40,000 application buckets and the global 100,000 limit remain
+unchanged. Broker funds remain unavailable; no zero simulation reply becomes
+positive broker financial evidence.
+
+One execution consumer shares the existing authenticated SDK owner. A narrow
+ExecutionPort wrapper serializes its mutable cache with query collection; it
+only forwards the existing canonical ExecutionService call. SDK observations
+run outside the writer. Collection releases its mutex before adopting reports,
+and a batch collected across a committed book mutation is discarded. Failed
+queries call service.adopt(()) so previous observations cannot remain usable.
+Each collection has an eight-second acceptance bound, without increasing the
+existing SDK, command or intent deadlines. Runtime pumping never calls the
+automatic strategy cycle, automatic exits or legacy financial reconciliation.
+
+ManualScope retains the broker owner's native generation and revision. The
+CompositeFacade projects only the current scope's context identity/epoch;
+preview, pending and result scopes retain their original admission identity.
+The authenticated request account/environment, outer command, inner form,
+accepted account selection and materialized owner stamp must agree. UI-only
+connection revision offsets never become manual authority.
+
+A small version-one Ledger retains masked alias/market facts and typed contract
+bindings needed to reconstruct prior obligations. No native account identifiers
+or credentials are stored there. Reconnection and contract changes preserve all
+books/orders/positions. Missing or unselected historical obligations remain
+blocked rather than disappearing. Observed-time-only resource renewals refresh
+limits/capabilities without rewriting contract economics or silently resuming a
+book. Economic/calendar/cost changes rematerialize and require confirmation.
+
+Simulation readiness is computed for the selected book. READY requires a known
+canceled/unfilled TMF diagnostic in the current native generation and current
+book submission readiness. It does not certify stock or other key permissions.
+The pending-account control host and a LOCAL book cannot borrow another book's
+READY. These computed read models do not advance the native CAS token. LIVE
+remains rejected before manual execution; production readiness remains blocked.
+
+An optional trusted Python sinopac_clock dependency passes through existing host
+composition into the owner's existing Clock port. Defaults and all real UTC
+journal leases/fences remain unchanged; there is no CLI/config/environment
+activation. The positive fake uses an actual covered trading date; the unchanged
+built-in calendar rejects Sunday 2026-11-01. Required real-clock startup remains
+separate and must produce no Sunday orders.
+
+The exact additive submit-caller inventory records only the ExecutionPort
+forwarder (runtime/manual_trading.py, submit, self.adapter). It adds no reservation
+or commit authority: ManualTradingService._submit -> TradingEngine.submit ->
+ExecutionService.commit remains the sole financial admission/journal path.
+Historical v1 submit callers, the sole execution.commit assertion, protected
+files, risk limits and all existing test assertions remain intact.

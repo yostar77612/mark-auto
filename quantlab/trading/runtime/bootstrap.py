@@ -1,6 +1,7 @@
 """Host composition for local engines and explicit disconnected broker contexts."""
 
 from dataclasses import dataclass, replace
+from contextlib import nullcontext
 from datetime import datetime, timezone
 from decimal import Decimal
 import stat
@@ -77,6 +78,7 @@ class RuntimeBundle:
     sinopac_factory: object | None = None
     secret_resolver: object | None = None
     resource_factory: object | None = None
+    sinopac_clock: object | None = None
 
     def __post_init__(self) -> None:
         if type(self.connect_timeout) not in (int, float) or not 0 < self.connect_timeout <= 8:
@@ -95,10 +97,16 @@ class RuntimeBundle:
                 secrets=self.secret_resolver,
                 resource_factory=self.resource_factory,
                 environment=self.launch.environment,
+                clock=self.sinopac_clock,
             )
         else:
             self.market_connection = MarketConnection(self.launch.root)
         self.sinopac_connection = self.market_connection if self.launch.sinopac else None
+        self.manual_runtime = None
+        if self.sinopac_connection is not None:
+            from .manual_trading import ManualRuntime
+
+            self.manual_runtime = ManualRuntime(self)
         if self.engine is not None:
             self.watch_settings.restore(self.engine)
         self.lock = RLock()
@@ -190,8 +198,8 @@ class RuntimeBundle:
             return tuple(self.engine.gateways)
         return (self.launch.account_ref,)
 
-    def snapshot(self) -> UiState:
-        with self.lock:
+    def snapshot(self, account_ref: str | None = None) -> UiState:
+        with self.lock, self.engine.lock if self.engine is not None else nullcontext():
             self._expire_connection()
             if self.control_failed:
                 raise DomainError('journal_failed', 'runtime control confirmation is unavailable')
@@ -200,6 +208,15 @@ class RuntimeBundle:
             views = self.market_terminal.views() if terminal_state else state.market_watch
             version = state.version + self.version_offset
             self._checkpoint(version)
+            manual = self.manual_runtime.snapshot(account_ref or state.account_ref) if self.manual_runtime is not None else state.manual
+            connection = self.sinopac_connection.snapshot() if self.sinopac_connection is not None else state.sinopac_connection
+            if self.manual_runtime is not None:
+                connection = self.manual_runtime.connection_view(connection, manual)
+            allocations = (
+                {book.account_ref: book.capital for book in self.engine.state.manual_books}
+                if self.manual_runtime is not None and self.engine is not None
+                else {}
+            )
             return replace(
                 state,
                 watchlist=(
@@ -226,13 +243,20 @@ class RuntimeBundle:
                 version=version,
                 engine_state='CONNECTING' if self.transitioning else state.engine_state,
                 configuration_id=self.configuration_id,
-                sinopac_connection=self.sinopac_connection.snapshot() if self.sinopac_connection is not None else state.sinopac_connection,
+                sinopac_connection=connection,
+                manual=manual,
                 accounts=(
                     tuple(
-                        AccountView(item['alias'], self.launch.environment, Market(item['market']), Decimal('0'), 'EXTERNAL_REQUIRED')
+                        AccountView(
+                            item['alias'],
+                            self.launch.environment,
+                            Market(item['market']),
+                            allocations.get(item['alias'], Decimal('0')),
+                            'EXTERNAL_REQUIRED',
+                        )
                         for item in self.sinopac_connection.preferences.known_accounts()
                     )
-                    if self.sinopac_connection is not None and self.engine is None
+                    if self.sinopac_connection is not None
                     else state.accounts
                 ),
             )
@@ -244,6 +268,10 @@ class RuntimeBundle:
     def execute(self, command: UiCommand) -> UiReceipt:
         from .sinopac_connection import SINOPAC_ACTIONS
 
+        if isinstance(command, UiCommand) and self.manual_runtime is not None and self.manual_runtime.handles(command):
+            if self.closing or self.closed or self.control_failed:
+                return UiReceipt(False, 'state_conflict', '')
+            return self.manual_runtime.execute(command)
         if isinstance(command, UiCommand) and command.action in SINOPAC_ACTIONS:
             with self.lock:
                 if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
@@ -470,6 +498,14 @@ class RuntimeBundle:
             engine = self.engine
         if self.closing or engine is None or engine.state.engine_closed or engine.storage_failed:
             return
+        if self.manual_runtime is not None:
+            # Manual SIM never schedules strategies, automatic exits or legacy
+            # financial reconciliation. Only the query worker adopts reports.
+            from quantlab.trading.application.sessions import synchronize_session
+
+            with engine.lock:
+                synchronize_session(engine)
+            return
         if engine.configuration.environment is not Environment.LOCAL:
             from quantlab.trading.application.coordinator import run_cycle, run_readonly_cycle
 
@@ -506,6 +542,9 @@ class RuntimeBundle:
 
     def poll_ports(self) -> None:
         """SDK waits run here, never on the decision/control writer lock."""
+        if self.manual_runtime is not None:
+            self.manual_runtime.refresh()
+            return
         with self.lock:
             engine, caches = self.engine, self.query_caches
         if self.closing or engine is None or engine.state.engine_closed or engine.storage_failed or not caches:
@@ -579,7 +618,13 @@ class RuntimeBundle:
 
 
 def build_runtime(
-    launch: RuntimeLaunch, *, engine_factory: EngineFactory | None = None, sinopac_factory=None, secret_resolver=None, resource_factory=None
+    launch: RuntimeLaunch,
+    *,
+    engine_factory: EngineFactory | None = None,
+    sinopac_factory=None,
+    secret_resolver=None,
+    resource_factory=None,
+    sinopac_clock=None,
 ) -> RuntimeBundle:
     if not isinstance(launch, RuntimeLaunch):
         raise DomainError('validation_failed', 'typed runtime launch required')
@@ -635,6 +680,7 @@ def build_runtime(
             sinopac_factory=sinopac_factory,
             secret_resolver=secret_resolver,
             resource_factory=resource_factory,
+            sinopac_clock=sinopac_clock,
         )
         from .market_terminal import attach_terminal
 
