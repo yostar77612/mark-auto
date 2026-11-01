@@ -35,6 +35,9 @@ def install_panel(window, layout):
 def render_connection(window, state):
     window.broker_panel.apply(state.sinopac_connection)
     accepted = window.broker_panel.view
+    if (state.contexts, state.accounts) != (window.state.contexts, window.state.accounts):
+        # Discovery changes available choices without changing the viewed book.
+        window._rendered_version = None
     if window.state.sinopac_connection != accepted:
         window.state = replace(window.state, sinopac_connection=accepted)
     return replace(state, sinopac_connection=accepted)

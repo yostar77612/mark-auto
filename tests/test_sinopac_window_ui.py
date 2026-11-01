@@ -262,3 +262,26 @@ class SinopacWindowUiTests(unittest.TestCase):
         self.assertTrue(panel.account_boxes['stock-1'].isChecked())
         self.assertIn(ui_text('m2.connection.permission_denied'), panel.status.text())
         self.assertEqual(self.window.state.sinopac_connection.accounts, connected_view().accounts)
+
+    def test_discovered_book_choices_refresh_without_engine_version_or_implicit_book_switch(self):
+        self._connected()
+        panel = self.window.broker_panel
+        panel.key_ref.setText('MarkAuto/v2/broker/unsaved')
+        panel._changed()
+        original = self.window.state
+        new_account = replace(original.accounts[0], account_ref='new-local-view')
+        incoming = replace(
+            original,
+            accounts=original.accounts + (new_account,),
+            market_revision=1,
+            sinopac_connection=replace(connected_view(2), accounts=tuple(reversed(connected_view().accounts))),
+        )
+        self.window.apply_state(incoming)
+        self.assertGreaterEqual(self.window.account.findData('new-local-view'), 0)
+        self.assertEqual(self.window.state.version, original.version)
+        self.assertEqual(self.window.state.account_ref, original.account_ref)
+        self.assertIs(self.window.state.environment, Environment.LOCAL)
+        self.assertEqual(self.window.state.positions, original.positions)
+        self.assertEqual(panel.key_ref.text(), 'MarkAuto/v2/broker/unsaved')
+        self.assertTrue(panel.dirty)
+        self.assertEqual(self.facade.commands, [])

@@ -18,6 +18,8 @@ def reason_text(code):
         'account_sign_unknown': ui_text('m2.connection.sign_unknown'),
         'account_query_unavailable': ui_text('m2.connection.account_unavailable'),
         'account_query_failed': ui_text('m2.connection.account_unavailable'),
+        'accounts_unavailable': ui_text('m2.connection.account_unavailable'),
+        'callback_failed': ui_text('m2.connection.outcome_unknown'),
         'permission_denied': ui_text('m2.connection.permission_denied'),
         'broker_permission_missing': ui_text('m2.connection.permission_denied'),
         'broker_login_failed': ui_text('m2.connection.login_failed'),

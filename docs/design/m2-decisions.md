@@ -559,3 +559,13 @@ against source/discovery. The current UI source has no real SDK import or
 financial operation. Full discovery, real startup and remote CI are coordinator
 steps after normal integration with the shared backend; fake-Qt proofs here do
 not establish the M2-2 engine LIVE invariant.
+
+M2-1 integration followup: account/context discovery may change selector choices
+without incrementing the accepted engine book version. A RED/GREEN real-widget
+case required invalidating only presentation before the same-version/market-only
+shortcut; the accepted LOCAL account, positions and dirty connection reference
+remain unchanged. Its named helper impact is CRITICAL (45 upstream sites,
+3 processes,5 modules), retained as a warning alongside source checks rather than
+waived by the graph's shared-name/dynamic gaps. Final backend accounts_unavailable
+and callback_failed reasons map to existing Chinese next-step copy, with explicit
+unknown-readiness tests; no new catalogue records were needed.

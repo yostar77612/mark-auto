@@ -166,3 +166,24 @@ class SinopacPanelUiTests(unittest.TestCase):
         self.assertEqual(emitted.count(), 0)
         self.assertEqual(self.panel.view.generation, 'replacement-generation')
         self.assertEqual(self.panel.status.text(), ui_text('m2.connection.state_conflict'))
+
+    def test_final_backend_account_and_callback_failures_have_chinese_next_steps(self):
+        self.panel.apply(
+            SinopacConnectionView(
+                revision=1,
+                error_code='callback_failed',
+                readiness=(
+                    SinopacReadiness('market', 'UNKNOWN', 'callback_failed'),
+                    SinopacReadiness('accounts', 'UNKNOWN', 'accounts_unavailable'),
+                    SinopacReadiness('simulation_orders', 'BLOCKED', 'implementation_pending'),
+                    SinopacReadiness('production_orders', 'BLOCKED', 'production_orders_disabled'),
+                ),
+            )
+        )
+        self.assertIn(ui_text('m2.connection.outcome_unknown'), self.panel.status.text())
+        self.assertIn(ui_text('m2.connection.outcome_unknown'), self.panel.readiness_labels['market'].text())
+        self.assertIn(ui_text('m2.connection.account_unavailable'), self.panel.readiness_labels['accounts'].text())
+        self.assertIn(ui_text('m2.connection.unknown'), self.panel.readiness_labels['accounts'].text())
+        for label in self.panel.findChildren(QLabel):
+            self.assertNotIn('callback_failed', label.text())
+            self.assertNotIn('accounts_unavailable', label.text())

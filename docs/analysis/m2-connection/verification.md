@@ -8,7 +8,7 @@ remain pending until the coordinator runs the combined branch.
 
 ## Focused evidence
 
-- 97 focused tests passed in16.443s:19 new panel/window tests, retained settings
+- 99 focused tests passed in 13.829s: 21 new panel/window tests, retained settings
   and TradingWindow regressions,10 M2-6 tests, the four-page keyboard-help case,
   four DTO/codec cases, centralized styles, architecture boundaries, reviewed
   stylesheet hashes and exact frozen page-service observer equality.
@@ -20,6 +20,9 @@ remain pending until the coordinator runs the combined branch.
   accepted account selection or leaked vendor details. Certificate selection,
   native Cancel default, nested-dialog stale generation and dirty Decimal fee
   persistence are exercised. An inconsistent production READY DTO is blocked.
+  A separate test first failed when discovered book choices changed without an
+  engine version increment, then passed after presentation invalidation; the
+  accepted LOCAL book, positions and dirty key draft remained unchanged.
 - Existing actual Qt enum reconstruction and connection-status tests now target
   the unified form. Alert-kind and painter geometry assertions remain unchanged.
   Old metadata save/restart/readiness coverage remains on typed legacy commands;
