@@ -1385,3 +1385,22 @@ The six new real-widget tests first failed3/error2 and then passed with the exis
 nine guideline checks (15 total). Two literal phase63 strings use2950/2951; only
 those keys extend the historical catalogue and contiguous total2952 in a separate
 baseline commit. Root takes over this follow-up after the agent usage limit.
+
+
+## 2026-11-01T20:39+08:00 — M2-2 final table evidence and precise inventory
+
+Retain all ordinary parent merges and feature-specific independent baselines.
+The final table component keeps six default columns, canonical quantity/account
+identity and merge-based local preferences. Reject malformed incremental graph
+UIDs and force only the local offline index; no FTS repair/download is requested.
+Verify all13 added qualified definitions and both complete change scopes before
+committing. Inventory line count is measured321, including the extra six LIVE
+manual action entries and one unconfirmed-book assertion; an earlier scratch
+assumption307 failed before editing anything and is not committed as a baseline.
+
+Review consistent synthetic-budget/price visual fixtures only. A first scratch
+capture still used old form inputs while previews were updated; correct the
+capture helper values, rerun it, keep earlier evidence local and publish only
+the consistent repeat. Neither helper alters product code or authenticates a
+broker. The30-scene metrics,13 representative PNGs and checklist are distinct
+from canonical fake order/startup/full-suite proofs. No second-round work is added.

@@ -321,3 +321,43 @@ No SDK mutation is added on refusal and no host/context is opened. Original
 request/scope identity remains visible in the authoritative result. This closes
 the observed boundary routing gap; full desktop startup/full-suite/CI remain
 separate coordinator gates.
+
+
+## Final manual order-table integration and visual review
+
+Ordinary merges7e43ee4/380da9a combine the independent source/baseline commits
+of the order-table follow-up with final M2-1's frozen metadata probe fix. All
+non-documentation blobs equal tested/captured e833622 except that one packaging
+probe, whose existing nine strict fake tests passed on exact9f2184e. Complete
+all/staged graph detection returned36 unique nonempty symbols over12 files,
+no partial/truncation/error, with all13 added qualified definitions represented.
+The earlier malformed incremental index result was rejected; offline single-worker
+forced rebuild restored exact IDs before any merge commit. Global flow caps are
+still lower bounds; absent graph edges are never considered proof of no callers.
+
+The table follow-up's six new Qt cases were first RED3F/2E, then15 related
+checks passed1.998s and the full affected128-case group passed66.842s. Canonical
+quantity/account/order IDs and confirmation data remain unchanged. The selector
+merges its separate local preferences without erasing position/other choices.
+Its two additive catalogue entries2950/2951 extend total2952; only those keys
+change the existing fixture projection in independent baselinee833622.
+Independent dad1873 records the actual321-line trading-page test, including six
+explicit new manual LIVE refusals and the unconfirmed-book flatten oracle.
+
+Whole-project prepush on the integrated source passes: Ruff lint,1179 formatted
+files, Python3.11 syntax1094 files and static credential gate0 findings. No test
+body, cap, timeout, skip, SDK pin, financial quantity or protected file is changed
+by the final inventory/visual documentation.
+
+The final consistent visual run took18.931s and covers30 scene-size records;
+all page/order/position horizontal maxima0, at most one visible primary and
+native diagnostic/cancel confirmations default Cancel. Representative actual
+PNGs, all sanitized metrics/hashes and UI guidelines section10 checklist are
+[in the manual visual directory](../analysis/m2-manual/ui-guidelines.md).
+The real window/theme uses command-refusing fake DTOs only, with no SDK or host;
+these visual fixtures are separate from actual IPC/startup/full-suite acceptance.
+Earlier inconsistent scratch captures are retained locally, not published here.
+
+Actual LOCAL/fake-SIM startup and full discovery must now be recorded against
+the final integrated source; earlier edcdc40 actual flow evidence remains
+attributed to its original source, not relabeled as this version.
