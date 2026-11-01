@@ -99,12 +99,15 @@ def _run_window(
         if host is not None:
             host.notify_local(message, completion=True)
 
+    # The alert panel renders restored events while it is constructed, before the
+    # terminal that hosts it exists: names fall back to codes, colours to defaults.
+    terminal = None
     alerts = AlertPanelController(
         facade.alerts,
         lambda operation, completed: terminal._submit(operation, completed),
         lambda: terminal.current_instrument,
         lambda key, occurred_at: terminal.select_instrument(key, occurred_at),
-        lambda key: next((item.name for item in terminal._directory if item.instrument_id == key), key.split(':')[-1]),
+        lambda key: next((item.name for item in (terminal._directory if terminal else ()) if item.instrument_id == key), key.split(':')[-1]),
         notify_alert,
         lambda: up_down_colors(appearance(terminal)[1]),
     )
