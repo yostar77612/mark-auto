@@ -74,7 +74,16 @@ class LocalFacade:
         elif action is UiAction.RESUME:
             resume(engine)
         elif action is UiAction.STOP_NEW:
-            engine._persist('new_entries_stopped', replace(engine.state, stopped=True))
+            books = tuple(replace(book, halted=True, reasons=tuple(sorted(set((*book.reasons, 'risk_rejected'))))) for book in engine.state.manual_books)
+            engine._persist(
+                'new_entries_stopped',
+                replace(
+                    engine.state,
+                    stopped=True,
+                    manual_books=books,
+                    manual_stopped=engine.state.manual_stopped or engine.configuration.environment is Environment.BROKER_SIMULATION,
+                ),
+            )
             if not engine.configuration.read_only and orders_enabled(engine.configuration.environment):
                 cancel_entries(engine)
         elif action is UiAction.CANCEL_ENTRIES:

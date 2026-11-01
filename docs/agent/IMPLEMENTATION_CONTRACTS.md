@@ -6941,3 +6941,21 @@ Exact screenshot, focused-test and baseline procedures are recorded in
 and additive baseline changes are separate commits; historical fixture identities,
 class/function caps, protected files and assertions remain intact. Shared-runtime
 integration, actual startup, full discovery and remote CI remain coordinator-owned.
+M2-2 ManualTradingService accepts typed UI intent and uses one aggregate
+TradingEngine plus its existing journal. Its execute/snapshot/adopt seam keeps
+native observation collection outside the writer. ManualAccountObservation
+contains orders, positions, events and source timing, never fabricated account
+funds. The runtime validates the immutable accepted environment/account/owner
+generation/revision before adoption and command admission. Its manual pump does
+not run automatic strategy cycles or normal financial-baseline reconciliation.
+Internal ManualRiskCapacity is app-owned virtual capital, not a broker balance.
+Only a matching durable manual intent can use the canonical submit branch;
+automatic ACTIVE/OOS/previous-close requirements remain unchanged.
+
+Manual acquisition/receivable tranches are part of the existing atomic fill
+event. Conservative settled owned cash-stock availability is app-derived and
+does not rewrite the automatic/native sellability path. Existing ExitCoordinator
+subtracts pending owned exits once. A confirmed canceled/unfilled current-owner
+TMF diagnostic is the shared first-attempt proof; UNKNOWN or a fill cannot pass.
+Restart, missing closing evidence, lost scope, external orders or degraded
+observations halt new risk without resetting the confirmed book or retry key.

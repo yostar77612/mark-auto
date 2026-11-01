@@ -189,6 +189,10 @@ class TradingEngine:
                     if not lot.quantity or lot.instrument_id != quote.instrument_id:
                         continue
                     entry = next(o for o in self.state.orders if o.order_id == lot.lot_id)
+                    from .manual_book import MANUAL_PREFIX
+
+                    if entry.plan.strategy_id.startswith(MANUAL_PREFIX):
+                        continue  # Manual stop_price is a risk estimate, not an automatic stop.
                     stop_price = dict(self.state.protection_stops).get(lot.lot_id, entry.plan.stop_price)
                     triggered = quote.last <= stop_price if lot.direction is Side.BUY else quote.last >= stop_price
                     if triggered:
@@ -360,15 +364,18 @@ class TradingEngine:
             if plan.state_version != self.state.version:
                 raise DomainError('state_conflict', 'order was prepared against another state')
             from .sessions import synchronize_session, assert_daily_baseline
+            from .manual_book import manual_plan_request, manual_risk_context
 
+            manual_request = manual_plan_request(self, plan, key)
             synchronize_session(self)
-            if not plan.reduce_only:
+            if not plan.reduce_only and manual_request is None:
                 assert_daily_baseline(self)
             from .scope import refresh_scope
 
-            refresh_scope(self, plan)
+            if manual_request is None:
+                refresh_scope(self, plan)
             plan = replace(plan, state_version=self.state.version)
-            if not plan.reduce_only:
+            if not plan.reduce_only and manual_request is None:
                 from .workflows import mark_risk, total_mark
 
                 actual_pnl = total_mark(self) - self.state.daily_baseline_pnl
@@ -381,12 +388,16 @@ class TradingEngine:
                 # original intent hash remains the retry identity.
                 plan = replace(plan, state_version=self.state.version)
             strategy = next((s for s in self.state.strategies if (s.strategy_id, s.version) == (plan.strategy_id, plan.strategy_version)), None)
-            if not plan.reduce_only and (
-                strategy is None
-                or strategy.state != 'ACTIVE'
-                or strategy.form.instrument_id != plan.instrument_id
-                or strategy.form.direction is not plan.side
-                or strategy.form.account_ref != plan.account_ref
+            if (
+                not plan.reduce_only
+                and manual_request is None
+                and (
+                    strategy is None
+                    or strategy.state != 'ACTIVE'
+                    or strategy.form.instrument_id != plan.instrument_id
+                    or strategy.form.direction is not plan.side
+                    or strategy.form.account_ref != plan.account_ref
+                )
             ):
                 raise DomainError('risk_rejected', 'active matching deployment required')
             if not plan.reduce_only and any(
@@ -398,7 +409,12 @@ class TradingEngine:
                 any(job.status != 'APPLIED' for job in self.state.corporate_actions) or any(job.status == 'FROZEN' for job in self.state.rolls)
             ):
                 raise DomainError('reconciliation_required', 'durable lifecycle work remains unresolved')
-            account = self.account(plan.account_ref)
+            manual_allocations, manual_pnl = (), ZERO
+            if manual_request is None:
+                account = self.account(plan.account_ref)
+                capability = gateway.inspect(plan.account_ref)
+            else:
+                account, manual_allocations, capability, manual_pnl = manual_risk_context(self, manual_request, plan)
             risk = self.risk()
             strategy_cash_limit = None
             if strategy is not None:
@@ -415,12 +431,12 @@ class TradingEngine:
                 spec,
                 quote,
                 account,
-                gateway.inspect(plan.account_ref),
+                capability,
                 now=self.clock.now(),
                 reservations=self.reservations(),
-                daily_pnl=self.state.daily_pnl,
+                daily_pnl=manual_pnl if manual_request else self.state.daily_pnl,
                 daily_locked=self.state.trading_day in self.state.daily_locks,
-                allocations=(account,) if plan.reduce_only else tuple(self.account(a) for a in self.gateways),
+                allocations=manual_allocations if manual_request else (account,) if plan.reduce_only else tuple(self.account(a) for a in self.gateways),
                 policy=policy,
                 strategy_cash_limit=strategy_cash_limit,
             )

@@ -145,6 +145,8 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         except DomainError:
             exit_window, held = 'CALENDAR_MISSING', 0
         protection = 'EXIT_BLOCKED' if not lot.sellable_quantity else 'LOCAL_DAY_ONLY'
+        if lot.strategy_id.startswith('manual-sim-'):
+            protection = 'UNPROTECTED'
         positions.append(
             PositionView(
                 lot.lot_id,

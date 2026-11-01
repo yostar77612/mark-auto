@@ -878,3 +878,40 @@ Both images retain the LOCAL book, formal connection label and readable readonly
 CA guidance; visual inspection passes and horizontal scrollbar maxima are zero.
 Other scenes and unrelated historical baselines are not regenerated. The capture
 record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
+# M2-2 manual simulation core decisions (2026-11-01)
+
+- A confirmed app-owned virtual book provides source-tagged internal risk
+  capacity. It never replaces broker balances, actual PnL, or the automatic
+  previous-close/OOS evidence. Capital remains bounded by the existing account
+  allocation buckets and single 100000 platform cap, including multiple aliases
+  of the same market. Re-enabling a book cannot reset capital, loss or stop state.
+- A private durable manual intent enters TradingEngine.submit's narrow branch.
+  It creates no ACTIVE StrategyRecord. The sole state-bearing commit caller,
+  locked RiskService preview/rejection, reservation, SUBMITTING and fence remain.
+- One current-login-generation diagnostic proof requires a known TMF broker
+  reference and subsequently confirmed canceled/unfilled state. It permits
+  explicit SIM attempts from other accepted confirmed books, while each account
+  still requires signed/market/risk/reconciliation checks. This is not verified
+  stock trading permission. UNKNOWN, partial/full fills and a changed generation
+  do not pass. Only a backend-minted legal distant-price diagnostic may be used.
+- A manual stop price estimates sizing risk; it creates neither a protective
+  broker order nor automatic management. Manual positions are UNPROTECTED.
+  STOP_NEW latches books; bare RESUME and adding another book cannot clear it.
+- Price-only amendments may not increase committed risk; quantity amendment is
+  explicitly unsupported rather than guessing the pinned SDK's reduction units.
+  Mutations receive a fresh admission TTL, retain original conservative reserves
+  until observed evidence, and never turn SDK timeout into retry permission.
+- Owner direction permits conservative app-derived exits for settled owned
+  cash-long stock. This uses durable per-fill acquisition tranches matured T+2
+  on the explicit calendar, exact fresh native-position reconciliation, healthy
+  scoped orders and existing pending-exit reservation. It is not a native
+  free-share certificate. StockPosition.yd_quantity and reserve available_share
+  are not substituted for sellability. Non-cash, financed/collateral, external,
+  mismatched, missing-date or unknown scopes remain blocked. SDK rejection is
+  still possible. The automatic stock-availability path remains unchanged.
+- Stock acquisitions and virtual sale receivables are written atomically by the
+  existing fill reducer. Unsettled sale proceeds remain unavailable until T+2
+  from their conservatively observed session. No second fill reducer is added.
+  A missing manual closing baseline keeps cross-day new risk stopped, while a
+  verified settled owned stock exit can still proceed. No previous-close value
+  or calendar fallback is invented.

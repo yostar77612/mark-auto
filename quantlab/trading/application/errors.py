@@ -10,6 +10,16 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'manual_book_not_enabled': ErrorText('尚未啟用這個帳戶的人工模擬帳本。', '確認應用程式虛擬額度及空倉對帳結果後啟用；這不是券商餘額。'),
+    'manual_confirmation_required': ErrorText('這項人工模擬操作需要明確確認。', '核對帳戶、目前狀態與風險預覽後再確認。'),
+    'manual_account_observation_required': ErrorText('尚未取得完整且新鮮的委託與部位對帳。', '等待帳戶查詢完成；未知資料不會視為空倉或零餘額。'),
+    'manual_test_required': ErrorText('尚未完成這次連線的微台模擬測試。', '確認虛擬額度後執行單筆測試；遠離行情的價格仍可能成交。'),
+    'manual_futures_test_required': ErrorText('請先切換已勾選的期貨帳戶完成微台測試。', '測試只證明這次連線的微台委託結果，其他商品仍以券商實際回報為準。'),
+    'manual_test_pending': ErrorText('微台測試委託仍待確認。', '保留原要求與風險預留，等待回報與對帳，不要重送。'),
+    'manual_unprotected_position': ErrorText('人工模擬帳本仍有未建立保護單的部位。', '風險估算價不代表已掛停損；請人工管理並核對部位。'),
+    'manual_restarted': ErrorText('人工模擬帳本已重新啟動，新單暫停。', '重新對帳後明確確認恢復；原額度與損益紀錄會保留。'),
+    'manual_day_baseline_required': ErrorText('人工模擬帳本缺少跨日收盤證據。', '新倉保持停止，不會虛構前收盤損益或重設額度。'),
+    'manual_quantity_amend_unsupported': ErrorText('本輪人工模擬只支援不增加風險的改價。', '數量修改尚未開放；先核對已成交及剩餘委託，必要時明確撤單。'),
     'production_orders_disabled': ErrorText('正式環境的下單、改單與撤單尚未啟用。', '此環境可查看行情與帳務；請切換至券商模擬測試委託。'),
     'market_data_not_configured': ErrorText('尚未設定行情連線。', '到設定頁填入環境與 API 金鑰引用名稱。'),
     'market_data_login_failed': ErrorText('行情登入失敗。', '確認金鑰已用 store_sinopac_key.py 存入，並檢查網路後重試。'),

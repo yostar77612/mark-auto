@@ -89,9 +89,12 @@ AST oracle continues to require exactly the original two paper submit callers
 and the same two intent writers, with risk rejection before the intent write.
 Its original expected sets and historical catalogue hashes are unchanged.
 
-`tests/test_paper_lock_b2.py` independently enumerates all five v2 submit call
-sites (coordinator entry, engine exit, both lifecycle roll legs, and the sole
-adapter submission in `ExecutionService.commit`). The exhaustive production
+`tests/test_paper_lock_b2.py` independently enumerates all six v2 submit call
+sites (coordinator entry, engine exit, both lifecycle roll legs, the M2-2 explicit
+manual SIM intent wrapper, and the sole adapter submission in
+`ExecutionService.commit`). The manual wrapper is not a second commit authority;
+it passes a confirmed, journaled app-owned manual intent to `TradingEngine.submit`
+without creating an ACTIVE strategy or research/OOS evidence. The exhaustive production
 scan includes the v2 Qt tree and composition entry point. Every new site fails
 this inventory until reviewed. The sole state-bearing execution commit caller
 is `TradingEngine.submit`; ordinary argument-free SQLite transaction commits are

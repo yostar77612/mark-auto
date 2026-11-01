@@ -72,7 +72,8 @@ def cancel_entries(engine: 'TradingEngine') -> None:
                 failures.append(exc.code)
     if engine.simulation:
         engine.simulation.persist_remote()
-    poll_events(engine)
+    if not engine.state.manual_books:
+        poll_events(engine)
     if failures:
         engine._persist(
             'entry_cancel_requires_attention',
@@ -81,6 +82,8 @@ def cancel_entries(engine: 'TradingEngine') -> None:
 
 
 def resume(engine: 'TradingEngine') -> None:
+    if engine.state.manual_books:
+        raise DomainError('manual_confirmation_required', 'manual books require scoped explicit resume')
     if not engine.state.reconciled or engine.state.issues or engine.storage_failed or engine.state.engine_closed:
         raise DomainError('reconciliation_required', 'engine requires reconciled healthy state')
     if engine.state.trading_day in engine.state.daily_locks:
