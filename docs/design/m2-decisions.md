@@ -1684,3 +1684,21 @@ both branches. No raw log or history is rewritten. Recovery module/function
 line counts are unchanged, so this one-line fix needs no unrelated baseline
 refresh. Pre-edit recovery upstream impact LOW:4 direct callers,5 total,
 with the shared timer flow still separately treated as HIGH.
+
+## M2-1 / independent smoke AST baseline and full repeat
+
+Exact caa6636 complete discovery4005/1427.181s records11 failures,22 errors,
+42 existing skips. Its sole new failed identity is the locked canonical smoke
+AST fingerprint in test_t11_part_b; the deliberate earlier joined-manager
+recovery call/timer stop-restart/cached report changed that exact body. Keep the
+whole raw run SHA2566a630a4a425fdedea69cb7fda9271299656829b198d6ea3f64f1103c991a68cd
+as failed history, not a zero-new-failure acceptance claim.
+
+Use an independent fixture-only commit to change ONLY SMOKE_DIGEST from
+b69ea4fa50829c6303ea9b8ba46c2f84d52a74948d828b8fadd46e54ea4e70cc to
+3737569e56810e75e96316e518479adf1d7f034f453d4930de2c997aeac93fe4.
+The original equality assertion, canonicalization, metadata expected counts,
+handler and terminal-finally hashes, budgets and all skip conditions stay
+unchanged. All11 startup-contract tests PASS0.180s after the baseline update.
+Repeat complete discovery on both final branches before push; do not waive this
+new failure or infer the new complete result solely from the focused check.
