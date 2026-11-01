@@ -964,3 +964,17 @@ histories. Keep all1192 non-documentation entries exact at tested4fd1f6e. Repair
 only the missing three existing M2-6 test-file registrations in an independent
 inventory baseline commit; no Python body, fixture, timing, size limit, skip or
 assertion changes. CI must be fully green on the pushed stacked PR; no main merge.
+
+## M2-1 / complete-discovery frozen-probe correction
+
+The first final M2-1 full run completed3996 tests in1416.477s with10 failures,
+23 errors and42 existing skips. One NEW error was a real compatibility omission:
+packaging/broker_probe.py still constructed ShioajiSDKFacade without the newly
+required immutable environment. Its existing strict mocked frozen test reproduces
+the TypeError; no assertion changes are needed. Pass Environment.LIVE explicitly
+in this inert metadata-only probe: the SDK constructor remains replaced by the
+existing denial function, and the test proves zero construction/login/operations.
+Exact probe impact is LOW (2 nodes, one packaging caller); its nine existing
+checks pass0.426s after the correction. Record the failed complete run rather than
+waiving it. A new complete suite follows on the corrected source. No SDK pin,
+execution guard, test limit, skip or real credential/broker operation changes.
