@@ -28,9 +28,18 @@ strings and UTC timestamps; no network trading service or pickle is used.
 
 ## Distinct v1 and v2 execution contracts
 
-The permanent v1 live prohibition remains unchanged. The v2 Shioaji adapter has
-separate capabilities, account/environment references, CA evidence and explicit
-execution gates. It defaults disconnected, read-only and execution disabled.
+The permanent v1 research/Paper real-order prohibition remains unchanged. The
+owner's 2026-11-01 decision D1 updates the v2 policy: production orders disabled
+by default; future enablement requires a separate, explicit owner decision.
+Throughout M2, LIVE production orders must remain hard-disabled at the program
+boundary, without a UI or configuration opt-in. Only SinoPac broker-simulation
+orders are authorized for subsequent M2-2 implementation and verification; this
+policy change does not enable them. Real credentials, CA activation and external
+financial operations are not authorized agent verification actions.
+
+The v2 Shioaji adapter has separate capabilities, account/environment references,
+CA evidence and explicit execution gates. It currently defaults disconnected,
+read-only and execution disabled; M2-0 changes no runtime gate.
 Settings/readiness checks only inspect explicit local metadata and references;
 they do not read financial credentials, log in or submit/cancel/amend orders.
 No success in local simulation authorizes a real operation.
@@ -74,7 +83,8 @@ The existing v1 test/quality gates and timeouts remain unchanged.
 ## Execution inventory and catalogue compatibility
 
 The owner explicitly authorizes the separate v2 execution architecture in this
-mission. This does not broaden the v1 permanent-live-disabled contract. The v1
+mission. D1 changes only the v2 future-production policy and authorizes subsequent
+broker-simulation implementation; the permanent v1 real-order prohibition remains. The v1
 AST oracle continues to require exactly the original two paper submit callers
 and the same two intent writers, with risk rejection before the intent write.
 Its original expected sets and historical catalogue hashes are unchanged.
@@ -127,7 +137,7 @@ readiness, source research, LOCAL simulation and default offline packaging do
 not call the loader. No importlib indirection hides the dependency from scans.
 
 This is a narrow v2 composition contract, not a general SDK import exemption.
-Legacy forbidden imports/calls, permanent v1 execution prohibitions and domain
+Legacy forbidden imports/calls, permanent v1 real-order prohibitions and domain
 stdlib boundaries remain in force. The research gate owns the exact path and
 function exception; independent tests continue rejecting SDK imports elsewhere.
 SDK loader tests additionally verify inert import, missing dependency, exact

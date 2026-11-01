@@ -80,7 +80,10 @@ class AdrGlossaryTests(unittest.TestCase):
     def test_safety_boundaries_remain_explicit(self):
         for path in [*sorted((DOCS / 'adr').glob('*.md')), DOCS / 'GLOSSARY.md']:
             with self.subTest(path=path.name):
-                self.assertIn('live trading permanently disabled', path.read_text(encoding='utf-8'))
+                # Owner decision D1 (2026-11-01) changes policy wording only.
+                text = path.read_text(encoding='utf-8')
+                for boundary in ('production orders disabled by default', '2026-11-01', 'D1'):
+                    self.assertIn(boundary, text)
         oos = (DOCS / 'adr/0001-oos-consumption-and-budget.md').read_text(encoding='utf-8')
         for boundary in ('Paper 30 s', 'smoke 40 s', '每 job 15 min', '230/300', '不隱式重試'):
             self.assertIn(boundary, oos)

@@ -87,7 +87,11 @@ against a single immutable post-mark position/cash snapshot. Risk validates
 the resulting plan before any simulated execution is queued; risk failure
 cannot leave partially queued strategy orders. Planning must be deterministic
 and independent of source call order. This ADR introduces no new order path;
-live trading permanently disabled.
+production orders disabled by default. The owner's 2026-11-01 decision D1
+requires separate explicit owner authorization for any future production-order
+enablement. M2 keeps production orders hard-disabled; only SinoPac broker-simulation
+orders are authorized for subsequent implementation and verification. The v1
+research/Paper real-order prohibition remains permanent.
 
 ### Validation and period identity
 
@@ -268,8 +272,10 @@ support follows from this ADR.
 No eval, exec or new Function; no dynamic code execution. Strategies remain
 finite AST rules with existing validation bounds. OOS one-time consumption,
 irreversible budget, fail-closed validation and no implicit retries remain.
-Timeouts are not loosened: Paper 30 s, smoke 40 s, 15 min per job. Live trading
-remains permanently disabled and no new order path is introduced.
+Timeouts are not loosened: Paper 30 s, smoke 40 s, 15 min per job. Production
+orders remain disabled by default and hard-disabled throughout M2; this policy
+amendment introduces no order path or LIVE opt-in. The dated verification below
+records the original ADR checks, not verification of subsequent M2 implementation.
 
 The unchanged [B5 ADR format test](../../tests/test_adr_glossary.py) parses this
 record using the existing three-section format. Documentation layering and
