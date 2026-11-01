@@ -266,8 +266,8 @@ class TradingUiTests(unittest.TestCase):
     def test_execution_drawdown_distinguishes_unknown_history_from_proven_zero(self):
         legacy = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
         self.window.apply_state(replace(self.window.state, version=2, performance=(legacy,)))
-        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('v2.attributed_pnl'))
-        self.assertEqual(self.window.performance.horizontalHeaderItem(8).text(), ui_text('v2.drawdown_recorded'))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('m2t.adjusted_pnl'))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(8).text(), ui_text('m2t.recorded_drawdown'))
         self.assertIn(ui_text('v2.performance_valuation_hint'), self.window.performance.horizontalHeaderItem(8).toolTip())
         self.assertEqual(self.window.performance.item(0, 7).text(), ui_text('v2.drawdown_unknown'))
         self.assertEqual(self.window.performance.item(0, 8).text(), ui_text('v2.drawdown_unknown'))
