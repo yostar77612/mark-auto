@@ -149,6 +149,62 @@ class SharedCoordinatorTests(unittest.TestCase):
         for environment in (Environment.BROKER_SIMULATION, Environment.LIVE):
             with self.subTest(environment=environment), laboratory(environment=environment) as (engine, broker, port, spec, history):
                 before = engine.clock.now(), engine.state.trading_day
+                if environment is Environment.LIVE:
+                    with self.assertRaises(DomainError) as rejected:
+                        run_cycle(engine, history)
+                    self.assertEqual(rejected.exception.code, 'production_orders_disabled')
+                    self.assertEqual(port.received, [])
+                    self.assertEqual(broker.submission_count, 0)
+                    self.assertFalse(engine.state.orders)
+                    self.assertFalse(engine.state.positions)
+                    # Seed a historical order only in the local exchange double.
+                    # It is report-observation evidence, never a LIVE submit.
+                    from hashlib import sha256
+                    from quantlab.trading.application.codec import dumps
+                    from quantlab.trading.application.coordinator import run_readonly_cycle
+                    from quantlab.trading.application.state import LocalOrder
+                    from quantlab.trading.domain.models import Reservation
+
+                    record = engine.state.strategies[-1]
+                    plan = replace(
+                        fixtures.plan(spec, environment=environment),
+                        strategy_id=record.strategy_id,
+                        strategy_version=record.version,
+                        limit_price=D('101'),
+                        state_version=engine.state.version,
+                    )
+                    receipt = broker.submit(replace(plan, environment=Environment.LOCAL), 'historical-local-fixture')
+                    reservation = Reservation(
+                        'historical-local-fixture',
+                        plan.account_ref,
+                        plan.instrument_id,
+                        spec.underlying,
+                        engine.fees.entry_cash(spec, plan.limit_price, plan.quantity),
+                        engine.fees.loss_at_stop(spec, plan.limit_price, plan.stop_price, plan.quantity),
+                        plan.quantity,
+                        OrderStatus.RESERVED,
+                    )
+                    order = LocalOrder(
+                        'historical-local-fixture',
+                        'historical-key',
+                        sha256(dumps(plan).encode()).hexdigest(),
+                        plan,
+                        record.policy,
+                        reservation,
+                        OrderStatus.ACCEPTED,
+                        broker_ref=receipt.broker_order_ref,
+                    )
+                    engine._persist('historical_local_report_fixture', replace(engine.state, orders=(order,)))
+                    engine.configuration = replace(engine.configuration, read_only=True)
+                    run_readonly_cycle(engine)
+                    self.assertFalse(engine.state.positions)
+                    broker.fill(order.order_id, 1, D('101'))
+                    run_readonly_cycle(engine)
+                    self.assertEqual(engine.state.positions[0].quantity, 1)
+                    self.assertEqual(port.received, [])
+                    self.assertEqual(broker.submission_count, 1, 'only the explicit local fixture seed exists')
+                    self.assertEqual((engine.clock.now(), engine.state.trading_day), before)
+                    continue
                 run_cycle(engine, history)
                 self.assertEqual(len(port.received), 1)
                 self.assertIs(port.received[0].environment, environment)
