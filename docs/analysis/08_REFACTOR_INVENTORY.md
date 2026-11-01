@@ -704,7 +704,6 @@ PR E4 market/history owners (content-only):
 | `desktop_app/components/disclosure.py` | 17 | presentation | `desktop_app/components/disclosure.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/context_header.py` | 44 | presentation | `desktop_app/features/trading/context_header.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/m1_ui.py` | 14 | shared | `desktop_app/strings/m1_ui.py` | M1: reviewed new module; existing rows and layer rules retained. |
-| `desktop_app/features/trading/market_data_panel.py` | 78 | presentation | `desktop_app/features/trading/market_data_panel.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/marketdata.py` | 18 | shared | `desktop_app/strings/marketdata.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/adapters/shioaji/market_session.py` | 267 | infrastructure | `quantlab/trading/adapters/shioaji/market_session.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/adapters/shioaji/symbol_directory.py` | 75 | infrastructure | `quantlab/trading/adapters/shioaji/symbol_directory.py` | M1: reviewed new module; existing rows and layer rules retained. |
@@ -746,6 +745,48 @@ PR E4 market/history owners (content-only):
 | `desktop_app/features/trading/trading_page_widgets.py` | 79 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
 
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
+| `quantlab/trading/application/sinopac_contracts.py` | 113 | application | `quantlab/trading/application/sinopac_contracts.py` | M2-1: scoped reference settings, redacted accounts and independent connection read model; no SDK or IO. |
+| `tests/test_sinopac_contracts.py` | 98 | tooling | `tests/test_sinopac_contracts.py` | M2-1: pure boundary and old-wire compatibility checks; no engine or broker. |
+| `tests/test_sinopac_facade_environment.py` | 30 | tooling | `tests/test_sinopac_facade_environment.py` | M2-1: explicit immutable facade environment using inert SDK stand-ins. |
+| `quantlab/trading/adapters/shioaji/account_discovery.py` | 44 | infrastructure | `quantlab/trading/adapters/shioaji/account_discovery.py` | M2-1: full native identity to stable masked alias; no persistence or SDK construction. |
+| `quantlab/trading/adapters/shioaji/shared_session.py` | 199 | infrastructure | `quantlab/trading/adapters/shioaji/shared_session.py` | M2-1: one native owner, independent callback consumers and quote/scanner leases. |
+| `quantlab/trading/runtime/sinopac_calendar.py` | 72 | composition | `quantlab/trading/runtime/sinopac_calendar.py` | M2-1: explicit 2026 common-window dates and versioned source references. |
+| `quantlab/trading/runtime/sinopac_certificate.py` | 35 | composition | `quantlab/trading/runtime/sinopac_certificate.py` | M2-1: optional reference-only CA transition; native person identity remains internal. |
+| `quantlab/trading/runtime/sinopac_classification.py` | 42 | composition | `quantlab/trading/runtime/sinopac_classification.py` | M2-1: bounded public ISIN classification with published date and response hash. |
+| `quantlab/trading/runtime/sinopac_connection.py` | 177 | composition | `quantlab/trading/runtime/sinopac_connection.py` | M2-1: explicit generation/revision owner lifecycle; inert startup and deadline acceptance. |
+| `quantlab/trading/runtime/sinopac_legacy.py` | 54 | composition | `quantlab/trading/runtime/sinopac_legacy.py` | M2-1: bounded confirmed legacy logout barrier before unified login. |
+| `quantlab/trading/runtime/sinopac_resources.py` | 151 | composition | `quantlab/trading/runtime/sinopac_resources.py` | M2-1: generated account-scoped contract/calendar/estimated-fee resources and daily limits. |
+| `quantlab/trading/runtime/sinopac_settings.py` | 110 | composition | `quantlab/trading/runtime/sinopac_settings.py` | M2-1: reference preferences and masked historical alias metadata; no credentials. |
+| `quantlab/trading/runtime/sinopac_transition.py` | 210 | composition | `quantlab/trading/runtime/sinopac_transition.py` | M2-1: owned SDK candidate acceptance/cleanup, discovery, selection and truthful readiness. |
+| `tests/test_sinopac_ca_classification.py` | 48 | tooling | `tests/test_sinopac_ca_classification.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_connection.py` | 182 | tooling | `tests/test_sinopac_connection.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_market_adoption.py` | 41 | tooling | `tests/test_sinopac_market_adoption.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_resources.py` | 72 | tooling | `tests/test_sinopac_resources.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_runtime_routing.py` | 227 | tooling | `tests/test_sinopac_runtime_routing.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_shared_session.py` | 70 | tooling | `tests/test_sinopac_shared_session.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tools/store_sinopac_ca.py` | 30 | tooling | `tools/store_sinopac_ca.py` | M2-1: explicit password-only Windows credential enrollment; never loads SDK or activates CA. |
+
+| `desktop_app/features/trading/sinopac_panel_text.py` | 92 | presentation | `desktop_app/features/trading/sinopac_panel_text.py` | M2-1: literal Chinese phase, signed, certificate and four-readiness rendering; no vendor messages, SDK or IO. |
+| `desktop_app/features/trading/sinopac_ui.py` | 54 | presentation | `desktop_app/features/trading/sinopac_ui.py` | M2-1: connection signal/receipt/snapshot bridge with independent generation/revision; no SDK or IO. |
+| `desktop_app/strings/sinopac_connection.py` | 86 | shared | `desktop_app/strings/sinopac_connection.py` | M2-1: 72 additive literal records, phase62/orders2806–2877; no alias or historical-value changes. |
+| `tests/test_sinopac_panel_ui.py` | 189 | tooling | `tests/test_sinopac_panel_ui.py` | M2-1: reference-only Qt controls, masked account intents, Decimal drafts, CA picker and stale Cancel-confirmation proof. |
+| `tests/test_sinopac_window_ui.py` | 287 | tooling | `tests/test_sinopac_window_ui.py` | M2-1: real TradingWindow with fake async connection facts; independent book/revision and both-size keyboard/layout proofs. |
+
+M2-1 replaces the former M1 `market_data_panel.py` module and the old primary
+twelve-reference BrokerPanel form with the single three-step connection panel.
+The existing BrokerPanel target now has315 lines (class297, no function over50);
+its historical source-path row remains relocation evidence, not a second form.
+Legacy profile import and offline metadata commands remain available. The shared
+backend owner registers sinopac_contracts.py in its own additive inventory commit.
+
+Window remains an inherited624-line orchestration module (TradingWindow533,
+apply_state91). M2-1 moves connection wiring/render/receipt ownership into the
+54-line sinopac_ui.py instead of adding another controller framework. The next
+narrow split is context navigation/confirmation from the remaining window owner;
+financial book validation stays at the application boundary. No size threshold
+or existing assertion changes. The legacy measure_ui_sizes --check diagnostic
+also reports pre-existing historical rows outside this feature; this slice does
+not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 
 | `desktop_app/features/trading/manual_actions.py` | 263 | presentation | `desktop_app/features/trading/manual_actions.py` | M2-2: scope-captured manual confirmation and existing asynchronous command port; no SDK or economic authorization. |
 | `desktop_app/features/trading/manual_form.py` | 89 | presentation | `desktop_app/features/trading/manual_form.py` | M2-2: Decimal inputs and server-provided whole-lot conversion. |

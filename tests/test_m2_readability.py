@@ -129,7 +129,7 @@ class M2ReadabilityTests(unittest.TestCase):
             (0, 'overview_start', ui_text('v2.start_hint')),
             (3, 'trading_control', ui_text('v2.control_hint')),
             (4, 'performance_explanation', ui_text('v2.performance_hint') + '\n\n' + ui_text('v2.performance_valuation_hint')),
-            (5, 'settings_context', ui_text('v2.context_navigation_hint') + '\n\n' + ui_text('v2.external_hint')),
+            (5, 'settings_context', ui_text('m2.connection.context_help') + '\n\n' + ui_text('v2.external_hint')),
         ):
             with self.subTest(page=index):
                 self.window.navigation.setCurrentRow(index)

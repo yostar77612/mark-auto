@@ -18,7 +18,7 @@ listing, subscriptions, CA activation and callback registration.
 from typing import Callable, cast
 
 from .sdk import SDK_VERSION, sdk_decimal, sdk_text, sdk_value
-from quantlab.trading.domain.models import PriceBand, validate_price_bands
+from quantlab.trading.domain.models import Environment, PriceBand, validate_price_bands
 from quantlab.trading.domain.validation import DomainError, identity
 
 
@@ -123,14 +123,21 @@ class ShioajiSDKFacade:
     gateway/application must retain UNKNOWN exposure and reconcile it.
     """
 
-    def __init__(self, client: object, sdk_module: object, *, query_timeout_ms: int = 2500, order_timeout_ms: int = 10000):
+    def __init__(self, client: object, sdk_module: object, *, environment: Environment, query_timeout_ms: int = 2500, order_timeout_ms: int = 10000):
         if getattr(sdk_module, '__version__', None) != SDK_VERSION:
             raise DomainError('capability_missing', 'pinned SDK version required')
+        if not isinstance(environment, Environment) or environment not in (Environment.BROKER_SIMULATION, Environment.LIVE):
+            raise DomainError('capability_missing', 'explicit broker environment required')
+        self._environment = environment
         self._client = client
         self._module = sdk_module
         self.query_timeout_ms = _budget(query_timeout_ms)
         self.order_timeout_ms = _budget(order_timeout_ms)
         self.contracts = ShioajiContractStore(client)
+
+    @property
+    def environment(self) -> Environment:
+        return self._environment
 
     def _enum(self, name: str, value: object, permitted: tuple[str, ...]) -> object:
         text = sdk_text(value)
@@ -157,6 +164,11 @@ class ShioajiSDKFacade:
     def market_contracts(self, security_type: str) -> list[object]:
         if security_type not in ('STK', 'IND'):
             raise DomainError('validation_failed', 'watch security type')
+        return _rows(_callable(self.contracts._store(), 'list')(security_type))
+
+    def execution_contracts(self, security_type: str) -> list[object]:
+        if security_type not in ('STK', 'FUT'):
+            raise DomainError('validation_failed', 'execution security type')
         return _rows(_callable(self.contracts._store(), 'list')(security_type))
 
     def market_contract(self, code: str) -> object:
@@ -255,6 +267,12 @@ class ShioajiSDKFacade:
     def list_trades(self) -> list[object]:
         # Official list_trades is a local snapshot API without timeout argument.
         return _rows(_callable(self._client, 'list_trades')())
+
+    def trade_cache_health(self, *, account: object) -> object:
+        # Pinned 1.7.9 is account-scoped and has no timeout parameter.
+        if account is None:
+            raise DomainError('capability_missing', 'explicit SDK account required')
+        return _callable(self._client, 'trade_cache_health')(account)
 
     def _callback(self, name: str, callback: Callable[..., None], *, bind: bool | None = None) -> None:
         if not callable(callback) or bind is not None and type(bind) is not bool:

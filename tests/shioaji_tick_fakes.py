@@ -71,7 +71,7 @@ def tick_gateway(*, sdk_type=TickSDK, **kwargs):
     specs = tuple(replace(instrument(Market.INDEX_FUTURE), instrument_id=f'WATCH:{i}') for i in range(25))
     sdk, clock, resolver = sdk_type(specs), MutableClock(), TickResolver()
     module = SimpleNamespace(__version__=SDK_VERSION, Unit=Unit, QuoteType=QuoteType, QuoteVersion=QuoteVersion)
-    facade = ShioajiSDKFacade(sdk, module)
+    facade = ShioajiSDKFacade(sdk, module, environment=Environment.BROKER_SIMULATION)
     gateway = ShioajiAdapter(
         facade,
         clock,

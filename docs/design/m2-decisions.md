@@ -513,6 +513,325 @@ then passed in0.003s, including old-field omission and malformed settings. This
 slice starts no engine, SDK or child process. Inventory/baseline registration
 is a separate precise commit; broader runtime implementation is still pending.
 
+## M2-1 / immutable facade environment — 2026-11-01
+
+Require ShioajiSDKFacade(client,module,environment=Environment...) explicitly;
+neither native simulation flags nor a LOCAL default establish execution scope.
+Expose a getter-only environment property; factory and retained legacy market
+construction pass their immutable configured environment. The manual-execution
+agent owns guards in the three existing mutation bodies and a central predicate,
+so this slice does not replace those bodies or add a second order path.
+
+Two pure tests went RED before implementation and now pass. With existing fake
+facade, tick-stream and price-band cases,33 tests passed in4.573s. Existing fake
+constructor sites receive only explicit BROKER_SIMULATION arguments; original
+assertions and expected requests remain intact. Those fixture edits and new
+module inventory rows are a separate commit. Source impacts: facade MEDIUM
+(10 direct), factory LOW(4), MarketSession LOW(2). UNKNOWN test/helper file
+impacts were confirmed via direct imports and unittest discovery references.
+
+## M2-1 / precise constructor fixtures and inventory — 2026-11-01
+
+This independent fixture commit adds only explicit BROKER_SIMULATION arguments
+at the six existing fake facade construction sites across the shared tick fake,
+SDK facade and price-band fixtures, plus the required Environment import. All
+old assertions, timeout cases, request expectations and failure paths remain.
+Register only the three reviewed new DTO/environment-test modules in inventory;
+no historical producer hash, appearance baseline, string or SDK pin is repinned.
+
+Complete source/fixture change detection reports16 symbols across9 files and
+CRITICAL graph risk with613 listed affected processes, dominated by the shared
+tick_gateway test-helper node. Source search confirms its direct consumers are
+the tick fixture modules; this does not waive the CRITICAL warning or replace
+tests. All33 relevant fake tests passed. Future source PR notes retain this
+warning and the index's dynamic receiver/process-cap limitations explicitly.
+
+## M2-1 / shared native owner — 2026-11-01
+
+One SharedSDKSession authenticates with trade reports enabled. Typed facade
+consumers retain the same immutable environment and execution guards. Native
+callback registration occurs once per event; callback failures are counted,
+sanitized and isolated from other consumers. Quote/scanner leases are shared;
+consumer logout detaches only its callbacks/subscriptions. Native logout is
+the owner's responsibility. Existing MarketSession can adopt a consumer, so
+directory, history, tick and scanner services use the authenticated session.
+
+Four new fake-only tests were RED before implementation. With the existing
+market session and controller regressions, all13 focused tests pass in0.050s.
+No SDK import, real credentials, CA, broker orders or engine process occurred.
+MarketSession.connect impact was UNKNOWN (dynamic receivers), confirmed by
+runtime and test source references. Disconnect impact was CRITICAL (2direct,
+167flows); its existing body remains unchanged. Adoption reuses that body via
+the consumer's detach-only logout, preserving legacy independent sessions.
+
+## M2-1 / unified backend acceptance and routing — 2026-11-01
+
+The explicit profile-free RuntimeLaunch.sinopac mode owns a single SDK session
+in one stable environment host (SINOPAC:environment). Its process seed stays
+sinopac-pending; navigating discovered account aliases changes only the client
+view. LOCAL first-connect routes connection/market intents to that host while
+preserving LOCAL cash, positions, book version and selected context. Switching
+to SIM remains a separate navigation intent. Environment replacement confirms
+the previous native logout before constructing/logging in the next client.
+Unknown logout remains blocked on retries; no process termination is used.
+An existing connected legacy market/profile session is retired through the same
+bounded explicit transition before unified login; legacy profile files and
+hash-pinned resource loading remain supported for their existing callers.
+
+Connection generation is an opaque UUID. Material accepted state changes use a
+persisted monotonic revision, independent of ticks/book version. Composite
+projection offsets revisions across environment hosts and maps CAS back without
+refreshing a stale intent to a newer native revision. Owned workers have the
+existing eight-second acceptance deadline. Disconnect waits on an Event for at
+most7.5seconds outside book locks. Expired login/account/CA completions cannot
+promote; candidates clean up normally. Close is bounded and reports uncertainty.
+Trusted factory/SecretResolver/resource-factory injection passes through
+serve/build_runtime for offline integration; startup never resolves secrets.
+
+Discovered aliases derive from the complete environment/account-type/broker/id
+identity. Only masked labels, signed tri-state and reason codes cross the wire.
+Preferences preserve references, selected aliases and generated masked metadata
+with identity hashes; raw account IDs/person_id/passwords are never saved.
+Historical/unselected/disappeared aliases remain available for book navigation,
+with unknown or unavailable evidence, independently of current selection. This
+never removes trading obligations; M2-2 owns canonical ledger reconciliation.
+Query readiness requires successful selected-account position queries. Callback
+delivery failures explicitly degrade readiness; simulation execution remains
+implementation_pending in this M2-1 slice and production is always blocked.
+
+The generated catalogue initially supports ordinary cash security2330 and the
+nearest actual, unexpired TMF month. Native ContractV2 supplies lot, multiplier,
+month/expiry, ticks and optional daily price limits. Missing limits remain
+missing. Stock classification comes from bounded automatic public ISIN data,
+not SDK industry codes or symbol guesses. Publication date and full response
+SHA are retained. The official page observed2026-11-01 was10,186,180bytes,
+SHA256 de68b53f834f4b17dab7a9125f932c4a270c202ec9deed7e672d564ddf170e54;
+its2330 row parsed TW0002330008/ESVUFR with publication2026-11-01. Read budget
+is2.5seconds and32MiB; unavailable/stale classification blocks that stock's
+resource generation while market/account services remain usable.
+
+Calendar coverage is explicitly2026 only:242 positive scheduled common dates,
+after excluding the independently recorded July10 TAIFEX closure. Its window
+09:00<=t<13:30 is a conservative shared manual window, not full TMF hours or an
+actual-open/emergency-completeness guarantee. 2027 is unavailable, never guessed.
+M1 quote/history sessions retain their independent received-timestamp behavior.
+Fees are versioned application estimates (adjustable stock-fee discount), not
+broker billing. TMF35050TWD initial margin is the dated TAIFEX exchange reference
+2026-08-12 observed2026-11-01, never fabricated broker funds. No positive broker
+cash/equity or global atomic order observation is inferred from simulation zeros.
+
+New CA enrollment stores only ca_password under the certificate reference. The
+legacy triple credential schema remains intact for its existing path. Explicit
+optional activation derives person_id from selected native accounts and uses a
+user-selected PFX path; references alone cross UI/IPC. SIM defaults NOT_REQUIRED
+based on official documentation, not owner real-SIM verification. Tests use an
+invalid fake certificate file and fake SDK callable only; no real CA was used.
+
+Pre-edit routing impacts are CRITICAL for RuntimeLaunch, RuntimeBundle,
+RuntimeContextManager/_Entry, ContextIpcFacade, CompositeFacade, desktop entry
+points and server dispatch/serve (broad160+flow attribution). Resolver impact is
+CRITICAL as previously recorded. UNKNOWN targets were checked against source.
+The new calendar builder's first symbol lookup occurred after initial creation;
+this local workflow miss is retained rather than represented as a pre-edit
+check. Subsequent source review, fake boundary tests and full change detection
+cover the resulting definition. No FTS/vector extension was installed.
+
+## M2-1 / exact inventory baseline — 2026-11-01
+
+The source commit e640eb0 is followed by an independent inventory-only change
+for the seventeen new backend/test/tool modules since af262ab. Each row retains
+its actual path, line count and reviewed layer. The three DTO/environment rows
+already added by af262ab remain unchanged. Historical rows/producer hashes and
+all existing assertions remain intact; no appearance/catalog baseline is reset.
+The existing bootstrap module remains an explicit composition boundary rather
+than moving its public lifecycle during this feature; new owner/resource modules
+are bounded and their functions meet the50-line readability target.
+
+Complete source detect reported130symbols/29files/608flows at CRITICAL risk,
+with no partial/truncated flags. One existing desktop.py parse_args record has
+an empty graph UID (its pre-edit impact still reported187direct callers). This
+is retained as an index limitation, not an unused/unaffected claim. Actual parser
+source and existing CLI tests were independently verified. Raw CLI report and
+structured flag/UID summary are in ignored .tmp/m2-backend-detect files.
+
+## M2-1 / single three-step connection presentation — 2026-11-01
+
+Use one visible BrokerPanel for environment/key save-and-connect, discovered
+masked accounts and optional certificate references. Remove the independent
+MarketDataPanel and twelve-reference primary form rather than keeping hidden
+obsolete controls. Retain the existing legacy profile import in the collapsed
+advanced section, and preserve offline legacy metadata persistence/readiness
+coverage through its typed commands. Account identities, SDK objects, secrets,
+person_id and certificate contents never enter the widget implementation.
+
+The connection draft defaults to broker simulation and the documented OS key
+reference. It is separate from the accepted Trade/Settings book selectors;
+connecting, a failed request or an unacknowledged request cannot switch a LOCAL
+book. Connection generation/revision are submitted independently of engine
+version. Render the connection view before same-book, stale-book and market-only
+shortcuts; reject older connection revisions. User-edited references and Decimal
+fee discount survive polling and book navigation, and only a matching accepted
+receipt clears those drafts. Checkbox clicks submit aliases then immediately
+restore accepted selection until the acknowledgement. An IPC failure shows
+unknown liveness rather than retaining a successful connection status.
+
+Certificate selection is reference-only and optional. Simulation's NOT_REQUIRED
+status follows the official contract, not a real-credential experiment. The
+shared runtime owns credential resolution, connection reuse, signed/permission
+validation and CA activation. Production readiness is always rendered blocked,
+including an inconsistent READY DTO; signed/account discovery alone never grants
+execution. Simulation execution remains pending dependent M2-2. Fee discount is
+editable as Decimal (0 < d <= 1, default1), with built-in estimate assumptions
+explained in help; M2-9 tax/calendar/expiry UX remains second-round scope.
+
+The four intents run through the existing asynchronous worker. Duplicate requests
+are disabled, pending status is neutral, account/CA controls open progressively,
+and disconnect requires native confirmation with Cancel as default. Capture its
+revision/generation before the dialog and reject a connection replaced while the
+dialog is open. Reasons are mapped to literal Chinese catalogue keys, never
+vendor text. Account-data absence does not assert that the broker has zero
+accounts. Help remains title-right; style rules are scoped in theme.py.
+
+Work is exclusive to codex/m2-1-connection-ui, normally merged with frozen DTO
+986f7cf. Catalogue phase62 owns orders2806–2877; M2-2 starts phase63/order2878.
+Pre-edit graph risks are retained: Window.command/_run and theme/catalog are
+CRITICAL; translation_parts HIGH. Dynamic/unittest UNKNOWN callers were checked
+against source/discovery. The current UI source has no real SDK import or
+financial operation. Full discovery, real startup and remote CI are coordinator
+steps after normal integration with the shared backend; fake-Qt proofs here do
+not establish the M2-2 engine LIVE invariant.
+
+M2-1 integration followup: account/context discovery may change selector choices
+without incrementing the accepted engine book version. A RED/GREEN real-widget
+case required invalidating only presentation before the same-version/market-only
+shortcut; the accepted LOCAL account, positions and dirty connection reference
+remain unchanged. Its named helper impact is CRITICAL (45 upstream sites,
+3 processes,5 modules), retained as a warning alongside source checks rather than
+waived by the graph's shared-name/dynamic gaps. Final backend accounts_unavailable
+and callback_failed reasons map to existing Chinese next-step copy, with explicit
+unknown-readiness tests; no new catalogue records were needed.
+## M2-0 / completed verification and owner follow-up — 2026-11-01T14:57+08:00
+
+- The owner's follow-up assigns the absent market-settings prerequisite to
+  this run and permits dependent implementation after its own green CI,
+  without a main merge. PR #129 reached all35 SUCCESS on run41279585267,
+  attempt2, exact2d8319b. M2-1/M2-2 now proceed in separate worktrees.
+  This supersedes the initial wait-for-merge decision; it does not enable
+  LIVE or authorize second-round automatic trading.
+- Final complete M2-0 discovery on unchanged97e2a8b: 3,888 tests in 2,380.898 s; FAILED (failures=10, errors=27, skipped=42).
+  No new failure identities; all actual traceback differences were reviewed.
+  Preserve the nonzero main-host result honestly. The initial new smoke-marker
+  failure passed on this complete unchanged retry; the separate incomplete
+  permission-loop attempt is excluded rather than called a pass.
+- Use normal user execution for later full suites after diagnosing the
+  restricted-run tempfile retry. Do not change test limits, Windows policy,
+  ACLs, application code or dependencies to hide that harness mistake.
+- Actual LOCAL and fake BROKER_SIMULATION windows returned0 and released their
+  owned resources. Source PR128 had35/35 CI success; final documentation-head
+  CI is verified separately before delivery. Evidence and limitations are in
+  docs/analysis/m2-policy/verification.md and its companion files.
+- This commit adds verification documentation only. No product/test/fixture
+  behavior, G3 source, SDK pin, PROJECT_STATE or acceptance score changes.
+
+
+## M2-6 / final policy evidence merge — 2026-11-01 Asia/Taipei
+
+- Normally merge the completed M2-0 verification documentation, preserving
+  both decision histories. No product, test, tool, catalogue or fixture content
+  changes from tested M2-6 source5285742. No history rewrite or main merge.
+- M2-6 actual LOCAL/fake-SIM startup checks already passed on5285742 with
+  clean normal release. Final branch full discovery is still scheduled after
+  the active M2-8 full suite; no focused/startup pass substitutes for it.
+
+## M2-1 / explicit unified broker startup identity — 2026-11-01
+
+Static review of the prepared actual-startup probe found a genuine entry-path
+gap: configure_launch handled explicit LOCAL/profile requests, then hashed every
+profile-free broker alias into an UNCONFIGURED host. An already registered
+unified alias therefore lost its stable SINOPAC environment host when launched
+directly through _run_window(environment=BROKER_SIMULATION, account_ref=alias).
+
+Before the existing generic fallback, reuse a registered explicit unified entry
+with the same environment and known alias. Keep LOCAL, selected-profile and
+unregistered legacy-alias behavior unchanged. This is metadata routing only;
+it performs no SDK login, host startup, automatic selection or snapshot synthesis.
+The real direct-SIM window probe must use this path, with natural prior owner
+discovery/selection, rather than patching configuration or read models.
+
+The new metadata regression was RED for both SIM and LIVE (hashed contexts
+instead of the registered unified context). After the four-line correction,
+all three UnifiedRegistryTests pass in 0.072s; ensure_engine is mocked and its
+single registration call is checked. No Qt app, host, SDK or process test ran.
+Ruff check/format pass. configure_launch impact is LOW (one direct caller,
+two modules); cached graph/source were read during the coordinator's isolated
+full-suite window. Full index refresh/change analysis and separate commits wait
+for the coordinator to release that exclusive window.
+
+Initial integrated source 90bdda8's prior 96 focused results remain attributed
+to that source only. They are not relabeled as verification of this correction;
+actual direct-SIM startup, updated focused/full and CI remain separate gates.
+
+## M2-1 / LIVE CA remains outside query-only scope — 2026-11-01
+
+The specification limits LIVE to login, market and account queries. The unified
+CA flow is therefore accepted only for BROKER_SIMULATION when explicitly used;
+this does not change the legacy connector CA path. Reject a LIVE CA intent at
+the owner boundary before creating a worker and independently at the executor
+before file/password/native SDK access. Return the existing
+production_orders_disabled reason, which already renders the formal query-only
+Chinese guidance; do not add/reorder catalogue strings or imply LIVE opt-in.
+
+The LIVE certificate path, picker, password-reference and activation controls
+are disabled, with existing formal-readonly guidance in status/tooltips. The
+panel helper stays in the same module and BrokerPanel remains292 lines, below
+its300-line cap. Valid optional SIM activation remains tested with an invalid
+fake PFX file, fake password and fake SDK only.
+
+Both new backend/UI cases were RED first (LIVE request accepted/controls enabled).
+After correction,23 fake, metadata and small-widget tests pass in0.558s. The
+backend test also calls the executor independently and proves zero password
+reads/native CA calls and unchanged accepted view on refusal. Existing SIM
+activation assertions are intact. Impact is LOW for the executor, MEDIUM for
+panel enablement (nine direct,two flows); UNKNOWN dynamic command/test targets
+were confirmed by actual RuntimeBundle callers and unittest references.
+
+After the isolated full8 smoke-sensitive prefix completed, the coordinator
+released a single-worker offline index and these small tests. This does not
+claim the entire full retry ran without later index/Qt activity. Actual startup
+and process-heavy verification remain coordinator-only until that full ends.
+
+## M2-1 / merge graph evidence chronology — 2026-11-01
+
+Documentation merge3623c4447f2e45e55fe6fa8970d37c2589834eaf was committed after
+staged analysis showed59symbols/eight docs/zero flows, LOW, with no missing IDs
+or truncation. At that time scope-all still had an empty UID for the new
+_certificate_controls helper. Using the clean staged subset while that all-scope
+issue remained was a workflow gap; it is not represented as clean precommit
+all-scope validation, and history is not rewritten to obscure the sequence.
+
+An offline forced single-worker rebuild then restored symbol identities
+(20,092nodes/641flows,28.0s). Retrospective exact committed comparison
+90bdda8..3623c44 reports59symbols/eight documentation files/zero flows, LOW,
+zero empty IDs and no partial/truncated flags. Source-all subsequently reports
+21symbols/nine files/eight flows, HIGH, all21returned with zero empty IDs and no
+partial/truncated flags. The HIGH warning is retained alongside actual focused
+tests; it is not lowered through riskSharedAxes or graph absence. These checks
+precede the separate source-fix commit, not the documentation merge.
+
+## M2-1 / scoped LIVE evidence recapture — 2026-11-01
+
+Source36fc1e8 passed23 updated fake/small-widget/metadata tests, Python3.11
+compilation, Ruff and complete all/staged graph checks (23symbols/10files/eight
+flows, HIGH, zero missing IDs/truncation). Under the coordinator's explicit
+lightweight Qt allowance, replace only1366×768/1920×1080 LIVE visual fixtures.
+The audited helper uses public fake DTOs/RecordingFacade and the real window/
+theme, with SDK imports forbidden, no engine/runtime/login/commands. It checks
+CA controls while expanded before restoring the original collapsed capture state.
+Both images retain the LOCAL book, formal connection label and readable readonly
+CA guidance; visual inspection passes and horizontal scrollbar maxima are zero.
+Other scenes and unrelated historical baselines are not regenerated. The capture
+record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
+
 ## M2-2 / scoped manual intent contracts — 2026-11-01
 
 Manual intents carry context id/epoch, environment/account, shared connection's

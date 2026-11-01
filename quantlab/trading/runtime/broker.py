@@ -110,7 +110,7 @@ class ShioajiClientFactory:
             raise DomainError('capability_missing', 'explicit broker environment required')
         from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
 
-        return ShioajiSDKFacade(self.module.Shioaji(simulation=environment is Environment.BROKER_SIMULATION), self.module)
+        return ShioajiSDKFacade(self.module.Shioaji(simulation=environment is Environment.BROKER_SIMULATION), self.module, environment=environment)
 
 
 @dataclass(frozen=True)

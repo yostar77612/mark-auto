@@ -27,6 +27,9 @@ class CompositeFacade:
         self._epoch, self._mutations, self._switching = 0, 0, False
         self._lock = RLock()
         self._verify(current.snapshot(), context_id)
+        restore = getattr(contexts, 'current_sinopac', None)
+        self._connection = restore() if callable(restore) else None
+        self._connection_offset, self._connection_high = 0, -1
 
     def _verify(self, state: UiState, context_id: str, account_ref: str = '') -> None:
         option = next((item for item in self.contexts.list_contexts() if item.context_id == context_id), None)
@@ -38,41 +41,61 @@ class CompositeFacade:
     def snapshot(self) -> UiState:
         with self._lock:
             facade, context_id, epoch = self._current, self._context_id, self._epoch
+            connection, offset = self._connection, self._connection_offset
         state = facade.snapshot()
         self._verify(state, context_id)
         with self._lock:
             if (facade, context_id, epoch) != (self._current, self._context_id, self._epoch):
                 raise DomainError('state_conflict', 'context changed during read')
-            return replace(state, context_id=context_id, context_epoch=epoch, contexts=self.contexts.list_contexts())
+        if connection is not None:
+            connected = connection.snapshot()
+            view = connected.sinopac_connection
+            projected = view.revision + offset
+            with self._lock:
+                if connection is not self._connection or offset != self._connection_offset or projected < self._connection_high:
+                    raise DomainError('state_conflict', 'connection changed during read')
+                self._connection_high = projected
+            state = replace(
+                state,
+                sinopac_connection=replace(view, revision=projected),
+                market_watch=connected.market_watch,
+                market_health=connected.market_health,
+                market_revision=connected.market_revision,
+                market_connection=connected.market_connection,
+                market_data_settings=connected.market_data_settings,
+                market_data_error=connected.market_data_error,
+                watchlist=connected.watchlist,
+            )
+        return replace(state, context_id=context_id, context_epoch=epoch, contexts=self.contexts.list_contexts())
 
     def market_series(self, query):
         with self._lock:
-            facade, epoch = self._current, self._epoch
+            facade, epoch = self._connection or self._current, self._epoch
         page = facade.market_series(query)
         with self._lock:
-            if facade is not self._current or epoch != self._epoch:
+            if facade is not (self._connection or self._current) or epoch != self._epoch:
                 raise DomainError('state_conflict', 'context changed during series read')
         return page
 
     def symbol_directory(self):
         with self._lock:
-            return self._current.symbol_directory()
+            return (self._connection or self._current).symbol_directory()
 
     def select_market_instrument(self, instrument_id: str, period: str = '1m') -> bool:
         with self._lock:
-            return self._current.select_market_instrument(instrument_id, period)
+            return (self._connection or self._current).select_market_instrument(instrument_id, period)
 
     def market_status(self):
         with self._lock:
-            return self._current.market_status()
+            return (self._connection or self._current).market_status()
 
     def market_preferences(self) -> str:
         with self._lock:
-            return self._current.market_preferences()
+            return (self._connection or self._current).market_preferences()
 
     def alerts(self, command):
         with self._lock:
-            return self._current.alerts(command)
+            return (self._connection or self._current).alerts(command)
 
     def execute(self, command: UiCommand) -> UiReceipt:
         if not isinstance(command, UiCommand):
@@ -94,6 +117,17 @@ class CompositeFacade:
                 facade = self._current
                 self._mutations += 1
             try:
+                if command.action in (
+                    UiAction.SAVE_AND_CONNECT_SINOPAC,
+                    UiAction.SELECT_SINOPAC_ACCOUNTS,
+                    UiAction.ACTIVATE_SINOPAC_CA,
+                    UiAction.DISCONNECT_SINOPAC,
+                ):
+                    return self._sinopac(command, facade)
+                if self._connection is not None and command.action is UiAction.SAVE_SETTINGS and command.watchlist is not None and command.settings is None:
+                    if facade.snapshot().version != command.expected_version:
+                        raise DomainError('state_conflict', 'refresh before changing market watchlist')
+                    return self._connection.execute(replace(command, expected_version=self._connection.snapshot().version))
                 if command.action is UiAction.ADD_CONTEXT:
                     if facade.snapshot().version != command.expected_version or command.environment is None:
                         raise DomainError('state_conflict', 'refresh before registering a profile')
@@ -107,6 +141,54 @@ class CompositeFacade:
             return _failure('operation_failed')
         except DomainError as exc:
             return _failure(exc.code)
+
+    def _sinopac(self, command, book):
+        if book.snapshot().version != command.expected_version:
+            raise DomainError('state_conflict', 'refresh before connection command')
+        connection = self._connection
+        current = self.snapshot().sinopac_connection
+        if command.connection_revision != current.revision or command.connection_generation != current.generation:
+            raise DomainError('state_conflict', 'connection changed before intent')
+        expected_revision = current.revision - self._connection_offset
+        expected_generation = current.generation
+        if command.action is UiAction.SAVE_AND_CONNECT_SINOPAC:
+            if command.sinopac_settings is None:
+                raise DomainError('validation_failed', 'connection settings required')
+            target = command.sinopac_settings.environment
+            if connection is None:
+                previous_book = book.snapshot()
+                if (
+                    previous_book.market_data_error == 'logout_unconfirmed'
+                    or previous_book.market_connection in ('CONNECTED', 'CONNECTING')
+                    and (previous_book.market_data_settings.enabled or previous_book.environment is not Environment.LOCAL)
+                ):
+                    receipt = book.execute(UiCommand(UiAction.DISCONNECT_SINOPAC, previous_book.version))
+                    if not receipt.accepted:
+                        raise DomainError('outcome_unknown', 'legacy session logout unconfirmed')
+            if connection is not None and connection.snapshot().environment is not target:
+                previous = connection.snapshot()
+                receipt = connection.execute(
+                    UiCommand(UiAction.DISCONNECT_SINOPAC, previous.version, connection_revision=expected_revision, connection_generation=expected_generation)
+                )
+                after = connection.snapshot().sinopac_connection
+                if not receipt.accepted or after.phase != 'DISCONNECTED' or after.error_code:
+                    raise DomainError('outcome_unknown', 'previous session logout unconfirmed')
+            if connection is None or connection.snapshot().environment is not target:
+                opener = getattr(self.contexts, 'open_sinopac', None)
+                if not callable(opener):
+                    raise DomainError('capability_missing', 'unified connection host unavailable')
+                connection = opener(target)
+                native = connection.snapshot().sinopac_connection
+                expected_revision, expected_generation = native.revision, native.generation
+                with self._lock:
+                    self._connection = connection
+                    self._connection_offset = max(0, self._connection_high + 1 - native.revision)
+        if connection is None:
+            raise DomainError('capability_missing', 'connection owner unavailable')
+        state = connection.snapshot()
+        return connection.execute(
+            replace(command, expected_version=state.version, connection_revision=expected_revision, connection_generation=expected_generation)
+        )
 
     def _switch(self, command: UiCommand) -> UiReceipt:
         # Preserve the historical version-bound command contract verbatim.

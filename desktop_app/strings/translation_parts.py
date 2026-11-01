@@ -2,6 +2,7 @@
 
 from .alerts import ENTRIES as _part_alerts
 from .m2_trading import ENTRIES as _part_m2_trading
+from .sinopac_connection import ENTRIES as _part_sinopac_connection
 from .m2_manual import ENTRIES as _part_m2_manual
 from .assistant import ENTRIES as _part_assistant
 from .terminal import ENTRIES as _part_terminal
@@ -79,8 +80,9 @@ from .watch import ENTRIES as _part_watch
 from .dashboard import ENTRIES as _part_dashboard
 
 PARTS = (
-    _part_m2_manual,
     _part_m2_trading,
+    _part_sinopac_connection,
+    _part_m2_manual,
     _part_alerts,
     _part_terminal,
     _part_marketdata,

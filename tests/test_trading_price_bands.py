@@ -260,7 +260,11 @@ class SDKPriceBandTests(unittest.TestCase):
     def bridge(self):
         vendor = StrictSDK()
         vendor._contracts.tick_bands = lambda info: [{'min': 0.0, 'max': 50.0, 'tick': 0.05}, {'min': 50.0, 'max': None, 'tick': 0.1}]
-        return ShioajiSDKFacade(vendor, SimpleNamespace(__version__=SDK_VERSION, Unit=Unit, QuoteType=QuoteType, QuoteVersion=QuoteVersion)), vendor
+        return ShioajiSDKFacade(
+            vendor,
+            SimpleNamespace(__version__=SDK_VERSION, Unit=Unit, QuoteType=QuoteType, QuoteVersion=QuoteVersion),
+            environment=Environment.BROKER_SIMULATION,
+        ), vendor
 
     def adapter(self, *, bands=BANDS, basis='price', rule='explicit-two-band-test-v1'):
         item = spec_for()

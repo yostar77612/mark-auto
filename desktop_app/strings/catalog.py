@@ -216,6 +216,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[58])
 # Lane M2-6: trading-page environment and plain-language controls.
 ZH_TW.update(_ZH_TW_CHUNKS[61])
 
+# Lane M2-1: one reference-only Sinopac connection.
+ZH_TW.update(_ZH_TW_CHUNKS[62])
+
 # Lane M2-2: explicitly confirmed manual simulation intents.
 ZH_TW.update(_ZH_TW_CHUNKS[63])
 
