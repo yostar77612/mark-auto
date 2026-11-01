@@ -746,6 +746,9 @@ PR E4 market/history owners (content-only):
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
 
 | `tests/test_trading_engine_cleanup.py` | 211 | tooling | `tests/test_trading_engine_cleanup.py` | M2-8: retained-owned-process success/failure/timeout cleanup and foreign-host preservation regressions; fake SDK only. |
+| `tests/test_m2_guidelines.py` | 175 | tooling | `tests/test_m2_guidelines.py` | M2-6: title/help placement, button roles, Cancel-default confirmations, column persistence, units and keyboard acceptance; no SDK or engine process. |
+| `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
+| `tests/test_m2_trading_page.py` | 306 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
