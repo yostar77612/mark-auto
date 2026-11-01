@@ -673,9 +673,19 @@
         },
         {
           "row": {
+            "file": "tests/test_market_terminal_service.py",
+            "kind": "assignment",
+            "line": 66,
+            "name": "history",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
             "file": "tests/test_history_sync.py",
             "kind": "assignment",
-            "line": 228,
+            "line": 243,
             "name": "history",
             "receiver": "self.session"
           },
@@ -685,7 +695,7 @@
           "row": {
             "file": "tests/test_m1_market_runtime.py",
             "kind": "assignment",
-            "line": 36,
+            "line": 48,
             "name": "history",
             "receiver": "self.bundle.market_terminal"
           },
@@ -693,11 +703,51 @@
         },
         {
           "row": {
-            "file": "tests/test_market_terminal_service.py",
+            "file": "tests/test_market_alerts_runtime.py",
             "kind": "assignment",
-            "line": 66,
+            "line": 75,
+            "name": "bars",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_market_alerts_runtime.py",
+            "kind": "assignment",
+            "line": 77,
             "name": "history",
             "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_market_alerts_runtime.py",
+            "kind": "assignment",
+            "line": 113,
+            "name": "market",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_market_alerts_runtime.py",
+            "kind": "assignment",
+            "line": 203,
+            "name": "bars",
+            "receiver": "self.market"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_market_alerts_runtime.py",
+            "kind": "assignment",
+            "line": 265,
+            "name": "bars",
+            "receiver": "self.market"
           },
           "count": 1
         },
@@ -742,7 +792,23 @@
           "count": 1
         }
       ]
-    }
+    },
+    "m1_aliases": [
+      {
+        "original": {
+          "attribute": "bars",
+          "name": "bars",
+          "page": "data_page",
+          "patch_sensitive": false
+        },
+        "current": {
+          "attribute": "bars",
+          "name": "bars",
+          "page": "data_page",
+          "patch_sensitive": true
+        }
+      }
+    ]
   },
   "focus": {
     "removed": [

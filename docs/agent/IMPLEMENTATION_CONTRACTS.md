@@ -6607,6 +6607,38 @@ paper-order suites pass. Native process12 passes using the documented true Pytho
 interpreter. Shared chart CRITICAL impact was acknowledged; default mode and
 existing tests remain intact. No G3/SDK pin/PROJECT_STATE/test weakening. Real native
 visual acceptance and broker verification remain pending owner checks.
+
+## M1-3 — typed local alerts and async terminal integration (2026-11-01)
+
+The twelve ordered rule kinds use validated immutable parameters, Decimal SMA/KD,
+edge rearming and per-rule/product cooldown. Tick evaluation requires live quotes
+and no queued/running history. Only final/non-incomplete bars feed indicators;
+end-of-session heartbeat handles closed daily periods without a future tick.
+Official-history completion invalidates observer seeds; reconnect discards prior
+session comparison state. Watch scopes include the fixed indices; market scope
+is scanner-only and stock-only rules exclude indices.
+
+Rules atomically persist (max100). Recent500 events feed the terminal, while active
+JSONL retains30days. Before retention cleanup the entire original is archived, so
+the owner no-data-deletion boundary wins. Corrupt files are preserved. Clear-record
+UI clears the in-memory view and never deletes the durable journal. SDK scanner
+presets cover the twelve kinds' four vendor families, subscribe only when enabled,
+filter local watches and unsubscribe before logout. Naive vendor times localize
+Taipei exactly once; errors/logs never expose raw vendor or credential text.
+
+Authenticated typed alert commands/snapshots reach the independent engine. The
+terminal controller serializes mutations/polls off the GUI thread and publishes
+immutable GUI caches. Initial history restores table/status without replaying
+desktop notifications; later events use the existing local notification preference.
+Rule dialogs, management, event colors, chart focus and latest-status text are wired
+into the actual application composition. No concrete adapter/SDK enters presentation.
+
+Integration regression also preserves failed official force-refresh on retry and
+serializes market settings/selection writes with a shared IO-only lock, retaining
+both settings sections without acquiring the core writer lock from market callbacks.
+Existing execution/CA/account/reference gates remain unchanged. New/related offline
+modules and full-check environment limitations are listed in m1-3-verification.md.
+G3, PROJECT_STATE, SDK pin, OOS/budgets/timeouts and original test strength are intact.
 ## M1-U existing UI corrections (2026-11-01)
 
 Research workflow chips share sidebar page identity/captions, retain five

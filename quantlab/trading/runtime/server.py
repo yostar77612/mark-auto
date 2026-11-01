@@ -65,6 +65,8 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         return Response(request.request_id, market_status=bundle.market_terminal.status())
     if request.operation is Operation.MARKET_PREFERENCES:
         return Response(request.request_id, market_selected=bundle.market_terminal.selected)
+    if request.operation is Operation.ALERTS:
+        return Response(request.request_id, alerts=bundle.alerts.execute(request.alert))
     if request.operation is Operation.COMMAND:
         if not isinstance(request.command.action, UiAction):
             raise DomainError('validation_failed', 'typed UI action required')

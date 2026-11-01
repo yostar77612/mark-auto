@@ -73,6 +73,7 @@ class RuntimeBundle:
     version_journal: Journal | None = None
     connect_timeout: float = 8.0
     market_terminal: object | None = None
+    alerts: object | None = None
 
     def __post_init__(self) -> None:
         if type(self.connect_timeout) not in (int, float) or not 0 < self.connect_timeout <= 8:
@@ -403,6 +404,7 @@ class RuntimeBundle:
     def pump(self) -> None:
         if self.market_terminal is not None and not self.closing:
             self.market_terminal.poll()
+            self.alerts.poll_scanner()
         with self.lock:
             self._expire_connection()
             engine = self.engine

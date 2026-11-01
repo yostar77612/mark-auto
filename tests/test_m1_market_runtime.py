@@ -19,6 +19,10 @@ from quantlab.trading.runtime.market_terminal import SessionBridge
 from quantlab.trading.runtime.protocol import Operation, Request
 from quantlab.trading.runtime.server import _dispatch
 from tests.test_market_session import FakeApi, FakeSecrets, STOCK
+from tests.test_alert_service import fake_sdk
+from quantlab.trading.application.alert_contracts import AlertCommand, AlertOperation, AlertRuleData
+from quantlab.trading.domain.alerts import AlertRule, AlertKind
+from decimal import Decimal
 
 
 class MarketRuntimeTests(unittest.TestCase):
@@ -26,13 +30,21 @@ class MarketRuntimeTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.bundle = build_runtime(RuntimeLaunch(Path(self.temp.name)))
         self.api = FakeApi()
+        self.api.set_on_scanner_callback = lambda callback: self.api.callbacks.update(scanner=callback)
+        self.api.subscribe_scanner = lambda scanner, **kwargs: self.api.calls.append(('scanner_subscribe', scanner.id))
+        self.api.unsubscribe_scanner = lambda scanner, **kwargs: self.api.calls.append(('scanner_unsubscribe', scanner.id))
         self.secrets = FakeSecrets()
-        self.sdk = SimpleNamespace(__version__=SDK_VERSION, Shioaji=lambda **kw: self.api, QuoteType=lambda value: value, QuoteVersion=lambda value: value)
-        self.clock = SimpleNamespace(now=lambda: datetime(2026, 11, 1, tzinfo=timezone.utc))
+        self.sdk = fake_sdk()
+        self.sdk.__version__ = SDK_VERSION
+        self.sdk.Shioaji = lambda **kw: self.api
+        self.sdk.QuoteType = self.sdk.QuoteVersion = lambda value: value
+        self.now = datetime(2026, 10, 30, 1, 10, tzinfo=timezone.utc)
+        self.clock = SimpleNamespace(now=lambda: self.now)
+        self.bundle.market_terminal.now = self.clock.now
         connection = self.bundle.market_connection
         connection.factory = lambda settings, directory: MarketSession(settings, self.secrets, self.sdk, self.clock, directory)
         self.bundle.market_history.close()
-        history = HistorySync(self.bundle.kline_store, SessionBridge(connection), autostart=False)
+        history = HistorySync(self.bundle.kline_store, SessionBridge(connection), now=self.clock.now, autostart=False)
         self.bundle.market_history = self.bundle.market_terminal.history = history
 
     def tearDown(self):
@@ -87,6 +99,26 @@ class MarketRuntimeTests(unittest.TestCase):
         self.request(Operation.SYMBOL_DIRECTORY)
         self.assertEqual(self.secrets.references, [])
         self.assertEqual(self.api.calls, [])
+
+    def test_alert_command_and_live_tick_crossing_reach_same_authenticated_host(self):
+        self.command(UiAction.SAVE_MARKET_DATA_SETTINGS, market_data_settings=MarketDataSettings(enabled=True))
+        self.command(UiAction.CONNECT_MARKET_DATA)
+        self.bundle.market_connection.worker.join(2)
+        self.assertEqual(self.bundle.snapshot().market_connection, 'CONNECTED')
+        self.request(Operation.MARKET_SELECT, series=MarketSeriesQuery(STOCK.instrument_id))
+        rule = AlertRule('real-wire-alert', AlertKind.PRICE_CROSS, instrument_id=STOCK.instrument_id, params={'price': Decimal('100')})
+        response = self.request(Operation.ALERTS, alert=AlertCommand(AlertOperation.ADD, rule=AlertRuleData.from_rule(rule)))
+        self.assertEqual(len(response.alerts.rules), 1)
+        while self.bundle.market_history.run_next():
+            pass
+        for price in (99, 101):
+            self.api.callbacks['stock'](None, SimpleNamespace(code='2330', datetime=self.now, close=price, volume=1))
+            self.bundle.market_terminal.poll()
+            self.now += timedelta(seconds=1)
+        response = self.request(Operation.ALERTS, alert=AlertCommand())
+        self.assertEqual(len(response.alerts.events), 1)
+        self.assertEqual(response.alerts.events[0].instrument_id, STOCK.instrument_id)
+        self.assertEqual(response.alerts.events[0].value, Decimal('101'))
 
 
 if __name__ == '__main__':

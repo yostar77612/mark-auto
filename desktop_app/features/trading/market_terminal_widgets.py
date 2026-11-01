@@ -209,6 +209,8 @@ def render_status(host):
             connection, count, limit, max(0, limit - 2 - temporary), quota_text(status.usage if status else None), market_summary(health)
         )
     )
+    if host.latest_alert:
+        host.status.setText(host.status.text() + ' · ' + ui_text('alert.latest').format(host.latest_alert))
     if status and (status.warning_code == 'history_quota_low' or status.history_state.paused):
         host.history_error.setText(ui_text('terminal.quota_paused'))
     if status and status.warning_code == 'kline_store_unavailable' and host._last_warning != status.warning_code:

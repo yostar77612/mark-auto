@@ -1,5 +1,6 @@
 """Feature partitions in original registration order."""
 
+from .alerts import ENTRIES as _part_alerts
 from .assistant import ENTRIES as _part_assistant
 from .terminal import ENTRIES as _part_terminal
 from .marketdata import ENTRIES as _part_marketdata
@@ -76,6 +77,7 @@ from .watch import ENTRIES as _part_watch
 from .dashboard import ENTRIES as _part_dashboard
 
 PARTS = (
+    _part_alerts,
     _part_terminal,
     _part_marketdata,
     _part_m1_ui,

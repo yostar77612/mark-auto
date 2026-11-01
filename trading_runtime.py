@@ -57,6 +57,7 @@ def _run_window(
     # Presentation is assembled here, not imported by the application core.
     from desktop_app.features.trading import TradingWindow
     from desktop_app.features.trading.market_terminal import MarketTerminalWidget
+    from desktop_app.features.trading.market_alerts_ui import AlertPanelController
     from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
@@ -92,6 +93,21 @@ def _run_window(
     layout_store = LayoutStore(
         root or default_root(), panel_ids=PANEL_IDS, areas=('left', 'center'), file_name='market-terminal-layout-v1.json', default_layout=terminal_preset()
     )
+
+    def notify_alert(message):
+        host = research.session.window
+        if host is not None:
+            host.notify_local(message, completion=True)
+
+    alerts = AlertPanelController(
+        facade.alerts,
+        lambda operation, completed: terminal._submit(operation, completed),
+        lambda: terminal.current_instrument,
+        lambda key, occurred_at: terminal.select_instrument(key, occurred_at),
+        lambda key: next((item.name for item in terminal._directory if item.instrument_id == key), key.split(':')[-1]),
+        notify_alert,
+        lambda: up_down_colors(appearance(terminal)[1]),
+    )
     terminal = MarketTerminalWidget(
         facade,
         CandlestickChart(),
@@ -100,6 +116,7 @@ def _run_window(
         index_chart=CandlestickChart(show_volume=False),
         panel_factory=WorkspacePanel,
         colours=lambda widget: up_down_colors(appearance(widget)[1]),
+        alerts_panel=alerts.panel,
         style_terminal=_apply_terminal_theme,
     )
     window = TradingWindow(facade, initial, market_watch=terminal)
@@ -109,6 +126,11 @@ def _run_window(
     # test bootstraps never discover or restore the user's remembered login.
     research = UnifiedResearch(window, session=ResearchSession(window, bootstrap=research_bootstrap, restore_login=research_bootstrap is None))
     window.unified_research = research
+    alerts.setParent(window)
+    window.alert_controller = alerts
+    alerts.panel.latest_changed.connect(terminal.set_latest_alert)
+    app.aboutToQuit.connect(alerts.stop)
+    alerts.start()
     window.show()
     result = app.exec()
     # The normal close path already joins original workers and reconciles. An

@@ -81,6 +81,7 @@ class HistorySync:
         self._serial = Lock()
         self._queue: list[HistoryRequest] = []
         self._errors: dict[str, str] = {}
+        self._failed: dict[str, HistoryRequest] = {}
         self._running = ''
         self._paused = False
         self._paused_day: date | None = None
@@ -133,12 +134,17 @@ class HistorySync:
         self._lookback(instrument, self.settings.daily_lookback_days if annual else self.settings.minute_lookback_days, 0)
 
     def refresh(self, instrument: WatchInstrument, period: str = '1m', is_watchlisted: bool = False) -> None:
+        with self._condition:
+            failed = self._failed.pop(instrument.instrument_id, None)
+        if failed is not None:
+            self.request(instrument, failed.start, failed.end, 0, force=failed.force)
         self.browse(instrument, period, is_watchlisted)
         self.resume()
 
     def watch_removed(self, instrument_id: str) -> None:
         with self._condition:
             self._generations[instrument_id] = self._generations.get(instrument_id, 0) + 1
+            self._failed.pop(instrument_id, None)
             self._queue = [item for item in self._queue if item.instrument.instrument_id != instrument_id]
 
     def disconnected(self) -> None:
@@ -226,9 +232,11 @@ class HistorySync:
                 self._sync(item)
             except DomainError as exc:
                 self._errors[item.instrument.instrument_id] = exc.code
+                self._failed[item.instrument.instrument_id] = item
             except (OSError, RuntimeError, ValueError):
                 # The cache/session ports perform external disk and SDK I/O.
                 self._errors[item.instrument.instrument_id] = 'history_query_failed'
+                self._failed[item.instrument.instrument_id] = item
             finally:
                 with self._condition:
                     self._running = ''
@@ -271,6 +279,7 @@ class HistorySync:
                     self.request(item.instrument, start, item.end, item.priority, force=item.force)
                     return
         self._errors.pop(item.instrument.instrument_id, None)
+        self._failed.pop(item.instrument.instrument_id, None)
         self.on_complete(item.instrument.instrument_id)
 
     def close(self) -> bool:

@@ -1,14 +1,16 @@
 """Atomic terminal preferences in the workspace settings, preserving other sections."""
 
 from pathlib import Path
+from threading import RLock
 
 from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.trading.domain.validation import DomainError, identity
 
 
 class MarketTerminalSettings:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, lock=None):
         self.store = SettingsStore(path)
+        self.lock = lock if lock is not None else RLock()
         saved = self.store.load().get('market_terminal_v1', {})
         if not isinstance(saved, dict):
             raise DomainError('validation_failed', 'terminal preferences object')
@@ -21,9 +23,10 @@ class MarketTerminalSettings:
         self.watchlist, self.selected = tuple(watches), selected
 
     def _save(self) -> None:
-        body = self.store.load()
-        body['market_terminal_v1'] = {'watchlist': list(self.watchlist), 'selected': self.selected}
-        self.store.save(body)
+        with self.lock:
+            body = self.store.load()
+            body['market_terminal_v1'] = {'watchlist': list(self.watchlist), 'selected': self.selected}
+            self.store.save(body)
 
     def save_watchlist(self, value: tuple[str, ...]) -> None:
         previous, self.watchlist = self.watchlist, value

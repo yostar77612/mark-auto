@@ -70,6 +70,10 @@ class CompositeFacade:
         with self._lock:
             return self._current.market_preferences()
 
+    def alerts(self, command):
+        with self._lock:
+            return self._current.alerts(command)
+
     def execute(self, command: UiCommand) -> UiReceipt:
         if not isinstance(command, UiCommand):
             return _failure('validation_failed')

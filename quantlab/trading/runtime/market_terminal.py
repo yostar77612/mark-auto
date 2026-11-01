@@ -52,7 +52,7 @@ class SessionBridge:
 
 def attach_terminal(bundle):
     connection = bundle.market_connection
-    preferences = MarketTerminalSettings(bundle.launch.root / 'settings.json')
+    preferences = MarketTerminalSettings(bundle.launch.root / 'settings.json', lock=connection.settings_lock)
     store = KlineStore(bundle.launch.root / 'market' / 'klines.sqlite3')
     history = HistorySync(store, SessionBridge(connection))
     service = MarketTerminalService(
@@ -70,3 +70,6 @@ def attach_terminal(bundle):
     connection.on_connected = lambda session: service.connected()
     connection.on_disconnected = service.disconnected
     bundle.market_terminal, bundle.kline_store, bundle.market_history = service, store, history
+    from .market_alerts import attach_alerts
+
+    attach_alerts(bundle)

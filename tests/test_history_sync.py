@@ -193,6 +193,21 @@ class HistorySyncTests(unittest.TestCase):
         self.assertNotIn('secret', repr(self.sync.state()))
         self.assertEqual(self.store.missing_ranges(STOCK.instrument_id, NOW - timedelta(days=60), NOW), ((NOW - timedelta(days=60), NOW),))
 
+    def test_retry_retains_failed_after_close_force_even_with_existing_coverage(self):
+        start = NOW.replace(hour=1)
+        self.store.mark_coverage(STOCK.instrument_id, start, NOW)
+        self.session.error = RuntimeError('fixture sdk unavailable')
+        self.sync.after_close((STOCK,))
+        self.drain()
+        self.assertEqual(len(self.session.calls), 1)
+        self.session.error = None
+        self.sync.refresh(STOCK)
+        self.drain()
+        self.assertGreaterEqual(len(self.session.calls), 2)
+        self.assertEqual(self.session.calls[1][1], start)
+        self.assertEqual(self.session.calls[1][2], start.replace(hour=5, minute=31))
+        self.assertEqual(self.sync.state().history_error, ())
+
     def test_rate_limiter_never_starts_more_than_40_queries_per_10_seconds(self):
         self.sync.settings = HistorySettings(chunk_days=1)
         self.sync.request(STOCK, NOW - timedelta(days=45), NOW)

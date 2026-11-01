@@ -27,6 +27,7 @@ class MarketTerminalWidget(QWidget):
         self._directory, self._history_only, self._terminal_status = tuple(FIXED_INDICES), False, None
         self._sorts, self._last_series, self._occurred_at = {}, None, None
         self._last_warning = ''
+        self.latest_alert = ''
         identify(self, 'market_terminal', ui_text('terminal.title'))
         build_terminal(self, layout_store, alerts_panel, panel_factory)
         self.render(state)
@@ -61,6 +62,10 @@ class MarketTerminalWidget(QWidget):
                     self.render(self.state)
 
         self._submit(fetch, completed)
+
+    def set_latest_alert(self, text: str) -> None:
+        self.latest_alert = text
+        self._render_status()
 
     def _view(self, key):
         return next((item for item in self.state.market_watch if item.instrument_id == key), MarketWatchView(instrument_id=key))

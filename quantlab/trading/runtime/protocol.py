@@ -9,6 +9,7 @@ from quantlab.trading.application.contracts import MarketSeriesPage, MarketSerie
 from quantlab.trading.application.context import QuoteBatch
 from quantlab.trading.application.market_terminal_service import MarketTerminalStatus
 from quantlab.trading.application.history_sync import HistorySyncState
+from quantlab.trading.application.alert_contracts import AlertCommand, AlertSnapshot
 from quantlab.trading.ports.history import HistoryUsage
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 from quantlab.trading.domain.models import Environment
@@ -25,6 +26,7 @@ class Operation(str, Enum):
     MARKET_SELECT = 'MARKET_SELECT'
     MARKET_STATUS = 'MARKET_STATUS'
     MARKET_PREFERENCES = 'MARKET_PREFERENCES'
+    ALERTS = 'ALERTS'
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,7 @@ class Request:
     quotes: QuoteBatch | None = None
     schema_version: int = 2
     series: MarketSeriesQuery | None = None
+    alert: AlertCommand | None = None
 
     def __post_init__(self) -> None:
         identity(self.request_id)
@@ -51,6 +54,8 @@ class Request:
             raise DomainError('validation_failed', 'missing quote batch')
         if self.operation in (Operation.MARKET_SERIES, Operation.MARKET_SELECT) and not isinstance(self.series, MarketSeriesQuery):
             raise DomainError('validation_failed', 'missing series query')
+        if self.operation is Operation.ALERTS and not isinstance(self.alert, AlertCommand):
+            raise DomainError('validation_failed', 'missing alert command')
 
 
 @dataclass(frozen=True)
@@ -75,6 +80,7 @@ class Response:
     instruments: tuple[WatchInstrument, ...] = ()
     market_status: MarketTerminalStatus | None = None
     market_selected: str = ''
+    alerts: AlertSnapshot | None = None
 
 
 register(Operation, Request, Response, Metrics, QuoteBatch)

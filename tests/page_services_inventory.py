@@ -211,6 +211,12 @@ def reviewed_inventory(base, delta):
         result['patch_points'].extend([item['row']] * item['count'])
     result['patch_points'].sort(key=lambda p: (p['file'], p['line'], p['name'], p['kind']))
     result = project_e6_service_refs(project_page_service_lines(result))
+    # Scanner-runtime fixtures now observe a same-named bars field. Preserve
+    # the alias identity/position and pin only its conservative observer flag.
+    for change in delta['m1_aliases']:
+        old, new = change['original'], change['current']
+        assert {key: value for key, value in old.items() if key != 'patch_sensitive'} == {key: value for key, value in new.items() if key != 'patch_sensitive'}
+        result['aliases'][result['aliases'].index(old)] = new
     # M1 adds test observers after the frozen historical relocation projection.
     # Exact removals/additions keep every original identity and multiplicity pinned.
     for item in delta['m1_patch_points']['removed']:

@@ -33,6 +33,7 @@ def create_market_session(settings, directory):
 class MarketConnection:
     def __init__(self, root: Path, factory: Callable = create_market_session):
         self.store = SettingsStore(root / 'settings.json')
+        self.settings_lock = RLock()
         self.directory = SymbolDirectory(root / 'market' / 'symbol_directory.json')
         self.settings = self._load()
         self.factory = factory
@@ -64,9 +65,10 @@ class MarketConnection:
                 settings = command.market_data_settings
                 if self.session is not None and self.session.connected:
                     return UiReceipt(False, 'state_conflict', '')
-                body = self.store.load()
-                body['market_data_v1'] = {'environment': settings.environment.value, 'secret_ref': settings.secret_ref, 'enabled': settings.enabled}
-                self.store.save(body)
+                with self.settings_lock:
+                    body = self.store.load()
+                    body['market_data_v1'] = {'environment': settings.environment.value, 'secret_ref': settings.secret_ref, 'enabled': settings.enabled}
+                    self.store.save(body)
                 self.settings = settings
                 return UiReceipt(True, 'completed', '')
             if command.action is UiAction.CONNECT_MARKET_DATA and not self.settings.enabled:

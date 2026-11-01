@@ -76,7 +76,7 @@ def capture_terminal(out):
         shiboken6.delete(frame)
 
 
-def capture_window(out):
+def capture_window(out, *, with_alerts=False):
     """Inspect the real TradingWindow shell using a projected logical monitor.
 
     This only replaces the monitor rectangle, as existing geometry tests do;
@@ -89,6 +89,23 @@ def capture_window(out):
             QFontDatabase.addApplicationFont(str(Path(os.environ['WINDIR']) / 'Fonts' / name))
     app.setFont(QFont('Microsoft JhengHei UI', 10))
     facade = FakeFacade((STOCK.instrument_id, OTHER.instrument_id))
+    alerts = None
+    if with_alerts:
+        from desktop_app.features.trading.market_alerts_ui import AlertPanelController
+        from quantlab.trading.application.alert_contracts import AlertSnapshot
+        from tests.test_market_alerts_ui import Backend, event
+
+        backend = Backend()
+        backend.snapshot = AlertSnapshot(events=(event(),))
+        alerts = AlertPanelController(
+            backend,
+            lambda operation, completed: terminal._submit(operation, completed),
+            lambda: terminal.current_instrument,
+            lambda key, at: terminal.select_instrument(key, at),
+            lambda key: STOCK.name,
+            None,
+            lambda: ('#c62828', '#16803c'),
+        )
     terminal = MarketTerminalWidget(
         facade,
         CandlestickChart(),
@@ -96,10 +113,15 @@ def capture_window(out):
         layout_store=LayoutStore(panel_ids=PANEL_IDS, default_layout=terminal_preset()),
         index_chart=CandlestickChart(show_volume=False),
         panel_factory=WorkspacePanel,
+        alerts_panel=alerts.panel if alerts is not None else None,
         style_terminal=_apply_terminal_theme,
     )
     window = TradingWindow(facade, facade.state, market_watch=terminal)
     window.poll.stop()
+    if alerts is not None:
+        alerts.setParent(window)
+        alerts.panel.latest_changed.connect(terminal.set_latest_alert)
+        alerts.start()
     terminal.select_instrument(STOCK.instrument_id)
     out.mkdir(parents=True, exist_ok=True)
     metrics = {}
@@ -130,6 +152,8 @@ def capture_window(out):
         (out / 'window-metrics.json').write_text(json.dumps(metrics, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     finally:
         window.poll.stop()
+        if alerts is not None:
+            alerts.stop()
         QThreadPool.globalInstance().waitForDone(3000)
         app.processEvents()
         shiboken6.delete(window)
@@ -139,8 +163,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, default=Path('docs/analysis/m1-terminal'))
     parser.add_argument('--window', action='store_true', help='capture the real TradingWindow shell with a fake facade')
+    parser.add_argument('--alerts', action='store_true', help='include the real asynchronous alert panel with fixture events')
     args = parser.parse_args()
-    (capture_window if args.window else capture_terminal)(args.out)
+    if args.window or args.alerts:
+        capture_window(args.out, with_alerts=args.alerts)
+    else:
+        capture_terminal(args.out)
 
 
 if __name__ == '__main__':

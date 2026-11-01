@@ -72,6 +72,28 @@
 - 完整 prepush 205 項中，Windows 原生環境失敗據實保留；真正 Python 解釋器的12項程序測試通過。
   已確認測試啟動器 PID 361768 與引擎 PID237016 不同，未增加任何期限或削弱斷言。
 - 真實視窗兩種尺寸截圖、六欄、無外層捲軸與無障礙測試完成；最後人工目視仍待擁有者。
+
+## 2026-11-01 02:50 +08:00 — M1-3：規則、接線與資料保留
+
+- 十二類規則與 scanner 皆以 fake 驗證；UI 透過型別化 IPC 使用同一行情引擎，背景序列執行儲存與輪詢。
+  第一次載入舊事件只恢復表格與狀態，不重播本機通知。通知沿用研究 presenter 的既有設定。
+- 完成回補後重設指標歷史種子；加入排隊判斷，避免尚未回補完成的商品誤觸發警示。
+- scanner 無時區 datetime 在 SDK 邊界視為台北時間，再轉 UTC；回傳文字與實際金鑰不進 log。
+- 三十天紀錄保留規則與「不刪使用者資料」停止線衝突時，先封存完整原始 JSONL，再重寫活躍檔。
+  清除紀錄只清記憶體，不刪磁碟日誌。原測試全部保留並新增封存檢查。
+- 重試保留失敗的官方收盤校正 force；已涵蓋區間不會因此跳過必要校正。
+- 設定與主圖偏好共用 IO 鎖保護 read-modify-write；獨立行情鎖內不取得核心 writer 鎖，避免反向鎖死。
+- 圖譜 UNKNOWN／lower-bound 動態參照以來源和 rg 核對；狀態列 HIGH 風險、共享圖表／契約
+  CRITICAL 風險保留，不以通過測試宣稱沒有風險。
+- 既有 live-bars 對來源時間空窗的 incomplete 安全標記維持原樣，不為冷門股放寬 fail-closed；
+  實際稀疏 tick 行為列待擁有者實測，正式歷史缺分鐘仍依 coverage 處理，不造假 K 線。
+
+## 2026-11-01 02:55 +08:00 — M1-3：最終檢查
+
+- 最終 prepush249測試，仍僅3個既有 retained-handle失敗、1個redirector PID啟動錯誤、1個原平台skip。
+  Ruff／格式／3.11語法／static／layers均通過；真正Python程序的12項原生runtime測試通過。
+- 同時寫入不同設定區段的回歸案例通過；新增與修改的執行緒操作沒有提升交易能力。
+- 失敗測試留下的明確測試專屬LOCAL引擎以正常關閉協定釋放，未終止使用者程序，也未刪其資料。
 ## 2026-11-01 03:34 +08:00 — CI 修復，M1-U
 
 - 問題：上一輪只跑 changed-file prepush，漏掉完整基準鎖定測試。
@@ -127,6 +149,31 @@
   直接影響清冊測試與 replay 工具；已讀三個呼叫者並以原完整斷言驗證。
 - 相關原閘門73項、相鄰47項通過。完整 discover 與遠端 CI 仍須完成，不能據此宣稱全綠。
 
+## 2026-11-01 04:05 +08:00 — CI 修復，M1-3
+
+- 正常 merge 最新 U→1→2，警示與私有樣式 callback 同時保留，沒有移除任一接線。
+- 去除同文字、同 key 的第二筆 alert.latest；保留原來唯一值，依原 order 排序後接續2680編號，
+  catalog 放 Lane M1-3。修來源後才獨立重釘總數、目錄、模組與四個 history observer 定位。
+- 原 B11 上限與全部原測試斷言保留；不需要放大類別限制。樣式繼承上一層，不重釘未改變的
+  app/market 樣式 hash。沒有真實 SDK 登入、CA、帳務或執行能力變更。
+
+## 2026-11-01 04:20 +08:00 — 完整清冊與 main 環境對照
+
+- M1-3 新增 scanner-runtime 測試的 self.bars／self.market 被既有 conservative 清冊掃入。
+  選項：改新測試命名掩去觀察／保留並精確釘選。選後者，五個新增完整位置、兩個搬動位置
+  與同一 bars alias 的 observer flag False→True 均列入獨立基準提交e48d855；
+  原 alias 的 name/page/attribute、順序、歷史投影與精確清冊斷言不變，不代表新增 UI 能力。
+- 原失敗閘門76項與樣式/接線46項通過；測試模組名稱誤打的一次載入錯誤已用正確名稱重跑，
+  沒有把它當成產品失敗或既有問題。
+- origin/main ba597b5 完整 discover：3760項、1898.475秒，10 failures／27 errors／42原平台skips。
+  四分支須逐一跑完整相同測試並比對失敗 ID；不以舊 changed-file prepush 當完整驗收。
+- main 的四個 ConnectionDiagnosticTests 額外失敗已最小重現：controller100924 →
+  venv launcher352236 → actual child232984，子程序 ppid 是launcher而非controller，
+  原 controller-owned fixture guard 於首個 checkpoint／DB 寫入前拒絕。
+  同一未修改案例改用既有實際解釋器，維持10秒與120次FULL commits，2.08秒完成且正常清理。
+  因此保留 PID 安全檢查，不改期限、權限、斷言或來源；第三方 tests 套件不是此四例原因。
+- main 的 named mutex／symlink 權限／原生 retained-handle 問題另記錄，不終止使用者程式，
+  不取得額外權限、不新增 skip。只有主分支實測已存在的失敗可作對照，遠端 CI 必須另確認。
 ## 2026-11-01 04:55 +08:00 — M1-U：第一輪完整測試的四項新失敗
 
 - 第一輪完整 discover a210a99：3766項、1524.589秒，14 failures／27 errors／42 skips。
