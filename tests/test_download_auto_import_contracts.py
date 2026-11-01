@@ -26,7 +26,10 @@ class DownloadImportContractTests(unittest.TestCase):
         actual = json.loads((ROOT / 'desktop_widget_names.json').read_text(encoding='utf-8'))
         self.assertEqual(actual, sorted(set(actual)))
         self.assertLessEqual(set(NAMES), set(actual))
-        historical = [name for name in actual if name not in NAMES]
+        m1_names = json.loads((ROOT / 'm1_u_ui_delta.json').read_text(encoding='utf-8'))['widget_names_added']
+        self.assertEqual(m1_names, ['saved_results_empty', 'settings_help_topics'])
+        self.assertLessEqual(set(m1_names), set(actual))
+        historical = [name for name in actual if name not in (*NAMES, *m1_names)]
         self.assertEqual(digest(historical), '366408108c0ac5de96107c5f3129f1b28753e6e1a02ca0c69e5f1098a3ae82e6')
 
     def test_historical_characterization_and_service_inventory_are_not_regenerated(self):

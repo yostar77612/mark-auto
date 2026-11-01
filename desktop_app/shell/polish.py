@@ -85,7 +85,8 @@ def install_polish(window):
         'replay_bars': ui_text('ui_polish.install_polish.replay_bars'),
     }
     for name, text in fields.items():
-        _label_field(getattr(window, name), text)
+        if name != 'replay_bars':
+            _label_field(getattr(window, name), text)
     _label_field(window.chatgpt_panel.account, ui_text('ui_polish.install_polish.saved_connection'))
     _label_field(window.automatic_backup_panel.directory, ui_text('ui_polish.install_polish.backup_directory'))
     for widget, suffix in (
@@ -126,11 +127,14 @@ def install_polish(window):
         if button is window.chatgpt_panel.cancel_button:
             prerequisite = ui_text('ui_polish.install_polish.connection_job_prerequisite')
         label = QLabel(button.parentWidget())
-        label.setWordWrap(True)
+        label.setWordWrap(False)
         label.setProperty('prerequisite', True)
         label.setObjectName(name + '_prerequisite')
         layout = button.parentWidget().layout()
-        if layout and _insert_after(layout, button, label):
+        if name == 'run_backtest':
+            window.backtest_page._setup_panel.layout().addWidget(label)
+            window._disabled_hints.append(DisabledHint(button, label, prerequisite))
+        elif layout and _insert_after(layout, button, label):
             window._disabled_hints.append(DisabledHint(button, label, prerequisite))
         else:
             label.deleteLater()

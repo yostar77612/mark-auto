@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone
 import re
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QLabel, QHeaderView
 from desktop_app.features.strategy.forms import PARAM_LABELS
 from desktop_app.components.formatting import display_number, display_status, result_name
 from desktop_app.strings.catalog import ui_text
@@ -67,6 +68,11 @@ class SavedResultsTable(ResultTable):
         self.setAccessibleName(ui_text('compare.saved'))
         self.setMinimumHeight(180)
         self.setMaximumHeight(220)
+        self.empty_label = QLabel(ui_text('m1u.compare_empty'), self.viewport())
+        self.empty_label.setObjectName('saved_results_empty')
+        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty_label.setWordWrap(True)
+        self.empty_label.setAccessibleName(ui_text('m1u.compare_empty'))
         self.itemChanged.connect(self._checked)
         legacy.itemSelectionChanged.connect(self._legacy_selected)
         self.set_saved([])
@@ -82,6 +88,20 @@ class SavedResultsTable(ResultTable):
             self.setHorizontalHeaderLabels([ui_text('compare.' + key) if key in FIELDS[:5] else column_label(key) for key in FIELDS])
             for c, key in enumerate(FIELDS):
                 align_table_item(self.horizontalHeaderItem(c), numeric=key in FIELDS[5:])
+                header = self.horizontalHeaderItem(c)
+                header.setToolTip(header.text())
+                if key == 'created':
+                    header.setText(ui_text('m1u.created'))
+                elif key == 'max_drawdown':
+                    header.setText(ui_text('m1u.max_drawdown'))
+                elif key == 'net_pnl':
+                    header.setText(ui_text('m1u.net_pnl'))
+                elif key == 'profit_factor':
+                    header.setText(ui_text('m1u.profit_factor'))
+                elif key == 'sharpe':
+                    header.setText(ui_text('m1u.sharpe'))
+                elif key == 'trade_count':
+                    header.setText(ui_text('m1u.trade_count'))
             for r, (path, row) in enumerate(records):
                 for c in range(self.columnCount()):
                     item = self.item(r, c)
@@ -96,10 +116,18 @@ class SavedResultsTable(ResultTable):
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 item.setCheckState(Qt.CheckState.Checked if path in selected else Qt.CheckState.Unchecked)
             self.setSortingEnabled(True)
-            self.setColumnWidth(0, 260)
+            self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+            for column, width in enumerate((150, 85, 110, 140, 140, 90, 80, 110, 90, 80)):
+                self.setColumnWidth(column, width)
+            self.empty_label.setVisible(not records)
+            self.empty_label.setGeometry(self.viewport().rect())
         finally:
             self.blockSignals(blocked)
         self.overlay_changed.emit()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.empty_label.setGeometry(self.viewport().rect())
 
     def _checked(self, item):
         if item.column() != 0:

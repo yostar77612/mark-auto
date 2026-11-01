@@ -6528,3 +6528,26 @@ fixtures request temp directories outside the writable workspace. This is the
 explicit non-blocking sandbox exception in t4-base.md; the controller must rerun
 the original discovery commands outside the sandbox. No replacement tests,
 skips, fixture rewrites or timeout extensions were used.
+
+
+## M1-U existing UI corrections (2026-11-01)
+
+Research workflow chips share sidebar page identity/captions, retain five
+persisted completion facts, and keep partial progress visible with completed,
+current and pending presentation. Explicit dismissal and all-complete hiding
+preserve preference/height reclamation. Existing navigation/objectNames remain.
+The single visible help entry opens the existing guide; advanced controls use
+native Qt arrows and retain saved disclosure keys and keyboard operation.
+Comparison headers use shorter labels with full original tooltips and an empty
+explanation. Backtest summaries localize family names, prerequisites occupy a
+full row, replay has one caption, and prerequisite completion changes the sole
+primary action from preparation to execution. Strategy task controls keep their
+existing actions and identities while presenting as tabs.
+
+The v2 header is one <=48px context line; clicking opens the unchanged account,
+engine, policy, funds, quote and issue detail labels. Existing visibility tests
+now explicitly open the details before asserting all original content. New tests
+also bind compact-header visibility/height. No action eligibility, execution,
+G3 files, source profiles, OOS/budget/timeouts, PROJECT_STATE or acceptance score
+changed. Offline evidence and before/after screenshots are recorded in
+docs/design/m1-u-notes.md; real-App owner visual verification remains pending.
