@@ -7,6 +7,7 @@ from dataclasses import replace
 from decimal import Decimal
 import time
 import unittest
+from unittest.mock import patch
 
 from PySide6.QtCore import QCoreApplication, QEvent, Qt, QThreadPool
 from PySide6.QtGui import QFont
@@ -122,7 +123,12 @@ class DashboardUiTests(unittest.TestCase):
 
     def test_exact_operations_send_existing_actions_by_keyboard(self):
         self.assertEqual(set(self.dashboard.operation_buttons), {UiAction.STOP_NEW, UiAction.CANCEL_ENTRIES, UiAction.RECONCILE})
-        self.assertEqual(len(self.dashboard.findChildren(QPushButton)), 4)  # three operations and event expansion
+        buttons = self.dashboard.findChildren(QPushButton)
+        self.assertEqual(
+            {button.objectName() for button in buttons},
+            {'overview_stop', 'overview_cancel_entries', 'overview_reconcile', 'dashboard_events_toggle', 'dashboard_new_strategy'},
+        )
+        self.assertEqual(len(buttons), 5)  # exact operations, event expansion and owner-added empty-strategy CTA
         controls = list(self.dashboard.operation_buttons.values())
         for before, after in zip(controls, controls[1:]):
             with self.subTest(tab=before.objectName()):
@@ -132,7 +138,8 @@ class DashboardUiTests(unittest.TestCase):
         for action, control in self.dashboard.operation_buttons.items():
             with self.subTest(action=action):
                 control.setFocus()
-                QTest.keyClick(control, Qt.Key.Key_Space)
+                with patch.object(self.window, '_confirm', return_value=True):
+                    QTest.keyClick(control, Qt.Key.Key_Space)
                 self.wait_for(lambda: self.window._operation is None and self.window._priority_operation is None)
                 self.assertEqual(self.facade.commands[-1].action, action)
 

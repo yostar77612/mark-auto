@@ -213,6 +213,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[56])
 # Lane M1-3: typed alert controls.
 ZH_TW.update(_ZH_TW_CHUNKS[58])
 
+# Lane M2-6: trading-page environment and plain-language controls.
+ZH_TW.update(_ZH_TW_CHUNKS[61])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

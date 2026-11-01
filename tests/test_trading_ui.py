@@ -181,7 +181,8 @@ class TradingUiTests(unittest.TestCase):
             (self.window.cancel_entries_button, UiAction.CANCEL_ENTRIES),
             (self.window.resume_button, UiAction.RESUME),
         ):
-            widget.click()
+            with patch.object(self.window, '_confirm', return_value=True):
+                widget.click()
             self.drain()
             self.assertEqual(self.facade.commands[-1].action, action)
             self.assertEqual(self.facade.commands[-1].expected_version, 1)
@@ -233,7 +234,8 @@ class TradingUiTests(unittest.TestCase):
         self.assertFalse(self.facade.commands)
 
     def test_rejection_feedback_survives_poll_and_all_pending_issues_remain_accessible(self):
-        self.window.stop_button.click()
+        with patch.object(self.window, '_confirm', return_value=True):
+            self.window.stop_button.click()
         self.drain()
         feedback = self.window.notice.text()
         self.window.refresh()
@@ -266,8 +268,8 @@ class TradingUiTests(unittest.TestCase):
     def test_execution_drawdown_distinguishes_unknown_history_from_proven_zero(self):
         legacy = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
         self.window.apply_state(replace(self.window.state, version=2, performance=(legacy,)))
-        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('v2.attributed_pnl'))
-        self.assertEqual(self.window.performance.horizontalHeaderItem(8).text(), ui_text('v2.drawdown_recorded'))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('m2t.adjusted_pnl'))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(8).text(), ui_text('m2t.recorded_drawdown'))
         self.assertIn(ui_text('v2.performance_valuation_hint'), self.window.performance.horizontalHeaderItem(8).toolTip())
         self.assertEqual(self.window.performance.item(0, 7).text(), ui_text('v2.drawdown_unknown'))
         self.assertEqual(self.window.performance.item(0, 8).text(), ui_text('v2.drawdown_unknown'))
@@ -542,7 +544,7 @@ class TradingUiTests(unittest.TestCase):
                 raise TimeoutError('test release missing')
             return self.facade.state
 
-        with patch.object(self.facade, 'snapshot', side_effect=held_snapshot):
+        with patch.object(self.facade, 'snapshot', side_effect=held_snapshot), patch.object(self.window, '_confirm', return_value=True):
             self.window.refresh()
             self.assertTrue(entered.wait(1))
             self.window.cancel_entries_button.click()
@@ -577,7 +579,11 @@ class TradingUiTests(unittest.TestCase):
             return initial if threading.get_ident() == research_thread[0] else self.facade.state
 
         try:
-            with patch.object(self.facade, 'execute', side_effect=execute), patch.object(self.facade, 'snapshot', side_effect=snapshot):
+            with (
+                patch.object(self.facade, 'execute', side_effect=execute),
+                patch.object(self.facade, 'snapshot', side_effect=snapshot),
+                patch.object(self.window, '_confirm', return_value=True),
+            ):
                 self.window.command(UiAction.RESEARCH, 'strategy-1:1')
                 self.assertTrue(entered.wait(1))
                 self.window.stop_button.click()

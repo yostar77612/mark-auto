@@ -9,6 +9,7 @@ from quantlab.trading.domain.models import Environment
 
 from desktop_app.features.trading.widgets import button, label, rows, table
 from desktop_app.features.trading.market_data_panel import MarketDataPanel
+from desktop_app.features.trading.page_help import HelpText
 
 
 FIELDS = (
@@ -51,7 +52,7 @@ class BrokerPanel(QWidget):
     market_connect_requested = Signal()
     market_disconnect_requested = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, *, help_header=None):
         super().__init__(parent)
         self.setObjectName('broker_readiness_panel')
         self.dirty = False
@@ -69,7 +70,7 @@ class BrokerPanel(QWidget):
         self.status.setWordWrap(True)
         self.status.setObjectName('broker_readiness_status')
         layout.addWidget(self.status)
-        layout.addWidget(label('v2.broker_reference_hint'))
+        layout.addWidget(HelpText(ui_text('m2t.broker_hint'), ui_text('v2.broker_reference_hint'), 'broker_reference', header=help_header))
         self.group = QGroupBox(ui_text('marketdata.advanced_broker'))
         self.group.setCheckable(True)
         self.group.setChecked(False)
@@ -95,7 +96,7 @@ class BrokerPanel(QWidget):
                 field.setReadOnly(True)
             self.fields[name] = field
             form.addRow(ui_text(key), field)
-        form.addRow(label('v2.broker_local_only'))
+        form.addRow(HelpText(ui_text('m2t.reference_hint'), ui_text('v2.broker_local_only'), 'broker_reference_scope', header=help_header))
         save = button('v2.broker_save', 'broker_save_button')
         save.clicked.connect(self._save)
         form.addRow(save)

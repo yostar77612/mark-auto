@@ -6708,6 +6708,91 @@ remote CI remain coordinating-agent checks until their actual results exist.
 No real SDK login, CA activation or external financial operation is verification
 evidence for this phase.
 
+## M2-6 first round — accepted-state trading-page environments (2026-11-01)
+
+The trading-page environment selector routes through the same settings selector
+and SWITCH_CONTEXT boundary. Both selectors and the environment band reflect
+accepted UiState only; pending, rejected or unavailable navigation cannot display
+a successful switch or merge the old/new books. Existing context epochs and
+application data isolation remain authoritative. No new DTO, session or SDK path.
+
+LOCAL uses grey-blue, BROKER_SIMULATION green, and LIVE a red outline and explicit
+production-order-disabled band. The UI independently rejects DEPLOY, STEP,
+RESUME, CANCEL_ENTRIES and FLATTEN in LIVE and disables their controls; STOP_NEW
+and RECONCILE remain usable. This does not establish M2-2's engine/gateway LIVE
+invariant. Its future manual order intents must extend the UI inventory and tests.
+The current read-only LIVE stop caption describes only the local stop flag;
+LOCAL/SIM retain their existing stop-and-cancel-entry scope. M2-2 must include
+STOP_NEW in its backend operation proof. Navigation captures environment with
+account/context before modal confirmations. First broker-profile import from
+LOCAL explicitly chooses SIM or LIVE before the existing file/import boundary;
+cancelling either prompt emits nothing and never changes the active book.
+
+The position table preserves twelve original values/identities. Compact headings
+retain original tooltips; cells retain complete text and tooltips. The first
+column sizes to actual content, other columns stretch, and populated 1366px tests
+require a zero horizontal scroll maximum, complete first-column text and every
+column within the viewport. Plain-language action hints explain scope.
+
+Scoped QSS is composed only by shell/theme at the runtime entry. The new feature
+module imports no shell, infrastructure or SDK; historical stylesheet builders,
+layer gates and all existing test limits remain unchanged. Catalogue phase61
+adds exactly23 continuous records; baseline pins are a separate commit.
+Performance comparison is deferred to round two under specification section7.
+Focused fake-widget evidence and screenshots are in docs/analysis/m2-trading;
+full suites, actual LOCAL/SIM startup and remote CI remain coordinator work.
+
+### M2-6 owner additions — dates, first-start status and explanations
+
+The compact header obtains today from UTC converted to Asia/Taipei. LOCAL
+separately labels its simulated trading day; broker environments omit that date.
+Same-version market updates still refresh the date. Detailed record metadata is
+retained; no application clock, ledger date or financial value is changed.
+
+Only the explicit version1/sole-startup-event empty LOCAL snapshot without
+strategies, orders, positions, issues or differences receives neutral startup
+presentation. Tests render a real initial build_runtime snapshot and its real
+reopened book. Restarted/populated/stopped/error states retain warnings and the
+underlying stopped/unreconciled engine state is never changed by rendering.
+
+The empty dashboard strategy CTA selects the existing strategy workspace and
+opens the existing wizard. Four workspaces use short explanatory summaries with
+owned plain-text help dialogs, retaining complete prior safety and valuation
+copy, accessible names, keyboard activation and Escape closure. Performance
+captions are simplified with original full tooltip definitions; no financial
+projection, comparison or second-round execution behavior is added.
+
+Existing dashboard style application moves into scoped shell theme selectors;
+no new inline QSS or relaxed import rule. The overview cancel/stop controls also
+retain the same LIVE UI safety/wording as trading controls. Twenty further
+literal catalogue records use orders2776–2795; exact presentation pins are an
+independent baseline commit. Market-setting fixes and M2-1/2 sequencing now belong
+to the root team; after prerequisite CI, those phases can stack independently.
+Full discovery/startup/CI evidence must be renewed on this final source head.
+
+M2-6 UI-guideline follow-up (owner-authorized after PR127): changed help
+controls are at page-title right with complete owned PlainText dialogs retained.
+Button role defaults secondary; trade reconcile and the overview empty CTA are
+the only primaries on their pages. Stop/cancel/flatten use danger styling and
+native Cancel-default confirmation. Confirmed stop/cancel preserve the existing
+command/priority path and reject any changed account/context/environment/book
+version while the dialog is open.
+
+Positions retain12 data columns but default to exactly0,1,2,5,8,9. Product stays
+visible; a native checkable menu persists optional columns through composition's
+dedicated atomic SettingsStore, with failed-save rollback. UI performs no file
+IO and changes no financial fact. Empty trade tables explain the absence and
+navigate to strategy without creating rows/orders. Actual keyboard, colors,
+Cancel-default and preference-restart tests supplement all previous M2-6
+regressions. Exactly10 further strings use2796–2805 (total2806), with an independent
+precise baseline commit. Full UX-1 and second-round work are not implemented.
+
+Empty trade projections describe absence of displayable position/order data,
+not verified zero exposure. This wording applies equally to disconnected or
+unverified SIM/LIVE snapshots, retains the existing CTA and causes no command,
+readiness or financial-state mutation. Only the two existing catalogue values
+change; order/key counts and aliases remain exact, with separate baseline pins.
+
 ## Installed 0.3.0 market-settings regressions (2026-11-01)
 
 MarketDataPanel reconstructs Environment from actual Qt combo data before

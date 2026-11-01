@@ -1,0 +1,146 @@
+{
+  "1366x768-local": {
+    "window": [
+      1366,
+      768
+    ],
+    "position_rows": 3,
+    "position_columns": 12,
+    "visible_columns": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      9
+    ],
+    "table_width": 1142,
+    "table_viewport_width": 1140,
+    "first_column_width": 119,
+    "first_column_text_width": 112,
+    "horizontal_maximum": 0,
+    "last_column_right": 1140,
+    "environment": "LOCAL",
+    "flatten_enabled": true
+  },
+  "1366x768-broker_simulation": {
+    "window": [
+      1366,
+      768
+    ],
+    "position_rows": 3,
+    "position_columns": 12,
+    "visible_columns": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      9
+    ],
+    "table_width": 1142,
+    "table_viewport_width": 1140,
+    "first_column_width": 119,
+    "first_column_text_width": 112,
+    "horizontal_maximum": 0,
+    "last_column_right": 1140,
+    "environment": "BROKER_SIMULATION",
+    "flatten_enabled": true
+  },
+  "1366x768-live": {
+    "window": [
+      1366,
+      768
+    ],
+    "position_rows": 3,
+    "position_columns": 12,
+    "visible_columns": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      9
+    ],
+    "table_width": 1142,
+    "table_viewport_width": 1140,
+    "first_column_width": 119,
+    "first_column_text_width": 112,
+    "horizontal_maximum": 0,
+    "last_column_right": 1140,
+    "environment": "LIVE",
+    "flatten_enabled": false
+  },
+  "1920x1080-local": {
+    "window": [
+      1920,
+      1080
+    ],
+    "position_rows": 3,
+    "position_columns": 12,
+    "visible_columns": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      9
+    ],
+    "table_width": 1696,
+    "table_viewport_width": 1694,
+    "first_column_width": 119,
+    "first_column_text_width": 112,
+    "horizontal_maximum": 0,
+    "last_column_right": 1694,
+    "environment": "LOCAL",
+    "flatten_enabled": true
+  },
+  "1920x1080-broker_simulation": {
+    "window": [
+      1920,
+      1080
+    ],
+    "position_rows": 3,
+    "position_columns": 12,
+    "visible_columns": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      9
+    ],
+    "table_width": 1696,
+    "table_viewport_width": 1694,
+    "first_column_width": 119,
+    "first_column_text_width": 112,
+    "horizontal_maximum": 0,
+    "last_column_right": 1694,
+    "environment": "BROKER_SIMULATION",
+    "flatten_enabled": true
+  },
+  "1920x1080-live": {
+    "window": [
+      1920,
+      1080
+    ],
+    "position_rows": 3,
+    "position_columns": 12,
+    "visible_columns": [
+      0,
+      1,
+      2,
+      5,
+      8,
+      9
+    ],
+    "table_width": 1696,
+    "table_viewport_width": 1694,
+    "first_column_width": 119,
+    "first_column_text_width": 112,
+    "horizontal_maximum": 0,
+    "last_column_right": 1694,
+    "environment": "LIVE",
+    "flatten_enabled": false
+  }
+}

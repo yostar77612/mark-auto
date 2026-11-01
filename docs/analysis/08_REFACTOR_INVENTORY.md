@@ -739,11 +739,18 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/domain/alerts.py` | 270 | domain | `quantlab/trading/domain/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/alerts.py` | 22 | application | `quantlab/trading/ports/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_alerts.py` | 137 | composition | `quantlab/trading/runtime/market_alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/trading_page.py` | 162 | presentation | `desktop_app/features/trading/trading_page.py` | M2-6: accepted-state environment controls, scoped confirmations and position-table presentation; no SDK or IO. |
+| `desktop_app/strings/m2_trading.py` | 57 | shared | `desktop_app/strings/m2_trading.py` | M2-6: 53 additive literal catalogue records through order2805; historical records unchanged. |
+| `desktop_app/features/trading/page_help.py` | 47 | presentation | `desktop_app/features/trading/page_help.py` | M2-6 owner additions: short summaries and fully owned keyboard-accessible plain-text dialogs; no SDK or IO. |
+| `desktop_app/features/trading/trading_page_widgets.py` | 79 | presentation | `desktop_app/features/trading/trading_page_widgets.py` | M2-6 guidelines: six default position columns with injected preference persistence, and actionable empty-table overlays; no SDK or IO. |
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
 | `tools/affected_tests.py` | 242 | tooling | `tools/affected_tests.py` | R8 開發工具：由 git diff 與 import 圖選出受影響測試模組；只讀來源、不匯入產品碼；既有列與分層規則不變。 |
 | `tools/repin_baselines.py` | 406 | tooling | `tools/repin_baselines.py` | R6 開發工具：重生字串目錄、盤點登記、樣式表雜湊與頁面服務觀察點基準；只產生預期值，不改斷言、不碰 G3 與 r7_base；既有列與分層規則不變。 |
 
 | `tests/test_trading_engine_cleanup.py` | 267 | tooling | `tests/test_trading_engine_cleanup.py` | M2-8: retained-owned-process success/failure/timeout cleanup, normal endpoint-removal race and live/abnormal-exit counterexamples; foreign-host preservation; fake SDK only. |
+| `tests/test_m2_guidelines.py` | 175 | tooling | `tests/test_m2_guidelines.py` | M2-6: title/help placement, button roles, Cancel-default confirmations, column persistence, units and keyboard acceptance; no SDK or engine process. |
+| `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
+| `tests/test_m2_trading_page.py` | 306 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

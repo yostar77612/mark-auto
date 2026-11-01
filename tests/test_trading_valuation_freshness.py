@@ -180,7 +180,8 @@ class ValuationFreshnessTests(unittest.TestCase):
         self.assertEqual(self.window.performance.item(0, 4).text(), ui_text('v2.valuation_unknown'))
         self.assertEqual(self.window.performance.item(0, 5).text(), ui_text('v2.valuation_unknown'))
         self.assertIn('尚未核對', self.window.summary.text())
-        self.assertEqual(self.window.overview_status.text(), ui_text('v2.context_facts_pending'))
+        self.assertEqual(self.window.overview_status.text(), ui_text('m2t.facts_pending'))
+        self.assertEqual(self.window.dashboard.data_help.details.text(), ui_text('v2.context_facts_pending'))
         self.assertNotIn('None', self.window.summary.text())
 
 

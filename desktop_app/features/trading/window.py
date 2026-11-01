@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 
 from PySide6.QtCore import QThread, QTimer, Qt, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QComboBox, QFileDialog, QMainWindow, QMessageBox, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QFileDialog, QInputDialog, QMainWindow, QMessageBox, QVBoxLayout
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import (
@@ -28,6 +28,7 @@ from desktop_app.features.trading.rendering import render_tables
 from desktop_app.features.trading.workspaces import build
 from desktop_app.features.trading.wizard import StrategyWizard
 from desktop_app.features.trading.context_header import install_context_header, refresh_context_header
+from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, refresh_trading_environment
 
 
 class _Operation(QThread):
@@ -91,11 +92,12 @@ class TradingWindow(QMainWindow):
     legacy_requested = Signal(str)
     close_ui_requested = Signal()
 
-    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None, *, market_watch=None):
+    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None, *, market_watch=None, position_columns=None, save_position_columns=None):
         super().__init__(parent)
         self.facade = facade
         self.state = initial_state
         self.market_watch = market_watch
+        self._position_columns, self._save_position_columns = position_columns, save_position_columns
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
@@ -159,6 +161,9 @@ class TradingWindow(QMainWindow):
         profile_ref: str = '',
         market_data_settings=None,
     ) -> None:
+        if self.state.environment is Environment.LIVE and action in LIVE_ORDER_ACTIONS:
+            self._feedback(ui_text('m2t.orders_disabled'))
+            return
         self._run(
             UiCommand(
                 action,
@@ -417,6 +422,7 @@ class TradingWindow(QMainWindow):
             return
         self._populate_accounts(Environment(self.environment.currentData()))
         self._switch_context()
+        refresh_trading_environment(self, self.state)
 
     def _populate_accounts(self, environment: Environment) -> None:
         self._context_rendering = True
@@ -438,6 +444,7 @@ class TradingWindow(QMainWindow):
     def _switch_context(self) -> None:
         if not self._context_rendering and self.account.currentData():
             selected = self.account.currentData()
+            environment = Environment(self.environment.currentData())
             context_id, account_ref = (selected[0], selected[1]) if self.state.contexts else ('', selected)
             if self.state.contexts and (context_id, account_ref) == (self.state.context_id, self.state.account_ref):
                 return
@@ -452,15 +459,19 @@ class TradingWindow(QMainWindow):
                 self._rendered_version = None
                 self.apply_state(self.state)
                 return
-            self.command(UiAction.SWITCH_CONTEXT, environment=Environment(self.environment.currentData()), account_ref=account_ref, context_id=context_id)
+            self.command(UiAction.SWITCH_CONTEXT, environment=environment, account_ref=account_ref, context_id=context_id)
         elif not self._context_rendering:
             self._feedback(ui_text('v2.no_account'))
 
     def add_context(self) -> None:
         selected = Environment(self.environment.currentData())
         if selected is Environment.LOCAL:
-            self._feedback(ui_text('v2.context_profile_broker_only'))
-            return
+            environments = (Environment.BROKER_SIMULATION, Environment.LIVE)
+            captions = [self._environment_label(environment) for environment in environments]
+            choice, accepted = QInputDialog.getItem(self, ui_text('v2.context_add_profile'), ui_text('v2.environment'), captions, 0, False)
+            if not accepted:
+                return
+            selected = environments[captions.index(choice)]
         path, _ = QFileDialog.getOpenFileName(self, ui_text('v2.context_add_profile'), '', ui_text('v2.context_profile_filter'))
         if path:
             self.command(UiAction.ADD_CONTEXT, environment=selected, profile_ref=path)
@@ -506,6 +517,7 @@ class TradingWindow(QMainWindow):
         if market_only and not freshness_changed:
             self.dashboard.render_market(state)
             self.state = state
+            refresh_context_header(self, state)
             return
         changed_context = (state.context_epoch, state.context_id) != (self.state.context_epoch, self.state.context_id)
         if changed_context:
@@ -544,6 +556,7 @@ class TradingWindow(QMainWindow):
             ui_text('v2.issue_summary').format(len(state.issues), state.issues[0]) if state.issues else self._last_feedback or ui_text('v2.no_issues')
         )
         refresh_context_header(self, state)
+        refresh_trading_environment(self, state)
         self.overview_step.setEnabled(state.environment == Environment.LOCAL)
         self.connect_read_only_button.setEnabled(state.environment is not Environment.LOCAL and state.engine_state == 'DISCONNECTED')
         self.add_context_button.setVisible(bool(state.contexts))
@@ -553,6 +566,8 @@ class TradingWindow(QMainWindow):
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
         render_tables(self, state, state_changed=state_changed)
+        self.positions_empty.setVisible(not state.positions)
+        self.orders_empty.setVisible(not state.orders)
         self.dashboard.render(state, state_changed=state_changed)
         if not state_changed:
             return

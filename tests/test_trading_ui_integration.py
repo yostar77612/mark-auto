@@ -648,5 +648,5 @@ class TradingUiIntegrationTests(unittest.TestCase):
             self.assertEqual(self.window.performance.item(index, 4).text(), str(row.net_pnl))
             self.assertEqual(self.window.performance.item(index, 7).text(), str(row.attributed_pnl))
             self.assertEqual(self.window.performance.item(index, 8).text(), str(row.drawdown))
-        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('v2.attributed_pnl'))
+        self.assertEqual(self.window.performance.horizontalHeaderItem(7).text(), ui_text('m2t.adjusted_pnl'))
         self.assertEqual(self.window.performance.horizontalHeaderItem(7).toolTip(), ui_text('v2.attributed_pnl_hint'))

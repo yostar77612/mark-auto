@@ -486,3 +486,35 @@ def _apply_terminal_theme(widget):
                 item = table.item(row, column)
                 if item.text() != ui_text('watch.unknown'):
                     item.setForeground(widget._colour(view))
+
+
+_TRADING_PAGE_QSS = '''
+QMainWindow#multi_market_window QPushButton[role="primary"] { background:#185db8; color:white; border:1px solid #185db8; }
+QMainWindow#multi_market_window QPushButton[role="danger"] { background:#9b1c1c; color:white; border:1px solid #9b1c1c; }
+QMainWindow#multi_market_window QPushButton[role="danger"]:disabled,
+QMainWindow#multi_market_window QPushButton[role="primary"]:disabled { background:#eef1f5; color:#697587; border:1px solid #b3c4d9; }
+QLabel[workspaceTitle="true"] { font-size:20px; font-weight:600; }
+QWidget#trading_execution_page[executionEnvironment="LOCAL"] { border:1px solid #9fb0c5; }
+QWidget#trading_execution_page[executionEnvironment="BROKER_SIMULATION"] { border:1px solid #26854b; }
+QWidget#trading_execution_page[executionEnvironment="LIVE"] { border:2px solid #b52c36; }
+QLabel#trading_environment_notice { padding:8px; border-radius:4px; font-weight:600; }
+QLabel#trading_environment_notice[executionEnvironment="LOCAL"] { background:#e5edf7; color:#31465d; }
+QLabel#trading_environment_notice[executionEnvironment="BROKER_SIMULATION"] { background:#e8f5ec; color:#1b6335; }
+QLabel#trading_environment_notice[executionEnvironment="LIVE"] { background:#fff0f0; color:#9c1b24; }
+QToolButton[tradingHelp="true"] { border:1px solid #9eafc3; border-radius:4px; padding:3px 6px; color:#31465d; background:#ffffff; }
+QToolButton[tradingHelp="true"]:focus { border:2px solid #185db8; }
+QLabel#dashboard_red_summary { color:#9b1c1c; background:#fff0ef; font-weight:bold; padding:8px; }
+QLabel#dashboard_issues_title { font-weight:bold; font-size:20px; color:#526071; }
+QLabel#dashboard_issues_title[overviewLevel="red"] { color:#9b1c1c; }
+QListWidget#pending_issue_details { border:1px solid #9fb0c5; background:#eef2f7; color:#526071; }
+QListWidget#pending_issue_details[overviewLevel="red"] { border:2px solid #9b1c1c; background:#fff0ef; color:#651414; font-weight:bold; }
+QWidget#overview_dashboard QLabel[level="live"] { font-weight:bold; color:#176b36; }
+QWidget#overview_dashboard QLabel[level="warning"] { font-weight:bold; color:#805500; }
+QWidget#overview_dashboard QLabel[level="muted"] { font-weight:bold; color:#526071; }
+QWidget#overview_dashboard QLabel[level="red"] { font-weight:bold; color:#9b1c1c; }
+'''
+
+
+def _apply_trading_page_theme(window):
+    """Composition-only scoped trading-page styles; historical builders stay exact."""
+    window.setStyleSheet(window.styleSheet() + _TRADING_PAGE_QSS)
