@@ -1,0 +1,29 @@
+{
+  "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-market-fix",
+  "head": "34673c269e80ecdc2f9a707e77b22df2fe28e0f2",
+  "mode": "LOCAL",
+  "python": "C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\python.exe",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_window_constructor": true,
+  "real_runtime_composition": true,
+  "instrumentation_delegates_original": true,
+  "window_type": "TradingWindow",
+  "window_visible": true,
+  "research_type": "EmbeddedWindow",
+  "research_pages": 7,
+  "widget_count": 2726,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "environment": "LOCAL",
+  "engine_state": "WAITING_RECONCILIATION",
+  "financial_facts_verified": true,
+  "return_code": 0,
+  "research_released": true,
+  "real_sdk_imported": false,
+  "engine_shutdown_clean": true,
+  "elapsed_seconds": 12.183,
+  "errors": []
+}
