@@ -235,7 +235,6 @@ shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
 - This commit adds verification documentation only. No product/test/fixture
   behavior, G3 source, SDK pin, PROJECT_STATE or acceptance score changes.
 
-
 ## M2-6 / final policy evidence merge — 2026-11-01 Asia/Taipei
 
 - Normally merge the completed M2-0 verification documentation, preserving
@@ -795,7 +794,6 @@ its separate outer-boundary forwarding regressions. Invalid/stale native scope,
 closed/failed storage or lost writer ownership cannot mint known admission
 outcomes. LIVE remains denied independently before any mutation.
 
-
 ## M2-1 / single three-step connection presentation — 2026-11-01
 
 Use one visible BrokerPanel for environment/key save-and-connect, discovered
@@ -852,6 +850,7 @@ remain unchanged. Its named helper impact is CRITICAL (45 upstream sites,
 waived by the graph's shared-name/dynamic gaps. Final backend accounts_unavailable
 and callback_failed reasons map to existing Chinese next-step copy, with explicit
 unknown-readiness tests; no new catalogue records were needed.
+
 ## M2-1 / explicit unified broker startup identity — 2026-11-01
 
 Static review of the prepared actual-startup probe found a genuine entry-path
@@ -1004,6 +1003,7 @@ or commit authority: ManualTradingService._submit -> TradingEngine.submit ->
 ExecutionService.commit remains the sole financial admission/journal path.
 Historical v1 submit callers, the sole execution.commit assertion, protected
 files, risk limits and all existing test assertions remain intact.
+
 ## M2-2 D1 coordinator oracle baseline
 
 Book allocation is explicitly APP_VIRTUAL_SIMULATION, requires user confirmation
@@ -1358,3 +1358,17 @@ histories. Keep all1192 non-documentation entries exact at tested4fd1f6e. Repair
 only the missing three existing M2-6 test-file registrations in an independent
 inventory baseline commit; no Python body, fixture, timing, size limit, skip or
 assertion changes. CI must be fully green on the pushed stacked PR; no main merge.
+
+## M2-1 / complete-discovery frozen-probe correction
+
+The first final M2-1 full run completed3996 tests in1416.477s with10 failures,
+23 errors and42 existing skips. One NEW error was a real compatibility omission:
+packaging/broker_probe.py still constructed ShioajiSDKFacade without the newly
+required immutable environment. Its existing strict mocked frozen test reproduces
+the TypeError; no assertion changes are needed. Pass Environment.LIVE explicitly
+in this inert metadata-only probe: the SDK constructor remains replaced by the
+existing denial function, and the test proves zero construction/login/operations.
+Exact probe impact is LOW (2 nodes, one packaging caller); its nine existing
+checks pass0.426s after the correction. Record the failed complete run rather than
+waiving it. A new complete suite follows on the corrected source. No SDK pin,
+execution guard, test limit, skip or real credential/broker operation changes.
