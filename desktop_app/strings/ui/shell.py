@@ -79,7 +79,7 @@ ENTRIES = (
     (0, 218, 'ui.paint_event.no_equity', '尚無權益資料'),
     (0, 219, 'ui.paint_event.equity_range', '權益 TWD  最低 {0:,.0f}  最高 {1:,.0f} | 時間 →'),
     (0, 220, 'ui.init.window_title', 'TMF 量化研究桌面｜研究與紙上模擬'),
-    (0, 221, 'ui.init.research_mode_banner', '研究模式・實盤停用'),
+    (0, 221, 'ui.init.research_mode_banner', '研究模式・正式下單停用'),
     (
         0,
         222,

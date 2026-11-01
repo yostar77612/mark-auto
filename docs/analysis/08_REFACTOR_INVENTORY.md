@@ -739,6 +739,7 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/domain/alerts.py` | 270 | domain | `quantlab/trading/domain/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/alerts.py` | 22 | application | `quantlab/trading/ports/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_alerts.py` | 137 | composition | `quantlab/trading/runtime/market_alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -317,7 +317,11 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.last_rendered_bar_count = 0
         if self.error or not self.bars:
             self.setToolTip('')
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.error or ui_text('charts.paint_event.no_data'))
+            message = self.error or ui_text('charts.paint_event.no_data')
+            message_rect = self.rect()
+            if self.show_volume and fm.boundingRect(message_rect, Qt.AlignmentFlag.AlignCenter, message).top() <= 43 + fm.descent():
+                message_rect.setTop(43 + fm.descent() + 4)
+            p.drawText(message_rect, Qt.AlignmentFlag.AlignCenter, message)
             p.end()
             return
         start, end = self.visible_range

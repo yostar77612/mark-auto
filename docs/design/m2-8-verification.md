@@ -200,3 +200,50 @@ four documentation files, 11 sections, zero affected processes and LOW risk,
 without error, partial or truncation flags. Standard whole-index candidate,
 cross-language and flow-budget warnings remain in the local log; absent graph
 flows are not used as proof about product behavior.
+
+## Latest-main integration: final composite verification pending
+
+The normal merge combines M2-8 documentation head
+`756b1d9fe9bf42afd8e75dcb0849c1e54947f828` with main
+`67249dc126423212bbcced2048992c4c50a1be48`, which includes both the market-settings
+fix and M2-0 policy. Only the contracts tail and add/add decisions document
+required resolution; all independent original blocks are retained under one
+decisions title. The inventory merged both registrations automatically.
+
+An exact index audit checks all 1171 non-documentation blobs: the seven M2-8
+test/tool files equal `756b1d9`, and every other file, including inherited policy
+fixtures, equals main `67249dc`. No source rewrite or baseline re-pin was made.
+Main `06ee6a5` differed from tested market `2d8319b` only in three spec documents;
+the final main parent additionally includes the independently delivered policy
+banner, exact policy assertions/fixtures and policy documentation. This merged
+source is a new composite and is not the source of the earlier complete runs.
+
+Pre-merge graph impact reports MarketDataPanel HIGH (six affected nodes) and
+CandlestickChart CRITICAL (278 nodes/164 flows). Method identities in the older
+incremental index were unresolved, so direct Qt save-signal and chart-render
+references were checked; UNKNOWN was not read as unused. All inherited source
+blobs remain exact. A forced single-worker rebuild restored method identities;
+final all/staged analysis covers 48 files and 157 symbols, MEDIUM risk, with two
+affected chart-paint flows and no error/partial/truncation flags or empty IDs.
+The flows end in appearance and text lookup. Method-level paint/save callers
+remain UNKNOWN because Qt dispatch is dynamic, confirmed by paint events and
+the actual clicked-signal binding; `apply` resolves one caller at LOW risk. The
+class-level HIGH/CRITICAL warnings above remain retained. All inherited market
+paths are unchanged and covered by the five real-widget regressions.
+
+Lightweight checks on the resolved composite, provisioned root venv,
+`PYTHONUTF8=1`, `QT_QPA_PLATFORM=offscreen`, each exit 0:
+
+| Command suffix | Result |
+|---|---|
+| `-B -m unittest discover -s tests -p test_market_settings_fix.py -v` | 5 passed, 0.054s |
+| `-B -m unittest test_trading_engine_cleanup.OwnedEngineBoundaryTests test_trading_load_probe -v` (checkout/tests plus checkout on PYTHONPATH) | 8 passed, 0.002s; pure fake boundaries/load samples only |
+| `-B -m unittest discover -s tests -p test_docs_layering.py -v` | 8 passed, 0.688s |
+
+The seven actual-process cleanup cases, new complete discovery, actual LOCAL
+and fake-SIM startup on this composite, and final CI are PENDING controller
+execution. They were not run alongside the controller's active M2-6 full suite.
+The earlier 3909-test retry and startup JSONs remain evidence only for source
+`8f03a99`; none is relabeled as validation of the final merge head. The user
+requires the new complete run after latest-main integration, so prior full-run
+evidence does not replace it.

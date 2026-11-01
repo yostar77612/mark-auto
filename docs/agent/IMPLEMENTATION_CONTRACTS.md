@@ -6661,6 +6661,62 @@ G3 files, source profiles, OOS/budget/timeouts, PROJECT_STATE or acceptance scor
 changed. Offline evidence and before/after screenshots are recorded in
 docs/design/m1-u-notes.md; real-App owner visual verification remains pending.
 
+## M2-0 — owner-authorized execution policy wording (2026-11-01, D1)
+
+Owner decision D1 supersedes the earlier permanent product-wide prohibition
+for v2: production orders disabled by default; future enablement requires a
+separate explicit owner decision. M2 must keep LIVE production orders
+hard-disabled, without a UI or configuration opt-in. The v1 research/Paper
+real-order prohibition remains permanent. SinoPac broker-simulation orders
+are authorized for subsequent M2-2 implementation and verification. M2-0
+only changes policy documentation and the passive research banner; it does
+not enable simulation execution or change any runtime execution gate.
+
+README, contributor safety/mission guidance, the upgrade contract, six ADRs,
+the glossary and PR risk checklist express that distinction. Frozen contracts
+and dated verification records above remain historical evidence; their old
+policy wording does not override this explicit D1 addendum for v2. Original
+OOS/holdout, fail-closed, Decimal, risk, credential, SDK-import, budget,
+deadline, execution-inventory and v1 producer-profile safeguards are unchanged.
+
+The two existing equivalent keys ui.init.research_mode_banner and
+header.live_disabled display `研究模式・正式下單停用`. Keys, phase/order values,
+historical aliases and alias provenance remain unchanged. A separate baseline
+commit records only the D1-authorized text and policy assertion deltas; exact
+historical evidence and all unrelated expected values remain pinned.
+
+Focused verification and autonomous decisions are recorded in
+docs/design/m2-decisions.md. Full discovery, isolated runtime launches and
+remote CI remain coordinating-agent checks until their actual results exist.
+No real SDK login, CA activation or external financial operation is verification
+evidence for this phase.
+
+## Installed 0.3.0 market-settings regressions (2026-11-01)
+
+MarketDataPanel reconstructs Environment from actual Qt combo data before
+creating MarketDataSettings. Both existing broker-simulation and LIVE choices
+emit the original typed, reference-only save intent through the real save
+button. Domain validation and the explicit separate connect action remain.
+Disabled settings display the existing disconnected label regardless of a
+supplied local-engine status/error; enabled settings preserve their own
+connecting/connected/disconnected/failure display. The runtime snapshot's
+market_connection projection and all other consumers are unchanged.
+
+CandlestickChart retains its normal empty centering and nonempty painter path.
+At compressed heights, only an empty/error message whose centered text would
+overlap the legend moves into the area below it. Actual QPainter text bounds
+at terminal-minimum and normal sizes verify the separation. No UI strings,
+catalog order, theme or execution behavior changes.
+
+The trading currentData audit found existing typed enum reconstruction in
+BrokerPanel, TradingWindow, StrategyWizard and AlertRuleDialog; a real Qt test
+also creates all twelve typed alert rules. New tests use only offline widgets
+and original painting. New module registration and any observed baseline
+changes are isolated from source fixes; historical fixture bytes and test
+strength remain authoritative. Decisions and verification ownership are in
+docs/design/m2-decisions.md. Real broker operations, G3/SDK pin/PROJECT_STATE,
+OOS, budgets, deadlines and source profiles remain untouched.
+
 ## M2-8 test/developer engine ownership (2026-11-01)
 
 Disposable source-engine owners register cleanup before startup can fail. The
