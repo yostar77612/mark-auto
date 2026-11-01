@@ -1315,3 +1315,12 @@ LIVE, malformed markers and unsupported/unconfirmed actions fail before fallback
 The runtime retains a false-receipt scope only when a matching server-known
 result exists. Transport failures and preexisting UNKNOWN remain uncertain; no
 generic state_conflict whitelist clears pending state or manufactures a result.
+
+## M2-2 / explicit readability debt in the delivery inventory
+
+Record exact file/class/function target exceptions and the required narrow split
+plan for the manual application coordinator and strict-fake fixture. These targets
+are not claimed as met and no limit or privacy assertion is changed. Preserve the
+one canonical writer, journal, admission/absence proof, existing risk/fence and
+all test cases. This is a separate documentation baseline after source integration;
+actual class decomposition is outside this frozen safety handoff.
