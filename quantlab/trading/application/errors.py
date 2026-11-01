@@ -10,6 +10,8 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'manual_allocation_exceeds_settings': ErrorText('人工模擬帳本的已確認額度超過目前配置。', '核對證券及期貨配置後再操作；原帳本與損益紀錄不會重設，合法退出仍可另行核對。'),
+    'manual_not_submitted': ErrorText('日誌已確認這個要求尚未進入券商送單流程。', '原要求不會重送；核對帳本並明確恢復後，重新預覽建立新的要求。'),
     'manual_book_not_enabled': ErrorText('尚未啟用這個帳戶的人工模擬帳本。', '確認應用程式虛擬額度及空倉對帳結果後啟用；這不是券商餘額。'),
     'manual_confirmation_required': ErrorText('這項人工模擬操作需要明確確認。', '核對帳戶、目前狀態與風險預覽後再確認。'),
     'manual_account_observation_required': ErrorText('尚未取得完整且新鮮的委託與部位對帳。', '等待帳戶查詢完成；未知資料不會視為空倉或零餘額。'),

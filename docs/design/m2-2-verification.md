@@ -203,3 +203,38 @@ methods were reviewed before edits; new symbols were UNKNOWN/absent and source
 confirmed, never treated as an all-clear. Full fresh indexed all/staged change
 analysis precedes each source/baseline commit; complete runtime/full/CI evidence
 must still be supplied after composition.
+
+## Readiness, interrupted intent and LIVE follow-ups
+
+Three strict regressions were first RED: stale-session controls appeared ready,
+a receipted order was not linked to its earlier pending manual request after
+restart, and a proven pre-submission append failure remained pending forever.
+The repaired projection uses the existing active-session, verified quote,
+current actual limit and capability policy. It leaves cancellation readiness
+independent of entry quote/session rules. Restored pending submit requests link
+only by their exact durable canonical key. A complete valid replay with no
+durable order and no recorded order id proves the earlier manual intent never
+reached the sole SDK submit call; only that case becomes known rejected with
+manual_not_submitted. A durable SUBMITTING/UNKNOWN order is never cleared by an
+empty cache and is never automatically resent. Original admitted scope remains.
+
+An additional two-account regression proves enabling a stock book after the
+existing futures book's STOP_NEW keeps the global stop, both book histories and
+the 100000 cap. The final settings regression was first RED, then verifies the
+existing SAVE_SETTINGS action can lower a bucket without authorizing the old
+confirmed capital for new risk. manual_allocation_exceeds_settings explains the
+constraint; book capital/history and legal reductions are retained.
+
+The expanded tiny matrix passes 37 tests in 0.450 seconds: manual core 24, LIVE
+wall 8 and actual shared-session consumer 5. LIVE cases include direct manual
+command routes with contradictory flags and a real engine replay/read-only
+recovery from SUBMITTING to a known report, with zero native Order/place/update/
+cancel calls. The separate existing domain/grid/SDK/session/coordinator group
+passes 107 tests in 8.419 seconds after the precise independent D1 oracle update;
+its original restricted-token attempt failed on test-owned temporary paths and
+is not counted as product evidence. No timeout, skip or source limit changed.
+
+All follow-up Python passes Ruff and diff whitespace checks. Graph evidence is
+refreshed before commits after the coordinator's isolated smoke prefix. These
+focused results do not claim the final full suite, Qt startup, IPC integration
+or CI, which the coordinator runs against the eventual merged source.

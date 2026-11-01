@@ -17,7 +17,7 @@ from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.application.state import AppState, LocalOrder
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.execution_policy import orders_enabled
-from quantlab.trading.domain.models import Environment, HoldingPolicy, OrderStatus, PositionLot, Quote, Reservation
+from quantlab.trading.domain.models import Environment, HoldingPolicy, Market, OrderStatus, PositionLot, Quote, Reservation, Side
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import BrokerOrder
 from quantlab.trading.ports.storage import StoredEvent
@@ -56,6 +56,107 @@ def live_adapter():
 
 
 class LiveOrderGuardTests(unittest.TestCase):
+    def test_live_manual_command_routes_cannot_reach_native_mutations(self):
+        from quantlab.trading.application.manual_contracts import ManualBookForm, ManualMutationForm, ManualOrderForm, ManualScope
+        from quantlab.trading.application.manual_trading import ManualTradingService
+
+        case, adapter = live_adapter()
+        adapter.capabilities['test-stock'] = replace(adapter.capabilities['test-stock'], markets=frozenset((Market.STOCK,)))
+        engine = TradingEngine(
+            GuardJournal(),
+            case.clock,
+            synthetic_calendar(),
+            Catalog((case.spec,)),
+            {'test-stock': adapter},
+            configuration=ExecutionConfiguration(Environment.LIVE, 'test-stock', '', False, False, True),
+            ownership_clock=case.clock.now,
+            fees=FeeSchedule(),
+        )
+        service = ManualTradingService(engine, validate_scope=lambda scope: None, limits=(), cost_source='explicit-fake-costs', margin_source='not-applicable')
+        scope = ManualScope('live-context', 1, Environment.LIVE, 'test-stock', 'live-generation', 1)
+        book = ManualBookForm(scope, Decimal('60000'), True)
+        order = ManualOrderForm(scope, 'live-order', case.spec.instrument_id, Side.BUY, 1000, Decimal('20'), Decimal('19'), confirmed=True)
+        mutation = ManualMutationForm(scope, 'live-change', 'owned', Decimal('20.1'), confirmed=True)
+        for action, fields in (
+            (UiAction.ENABLE_MANUAL_BOOK, {'manual_book': book}),
+            (UiAction.PREVIEW_MANUAL, {'manual_order': order}),
+            (UiAction.SUBMIT_MANUAL, {'manual_order': order}),
+            (UiAction.TEST_SIM_ORDER, {}),
+            (UiAction.CANCEL_MANUAL, {'manual_mutation': mutation}),
+            (UiAction.AMEND_MANUAL, {'manual_mutation': mutation}),
+            (UiAction.RESUME, {'manual_book': book}),
+            (UiAction.FLATTEN, {'manual_book': book, 'target_id': 'owned'}),
+        ):
+            receipt = service.execute(
+                UiCommand(
+                    action,
+                    engine.state.version,
+                    environment=Environment.LIVE,
+                    account_ref='test-stock',
+                    context_id=scope.context_id,
+                    context_epoch=scope.context_epoch,
+                    connection_generation=scope.connection_generation,
+                    connection_revision=scope.connection_revision,
+                    **fields,
+                )
+            )
+            self.assertFalse(receipt.accepted)
+            self.assertEqual(receipt.code, 'production_orders_disabled')
+        self.assertEqual(case.client.placed, [])
+        self.assertEqual(case.client.order_calls, [])
+        case.client.cancel_order.assert_not_called()
+        case.client.update_order.assert_not_called()
+
+    def test_live_recovery_observes_unknown_without_native_mutation(self):
+        from quantlab.trading.application.coordinator import run_readonly_cycle
+
+        case, adapter = live_adapter()
+        journal = GuardJournal()
+        config = ExecutionConfiguration(Environment.LIVE, 'test-stock', '', False, False, True)
+        engine = TradingEngine(
+            journal,
+            case.clock,
+            synthetic_calendar(),
+            Catalog((case.spec,)),
+            {'test-stock': adapter},
+            configuration=config,
+            ownership_clock=case.clock.now,
+            fees=FeeSchedule(),
+        )
+        plan = replace(fixtures.plan(case.spec, environment=Environment.LIVE), state_version=engine.state.version)
+        reservation = Reservation('owned', 'test-stock', plan.instrument_id, '0050', Decimal('20000'), Decimal('1000'), 1000, OrderStatus.RESERVED)
+        order = LocalOrder('owned', 'owned-key', 'historical-fixture-hash', plan, HoldingPolicy(), reservation, OrderStatus.SUBMITTING, broker_ref='sdk-owned')
+        engine._persist('historical_owned_submitting_fixture', replace(engine.state, orders=(order,)))
+        raw = SimpleNamespace(
+            order=SimpleNamespace(id='sdk-owned', account=case.client.account, quantity=1, action='Buy', price=20.0, order_lot='Common'),
+            status=SimpleNamespace(status='Submitted', deal_quantity=0, deals=[]),
+            contract=case.client.synthetic_contract,
+        )
+        case.client.placed.append(raw)  # Historical report data, not an SDK call.
+        case.client.place_order = Mock(side_effect=AssertionError('LIVE recovery called place_order'))
+        case.client.Order = Mock(side_effect=AssertionError('LIVE recovery built an order'))
+        adapter.orders['owned'] = BrokerOrder('owned', plan, 0, Decimal('0'), OrderStatus.ACCEPTED, 'sdk-owned', fixtures.NOW)
+        adapter.trades['owned'] = raw
+        recovered = TradingEngine(
+            journal,
+            case.clock,
+            engine.calendar,
+            engine.catalog,
+            engine.gateways,
+            configuration=replace(config, read_only=True),
+            ownership_clock=case.clock.now,
+            fees=FeeSchedule(),
+        )
+        self.assertEqual(recovered.state.orders[0].status, OrderStatus.UNKNOWN)
+        run_readonly_cycle(recovered)
+        self.assertEqual(recovered.state.orders[0].status, OrderStatus.ACCEPTED)
+        self.assertTrue(recovered.state.stopped)
+        self.assertEqual(len(recovered.state.orders), 1)
+        case.client.place_order.assert_not_called()
+        case.client.Order.assert_not_called()
+        case.client.cancel_order.assert_not_called()
+        case.client.update_order.assert_not_called()
+
     def test_policy_rejects_live_and_non_enum_values(self):
         self.assertTrue(orders_enabled(Environment.LOCAL))
         self.assertTrue(orders_enabled(Environment.BROKER_SIMULATION))
