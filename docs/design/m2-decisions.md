@@ -395,3 +395,27 @@ Final document/layout checks passed: 37 tests in 4.645s. The offline index
 refresh completed; complete change analysis reported 10 document symbols,
 12 evidence files and LOW risk with no partial/truncation flag. No graph
 absence is used to waive tests or the full-run native-cause limits above.
+
+## M2-6 / first complete-run corrections and cleanup prerequisite
+
+Retain the first complete run's 3914/1638.307s, 14 failures, 27 errors and 42
+existing skips as FAILED, including all four new identities. Replace the real
+page-boundary violation with an explicit owned trading-page argument; do not
+relax the original no-parent/shell-discovery test or move that lookup elsewhere.
+The established page-3 contract is checked in a real widget regression that
+separately supplies a page different from the layout owner.
+
+Commit that source correction with the normal pinned-main `67249dc` merge as
+`f98d98c`, then independently update the three feature-caused visible-label test
+references. Preserve all identity/finance/repaint assertions and add exact original
+full-warning help/accessibility checks. No catalogue value, historical fixture,
+skip, cap or timeout is changed to hide a failure. Source and exact text-baseline
+changes remain separate commits.
+
+Normally integrate final M2-8 `fdfde06` as the next test-cleanup prerequisite,
+retaining its seven source/test/tool blobs exactly. Delivery dependency becomes
+M2-8 → M2-6 → M2-1 → M2-2; root runs one new final-composite M2-6 full suite and
+actual startup serially after M2-8. Prior runs keep their original source IDs.
+No real key, CA, broker operation, installed-app control or git-history rewrite
+is performed. Detailed focused evidence and the retained first-run comparison
+are in [M2-6 verification](../analysis/m2-trading/verification.md).

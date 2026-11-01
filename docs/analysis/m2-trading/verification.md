@@ -44,3 +44,60 @@ contract. Screenshots are synthetic visual evidence, not live account data.
 Full-suite, actual `_run_window` LOCAL/SIM startup and CI remain pending root
 coordination. No real credentials, SDK login, CA activation or order operation
 was used. G3, SDK pin, PROJECT_STATE, timeouts and existing test limits are intact.
+
+## First complete run and four-failure follow-up
+
+The complete run on `6950a0c07bceb1f8b5a58d1bd9950cb33ad0fcc9` ran 3914 tests
+in 1638.307s: FAILED, 14 failures, 27 errors, 42 existing skips. All main failure
+IDs remain; four NEW IDs are retained in [the comparison](first-full-comparison.json).
+Raw traceback review matches 37/41 ordered frames and exception type chains;
+22/22 referenced repository source blobs match main. These are comparison facts,
+not a passing full-suite claim.
+
+One new failure was a real page-boundary violation. Source commit `f98d98c`
+normally merges pinned main `67249dc126423212bbcced2048992c4c50a1be48` and changes
+`install_trading_environment(window, layout, page)` to receive the explicit owned
+trading-page widget from its caller. No parent/shell discovery is moved elsewhere.
+The unchanged negative-rule scan is RED at the old parentWidget call and GREEN
+across all 239 page-source files after the fix. A new real-widget case supplies
+an explicit page distinct from the layout owner and also verifies the real
+TradingWindow's stable page-3 content/LOCAL styling target. The original
+PageBoundaryTests assertion remains unchanged.
+
+Exact parent-blob audit verifies 1173 inherited non-documentation files; only the
+two reviewed UI source paths and their added regression differ. The three
+incoming market files match pinned main exactly. There are no baseline re-pins
+in the source commit. Complete all/staged graph review reports 42 symbols,
+20 files, two chart-paint flows and MEDIUM risk, no error/partial/truncation
+flags or empty IDs. Dynamic Qt callers remain UNKNOWN and were checked against
+actual bindings; source/caller impact is LOW. Global graph caps are retained.
+
+Small offscreen checks after the M2-8 full run's smoke-sensitive prefix passed
+used the provisioned root venv, `PYTHONUTF8=1`, `QT_QPA_PLATFORM=offscreen` and
+checkout/tests plus checkout on PYTHONPATH:
+
+| Command suffix | Result |
+|---|---|
+| `-B -m unittest test_m2_trading_page test_m2_readability test_m2_guidelines test_market_settings_fix test_desktop_pages.PageBoundaryTests -v` | 35 passed, 7.271s |
+| Three exact original short-copy cases plus unchanged architecture case and new explicit-owner case, before text-oracle update | Five run, three expected text failures; both architecture/owner cases pass, 2.358s |
+| `-B -m unittest test_dashboard_characterization test_trading_valuation_freshness test_desktop_pages.PageBoundaryTests test_m2_trading_page.M2TradingPageTests.test_environment_installation_uses_the_explicit_page_owner -v` | 12 passed, 11.425s after the separate exact oracle update |
+
+The latter two modules now expect only the existing M2 short visible labels.
+Five added assertions bind the original complete v2 safety text in the actual
+help details/accessibility description. All original control identities,
+row-preservation, financial-unknown, same-stamp repaint and no-None-money
+assertions remain. No production copy, catalogue record, skip, cap or timeout
+changes. Changed-file Ruff check/format and diff checks pass.
+The separate baseline/evidence commit also passes 37 document/layout checks in
+2.138s. Complete all/staged graph checks report eight symbols across five files,
+LOW risk and zero affected processes, no error/partial/truncation flags or empty
+IDs. Unittest dispatch is confirmed by the exact exercised cases, not absent
+graph caller edges.
+
+M2-8's exact test/developer ownership cleanup is a prerequisite of the next
+complete run; final source integrates that dependency normally, without rewriting
+its seven source/test/tool files. Actual startup, new full discovery and CI on
+the final composite remain PENDING controller execution. Small checks resumed
+only after the other run's smoke prefix; this is not whole-run isolation. No
+native engine process, installed app or full test suite was launched or stopped
+by this follow-up agent.
