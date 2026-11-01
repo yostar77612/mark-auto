@@ -1,0 +1,114 @@
+{
+  "source_head": "34673c269e80ecdc2f9a707e77b22df2fe28e0f2",
+  "scope": "Real TradingWindow/widgets, fake read model only; no engine/startup, broker login, credentials or real SDK.",
+  "style": "Fusion / existing application theme / Microsoft JhengHei UI 10pt",
+  "logical_sizes": {
+    "1366x768": {
+      "window_size": [
+        1366,
+        768
+      ],
+      "settings": {
+        "page_height": 262,
+        "visible_input_count": 2,
+        "button_count": 3,
+        "label_char_count": 17,
+        "visible_text": [
+          "行情環境",
+          "券商模擬（待外部驗證）",
+          "API 金鑰引用名稱",
+          "MarkAuto/v2/broker/sinopac",
+          "未連線",
+          "儲存",
+          "測試連線",
+          "中斷連線"
+        ],
+        "combo_items": [
+          "券商模擬（待外部驗證）",
+          "正式環境（預設停用）"
+        ],
+        "table_headers": [],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [],
+        "primary_button_count": 0
+      },
+      "settings_status": "未連線",
+      "market_buttons_accessible_names": {
+        "market_data_save": "儲存",
+        "market_data_connect": "測試連線",
+        "market_data_disconnect": "中斷連線"
+      },
+      "market_keyboard_tab_order": [
+        "market_data_environment",
+        "market_data_secret_ref",
+        "market_data_save",
+        "market_data_connect",
+        "market_data_disconnect"
+      ],
+      "visible_horizontal_scrollbars": [],
+      "empty_chart_size": [
+        699,
+        272
+      ],
+      "compact_chart_size": [
+        699,
+        90
+      ]
+    },
+    "1920x1080": {
+      "window_size": [
+        1920,
+        1080
+      ],
+      "settings": {
+        "page_height": 262,
+        "visible_input_count": 2,
+        "button_count": 3,
+        "label_char_count": 17,
+        "visible_text": [
+          "行情環境",
+          "券商模擬（待外部驗證）",
+          "API 金鑰引用名稱",
+          "MarkAuto/v2/broker/sinopac",
+          "未連線",
+          "儲存",
+          "測試連線",
+          "中斷連線"
+        ],
+        "combo_items": [
+          "券商模擬（待外部驗證）",
+          "正式環境（預設停用）"
+        ],
+        "table_headers": [],
+        "unlabeled_inputs": [],
+        "disabled_buttons": [],
+        "primary_button_count": 0
+      },
+      "settings_status": "未連線",
+      "market_buttons_accessible_names": {
+        "market_data_save": "儲存",
+        "market_data_connect": "測試連線",
+        "market_data_disconnect": "中斷連線"
+      },
+      "market_keyboard_tab_order": [
+        "market_data_environment",
+        "market_data_secret_ref",
+        "market_data_save",
+        "market_data_connect",
+        "market_data_disconnect"
+      ],
+      "visible_horizontal_scrollbars": [],
+      "empty_chart_size": [
+        1032,
+        490
+      ],
+      "compact_chart_size": [
+        1032,
+        90
+      ]
+    }
+  },
+  "command_count": 0,
+  "real_sdk_imported": false,
+  "child_processes_started": 0
+}

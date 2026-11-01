@@ -107,3 +107,46 @@ claimed.
   in 15 actual modules; the dependency-layer gate reported zero findings.
   Final commits and the coordinating agent's full/startup/remote checks retain
   their actual evidence separately.
+
+## Market-settings fix / final frozen-source evidence — 2026-11-01
+
+The coordinator verified source head
+`34673c269e80ecdc2f9a707e77b22df2fe28e0f2` with complete serial discovery:
+3,893 tests in 2,094.353s, 10 failures, 27 errors, 42 existing skips. Main 0453136
+has 3,888 tests in 1,968.015s with 10 failures, 27 errors, 42 skips. All 36 failing
+IDs are preexisting and there are no new IDs; this local suite is nonzero,
+not a pass. Of 37 occurrences, 36 match ordered traceback frames/types. One
+unchanged standalone native retained-handle case reaches a different native
+assertion (already signaled 0 rather than WAIT_TIMEOUT 258); its exact cause
+remains unresolved. E06's same primary PID mismatch has secondary cleanup
+WinError 5 on .sqlite-shm instead of main's WinError 32 on .sqlite. Preserve
+these limits; do not call every failure's underlying cause identical. An
+incomplete extra main replay is excluded from passing/count/cause evidence.
+
+Actual run_window returning 0 checks at this source passed: LOCAL 12.183s and fake
+BROKER_SIMULATION 6.173s, each with 7 embedded research pages/2,726 widgets,
+clean engine/research release and no real SDK import. Fake broker counts
+were 1 login/1 logout/2 subscriptions/0 order constructors/0 orders; broker
+financial facts remained unknown. The full-suite-owned wrapper 153036 and
+native child 230124 were normally authenticatedly shut down and both exited.
+No user application or data was altered.
+
+The new origin/main UI guidelines section 10 was read without merging main
+or changing verified source. Real-window fake-facade captures at 1366×768
+and 1920×1080 plus 90px empty-chart details were visually inspected. The changed
+group has readable controls, no horizontal scrollbar, labeled/named inputs
+and buttons, and actual Tab order environment→reference→save→connect→disconnect.
+Disabled settings still show 未連線 when supplied a stale CONNECTED value/error.
+The isolated capture records 0 commands/0 child processes/no SDK import.
+
+Final screenshots, focused/static limitations, exact startup JSON and bounded
+failure comparison are in
+[market settings verification](../analysis/market-settings-fix/verification.md).
+This evidence commit changes only documents/captures, retaining all product,
+test, theme and tool bytes at the frozen source. Existing page architecture,
+strings and general UI redesign are outside this three-defect fix. Remote
+CI is still pending and required independently before M2-1/M2-2 begin.
+Final document/layout checks passed: 37 tests in 4.645s. The offline index
+refresh completed; complete change analysis reported 10 document symbols,
+12 evidence files and LOW risk with no partial/truncation flag. No graph
+absence is used to waive tests or the full-run native-cause limits above.
