@@ -181,3 +181,23 @@ staged evidence while all-scope still had an empty UID. Offline forced rebuild
 restored identities and exact committed doc comparison was completed afterward;
 that retrospective check is not claimed as precommit. Separate source commit
 requires complete all/staged detection with zero empty IDs and no truncation.
+
+### LIVE-only visual evidence after the correction
+
+Source36fc1e86ee00ee9c9c506932c5d962133ec72c0c was captured with the audited
+fake-DTO helper at1366×768 and1920×1080. Only the two existing `*-live.png`
+images were replaced; all other scene bytes remain unchanged. Exact image SHA,
+dimensions and capture context are in [the capture record](live-ca-capture-36fc1e8.json).
+
+The helper expanded the CA group to assert disabled picker/reference/activation
+controls, then restored the original collapsed default for capture. The updated
+formal-readonly guidance is visible; both captures were visually inspected with
+no clipping/overlap/horizontal overflow.1366 uses its existing vertical scroll;
+1920 shows the complete settings page. Horizontal scrollbar maxima are zero.
+The retained LOCAL book and zero commands are asserted. These are offline visual
+fixtures, not a real LIVE login or verified broker account/signature claim.
+
+The source commit's complete all/staged graph checks both returned23 symbols
+across10 files/eight affected flows, HIGH, with no empty IDs, partial or truncated
+results. Python3.11 compilation and changed-file Ruff checks passed. Actual
+window/IPC startup and complete-source validation remain coordinator gates.

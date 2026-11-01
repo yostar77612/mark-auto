@@ -817,3 +817,17 @@ zero empty IDs and no partial/truncated flags. Source-all subsequently reports
 partial/truncated flags. The HIGH warning is retained alongside actual focused
 tests; it is not lowered through riskSharedAxes or graph absence. These checks
 precede the separate source-fix commit, not the documentation merge.
+
+## M2-1 / scoped LIVE evidence recapture — 2026-11-01
+
+Source36fc1e8 passed23 updated fake/small-widget/metadata tests, Python3.11
+compilation, Ruff and complete all/staged graph checks (23symbols/10files/eight
+flows, HIGH, zero missing IDs/truncation). Under the coordinator's explicit
+lightweight Qt allowance, replace only1366×768/1920×1080 LIVE visual fixtures.
+The audited helper uses public fake DTOs/RecordingFacade and the real window/
+theme, with SDK imports forbidden, no engine/runtime/login/commands. It checks
+CA controls while expanded before restoring the original collapsed capture state.
+Both images retain the LOCAL book, formal connection label and readable readonly
+CA guidance; visual inspection passes and horizontal scrollbar maxima are zero.
+Other scenes and unrelated historical baselines are not regenerated. The capture
+record pins36fc1e8 and each image hash. Actual startup/full/CI stay separate.
