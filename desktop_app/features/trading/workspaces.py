@@ -266,7 +266,7 @@ def _market_page(self) -> None:
 
 def _trading_page(self) -> None:
     layout = _page(self, 'trading')
-    install_trading_environment(self, layout)
+    install_trading_environment(self, layout, self.pages.widget(3).widget())
     layout.addWidget(HelpText(ui_text('m2t.trading_hint'), ui_text('v2.control_hint'), 'trading_control', header=self.page_headers['trading']))
     _buttons(
         self,

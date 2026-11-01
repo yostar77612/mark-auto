@@ -16,8 +16,8 @@ LIVE_ORDER_ACTIONS = frozenset((UiAction.DEPLOY, UiAction.STEP, UiAction.RESUME,
 _ORDER_BUTTONS = ('deploy_button', 'resume_button', 'cancel_entries_button', 'flatten_button', 'overview_cancel_entries')
 
 
-def install_trading_environment(window, layout):
-    window.trading_execution_page = layout.parentWidget()
+def install_trading_environment(window, layout, page):
+    window.trading_execution_page = page
     window.trading_execution_page.setObjectName('trading_execution_page')
     header = window.page_headers['trading']
     caption = QLabel(ui_text('v2.environment'))
