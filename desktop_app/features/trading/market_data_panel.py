@@ -54,7 +54,7 @@ class MarketDataPanel(QGroupBox):
 
     def _save(self):
         try:
-            settings = MarketDataSettings(self.environment.currentData(), self.secret_ref.text().strip(), True)
+            settings = MarketDataSettings(Environment(self.environment.currentData()), self.secret_ref.text().strip(), True)
         except DomainError:
             self.status.setText(ui_text('marketdata.invalid'))
             return
@@ -72,6 +72,9 @@ class MarketDataPanel(QGroupBox):
             self.environment.setCurrentIndex(self.environment.findData(settings.environment))
             self.secret_ref.setText(settings.secret_ref)
             self._loading = False
+        if not settings.enabled:
+            self.status.setText(ui_text('watch.disconnected'))
+            return
         key = {'CONNECTED': 'watch.connected', 'CONNECTING': 'watch.connecting', 'DISCONNECTED': 'watch.disconnected'}
         self.status.setText(ui_text(key.get(connection, 'watch.unknown')))
         if error_code:
