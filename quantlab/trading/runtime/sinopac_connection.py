@@ -9,7 +9,7 @@ from quantlab.trading.adapters.shioaji.symbol_directory import SymbolDirectory
 from quantlab.trading.application.contracts import UiAction, UiReceipt
 from quantlab.trading.application.market_settings import MarketDataSettings
 from quantlab.trading.application.sinopac_contracts import SinopacAccountView, SinopacConnectionView
-from quantlab.trading.domain.models import Market
+from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError
 from .sinopac_settings import SinopacSettingsStore
 from .sinopac_transition import transition
@@ -110,6 +110,8 @@ class SinopacConnection:
                 return UiReceipt(False, 'state_conflict', '')
             if command.connection_revision != view.revision or command.connection_generation != view.generation:
                 return UiReceipt(False, 'state_conflict', '')
+            if command.action is UiAction.ACTIVATE_SINOPAC_CA and self.configuration.environment is Environment.LIVE:
+                return UiReceipt(False, 'production_orders_disabled', '')
             if self.worker is not None and self.worker.is_alive() or self.cleanup_unconfirmed:
                 return UiReceipt(False, 'outcome_unknown' if self.cleanup_unconfirmed else 'state_conflict', '')
             if command.action is UiAction.SAVE_AND_CONNECT_SINOPAC:

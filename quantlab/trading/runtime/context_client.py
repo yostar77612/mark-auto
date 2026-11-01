@@ -412,6 +412,10 @@ class RuntimeContextManager:
             if account_ref not in option.account_refs:
                 raise DomainError('capability_missing', 'requested account not present in runtime profile')
             return option.context_id
+        with self._lock:
+            for context_id, entry in self._entries.items():
+                if entry.launch.sinopac and entry.launch.environment is environment and account_ref in entry.accounts():
+                    return context_id
         context_id = environment.value.lower() + '-' + sha256(account_ref.encode('utf-8')).hexdigest()[:20]
         launch = RuntimeLaunch(self.base_root / 'context-engines' / context_id, environment, None, account_ref)
         entry = self._entry(context_id, '', launch)

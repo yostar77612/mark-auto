@@ -5,9 +5,12 @@ from pathlib import Path
 from time import monotonic
 
 from quantlab.trading.domain.validation import DomainError
+from quantlab.trading.domain.models import Environment
 
 
 def activate_certificate(owner, settings, ticket):
+    if owner.configuration.environment is not Environment.BROKER_SIMULATION:
+        raise DomainError('production_orders_disabled', 'LIVE allows market and account queries only')
     if settings is None or settings.environment is not owner.configuration.environment:
         raise DomainError('validation_failed', 'accepted connection environment required')
     path = Path(settings.certificate_path)

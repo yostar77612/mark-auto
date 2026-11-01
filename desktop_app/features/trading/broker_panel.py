@@ -14,6 +14,24 @@ from desktop_app.features.trading.page_help import HelpText
 from desktop_app.features.trading.widgets import button
 
 
+def _certificate_controls(panel, connected):
+    live = panel.view.environment is Environment.LIVE or panel.view.settings.environment is Environment.LIVE
+    enabled = connected and not live
+    hint = text.reason_text('production_orders_disabled') if live else ui_text('m2.connection.ca_connect_first')
+    for widget in (panel.choose_certificate, panel.certificate_secret_ref, panel.certificate_path):
+        widget.setEnabled(enabled)
+        widget.setToolTip(hint if not enabled else '')
+    panel.activate_certificate.setEnabled(
+        enabled and bool(panel.certificate_path.text()) and bool(panel.certificate_secret_ref.text()) and panel.view.certificate_status != 'ACTIVATING'
+    )
+    panel.activate_certificate.setToolTip(ui_text('m2.connection.ca_reference_needed') if enabled else hint)
+    panel._paint(
+        panel.certificate_status,
+        text.reason_text('production_orders_disabled') if live else text.certificate_text(panel.view.certificate_status),
+        'BLOCKED' if live else panel.view.certificate_status,
+    )
+
+
 class BrokerPanel(QWidget):
     save_connect_requested = Signal(object, int, str)
     accounts_requested = Signal(object, int, str)
@@ -230,7 +248,6 @@ class BrokerPanel(QWidget):
         self._update_accounts()
         for item in view.readiness:
             self._paint(self.readiness_labels[item.code], text.readiness_text(item), 'BLOCKED' if item.code == 'production_orders' else item.state)
-        self._paint(self.certificate_status, text.certificate_text(view.certificate_status), view.certificate_status)
         self._enabled()
 
     def unavailable(self):
@@ -291,13 +308,7 @@ class BrokerPanel(QWidget):
         for widget in (self.environment, self.key_ref, self.fee_discount, self.save_connect):
             widget.setEnabled(not busy)
         self.disconnect_button.setEnabled(not self._busy and self.view.phase in ('CONNECTED', 'CONNECTING'))
-        self.choose_certificate.setEnabled(connected)
-        self.certificate_secret_ref.setEnabled(connected)
-        self.activate_certificate.setEnabled(
-            connected and bool(self.certificate_path.text()) and bool(self.certificate_secret_ref.text()) and self.view.certificate_status != 'ACTIVATING'
-        )
-        self.choose_certificate.setToolTip('' if connected else ui_text('m2.connection.ca_connect_first'))
-        self.activate_certificate.setToolTip(ui_text('m2.connection.ca_reference_needed') if connected else ui_text('m2.connection.ca_connect_first'))
+        _certificate_controls(self, connected)
         self.save_connect.setToolTip(ui_text('m2.connection.busy') if busy else ui_text('m2.connection.help_short'))
         for item in self.view.accounts:
             widget = self.account_boxes[item.alias]

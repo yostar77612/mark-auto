@@ -154,3 +154,30 @@ updating any fixture and preserve the fixed historical source identity.
 6. Run complete GitNexus detect_changes before every commit. A partial/truncated
    response is not clean; keep the full raw result and verify changed-symbol
    count equals the returned list, then inspect tests and git diff separately.
+
+## Post-review direct startup and LIVE CA corrections
+
+Explicit profile-free broker startup now reuses a registered unified alias's
+stable environment host; it does not create another UNCONFIGURED book. Legacy
+unregistered aliases keep their original fallback. The metadata regression was
+RED for both SIM and LIVE before correction; three metadata cases then passed
+in 0.072s without Qt or host startup.
+
+LIVE unified CA requests are refused at the command owner and independently at
+the executor before password/native activation. Existing production_orders_disabled
+guidance is reused for disabled path/picker/reference/activation controls and
+formal-readonly status/tooltips. No catalogue keys/order changed. The optional
+fake SIM CA test remains intact. Both new backend/widget cases were RED first;
+the updated fake/small-widget/metadata group passed23 tests in0.558s. BrokerPanel
+remains292 lines; legacy CA behavior is unchanged.
+
+These are new source changes after integrated90bdda8. Prior96 focused results
+remain attributed to that earlier source, not relabeled as updated verification.
+Full/startup/CI remain coordinator-owned. Updated1366/1920 LIVE-only captures
+will be recorded against the separate new source commit; other scenes are kept.
+
+Graph chronology is explicit in m2-decisions: the documentation merge used clean
+staged evidence while all-scope still had an empty UID. Offline forced rebuild
+restored identities and exact committed doc comparison was completed afterward;
+that retrospective check is not claimed as precommit. Separate source commit
+requires complete all/staged detection with zero empty IDs and no truncation.

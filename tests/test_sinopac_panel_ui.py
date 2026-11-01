@@ -123,6 +123,18 @@ class SinopacPanelUiTests(unittest.TestCase):
         self.assertEqual(emitted.at(0)[0].certificate_secret_ref, 'MarkAuto/v2/certificate/sinopac')
         self.assertFalse(any(field.echoMode() == QLineEdit.EchoMode.Password for field in self.panel.findChildren(QLineEdit)))
 
+    def test_live_certificate_controls_are_readonly_and_emit_no_activation(self):
+        settings = SinopacConnectionSettings(Environment.LIVE, certificate_path='C:/fake/Sinopac.pfx')
+        self.panel.apply(replace(connected_view(), settings=settings, environment=Environment.LIVE))
+        self.panel.certificate_group.setChecked(True)
+        emitted = QSignalSpy(self.panel.certificate_requested)
+        for widget in (self.panel.certificate_path, self.panel.choose_certificate, self.panel.certificate_secret_ref, self.panel.activate_certificate):
+            self.assertFalse(widget.isEnabled())
+            self.assertIn(ui_text('m2.connection.production_disabled'), widget.toolTip())
+        self.panel.activate_certificate.click()
+        self.assertEqual(emitted.count(), 0)
+        self.assertEqual(self.panel.certificate_status.text(), ui_text('m2.connection.production_disabled'))
+
     def test_disconnect_requires_confirmation_and_preserves_exact_connection_cas(self):
         self.panel.apply(connected_view())
         emitted = QSignalSpy(self.panel.disconnect_requested)

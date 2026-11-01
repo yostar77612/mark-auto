@@ -742,3 +742,78 @@ unknown-readiness tests; no new catalogue records were needed.
 - M2-6 actual LOCAL/fake-SIM startup checks already passed on5285742 with
   clean normal release. Final branch full discovery is still scheduled after
   the active M2-8 full suite; no focused/startup pass substitutes for it.
+
+## M2-1 / explicit unified broker startup identity — 2026-11-01
+
+Static review of the prepared actual-startup probe found a genuine entry-path
+gap: configure_launch handled explicit LOCAL/profile requests, then hashed every
+profile-free broker alias into an UNCONFIGURED host. An already registered
+unified alias therefore lost its stable SINOPAC environment host when launched
+directly through _run_window(environment=BROKER_SIMULATION, account_ref=alias).
+
+Before the existing generic fallback, reuse a registered explicit unified entry
+with the same environment and known alias. Keep LOCAL, selected-profile and
+unregistered legacy-alias behavior unchanged. This is metadata routing only;
+it performs no SDK login, host startup, automatic selection or snapshot synthesis.
+The real direct-SIM window probe must use this path, with natural prior owner
+discovery/selection, rather than patching configuration or read models.
+
+The new metadata regression was RED for both SIM and LIVE (hashed contexts
+instead of the registered unified context). After the four-line correction,
+all three UnifiedRegistryTests pass in 0.072s; ensure_engine is mocked and its
+single registration call is checked. No Qt app, host, SDK or process test ran.
+Ruff check/format pass. configure_launch impact is LOW (one direct caller,
+two modules); cached graph/source were read during the coordinator's isolated
+full-suite window. Full index refresh/change analysis and separate commits wait
+for the coordinator to release that exclusive window.
+
+Initial integrated source 90bdda8's prior 96 focused results remain attributed
+to that source only. They are not relabeled as verification of this correction;
+actual direct-SIM startup, updated focused/full and CI remain separate gates.
+
+## M2-1 / LIVE CA remains outside query-only scope — 2026-11-01
+
+The specification limits LIVE to login, market and account queries. The unified
+CA flow is therefore accepted only for BROKER_SIMULATION when explicitly used;
+this does not change the legacy connector CA path. Reject a LIVE CA intent at
+the owner boundary before creating a worker and independently at the executor
+before file/password/native SDK access. Return the existing
+production_orders_disabled reason, which already renders the formal query-only
+Chinese guidance; do not add/reorder catalogue strings or imply LIVE opt-in.
+
+The LIVE certificate path, picker, password-reference and activation controls
+are disabled, with existing formal-readonly guidance in status/tooltips. The
+panel helper stays in the same module and BrokerPanel remains292 lines, below
+its300-line cap. Valid optional SIM activation remains tested with an invalid
+fake PFX file, fake password and fake SDK only.
+
+Both new backend/UI cases were RED first (LIVE request accepted/controls enabled).
+After correction,23 fake, metadata and small-widget tests pass in0.558s. The
+backend test also calls the executor independently and proves zero password
+reads/native CA calls and unchanged accepted view on refusal. Existing SIM
+activation assertions are intact. Impact is LOW for the executor, MEDIUM for
+panel enablement (nine direct,two flows); UNKNOWN dynamic command/test targets
+were confirmed by actual RuntimeBundle callers and unittest references.
+
+After the isolated full8 smoke-sensitive prefix completed, the coordinator
+released a single-worker offline index and these small tests. This does not
+claim the entire full retry ran without later index/Qt activity. Actual startup
+and process-heavy verification remain coordinator-only until that full ends.
+
+## M2-1 / merge graph evidence chronology — 2026-11-01
+
+Documentation merge3623c4447f2e45e55fe6fa8970d37c2589834eaf was committed after
+staged analysis showed59symbols/eight docs/zero flows, LOW, with no missing IDs
+or truncation. At that time scope-all still had an empty UID for the new
+_certificate_controls helper. Using the clean staged subset while that all-scope
+issue remained was a workflow gap; it is not represented as clean precommit
+all-scope validation, and history is not rewritten to obscure the sequence.
+
+An offline forced single-worker rebuild then restored symbol identities
+(20,092nodes/641flows,28.0s). Retrospective exact committed comparison
+90bdda8..3623c44 reports59symbols/eight documentation files/zero flows, LOW,
+zero empty IDs and no partial/truncated flags. Source-all subsequently reports
+21symbols/nine files/eight flows, HIGH, all21returned with zero empty IDs and no
+partial/truncated flags. The HIGH warning is retained alongside actual focused
+tests; it is not lowered through riskSharedAxes or graph absence. These checks
+precede the separate source-fix commit, not the documentation merge.

@@ -6868,6 +6868,18 @@ Selection/discovery must never delete historical manual orders or positions.
 M2-1 never enables automatic strategies or sends broker orders. M2-2 owns the
 canonical manual engine and execution guard; LIVE remains prohibited.
 
+Explicit profile-free broker startup for a known generated alias reuses its
+registered unified environment context and stable process seed/configuration.
+It must not synthesize a second UNCONFIGURED host from that alias. Metadata
+registration never logs in or changes selected book context; legacy profile-free
+aliases without a matching unified registration retain their existing fallback.
+
+Unified CA activation is restricted to BROKER_SIMULATION. LIVE refusal occurs
+before worker creation/password lookup/native activation and leaves accepted
+connection state unchanged. The executor checks the same boundary independently;
+the LIVE UI disables CA controls using the existing formal-readonly reason.
+This restriction does not modify the separately retained legacy CA connector.
+
 ## M2-1 unified connection presentation contract (2026-11-01)
 
 Settings exposes one reference-only three-step Sinopac connection panel. Draft

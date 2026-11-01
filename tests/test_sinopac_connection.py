@@ -177,6 +177,35 @@ class UnifiedConnectionTests(unittest.TestCase):
         self.assertEqual(references, ['MarkAuto/v2/certificate/sinopac'])
         self.assertNotIn('FAKE_PASSWORD', repr(self.owner.snapshot()))
 
+    def test_live_certificate_intent_and_executor_never_read_password_or_call_sdk(self):
+        from unittest.mock import Mock
+        from quantlab.trading.runtime.sinopac_certificate import activate_certificate
+        from quantlab.trading.domain.validation import DomainError
+
+        path = Path(self.temp.name) / 'fake-live-only.pfx'
+        path.write_bytes(b'not a certificate')
+        settings = SinopacConnectionSettings(Environment.LIVE, certificate_path=str(path))
+        self.assertTrue(self.owner.execute(self.command(UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=settings)).accepted)
+        self.owner.worker.join(2)
+        self.assertEqual(self.owner.snapshot().phase, 'CONNECTED')
+        alias = self.owner.snapshot().accounts[0].alias
+        self.assertTrue(self.owner.execute(self.command(UiAction.SELECT_SINOPAC_ACCOUNTS, sinopac_accounts=(alias,))).accepted)
+        self.owner.worker.join(2)
+        self.secrets.certificate_password = Mock(return_value='FAKE_PASSWORD')
+        self.api.activate_ca = Mock(return_value=True)
+        before = self.owner.snapshot()
+        receipt = self.owner.execute(self.command(UiAction.ACTIVATE_SINOPAC_CA, sinopac_settings=settings))
+        if receipt.accepted:
+            self.owner.worker.join(2)
+        self.assertFalse(receipt.accepted)
+        self.assertEqual(receipt.code, 'production_orders_disabled')
+        self.assertEqual(self.owner.snapshot(), before)
+        with self.assertRaises(DomainError) as error:
+            activate_certificate(self.owner, settings, self.owner.ticket)
+        self.assertEqual(error.exception.code, 'production_orders_disabled')
+        self.secrets.certificate_password.assert_not_called()
+        self.api.activate_ca.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()
