@@ -1372,3 +1372,16 @@ Exact probe impact is LOW (2 nodes, one packaging caller); its nine existing
 checks pass0.426s after the correction. Record the failed complete run rather than
 waiving it. A new complete suite follows on the corrected source. No SDK pin,
 execution guard, test limit, skip or real credential/broker operation changes.
+## M2-2 / six default order columns and exact display units
+
+Visual review found the inherited seven-column order table. Reuse the existing
+column selector with table-sized bounds, six default order columns and an optional
+account column. Persist each choice by merging the dedicated presentation store
+so order, position and future preferences do not erase one another. Keep canonical
+order IDs, hidden full account values and native confirmation account text. Display
+stock total/partial fills in exact fractional lots (500shares=0.5lots), with canonical
+share-count tooltips; futures remain contracts. No financial or scope data changes.
+The six new real-widget tests first failed3/error2 and then passed with the existing
+nine guideline checks (15 total). Two literal phase63 strings use2950/2951; only
+those keys extend the historical catalogue and contiguous total2952 in a separate
+baseline commit. Root takes over this follow-up after the agent usage limit.

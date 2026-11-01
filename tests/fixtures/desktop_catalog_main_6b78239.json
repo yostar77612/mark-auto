@@ -2950,7 +2950,9 @@
       "m2m.stock_exit_hint": "不開放現股放空。賣出持股請到部位頁選取持倉，再預覽平倉。",
       "m2m.exit_source": "人工帳本的可退出數量為本機帳本保守估算；以券商回報為準。確認後使用當時行情計算限價，仍可能尚未成交。",
       "m2m.not_submitted": "已確認這筆請求尚未送出。請先對帳，再重新預覽。",
-      "m2m.allocation_exceeds_settings": "已確認的虛擬分配超過目前設定上限。請先調整設定；仍可退出合法部位。"
+      "m2m.allocation_exceeds_settings": "已確認的虛擬分配超過目前設定上限。請先調整設定；仍可退出合法部位。",
+      "m2m.order_columns": "委託欄位",
+      "m2m.order_columns_hint": "選擇委託表顯示的欄位，選擇會儲存在本機。"
     }
   },
   "aliases": {
@@ -7229,6 +7231,8 @@
       "m2m.exit_source": "人工帳本的可退出數量為本機帳本保守估算；以券商回報為準。確認後使用當時行情計算限價，仍可能尚未成交。",
       "m2m.not_submitted": "已確認這筆請求尚未送出。請先對帳，再重新預覽。",
       "m2m.allocation_exceeds_settings": "已確認的虛擬分配超過目前設定上限。請先調整設定；仍可退出合法部位。",
+      "m2m.order_columns": "委託欄位",
+      "m2m.order_columns_hint": "選擇委託表顯示的欄位，選擇會儲存在本機。",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -11503,7 +11507,9 @@
     "m2m.stock_exit_hint",
     "m2m.exit_source",
     "m2m.not_submitted",
-    "m2m.allocation_exceeds_settings"
+    "m2m.allocation_exceeds_settings",
+    "m2m.order_columns",
+    "m2m.order_columns_hint"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

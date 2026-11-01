@@ -94,12 +94,24 @@ class TradingWindow(QMainWindow):
     legacy_requested = Signal(str)
     close_ui_requested = Signal()
 
-    def __init__(self, facade: TradingFacade, initial_state: UiState, parent=None, *, market_watch=None, position_columns=None, save_position_columns=None):
+    def __init__(
+        self,
+        facade: TradingFacade,
+        initial_state: UiState,
+        parent=None,
+        *,
+        market_watch=None,
+        position_columns=None,
+        save_position_columns=None,
+        order_columns=None,
+        save_order_columns=None,
+    ):
         super().__init__(parent)
         self.facade = facade
         self.state = initial_state
         self.market_watch = market_watch
         self._position_columns, self._save_position_columns = position_columns, save_position_columns
+        self._order_columns, self._save_order_columns = order_columns, save_order_columns
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
