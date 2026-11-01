@@ -103,6 +103,8 @@ class ManualContractTests(unittest.TestCase):
             'NAMED_FEE_ASSUMPTION',
             now,
             now + timedelta(seconds=30),
+            quantity_unit=QuantityUnit.CONTRACT,
+            lot_size=1,
         )
         instrument = ManualInstrumentView('TMFK6', 'TMF fixture', Market.INDEX_FUTURE, QuantityUnit.CONTRACT, 1, 1, Decimal('1'))
         stock = ManualInstrumentView(
@@ -133,6 +135,8 @@ class ManualContractTests(unittest.TestCase):
         self.assertIsNone(decoded.instruments[1].price_tick)
         self.assertEqual(decoded.instruments[1].quantity_step, 1000)
         self.assertEqual(decoded.preview.protection, 'UNPROTECTED')
+        self.assertEqual(decoded.preview.quantity_unit, QuantityUnit.CONTRACT)
+        self.assertEqual(decoded.preview.lot_size, 1)
         self.assertFalse(decoded.pending.outcome_known)
         self.assertEqual(decoded.pending.request_id, 'request-a')
         self.assertFalse(decoded.can_submit)

@@ -83,3 +83,79 @@ All subsequent merges use --no-commit and own complete detect before committing.
 The restricted-token CLI status could not read current git identity, reporting
 detached/empty current commit; direct git and MCP metadata confirm own db2335f.
 This status limitation does not authorize skipping an actual freshness check.
+
+The subsequent af262ab environment/fake-fixture normal merge was held with
+--no-commit. Only two append-only documentation hunks conflicted; both sets of
+decisions/contracts were retained. The seven incoming source/fake files remain
+byte-identical to af262ab. Own force-refreshed complete precommit detect reports
+26 symbols/10 incoming files/6 connect flows,HIGH,0 empty ids and no
+partial/truncated flags. HIGH risk remains warned, not waived. Individual fake
+modules passed: immutable environment2,SDK facade11,price bands16,tick stream4;
+strict layers0 findings. No native engine or actual SDK session was started.
+
+## Central LIVE guard slice
+
+One pure domain orders_enabled predicate admits only typed LOCAL and
+BROKER_SIMULATION. Engine execution/exit, ExecutionService commit/cancel, gateway
+inspect/execution and all three SDK mutation sinks consume it. Explicit immutable
+facade environment, not a native simulation flag, controls the final SDK check.
+LIVE STOP_NEW still records the local halt but never dispatches cancel. No risk,
+funding, ownership, durable-intent, OOS or deadline check is removed.
+
+Own pre-edit impact warns HIGH for engine.exit_lot (6 direct callers), LOW for
+the other resolved engine/service/gateway/dispatch methods. SDK sinks and the
+error table have UNKNOWN static callers; text/source confirms gateway submit/
+change, strict SDK tests and error catalogue composition, rather than treating
+empty edges as safe. New policy/test names were absent in graph and source.
+
+New test_live_order_guard:6/6 PASS in0.006s. It exercises the real TradingEngine
+with a test-owned in-memory journal and explicit fake adapter, direct service
+and SDK calls, contradictory LIVE flags/readiness/CA, stop/cancel/flatten, and
+SIM-positive delegation with original2500ms query/10000ms order budgets. No
+native engine, credential, SDK import/login or actual order is involved.
+
+The original environment oracle with guarded source failed only its formerly
+allowed LIVE submission. Its independent D1 baseline keeps the full SIM flow and
+requires zero LIVE delivery after the existing genuine fixture research steps;
+the module now passes2/2 in0.608s. Broader application/full/native runs belong to
+the coordinator; the focused results do not claim first-round completion.
+
+Additional focused results:32 adapter tests,11 SDK facade tests and the3 existing
+AST/catalogue cases passed; unique commit caller, locked risk/reservation/durable
+intent/fence ordering and original submit inventory remain exact. Strict layers
+reported0 findings and changed Python Ruff check/format passed. Complete own
+forced-index detect:44 changed symbols/13 files,LOW,0 empty ids and no partial or
+truncated flag. This does not waive the separately warned HIGH exit_lot impact.
+
+The frozen78e1f83 shared-owner/resources backend was adopted with --no-commit.
+Two append-only documentation conflicts retain both intents; existing central
+SDK guards remain present. Own prebuilt forced-index complete detect reports220
+symbols/32 files/28 flows,CRITICAL,0 empty ids and no partial/truncated flags.
+The risk is warned, not waived. Current own LIVE wall tests6/6 and incoming tiny
+shared-session fake tests3/3 pass. No new index/native/Qt tests are run during
+the coordinating agent's isolated full8 window; subsequent source work remains
+uncommitted until its own complete review is possible.
+
+## Revoked shared execution consumer and preview units
+
+The strict offline regression first failed three assertions and one signature:
+detached/closed execution views still reached the native mutation methods,
+active SIM calls did not hold the lifecycle lock, and price-only updates required
+an unintended quantity argument. The repaired view holds the existing operation
+lock from active-consumer validation through each of the three SDK calls. The
+base immutable-environment LIVE guard still runs; native SIM/signed/CA flags do
+not override it. Query and order budgets remain 2500/10000 ms.
+
+The pinned 1.7.9 stub permits optional price/quantity. Price-only update omits
+the quantity keyword entirely, verified by a strict fake rejecting that keyword.
+Preview quantity_unit and lot_size are appended defaulted fields; actual core
+previews supply the instrument specification, and unknown units remain unknown.
+
+Pre-edit graph: SharedFacadeView LOW (one direct caller), ManualPreviewView
+MEDIUM (two). Dynamic SDK update_order/SDKClient and new methods are UNKNOWN;
+source/text confirms gateway._change delegation, protocol use and the absence
+of these new overrides. This is not interpreted as unused or low risk.
+Five new consumer cases and the existing DTO/shared-session/LIVE/SDK cases pass:
+29 tests in 0.013 seconds. RED and GREEN logs remain in ignored .tmp. These are
+pure in-memory fakes, with no SDK import, native client, Qt or engine process.
+The pending manual core is deliberately not part of this small source commit.

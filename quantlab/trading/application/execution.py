@@ -11,6 +11,7 @@ from .codec import dumps
 from .state import ACTIVE, AppState, LocalOrder, replace_order
 from quantlab.trading.domain.models import OrderPlan, OrderStatus, Reservation
 from quantlab.trading.domain.validation import DomainError
+from quantlab.trading.domain.execution_policy import orders_enabled
 from quantlab.trading.ports.contracts import OrderEvent
 from quantlab.trading.ports.interfaces import ExecutionPort
 
@@ -32,6 +33,10 @@ class ExecutionService:
     def commit(
         self, state: AppState, plan: OrderPlan, policy, reservation: Reservation, key: str, validate: Callable[[], None], *, request_hash: str | None = None
     ) -> str:
+        if not orders_enabled(state.environment) or not orders_enabled(plan.environment):
+            raise DomainError('production_orders_disabled')
+        if plan.environment is not state.environment:
+            raise DomainError('capability_missing', 'execution state/environment mismatch')
         request_hash = request_hash or sha256(dumps(plan).encode()).hexdigest()
         for prior in state.orders:
             if prior.key == key:
@@ -77,6 +82,8 @@ class ExecutionService:
         return order_id
 
     def cancel(self, state: AppState, order_id: str) -> None:
+        if not orders_enabled(state.environment):
+            raise DomainError('production_orders_disabled')
         order = next((v for v in state.orders if v.order_id == order_id), None)
         if order is None or order.status not in ACTIVE:
             raise DomainError('state_conflict', 'order is not cancelable')

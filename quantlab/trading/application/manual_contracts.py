@@ -137,6 +137,8 @@ class ManualPreviewView:
     expires_at: datetime
     reasons: tuple[str, ...] = ()
     protection: str = 'UNPROTECTED'
+    quantity_unit: QuantityUnit | None = None
+    lot_size: int = 1
 
 
 @dataclass(frozen=True)
