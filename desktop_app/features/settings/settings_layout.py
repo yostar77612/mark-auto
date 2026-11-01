@@ -122,6 +122,8 @@ def build_settings(page, layout):
     page._button(controls, ui_text('settings.open_backup'), '', lambda: open_folder(page.automatic_backup_panel.directory.text() or page.paths.root))
     # Resolve the installed package version when rendering settings.
     from quantlab import __version__
+
+    # Read the bundled build commit only when rendering settings.
     from quantlab.build_info import build_commit
 
     commit = build_commit()
