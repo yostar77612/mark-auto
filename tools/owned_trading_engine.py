@@ -78,20 +78,26 @@ class OwnedEngineProcesses:
             if session.process_id != process.pid:
                 raise DomainError('startup_workspace_busy', 'refuse to control a different session owner')
             facade = context_client.ContextIpcFacade(launch)
-            for _ in range(3):
-                state = facade.snapshot()
-                if state.engine_state == 'CLOSED':
-                    break
-                receipt = facade.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
-                if receipt.accepted:
-                    break
-                if receipt.code != 'state_conflict':
-                    raise DomainError(receipt.code)
-            else:
-                raise DomainError('state_conflict', 'owned test shutdown remained stale')
+            outcome = 'NORMAL'
+            try:
+                for _ in range(3):
+                    state = facade.snapshot()
+                    if state.engine_state == 'CLOSED':
+                        break
+                    receipt = facade.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
+                    if receipt.accepted:
+                        break
+                    if receipt.code != 'state_conflict':
+                        raise DomainError(receipt.code)
+                else:
+                    raise DomainError('state_conflict', 'owned test shutdown remained stale')
+            except FileNotFoundError:
+                # Another normal shutdown may remove the endpoint before the
+                # retained process exits. Only its verified zero exit can pass.
+                outcome = 'ALREADY_EXITED'
             if process.wait(timeout=15) != 0:
                 raise DomainError('operation_failed', 'owned test engine exited abnormally')
-            return 'NORMAL'
+            return outcome
         process.wait(timeout=15)
         return 'ALREADY_EXITED'
 

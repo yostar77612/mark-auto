@@ -2,11 +2,13 @@
 
 from pathlib import Path
 import json
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
+from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.config import RuntimeLaunch
@@ -180,6 +182,60 @@ class FixtureCleanupRegressionTests(unittest.TestCase):
 
 
 class OwnedEngineBoundaryTests(unittest.TestCase):
+    def test_endpoint_removal_after_normal_shutdown_joins_retained_process(self):
+        for phase in ('snapshot', 'execute'):
+            with self.subTest(phase=phase):
+                process = Mock(pid=123)
+                process.poll.return_value = None
+                process.wait.return_value = 0
+                launch = RuntimeLaunch(Path.cwd() / 'normal-close-race')
+                owner = OwnedEngineProcesses()
+                owner.owned = [(process, launch)]
+                facade = Mock()
+                facade.snapshot.return_value = SimpleNamespace(engine_state='READY', version=1)
+
+                def endpoint_removed(*_):
+                    process.poll.return_value = 0
+                    raise FileNotFoundError('endpoint removed by an earlier normal shutdown')
+
+                getattr(facade, phase).side_effect = endpoint_removed
+                with (
+                    patch('tools.owned_trading_engine.read_session', return_value=SimpleNamespace(process_id=123)),
+                    patch.object(context_client, 'ContextIpcFacade', return_value=facade),
+                ):
+                    owner.close()
+                process.wait.assert_called_once_with(timeout=15)
+                process.terminate.assert_not_called()
+                self.assertEqual(owner.closed[0]['shutdown'], 'ALREADY_EXITED')
+                self.assertEqual(owner.closed[0]['exit_code'], 0)
+                if phase == 'snapshot':
+                    facade.execute.assert_not_called()
+                else:
+                    self.assertEqual(facade.execute.call_args.args[0].action, UiAction.SHUTDOWN_ENGINE)
+
+    def test_missing_endpoint_cannot_certify_live_or_abnormal_owned_exit(self):
+        for failure in ('still-live', 'abnormal-exit'):
+            with self.subTest(failure=failure):
+                process = Mock(pid=123)
+                process.poll.return_value = None if failure == 'still-live' else 1
+                # The first retained-PID check occurs before the endpoint disappears.
+                process.poll.side_effect = [None, process.poll.return_value, process.poll.return_value]
+                process.wait.side_effect = [subprocess.TimeoutExpired('owned-fixture', 15), 0] if failure == 'still-live' else [1, 1]
+                owner = OwnedEngineProcesses()
+                owner.owned = [(process, RuntimeLaunch(Path.cwd() / failure))]
+                facade = Mock()
+                facade.snapshot.side_effect = FileNotFoundError('endpoint unavailable')
+                with (
+                    patch('tools.owned_trading_engine.read_session', return_value=SimpleNamespace(process_id=123)),
+                    patch.object(context_client, 'ContextIpcFacade', return_value=facade),
+                    self.assertRaisesRegex(RuntimeError, 'owned engine cleanup failed'),
+                ):
+                    owner.close()
+                self.assertEqual(owner.closed[0]['shutdown'], 'FAILED')
+                facade.execute.assert_not_called()
+                if failure == 'still-live':
+                    process.terminate.assert_called_once_with()
+
     def test_mismatched_session_never_receives_a_shutdown_command(self):
         process = Mock(pid=123)
         process.poll.return_value = None
