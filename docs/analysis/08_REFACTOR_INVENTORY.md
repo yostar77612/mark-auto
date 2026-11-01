@@ -330,6 +330,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `tools/m1_market_probe.py` | 122 | tooling | `tools/m1_market_probe.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`read_keys`，`tools/m1_market_probe.py:40` |
 | `tools/make_icon.py` | 58 | tooling | `tools/make_icon.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`_chunk`，`tools/make_icon.py:12` |
 | `tools/measure_ci_margin.py` | 83 | tooling | `tools/measure_ci_margin.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summarize`，`tools/measure_ci_margin.py:20` |
+| `tools/owned_trading_engine.py` | 128 | tooling | `tools/owned_trading_engine.py` | M2-8 測試／開發引擎生命週期；原生 Python 啟動、保留自有 Popen 身分、正常認證關閉及失敗清理；產品 runtime 不匯入。 |
 | `tools/probe_windows_guest_host.py` | 224 | tooling | `tools/probe_windows_guest_host.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`query_kvm_api`，`tools/probe_windows_guest_host.py:42` |
 | `tools/quality_gate.py` | 244 | tooling | `tools/quality_gate.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`v2_import_allowance`，`tools/quality_gate.py:36` |
 | `tools/research_app.py` | 404 | tooling | `tools/research_app.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`guard`，`tools/research_app.py:37` |

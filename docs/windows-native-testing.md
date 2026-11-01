@@ -48,6 +48,18 @@ The full-suite command remains `tools/run_test_group.py --group all --manifest
 <isolated-output.json>` with the same interpreter/environment. Verify the child
 PID equals the retained `Popen.pid` before treating native handle evidence as valid.
 
+Engine-spawning tests and developer probes use the tooling-only
+`tools.owned_trading_engine.OwnedEngineProcesses` scope before `ensure_engine`.
+For unittest class fixtures use `enterClassContext`, and register temporary
+directory cleanup first with `addClassCleanup`; for individual cases use
+`enterContext`. These hooks still run when setUpClass/setUp/tearDown raises.
+The scope selects native source Python plus the same installed packages without
+weakening production's exact PID guard. It records only engines it launches,
+uses authenticated shutdown, and leaves reused hosts and their data untouched.
+An exact retained child requiring forced containment is a cleanup failure,
+never a passing test or installer acceptance. Synthetic multiprocessing hosts
+likewise register their own authenticated cleanup hook before start/readiness.
+
 ## Distinguish access denial from missing privilege
 
 Synthetic raw `Path.replace` probes reproduced intermittent WinError 5 in both

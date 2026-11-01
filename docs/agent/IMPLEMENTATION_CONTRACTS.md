@@ -6801,3 +6801,20 @@ changes are isolated from source fixes; historical fixture bytes and test
 strength remain authoritative. Decisions and verification ownership are in
 docs/design/m2-decisions.md. Real broker operations, G3/SDK pin/PROJECT_STATE,
 OOS, budgets, deadlines and source profiles remain untouched.
+
+## M2-8 test/developer engine ownership (2026-11-01)
+
+Disposable source-engine owners register cleanup before startup can fail. The
+tooling-only launcher selects the actual Python interpreter and the same
+installed package paths, preserving production's exact retained-PID/session
+guard. Normal authenticated SHUTDOWN_ENGINE, bounded exit wait and endpoint
+removal prove closure; reused or differently owned hosts receive no command.
+Class/setup/body/teardown exceptions and caller startup timeout still run the
+registered cleanup. Each synthetic host has an independent pre-start hook.
+Cleanup errors remain failures, attempt remaining owned handles, and never
+authorize broad termination, other processes or data deletion. Load-probe partial
+initialization has the same normal shutdown and truthful failure reporting.
+Production lifecycle/ownership/security, broker gates, deadlines and applicability
+are unchanged. Exact focused, complete-run comparison and actual-window evidence,
+including retained first-run failure and pending CI, is recorded in
+docs/design/m2-8-verification.md.
