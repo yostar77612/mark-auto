@@ -6867,3 +6867,30 @@ Persisted alias metadata does not grant native query/execution capability.
 Selection/discovery must never delete historical manual orders or positions.
 M2-1 never enables automatic strategies or sends broker orders. M2-2 owns the
 canonical manual engine and execution guard; LIVE remains prohibited.
+
+## M2-1 unified connection presentation contract (2026-11-01)
+
+Settings exposes one reference-only three-step Sinopac connection panel. Draft
+connection settings and accepted trading-book context remain separate; connect
+never chooses a viewed book. Four connection intents carry the accepted opaque
+generation and connection revision, not merely an engine version. Existing worker
+execution keeps the GUI responsive. Connection snapshots are rendered before
+book-version fast paths, older connection revisions cannot replace newer facts,
+and polls never overwrite dirty key/CA/Decimal-fee drafts. Mutations display only
+accepted account selections. Failed transport makes readiness unknown; messages
+use an explicit Chinese reason map and cannot echo backend/vendor text.
+
+Signed has three display states. Market, accounts, simulation orders and disabled
+production orders remain separate facts; discovery/login/signed cannot infer
+execution permission. Certificate picker returns a local path reference only,
+password is an OS credential reference and person_id has no input. Optional CA
+and fee estimates have complete keyboard help. Native disconnect confirmation
+uses Cancel by default and detects connection replacement during its nested
+modal loop. Existing legacy metadata/import behavior remains at the typed backend
+boundary, while obsolete primary forms and their production module are removed.
+
+Exact screenshot, focused-test and baseline procedures are recorded in
+[connection UI verification](../analysis/m2-connection/verification.md). Source
+and additive baseline changes are separate commits; historical fixture identities,
+class/function caps, protected files and assertions remain intact. Shared-runtime
+integration, actual startup, full discovery and remote CI remain coordinator-owned.

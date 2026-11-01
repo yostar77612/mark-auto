@@ -29,6 +29,7 @@ from desktop_app.features.trading.workspaces import build
 from desktop_app.features.trading.wizard import StrategyWizard
 from desktop_app.features.trading.context_header import install_context_header, refresh_context_header
 from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, refresh_trading_environment
+from desktop_app.features.trading.sinopac_ui import CONNECTION_ACTIONS, complete_connection, render_connection
 
 
 class _Operation(QThread):
@@ -160,6 +161,10 @@ class TradingWindow(QMainWindow):
         context_id: str | None = None,
         profile_ref: str = '',
         market_data_settings=None,
+        sinopac_settings=None,
+        sinopac_accounts=None,
+        connection_revision=None,
+        connection_generation='',
     ) -> None:
         if self.state.environment is Environment.LIVE and action in LIVE_ORDER_ACTIONS:
             self._feedback(ui_text('m2t.orders_disabled'))
@@ -179,6 +184,10 @@ class TradingWindow(QMainWindow):
                 profile_ref,
                 self.state.context_epoch if self.state.contexts else None,
                 market_data_settings=market_data_settings,
+                sinopac_settings=sinopac_settings,
+                sinopac_accounts=sinopac_accounts,
+                connection_revision=connection_revision,
+                connection_generation=connection_generation,
             )
         )
 
@@ -199,6 +208,8 @@ class TradingWindow(QMainWindow):
         # version the user reviewed and are never silently refreshed/retried.
         operation = _Operation(self.facade, command, self, refresh_before=command is not None and command.action is UiAction.SWITCH_CONTEXT)
         self._operation = operation
+        if command is not None and command.action in CONNECTION_ACTIONS:
+            self.broker_panel.set_busy(True)
         operation.completed.connect(self._completed)
         operation.failed.connect(self._failed)
         operation.finished.connect(self._finished)
@@ -236,16 +247,15 @@ class TradingWindow(QMainWindow):
             operation.deleteLater()
 
     def _result(self, state: UiState, receipt: UiReceipt | None, action: UiAction | None) -> None:
+        state = render_connection(self, state)
+        if complete_connection(self, state, receipt, action):
+            return
         if self._stamp(state) < self._stamp(self.state):
             return
         self._engine_reachable = True
         if receipt is not None and receipt.accepted:
             if action == UiAction.SAVE_SETTINGS:
                 self._settings_dirty = False
-            elif action == UiAction.SAVE_BROKER_SETTINGS:
-                self.broker_panel.dirty = False
-            elif action == UiAction.SAVE_MARKET_DATA_SETTINGS:
-                self.broker_panel.market_panel.dirty = False
         if action in (UiAction.SWITCH_CONTEXT, UiAction.ADD_CONTEXT):
             self._rendered_version = None
         self.apply_state(state)
@@ -272,12 +282,15 @@ class TradingWindow(QMainWindow):
 
     def _failed(self) -> None:
         self._engine_reachable = False
+        self.broker_panel.unavailable()
         self._feedback(ui_text('v2.connection_failed'))
 
     def _finished(self) -> None:
         operation = self._operation
         self._operation = None
         if operation is not None:
+            if operation.command is not None and operation.command.action in CONNECTION_ACTIONS:
+                self.broker_panel.set_busy(False)
             operation.deleteLater()
 
     def new_strategy(self) -> None:
@@ -448,8 +461,8 @@ class TradingWindow(QMainWindow):
             context_id, account_ref = (selected[0], selected[1]) if self.state.contexts else ('', selected)
             if self.state.contexts and (context_id, account_ref) == (self.state.context_id, self.state.account_ref):
                 return
-            if self._settings_dirty or self.broker_panel.dirty or self.broker_panel.market_panel.dirty:
-                if not self._confirm(ui_text('v2.context_unsaved')):
+            if self._settings_dirty or self.broker_panel.dirty:
+                if not self._confirm(ui_text('m2.connection.unsaved')):
                     self._rendered_version = None
                     self.apply_state(self.state)
                     return
@@ -476,13 +489,6 @@ class TradingWindow(QMainWindow):
         if path:
             self.command(UiAction.ADD_CONTEXT, environment=selected, profile_ref=path)
 
-    def connect_read_only(self) -> None:
-        if self.state.environment is Environment.LOCAL:
-            self._feedback(ui_text('v2.context_profile_broker_only'))
-            return
-        if self._confirm(ui_text('v2.connect_readonly_summary').format(self._environment_label(self.state.environment), self.state.account_ref)):
-            self.command(UiAction.CONNECT_READ_ONLY)
-
     @staticmethod
     def _environment_label(environment: Environment) -> str:
         return ui_text({Environment.LOCAL: 'v2.local', Environment.BROKER_SIMULATION: 'v2.broker_sim', Environment.LIVE: 'v2.live'}[environment])
@@ -496,6 +502,7 @@ class TradingWindow(QMainWindow):
         return ui_text({'STOCK': 'v2.stock', 'INDEX_FUTURE': 'v2.index_future', 'STOCK_FUTURE': 'v2.stock_future'}[market.value])
 
     def apply_state(self, state: UiState) -> None:
+        state = render_connection(self, state)
         if self._stamp(state) < self._stamp(self.state):
             return
         market_changed = state.market_revision != self.state.market_revision
@@ -522,7 +529,6 @@ class TradingWindow(QMainWindow):
         changed_context = (state.context_epoch, state.context_id) != (self.state.context_epoch, self.state.context_id)
         if changed_context:
             self._settings_dirty = False
-            self.broker_panel.dirty = False
             self._last_feedback = ''
             self._rendered_version = None
             self._connecting_request = False
@@ -558,7 +564,6 @@ class TradingWindow(QMainWindow):
         refresh_context_header(self, state)
         refresh_trading_environment(self, state)
         self.overview_step.setEnabled(state.environment == Environment.LOCAL)
-        self.connect_read_only_button.setEnabled(state.environment is not Environment.LOCAL and state.engine_state == 'DISCONNECTED')
         self.add_context_button.setVisible(bool(state.contexts))
         render_version = self._stamp(state)
         if self._rendered_version == render_version and not freshness_changed:
@@ -587,8 +592,6 @@ class TradingWindow(QMainWindow):
             self.futures_budget.setText(str(state.settings.futures_allocation))
             self.setting_risk.setCurrentIndex(self.setting_risk.findData(state.settings.risk_fraction))
         self._context_rendering = False
-        self.broker_panel.apply(state.broker_settings, state.broker_readiness)
-        self.broker_panel.apply_market(state.market_data_settings, state.market_connection, state.market_data_error)
 
     @staticmethod
     def _stamp(state: UiState) -> tuple[int, int, int]:

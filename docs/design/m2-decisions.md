@@ -653,3 +653,60 @@ an empty graph UID (its pre-edit impact still reported187direct callers). This
 is retained as an index limitation, not an unused/unaffected claim. Actual parser
 source and existing CLI tests were independently verified. Raw CLI report and
 structured flag/UID summary are in ignored .tmp/m2-backend-detect files.
+
+## M2-1 / single three-step connection presentation — 2026-11-01
+
+Use one visible BrokerPanel for environment/key save-and-connect, discovered
+masked accounts and optional certificate references. Remove the independent
+MarketDataPanel and twelve-reference primary form rather than keeping hidden
+obsolete controls. Retain the existing legacy profile import in the collapsed
+advanced section, and preserve offline legacy metadata persistence/readiness
+coverage through its typed commands. Account identities, SDK objects, secrets,
+person_id and certificate contents never enter the widget implementation.
+
+The connection draft defaults to broker simulation and the documented OS key
+reference. It is separate from the accepted Trade/Settings book selectors;
+connecting, a failed request or an unacknowledged request cannot switch a LOCAL
+book. Connection generation/revision are submitted independently of engine
+version. Render the connection view before same-book, stale-book and market-only
+shortcuts; reject older connection revisions. User-edited references and Decimal
+fee discount survive polling and book navigation, and only a matching accepted
+receipt clears those drafts. Checkbox clicks submit aliases then immediately
+restore accepted selection until the acknowledgement. An IPC failure shows
+unknown liveness rather than retaining a successful connection status.
+
+Certificate selection is reference-only and optional. Simulation's NOT_REQUIRED
+status follows the official contract, not a real-credential experiment. The
+shared runtime owns credential resolution, connection reuse, signed/permission
+validation and CA activation. Production readiness is always rendered blocked,
+including an inconsistent READY DTO; signed/account discovery alone never grants
+execution. Simulation execution remains pending dependent M2-2. Fee discount is
+editable as Decimal (0 < d <= 1, default1), with built-in estimate assumptions
+explained in help; M2-9 tax/calendar/expiry UX remains second-round scope.
+
+The four intents run through the existing asynchronous worker. Duplicate requests
+are disabled, pending status is neutral, account/CA controls open progressively,
+and disconnect requires native confirmation with Cancel as default. Capture its
+revision/generation before the dialog and reject a connection replaced while the
+dialog is open. Reasons are mapped to literal Chinese catalogue keys, never
+vendor text. Account-data absence does not assert that the broker has zero
+accounts. Help remains title-right; style rules are scoped in theme.py.
+
+Work is exclusive to codex/m2-1-connection-ui, normally merged with frozen DTO
+986f7cf. Catalogue phase62 owns orders2806–2877; M2-2 starts phase63/order2878.
+Pre-edit graph risks are retained: Window.command/_run and theme/catalog are
+CRITICAL; translation_parts HIGH. Dynamic/unittest UNKNOWN callers were checked
+against source/discovery. The current UI source has no real SDK import or
+financial operation. Full discovery, real startup and remote CI are coordinator
+steps after normal integration with the shared backend; fake-Qt proofs here do
+not establish the M2-2 engine LIVE invariant.
+
+M2-1 integration followup: account/context discovery may change selector choices
+without incrementing the accepted engine book version. A RED/GREEN real-widget
+case required invalidating only presentation before the same-version/market-only
+shortcut; the accepted LOCAL account, positions and dirty connection reference
+remain unchanged. Its named helper impact is CRITICAL (45 upstream sites,
+3 processes,5 modules), retained as a warning alongside source checks rather than
+waived by the graph's shared-name/dynamic gaps. Final backend accounts_unavailable
+and callback_failed reasons map to existing Chinese next-step copy, with explicit
+unknown-readiness tests; no new catalogue records were needed.

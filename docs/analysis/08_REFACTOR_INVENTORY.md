@@ -704,7 +704,6 @@ PR E4 market/history owners (content-only):
 | `desktop_app/components/disclosure.py` | 17 | presentation | `desktop_app/components/disclosure.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/context_header.py` | 44 | presentation | `desktop_app/features/trading/context_header.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/m1_ui.py` | 14 | shared | `desktop_app/strings/m1_ui.py` | M1: reviewed new module; existing rows and layer rules retained. |
-| `desktop_app/features/trading/market_data_panel.py` | 78 | presentation | `desktop_app/features/trading/market_data_panel.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/marketdata.py` | 18 | shared | `desktop_app/strings/marketdata.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/adapters/shioaji/market_session.py` | 267 | infrastructure | `quantlab/trading/adapters/shioaji/market_session.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/adapters/shioaji/symbol_directory.py` | 75 | infrastructure | `quantlab/trading/adapters/shioaji/symbol_directory.py` | M1: reviewed new module; existing rows and layer rules retained. |
@@ -765,6 +764,28 @@ PR E4 market/history owners (content-only):
 | `tests/test_sinopac_runtime_routing.py` | 227 | tooling | `tests/test_sinopac_runtime_routing.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
 | `tests/test_sinopac_shared_session.py` | 70 | tooling | `tests/test_sinopac_shared_session.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
 | `tools/store_sinopac_ca.py` | 30 | tooling | `tools/store_sinopac_ca.py` | M2-1: explicit password-only Windows credential enrollment; never loads SDK or activates CA. |
+
+| `desktop_app/features/trading/sinopac_panel_text.py` | 92 | presentation | `desktop_app/features/trading/sinopac_panel_text.py` | M2-1: literal Chinese phase, signed, certificate and four-readiness rendering; no vendor messages, SDK or IO. |
+| `desktop_app/features/trading/sinopac_ui.py` | 54 | presentation | `desktop_app/features/trading/sinopac_ui.py` | M2-1: connection signal/receipt/snapshot bridge with independent generation/revision; no SDK or IO. |
+| `desktop_app/strings/sinopac_connection.py` | 86 | shared | `desktop_app/strings/sinopac_connection.py` | M2-1: 72 additive literal records, phase62/orders2806–2877; no alias or historical-value changes. |
+| `tests/test_sinopac_panel_ui.py` | 189 | tooling | `tests/test_sinopac_panel_ui.py` | M2-1: reference-only Qt controls, masked account intents, Decimal drafts, CA picker and stale Cancel-confirmation proof. |
+| `tests/test_sinopac_window_ui.py` | 287 | tooling | `tests/test_sinopac_window_ui.py` | M2-1: real TradingWindow with fake async connection facts; independent book/revision and both-size keyboard/layout proofs. |
+
+M2-1 replaces the former M1 `market_data_panel.py` module and the old primary
+twelve-reference BrokerPanel form with the single three-step connection panel.
+The existing BrokerPanel target now has315 lines (class297, no function over50);
+its historical source-path row remains relocation evidence, not a second form.
+Legacy profile import and offline metadata commands remain available. The shared
+backend owner registers sinopac_contracts.py in its own additive inventory commit.
+
+Window remains an inherited624-line orchestration module (TradingWindow533,
+apply_state91). M2-1 moves connection wiring/render/receipt ownership into the
+54-line sinopac_ui.py instead of adding another controller framework. The next
+narrow split is context navigation/confirmation from the remaining window owner;
+financial book validation stays at the application boundary. No size threshold
+or existing assertion changes. The legacy measure_ui_sizes --check diagnostic
+also reports pre-existing historical rows outside this feature; this slice does
+not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
