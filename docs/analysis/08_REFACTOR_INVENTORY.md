@@ -792,12 +792,12 @@ or existing assertion changes. The legacy measure_ui_sizes --check diagnostic
 also reports pre-existing historical rows outside this feature; this slice does
 not regenerate unrelated rows or claim that diagnostic is a current CI failure.
 
-| `desktop_app/features/trading/manual_actions.py` | 263 | presentation | `desktop_app/features/trading/manual_actions.py` | M2-2: scope-captured manual confirmation and existing asynchronous command port; no SDK or economic authorization. |
-| `desktop_app/features/trading/manual_form.py` | 89 | presentation | `desktop_app/features/trading/manual_form.py` | M2-2: Decimal inputs and server-provided whole-lot conversion. |
+| `desktop_app/features/trading/manual_actions.py` | 285 | presentation | `desktop_app/features/trading/manual_actions.py` | M2-2: scope-captured manual confirmation and existing asynchronous command port; no SDK or economic authorization. |
+| `desktop_app/features/trading/manual_form.py` | 91 | presentation | `desktop_app/features/trading/manual_form.py` | M2-2: Decimal inputs and server-provided whole-lot conversion. Readability exception: 58-line constructor keeps one compact form layout together; no execution logic. |
 | `desktop_app/features/trading/manual_intents.py` | 59 | presentation | `desktop_app/features/trading/manual_intents.py` | M2-2: pending UI identity survives unknown outcomes; never substitutes for the execution journal. |
-| `desktop_app/features/trading/manual_presenter.py` | 176 | presentation | `desktop_app/features/trading/manual_presenter.py` | M2-2: accepted manual facts, readiness and source labels; no risk calculations. |
-| `desktop_app/strings/m2_manual.py` | 86 | shared | `desktop_app/strings/m2_manual.py` | M2-2: additive phase63 literal catalogue records following the M2-1 phase62. |
-| `tests/test_m2_manual_ui.py` | 469 | tooling | `tests/test_m2_manual_ui.py` | M2-2: actual offscreen controls, asynchronous fake facade and exact intent identity regressions; no SDK/process orders. |
+| `desktop_app/features/trading/manual_presenter.py` | 197 | presentation | `desktop_app/features/trading/manual_presenter.py` | M2-2: accepted manual facts, readiness and source labels; no risk calculations. Readability exception: 107-line render function projects one accepted snapshot atomically into this bounded form. |
+| `desktop_app/strings/m2_manual.py` | 91 | shared | `desktop_app/strings/m2_manual.py` | M2-2: additive phase63 literal catalogue records following the M2-1 phase62. |
+| `tests/test_m2_manual_ui.py` | 560 | tooling | `tests/test_m2_manual_ui.py` | M2-2: actual offscreen controls, asynchronous fake facade and exact intent identity regressions; no SDK/process orders. Readability exception: 560-line test module and 456-line test class group 29 short cases with one owned Qt fixture; no production-class exception. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
