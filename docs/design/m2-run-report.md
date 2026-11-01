@@ -83,6 +83,11 @@ M2-2 完整測試來源為32ad38428e5da8959c18aad9fa403e15edbce55d，原始日�
 - #132 首輪 CI 的原始 IPC/CAS 案例暴露重複清理的端點競態，另三項為彙整失敗。
   兩個新回歸先 RED 再 GREEN；原始真實案例與清理回歸共12項／24.115s通過。
   其首輪 Windows 安裝三項工作已通過，最終修正 Head 仍獨立接受完整 CI。
+- 修正 Head a62a110 的離線35項全部通過；Windows安裝流程41323736442
+  attempt1在重裝後的 retained-candidate 自測回報 InsufficientExistingSmokeBudget。
+  七項UI操作與行情／認證／歷史／walk-forward檢查均通過，程序清理已驗證；
+  失敗artifact13091592701保留。未歸入允許的main失敗、未放寬任何時間或斷言，
+  重跑整個流程並要求最新Head全部適用工作成功；最終結果見上方Checks連結。
 - f77 第一輪4,000項中新增一次 alert store WinError5；main與同程式各100次對照
   均未重現。未把它加入允許基準，也未加入臆測的儲存重試；保留失敗紀錄，
   以不變程式完整重跑4,000項後才接受零新增失敗。

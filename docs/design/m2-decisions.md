@@ -1586,3 +1586,23 @@ Prepare the completed M2-1 evidence-only parent merge in this separate documenta
 ## manual-cleanup-final / complete corrected source evidence
 
 Publish exact 32ad384 complete discovery 4120/1508.968s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.
+
+## M2-1 / corrected-head installer recovery budget evidence
+
+The a62a110 offline workflow41323736469 passes all35 jobs. Windows installer
+workflow41323736442 attempt1 fails the retained-candidate smoke after a real
+same-version reinstall: recovery_helper_smoke.error_type is
+InsufficientExistingSmokeBudget, timed_out is false and worker_cleanup.verified
+is true. All seven UI operations and market/auth/history/walk-forward smokes
+pass; baseline, interrupted-baseline and recovered-candidate smoke also pass.
+The baseline WAL-workspace refusal deliberately records RuntimeSafetyError;
+that expected refusal is not this failure. Artifact13091592701 preserves the
+actual evidence. The prior65e7d7f installer workflow41316970379 passed all three
+applicable jobs, and packaging source is unchanged between those heads.
+
+Do not declare this a permitted main failure or claim a proven timing cause.
+Retain the failed artifact, rerun the entire workflow with gh run rerun
+41323736442 and require every applicable current-head job to pass. Do not
+extend budgets, omit recovery checks or weaken their assertions. Further
+failures require their own actual evidence review. This is documentation only;
+all non-documentation blobs must remain identical to full-tested32ad384.
