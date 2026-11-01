@@ -2,15 +2,16 @@
 
 from dataclasses import replace
 from threading import Event
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QScrollArea
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QScrollArea, QVBoxLayout, QWidget
 
 from desktop_app.features.trading import TradingWindow
-from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS
+from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, install_trading_environment
 from desktop_app.shell.theme import _apply_trading_page_theme
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import AccountView, ContextOption, OrderView, UiAction, UiReceipt
@@ -80,6 +81,26 @@ class M2TradingPageTests(unittest.TestCase):
         self.window.navigation.setCurrentRow(3)
         self.window.show()
         self.app.processEvents()
+
+    def test_environment_installation_uses_the_explicit_page_owner(self):
+        page = QWidget()
+        self.addCleanup(page.deleteLater)
+        page_layout = QVBoxLayout(page)
+        header = QHBoxLayout()
+        page_layout.addLayout(header)
+        layout_owner = QWidget(page)
+        layout_owner.setObjectName('independent_layout_owner')
+        page_layout.addWidget(layout_owner)
+        layout = QVBoxLayout(layout_owner)
+        host = SimpleNamespace(page_headers={'trading': header}, environment=QComboBox(page))
+
+        install_trading_environment(host, layout, page)
+
+        self.assertIs(host.trading_execution_page, page)
+        self.assertEqual(page.objectName(), 'trading_execution_page')
+        self.assertEqual(layout_owner.objectName(), 'independent_layout_owner')
+        self.assertIs(self.window.trading_execution_page, self.window.pages.widget(3).widget())
+        self.assertEqual(self.window.trading_execution_page.property('executionEnvironment'), Environment.LOCAL.value)
 
     def test_switch_pending_keeps_accepted_environment_then_isolates_books(self):
         window = self.window
