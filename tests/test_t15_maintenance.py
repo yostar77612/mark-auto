@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QPushButton, QToolButto
 
 from desktop_app.features.settings.maintenance import MaintenancePanel, installed_payload_root
 from desktop_app.strings.catalog import ui_text
+from quantlab import __version__
 from quantlab.payload_cleanup import CleanupPlan, execute_payload_cleanup, plan_payload_cleanup
 from quantlab.update_check import MAX_BODY, UpdateResult, _HTTPSRedirect, check_for_update
 from tests.test_t9_onboarding import sandbox_ui
@@ -296,7 +297,8 @@ class MaintenanceUITests(OfflineTest):
     def test_cleanup_confirmation_is_default_no_and_required(self):
         parent = self.temp()
         root = parent / 'payloads'
-        for version in ('0.1', '0.2', '0.2.2'):
+        # The installed (current) payload must exist; it follows quantlab.__version__.
+        for version in ('0.1', '0.2', __version__):
             (root / version / 'unique').mkdir(parents=True)
         panel = self.panel()
         with patch('desktop_app.features.settings.maintenance.installed_payload_root', return_value=root):
@@ -309,7 +311,7 @@ class MaintenanceUITests(OfflineTest):
                 panel.cleanup_button.click()
                 self.assertFalse((root / '0.1').exists())
                 self.assertTrue((root / '0.2').exists())
-                self.assertTrue((root / '0.2.2').exists())
+                self.assertTrue((root / __version__).exists())
 
     def test_development_and_wrong_executable_path_cannot_offer_deletion(self):
         with patch('desktop_app.features.settings.maintenance.sys.frozen', False, create=True):

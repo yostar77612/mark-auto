@@ -1,4 +1,4 @@
-param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.2.2', [ValidatePattern('^\d+\.\d+\.\d+$')][string]$BaselineVersion = '0.0.0',
+param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.3.0', [ValidatePattern('^\d+\.\d+\.\d+$')][string]$BaselineVersion = '0.0.0',
       [string]$BaselineAppVersion = '', [string]$BaselineManifest = '', [string]$CandidateManifest = '',
       [switch]$CreateRecoveryHandoff,
       [ValidateSet('HostedCi','DisposableVm','PreparedHost')][string]$AcceptanceScope,

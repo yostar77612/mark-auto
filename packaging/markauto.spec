@@ -16,6 +16,7 @@ analysis = Analysis(
     binaries=[],
     runtime_hooks=[str(root / 'packaging/sqlite_runtime_hook.py')] + [str(root / 'packaging/early_multiprocessing_runtime_hook.py')],
     datas=[(str(root / 'packaging/sqlite-runtime.json'), '.'),
+           (str(root / 'build/build-info.json'), '.'),
            (str(root / 'packaging/markauto.ico'), 'packaging'),
            (str(root / 'examples'), 'examples'),
            (str(root / 'quantlab/data_files/taifex_expiries.json'), 'quantlab/data_files'),

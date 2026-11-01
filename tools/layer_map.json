@@ -138,6 +138,7 @@
     "quantlab/tls_trust.py": "infrastructure",
     "quantlab/trade_statistics.py": "domain",
     "quantlab/ui_preferences.py": "presentation",
+    "quantlab/build_info.py": "shared",
     "quantlab/update_check.py": "infrastructure",
     "quantlab/value_bounds.py": "domain",
     "quantlab/verdict.py": "domain",

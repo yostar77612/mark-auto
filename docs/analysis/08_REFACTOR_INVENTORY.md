@@ -167,6 +167,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/backtest.py` | 374 | application | `quantlab/backtest.py` | 回測執行；含來源檔雜湊，非純 domain；`_performance_metrics`，`quantlab/backtest.py:21` |
 | `quantlab/backtest_summary.py` | 14 | domain | `quantlab/backtest_summary.py` | 樣本警告規則；R4 無違規／超大觸發，原址保留；`warning_keys`，`quantlab/backtest_summary.py:7` |
 | `quantlab/backup_inspection.py` | 158 | infrastructure | `quantlab/research_core/adapters/backup_inspection.py` | ZIP 與備份 metadata 讀取；E 按責任抽取；匯入違規見第 3 節；`ArchiveMetadata`，`quantlab/backup_inspection.py:24` |
+| `quantlab/build_info.py` | 18 | shared | `quantlab/build_info.py` | 版本識別（與 `__version__` 同層）：讀取凍結版內建 build-info.json 的來源 commit；`build_commit`，`quantlab/build_info.py:8` |
 | `quantlab/capital_scenario.py` | 113 | application | `quantlab/capital_scenario.py` | 抽樣計算與取消／deadline 協調；使用 monotonic；R4 無違規／超大觸發，原址保留；`empty_result`，`quantlab/capital_scenario.py:19` |
 | `quantlab/chart_data.py` | 285 | domain | `quantlab/chart_data.py` | OHLCV 聚合規則；R4 無違規／超大觸發，原址保留；`AggregationResult`，`quantlab/chart_data.py:28` |
 | `quantlab/chart_drawings.py` | 253 | infrastructure | `quantlab/chart_drawings.py` | 圖形值物件混合 DrawingStore 檔案儲存；R4 無違規／超大觸發，原址保留；`Anchor`，`quantlab/chart_drawings.py:24` |
@@ -312,6 +313,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/windows_paths.py` | 54 | shared | `quantlab/windows_paths.py` | 跨層路徑拼寫工具；無讀寫副作用；保留本體與既有路徑，見 G3 相依限制；`canonical_path`，`quantlab/windows_paths.py:14` |
 | `tools/bench_backtest_scale.py` | 57 | tooling | `tools/bench_backtest_scale.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`main`，`tools/bench_backtest_scale.py:17` |
 | `tools/bench_worker_latency.py` | 189 | tooling | `tools/bench_worker_latency.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`summary`，`tools/bench_worker_latency.py:23` |
+| `tools/bump_version.py` | 52 | tooling | `tools/bump_version.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`versions`，`tools/bump_version.py:27` |
 | `tools/check_layers.py` | 218 | tooling | `tools/check_layers.py` | R1 全 repo 匯入分層閘門；只解析來源、不執行產品碼；`tools/check_layers.py:1` |
 | `tools/check_trading_architecture.py` | 276 | tooling | `tools/check_trading_architecture.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`Finding`，`tools/check_trading_architecture.py:22` |
 | `tools/ci_changes.py` | 95 | tooling | `tools/ci_changes.py` | 開發／打包／驗證／範例腳本；不屬 runtime layers；`is_doc_candidate`，`tools/ci_changes.py:23` |
