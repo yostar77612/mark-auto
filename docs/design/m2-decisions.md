@@ -1089,3 +1089,44 @@ No final corrected complete discovery or current-head CI is claimed yet.
 
 Publish exact f77d2b0 complete discovery 4000/1436.847s, zero new failures and all32 actual causes reviewed. Keep earlier failed local/CI attempts, explicit secondary cleanup differences and exact fake-only actual startup facts. Only documentation changes after the tested source; prove non-documentation Git blobs identical and detect graph changes before commit. Require final current-head CI separately.
 The prior4000-case attempt has one new M1 alert-store WinError5. Neither100 main nor100 unchanged-source controls reproduce it. Keep it outside the allowed main baseline and avoid speculative production storage retries; acceptance requires this actual complete unchanged-source retry to have zero new failures. Both failed attempt and successful controls remain retained.
+
+## M2-1 / schedule frozen recovery within the unchanged shared budget
+
+2026-11-02 Asia/Taipei: corrected-head Windows installer41323736442 fails
+twice with InsufficientExistingSmokeBudget. Attempt1 fails retained-candidate
+smoke (artifact13091592701); attempt2 fails recovered-candidate smoke
+(artifact13092473832). Both have successful seven original UI operations,
+market/auth/history/walk-forward checks and verified worker cleanup. The
+expected released0.2.1 WAL-workspace refusal is unrelated. Neither failure is
+added to the main allowance or described as accepted CI.
+
+Ranked hypotheses: variable earlier worker time, recovery scheduled after the
+walk-forward tail, or bad deadline arithmetic. Actual runner callback control
+with completed original/history work at70s and walk-forward at102s reproduces
+the failed final status under the unchanged120s deadline in0.209s. Admission
+needs its existing full40s even though successful native recovery often takes
+about1s. Running only after the tail therefore makes successful earlier work
+consume the reservation. The controlled positive case is RED; existing
+insufficient-budget and total-timeout cases remain negative.
+
+Move the exact recovery call to the existing original-manager close boundary
+before creating the walk-forward manager. Stop/restart the Qt timer around the
+same synchronous hook; retain uncertain-cleanup evidence. Reuse the verified
+original completed campaign and cache the report for final aggregation. Keep
+every original/manual/history/walk-forward operation and validation; keep the
+120s outer deadline,40s recovery cap,6s preparation cap and actual frozen/zero
+exit/cleanup requirements. Do not extend deadlines, reduce the fixture or add
+skips. No G3 or broker path changes.
+
+The same callback control becomes GREEN. Three new scheduling controls prove
+ordering after joined original work, insufficient-budget refusal and unchanged
+total timeout. Related modules:29 tests OK with4 existing skips in14.966s;
+inventory/layer/page/M2 readability:43 PASS11.414s. These are source/mocked
+scheduling evidence, not actual frozen proof; new complete discovery, actual
+fake-SDK startup and current-head installer CI are still required.
+
+Pre-edit GitNexus run_smoke upstream risk LOW: desktop.run_gui is its direct
+caller,11 upstream symbols,1 affected process. complete_smoke risk LOW with1
+direct timer-guard caller. Index differs only by documentation from the inspected
+smoke blobs. Fresh complete graph and added-definition coverage precede commit;
+measured runner size deltas get a separate explained baseline commit.

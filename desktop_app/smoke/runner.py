@@ -148,8 +148,18 @@ def run_smoke(state):
                 payload = {'result': smoke_result['results']['ui_backtest']['reports'][0]['result']}
             try:
                 if next_operation == 'ui_walk_forward_preview':
+                    smoke_timer.stop()
                     state.smoke_jobs.close()
+                    # Use the completed campaign before the bounded walk-forward
+                    # tail consumes its admission budget; retain the same 120s end.
+                    prior_cleanup_verified = state.smoke_cleanup_verified
+                    state.smoke_cleanup_verified = False
+                    recovery_report = run_recovery_smoke(
+                        AppPaths(Path(state.smoke_directory.name)), smoke_result['results'].get('ui_campaign'), deadline=smoke_deadline
+                    )
+                    state.smoke_cleanup_verified = prior_cleanup_verified and recovery_report.get('cleanup_verified') is True
                     state.smoke_jobs = create_job_manager(walk_forward_paths)
+                    smoke_timer.start()
                 elif next_operation == 'ui_walk_forward_run':
                     payload = {**walk_forward_payload, 'preview_identity': walk_forward_report['reference']}
                 elif next_operation == 'ui_walk_forward_read':
@@ -162,10 +172,6 @@ def run_smoke(state):
                 rows.append({'operation': next_operation, 'passed': False, 'error_type': type(exc).__name__})
         smoke_timer.stop()
         state.smoke_jobs.close()
-        prior_cleanup_verified = state.smoke_cleanup_verified
-        state.smoke_cleanup_verified = False  # Unexpected hook failure must retain disposable evidence.
-        recovery_report = run_recovery_smoke(AppPaths(Path(state.smoke_directory.name)), smoke_result['results'].get('ui_campaign'), deadline=smoke_deadline)
-        state.smoke_cleanup_verified = prior_cleanup_verified and recovery_report.get('cleanup_verified') is True
         recovery_required = sys.platform == 'win32' and bool(getattr(sys, 'frozen', False))
         recovery_passed = (
             (recovery_report['status'] == 'passed' and recovery_report.get('frozen') is True)
