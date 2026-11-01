@@ -6840,3 +6840,10 @@ exposes it read-only, independently of mutable native flags. Existing factory
 and legacy market-session construction supply that environment explicitly.
 The M2-2 execution guard work consumes this same property; no fallback to LOCAL
 or mutable production opt-in is introduced by the connection implementation.
+
+SharedSDKSession is the sole native login/logout owner. Named SharedFacadeView
+consumers retain ShioajiSDKFacade's environment and mutation guards. Consumers
+share callback dispatch and remote quote/scanner leases; detaching one cannot
+logout another. Callback exceptions degrade owner health without exposing SDK
+payloads or preventing other deliveries. MarketSession.attach_authenticated
+adopts a consumer without resolving credentials or constructing another SDK.

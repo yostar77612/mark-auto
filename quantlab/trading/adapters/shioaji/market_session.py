@@ -92,21 +92,7 @@ class MarketSession:
             credentials = self.secret_resolver.broker_credentials(self.settings.secret_ref)
             self.facade.login(api_key=credentials.api_key, secret_key=credentials.secret_key, subscribe_trade=False)
             del credentials
-            self.directory.refresh(self.facade, self.clock.now())
-            self.connected = True
-            self.tick_stream = ShioajiTickStream(
-                self.facade,
-                self.clock,
-                (),
-                WatchSessionResolver(),
-                lambda: self.connected,
-                self.live_settings,
-                self._session_down,
-                watch_instruments=self.directory.items,
-                tick_normalizer=self._watch_tick,
-            )
-            self.tick_stream.start()
-            self.facade.set_on_quote_idx_v1_callback(self._index_quote)
+            self._start_quotes()
         except Exception:
             self.connected = False
             if self.facade is not None:
@@ -116,6 +102,32 @@ class MarketSession:
                     pass
             self.facade = None
             raise DomainError('market_data_login_failed') from None
+
+    def attach_authenticated(self, facade: ShioajiSDKFacade) -> None:
+        """Adopt a shared consumer; its logout releases only this consumer."""
+        if self.facade is not None or not self.settings.enabled or facade.environment is not self.settings.environment:
+            raise DomainError('market_data_not_configured')
+        self.facade = facade
+        try:
+            self._start_quotes()
+        except Exception:
+            self.connected = False
+            self.facade = None
+            try:
+                facade.logout()
+            finally:
+                raise DomainError('market_data_login_failed') from None
+
+    def _start_quotes(self) -> None:
+        self.directory.refresh(self.facade, self.clock.now())
+        self.connected = True
+        self.tick_stream = ShioajiTickStream(
+            self.facade, self.clock, (), WatchSessionResolver(), lambda: self.connected,
+            self.live_settings, self._session_down, watch_instruments=self.directory.items,
+            tick_normalizer=self._watch_tick,
+        )
+        self.tick_stream.start()
+        self.facade.set_on_quote_idx_v1_callback(self._index_quote)
 
     def _session_down(self, *args) -> None:
         self.connected = False

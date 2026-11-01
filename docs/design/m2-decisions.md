@@ -545,3 +545,21 @@ tick_gateway test-helper node. Source search confirms its direct consumers are
 the tick fixture modules; this does not waive the CRITICAL warning or replace
 tests. All33 relevant fake tests passed. Future source PR notes retain this
 warning and the index's dynamic receiver/process-cap limitations explicitly.
+
+## M2-1 / shared native owner — 2026-11-01
+
+One SharedSDKSession authenticates with trade reports enabled. Typed facade
+consumers retain the same immutable environment and execution guards. Native
+callback registration occurs once per event; callback failures are counted,
+sanitized and isolated from other consumers. Quote/scanner leases are shared;
+consumer logout detaches only its callbacks/subscriptions. Native logout is
+the owner's responsibility. Existing MarketSession can adopt a consumer, so
+directory, history, tick and scanner services use the authenticated session.
+
+Four new fake-only tests were RED before implementation. With the existing
+market session and controller regressions, all13 focused tests pass in0.050s.
+No SDK import, real credentials, CA, broker orders or engine process occurred.
+MarketSession.connect impact was UNKNOWN (dynamic receivers), confirmed by
+runtime and test source references. Disconnect impact was CRITICAL (2direct,
+167flows); its existing body remains unchanged. Adoption reuses that body via
+the consumer's detach-only logout, preserving legacy independent sessions.
