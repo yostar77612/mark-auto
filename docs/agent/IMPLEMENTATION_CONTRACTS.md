@@ -6989,3 +6989,10 @@ never advances native CAS or certifies stock key permissions. LIVE is blocked.
 The optional trusted sinopac_clock composition port affects market observations,
 not real UTC leases; defaults, calendars, command/preview/SDK deadlines and
 production policy remain unchanged.
+M2-2 confirmed manual submit/cancel/amend preflight failures expose a durable
+matching known rejection only with validated original scope and proven absent
+manual/canonical key under the existing healthy writer fence. Existing keys
+(including UNKNOWN) replay unchanged; no failure-code whitelist clears them.
+UiCommand.manual_no_admission=False is wire-compatible and deny-only: outer
+CAS forwarding may seal an absent key, never execute its financial command.
+Original admitted scope/id remain on results, independent of current UI epoch.

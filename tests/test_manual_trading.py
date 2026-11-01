@@ -568,6 +568,142 @@ class ManualCoreTests(unittest.TestCase):
         self.assertEqual(receipt.code, 'manual_allocation_exceeds_settings')
         self.assertEqual(len(self.native.trades), 1)
 
+    def test_quote_expiry_before_confirm_records_exact_known_rejection_and_replays(self):
+        self.confirm_test()
+        self.clock.value += timedelta(seconds=20)
+        self.observe()
+        form, _ = self.normal('quote-expired-before-confirm')
+        self.clock.value += timedelta(seconds=11)
+        self.observe()
+        before = len(self.native.trades)
+        command = self.command(UiAction.SUBMIT_MANUAL, manual_order=form)
+        self.assertEqual(self.service.execute(command).code, 'stale_quote')
+        result = self.service.snapshot(self.scope).last_result
+        self.assertEqual(result.request_id, form.request_id)
+        self.assertEqual(result.scope, form.scope)
+        self.assertEqual(result.status, 'REJECTED')
+        self.assertTrue(result.outcome_known)
+        self.assertEqual(result.reason, 'stale_quote')
+        self.assertIsNone(self.service.snapshot(self.scope).pending)
+        self.assertEqual(len(self.native.trades), before)
+        restored = TradingEngine(
+            self.journal,
+            self.clock,
+            self.engine.calendar,
+            self.engine.catalog,
+            self.engine.gateways,
+            configuration=self.engine.configuration,
+            ownership_clock=self.clock.now,
+            fees=self.engine.fees,
+        )
+        self.engine = restored
+        self.service = ManualTradingService(
+            restored,
+            validate_scope=self.validate_scope,
+            limits=tuple(self.service.limits.values()),
+            cost_source=self.service.cost_source,
+            margin_source=self.service.margin_source,
+        )
+        result = self.service.snapshot(self.scope).last_result
+        self.assertEqual(result.request_id, form.request_id)
+        self.assertTrue(result.outcome_known)
+        self.assertEqual(self.service.execute(command).code, 'stale_quote')
+        self.assertEqual(len(self.native.trades), before)
+
+    def test_amend_preflight_rejection_has_matching_result_without_native_mutation(self):
+        self.confirm_test()
+        form, _ = self.normal()
+        receipt = self.service.execute(self.command(UiAction.SUBMIT_MANUAL, manual_order=form))
+        self.assertTrue(receipt.accepted)
+        mutation = ManualMutationForm(self.scope, 'risk-increasing-amend', receipt.reference, D('25001'), confirmed=True)
+        before = sum(row[0] == 'update_order' for row in self.native._seen)
+        self.assertEqual(self.service.execute(self.command(UiAction.AMEND_MANUAL, manual_mutation=mutation)).code, 'risk_rejected')
+        result = self.service.snapshot(self.scope).last_result
+        self.assertEqual(result.request_id, mutation.request_id)
+        self.assertTrue(result.outcome_known)
+        self.assertEqual(result.reason, 'risk_rejected')
+        self.assertEqual(sum(row[0] == 'update_order' for row in self.native._seen), before)
+
+    def test_preflight_cannot_replace_existing_unknown_or_invalid_scope_identity(self):
+        self.confirm_test()
+        form, _ = self.normal()
+        self.native.place_mode = 'TIMEOUT'
+        command = self.command(UiAction.SUBMIT_MANUAL, manual_order=form)
+        self.assertEqual(self.service.execute(command).code, 'outcome_unknown')
+        original = self.engine.state.manual_requests[-1]
+        before = len(self.journal.events)
+        self.assertEqual(self.service.execute(replace(command, manual_order=replace(form, limit_price=D('25001')))).code, 'state_conflict')
+        invalid = replace(form, request_id='invalid-native-generation', scope=replace(self.scope, connection_generation='obsolete'))
+        self.assertEqual(self.service.execute(self.command(UiAction.SUBMIT_MANUAL, manual_order=invalid)).code, 'state_conflict')
+        self.assertEqual(self.engine.state.manual_requests[-1], original)
+        self.assertFalse(self.service.snapshot(self.scope).pending.outcome_known)
+        self.assertEqual(len(self.journal.events), before)
+        self.assertEqual(len(self.native.trades), 2)
+
+    def test_current_scope_stale_engine_version_is_durable_no_admission(self):
+        self.confirm_test()
+        form, _ = self.normal('stale-engine-version')
+        command = self.command(UiAction.SUBMIT_MANUAL, manual_order=form)
+        self.engine._persist('fixture_concurrent_change', self.engine.state)
+        self.assertEqual(self.service.execute(command).code, 'state_conflict')
+        result = self.service.snapshot(self.scope).last_result
+        self.assertEqual(result.request_id, form.request_id)
+        self.assertTrue(result.outcome_known)
+        self.assertEqual(len(self.native.trades), 1)
+        self.assertEqual(self.service.execute(self.command(UiAction.SUBMIT_MANUAL, manual_order=form)).code, 'state_conflict')
+        self.assertEqual(len(self.native.trades), 1)
+
+    def test_outer_no_admission_is_deny_only_wire_default_and_unknown_replay(self):
+        import json
+        from quantlab.trading.application.codec import dumps, loads
+
+        unenabled = ManualOrderForm(self.scope, 'no-confirmed-book', self.spec.instrument_id, Side.BUY, 1, D('25000'), D('24950'), confirmed=True)
+        receipt = self.service.execute(replace(self.command(UiAction.SUBMIT_MANUAL, manual_order=unenabled), manual_no_admission=True))
+        self.assertEqual(receipt.code, 'manual_book_not_enabled')
+        self.assertEqual(self.engine.state.manual_requests, ())
+        self.assertEqual(self.native.trades, [])
+        self.confirm_test()
+        form, _ = self.normal('outer-refused')
+        command = self.command(UiAction.SUBMIT_MANUAL, manual_order=form)
+        body = json.loads(dumps(command))
+        body['fields'].pop('manual_no_admission')
+        self.assertEqual(loads(json.dumps(body)), command)
+        denied = replace(command, manual_no_admission=True)
+        self.assertEqual(loads(dumps(denied)), denied)
+        self.assertEqual(self.service.execute(denied).code, 'state_conflict')
+        result = self.service.snapshot(self.scope).last_result
+        self.assertEqual(result.request_id, form.request_id)
+        self.assertTrue(result.outcome_known)
+        self.assertEqual(len(self.native.trades), 1)
+        # The refused key is permanently sealed, including a delayed original.
+        self.assertEqual(self.service.execute(self.command(UiAction.SUBMIT_MANUAL, manual_order=form)).code, 'state_conflict')
+        unknown, _ = self.normal('actually-unknown')
+        self.native.place_mode = 'TIMEOUT'
+        admitted = self.command(UiAction.SUBMIT_MANUAL, manual_order=unknown)
+        self.assertEqual(self.service.execute(admitted).code, 'outcome_unknown')
+        before = self.engine.state.manual_requests[-1]
+        self.assertEqual(self.service.execute(replace(admitted, manual_no_admission=True)).code, 'outcome_unknown')
+        self.assertEqual(self.engine.state.manual_requests[-1], before)
+        self.assertFalse(self.service.snapshot(self.scope).pending.outcome_known)
+        self.assertEqual(len(self.native.trades), 2)
+        invalid = self.command(UiAction.SUBMIT_MANUAL, manual_order=replace(form, request_id='bad-flag'))
+        self.assertEqual(self.service.execute(replace(invalid, manual_no_admission=1)).code, 'validation_failed')
+        live = replace(self.scope, environment=Environment.LIVE)
+        denied_live = replace(command, environment=Environment.LIVE, manual_order=replace(form, scope=live), manual_no_admission=True)
+        self.assertEqual(self.service.execute(denied_live).code, 'production_orders_disabled')
+        self.assertEqual(len(self.native.trades), 2)
+
+    def test_no_admission_result_requires_live_writer_fence_and_durable_append(self):
+        self.confirm_test()
+        form, _ = self.normal('cannot-certify-without-writer')
+        prior = self.service.snapshot(self.scope).last_result
+        with patch.object(self.journal, 'heartbeat', side_effect=DomainError('ownership_conflict')):
+            receipt = self.service.execute(replace(self.command(UiAction.SUBMIT_MANUAL, manual_order=form), manual_no_admission=True))
+        self.assertEqual(receipt.code, 'ownership_conflict')
+        self.assertEqual(self.service.snapshot(self.scope).last_result, prior)
+        self.assertFalse(any(row.request_id == form.request_id for row in self.engine.state.manual_requests))
+        self.assertEqual(len(self.native.trades), 1)
+
     def test_restart_links_receipted_order_without_retransmission(self):
         self.confirm_test()
         form, _ = self.normal()
