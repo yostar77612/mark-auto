@@ -221,6 +221,23 @@ without bypassing navigation guards or starting jobs. Evidence:
 tests/test_wf_wizard.py and docs/analysis/t8_snapshot_numbers.json.
 
 <!-- CURRENT_STATUS_START -->
+## M2-8 test/developer engine ownership (2026-11-01)
+
+Disposable source-engine owners register cleanup before startup can fail. The
+tooling-only launcher selects the actual Python interpreter and the same
+installed package paths, preserving production's exact retained-PID/session
+guard. Normal authenticated SHUTDOWN_ENGINE, bounded exit wait and endpoint
+removal prove closure; reused or differently owned hosts receive no command.
+Class/setup/body/teardown exceptions and caller startup timeout still run the
+registered cleanup. Each synthetic host has an independent pre-start hook.
+Cleanup errors remain failures, attempt remaining owned handles, and never
+authorize broad termination, other processes or data deletion. Load-probe partial
+initialization has the same normal shutdown and truthful failure reporting.
+Production lifecycle/ownership/security, broker gates, deadlines and applicability
+are unchanged. Exact focused, complete-run comparison and actual-window evidence,
+including retained first-run failure and pending CI, is recorded in
+docs/design/m2-8-verification.md.
+
 ## 目前交付對帳（2026-10-10 23:42 UTC）
 
 0.2.2 unsigned preview 已從產品來源 `9d35c7d7` 發布；exact-main Quantlab 12 jobs、Windows native／frozen TLS／安裝升級復原與公開下載驗證均 PASS。M4 依原 §19 條件取得 20 點，現行 **230/300＝76.67%，剩餘23.33%**；其他固定權重與未通過項目不變。
@@ -6802,22 +6819,31 @@ strength remain authoritative. Decisions and verification ownership are in
 docs/design/m2-decisions.md. Real broker operations, G3/SDK pin/PROJECT_STATE,
 OOS, budgets, deadlines and source profiles remain untouched.
 
-## M2-8 test/developer engine ownership (2026-11-01)
+## Verified SDK in the default installer (2026-11-01)
 
-Disposable source-engine owners register cleanup before startup can fail. The
-tooling-only launcher selects the actual Python interpreter and the same
-installed package paths, preserving production's exact retained-PID/session
-guard. Normal authenticated SHUTDOWN_ENGINE, bounded exit wait and endpoint
-removal prove closure; reused or differently owned hosts receive no command.
-Class/setup/body/teardown exceptions and caller startup timeout still run the
-registered cleanup. Each synthetic host has an independent pre-start hook.
-Cleanup errors remain failures, attempt remaining owned handles, and never
-authorize broad termination, other processes or data deletion. Load-probe partial
-initialization has the same normal shutdown and truthful failure reporting.
-Production lifecycle/ownership/security, broker gates, deadlines and applicability
-are unchanged. Exact focused, complete-run comparison and actual-window evidence,
-including retained first-run failure and pending CI, is recorded in
-docs/design/m2-8-verification.md.
+The default Windows installer reuses `broker_package.py` and the official
+Shioaji 1.7.9 Windows wheel in `requirements-shioaji-v2.lock`. Both the wheel
+and every installed package/metadata input are verified before collection;
+unverified/disabled broker flavors fail before Analysis. All other security
+exclusions remain, and the separate vendor CLI/server is never shipped.
+The standard manifest records verified SDK inputs and the actual bundled native
+core hash. Vendor metadata/SBOM and accurate absent-license/source notices are
+retained. Packaging authorizes no login, CA or financial operation.
+
+After installing/upgrading the candidate, Windows CI invokes the installed
+`MarkAuto.exe --broker-sdk-probe` with developer tools absent from PATH. Actual
+frozen import, module/distribution version 1.7.9, selected-runtime containment
+and native hash must pass; no SDK client, login or asset operation is performed.
+The existing TLS, full regression, lifecycle and recovery checks remain required.
+
+In the market-connection composition, loader `capability_missing` becomes
+`market_sdk_missing`, rendered from application ErrorText as
+「此安裝版未包含永豐元件，請安裝新版」. Other capability errors retain their
+existing semantics. Saving settings/startup remains inert; LIVE stays hard-disabled.
+No G3, SDK version constant, historical producer profile or PROJECT_STATE change
+is made. One unchanged test observer moves 25 source lines with its SDK fixture;
+only its current line projection and corresponding SHA256 are re-pinned in an
+independent baseline commit, preserving every observer identity and count.
 
 ## M2-1 shared connection wire contract (2026-11-01)
 
