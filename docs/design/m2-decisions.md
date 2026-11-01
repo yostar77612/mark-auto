@@ -385,3 +385,15 @@ absence is used to waive tests or the full-run native-cause limits above.
 - Remote Windows installer/installed-import and all required PR CI remain pending
   until their actual run results exist. No merge or production/broker acceptance
   is claimed by these local checks.
+
+### SDK packaging CI syntax correction (2026-11-01)
+
+- PR #133's Windows workflow initially failed to parse before any job started:
+  the hash-pinned audit command's `--only-binary=:all:` ended a plain YAML
+  scalar with a colon. Use a literal command block, preserving the exact command,
+  dependency audit and security requirements. No product source, fixture or
+  baseline changes are involved in this correction.
+- GitNexus cannot resolve the workflow file (UNKNOWN); direct workflow and
+  packaging-test references were inspected instead. Validate YAML with the
+  existing local parser, rerun affected packaging checks and prepush, then
+  require fresh CI on the corrected head, including the Windows installer.
