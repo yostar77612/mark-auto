@@ -542,3 +542,18 @@ result combines separately tested sources and needs new full discovery and
 actual startup at the final head. Preserve earlier failed-run evidence under
 its original `8f03a99` scope; do not present it as final composite acceptance.
 Controller serializes native/engine/full validation after M2-6 completes.
+
+## M2-6 / exact cleanup inheritance and two runtime copy oracles
+
+Normal merge `dc58096` preserves all seven M2-8 source/test/tool files exactly.
+Only afterward apply a separately authorized presentation-baseline delta to
+two RuntimeContextClientTests cases: expect the existing short facts-pending
+label, while retaining the complete original warning and its no-empty-exposure
+meaning in actual help/accessibility assertions. Their prior startup-PID errors
+had hidden these body assertions. Real SIM/LIVE widget surrogates reproduce the
+old expectation failure and verify the corrected text plus unknown financial
+facts and zero commands. Do not claim the native IPC bodies were rerun alongside
+the active M2-8 full suite. Preserve every other context/finance/ownership and
+no-engine-creation assertion and all cleanup behavior; no cap, skip, timeout or
+catalogue change. Stop the audit after all actual changed-copy references are
+accounted for. Final full discovery/startup/CI remain root's serialized gates.

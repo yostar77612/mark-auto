@@ -101,3 +101,43 @@ the final composite remain PENDING controller execution. Small checks resumed
 only after the other run's smoke prefix; this is not whole-run isolation. No
 native engine process, installed app or full test suite was launched or stopped
 by this follow-up agent.
+
+## Final cleanup integration and newly reachable text oracles
+
+Normal dependency merge `dc580963b18830fef9478bff99073e8328a1f2ca` retains all
+seven incoming M2-8 test/tool blobs exactly from `fdfde06`. All 1178 staged
+non-documentation blobs match the intended parent. The source fix remains
+`f98d98c`, and the initial three text-oracle correction remains separate `7ca917a`.
+Merge all/staged graph review is complete: 76/74 symbols respectively (the
+licensed later text baseline is unstaged), 13 files, nine load-probe flows and
+HIGH risk; no error/partial/truncation flags or empty IDs. The inherited exact
+ownership/normal-shutdown behavior and its original focused tests were reviewed;
+UNKNOWN dynamic callbacks are not unused-code claims. Final focused widget,
+finance repaint, architecture, market and pure-fake cleanup/load tests pass
+51 cases in 21.006s. Actual-process cleanup cases are still deferred.
+
+Literal audit also found two old visible-label expectations in
+`RuntimeContextClientTests.test_three_environments_use_real_ipc_and_never_mix_books_or_implicitly_connect`
+and `test_standard_disconnected_launch_without_profile_keeps_financial_facts_unknown`.
+Their native bodies were previously blocked by the main host's startup-PID
+failures. The first expects the full v2 warning; the second expects its original
+"空表不代表沒有持倉" substring in the now-short label. A separate feature-baseline
+delta expects only `m2t.facts_pending` visibly and preserves the exact old warning
+in full help/accessibility, including that substring. All original unknown
+money, account/context identity, no-implicit-login and no-engine-creation
+assertions are unchanged; ownership cleanup code is unchanged.
+
+Both predicates were RED on actual TradingWindow widgets with the original old
+text oracle and GREEN with the corrected expectation. The fake read models
+explicitly use disconnected SIM/LIVE, empty accounts/exposure, NO_DATA and None
+financial facts; full warning details/accessibility remain exact and zero
+commands are emitted. This is real-widget surrogate evidence, not execution of
+the native IPC test bodies. Those cases must run in the new final full suite.
+The audit found no other old short-label references in visible-text assertions;
+remaining old keys intentionally bind complete help/tooltips. No speculative
+baseline, catalogue, skip, timing or cap changes were made. Complete full-suite,
+actual startup and remote CI remain PENDING on the final composite.
+Final document/layout checks pass 37 cases in 2.791s. The separate two-oracle
+baseline's complete all/staged graph checks report seven symbols/three files,
+LOW risk, zero affected processes and no error/partial/truncation flags or empty
+IDs; inherited production/cleanup behavior remains unchanged.
