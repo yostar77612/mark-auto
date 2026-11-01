@@ -30,6 +30,7 @@ class RuntimeLaunch:
     profile_path: Path | None = None
     account_ref: str = 'local-stock'
     schema_version: int = 1
+    sinopac: bool = False
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1 or not isinstance(self.root, Path) or not self.root.is_absolute():
@@ -41,6 +42,8 @@ class RuntimeLaunch:
         ):
             raise DomainError('validation_failed', 'explicit runtime environment and profile location required')
         identity(self.account_ref)
+        if type(self.sinopac) is not bool or self.sinopac and (self.environment is Environment.LOCAL or self.profile_path is not None):
+            raise DomainError('validation_failed', 'unified broker host must be explicit and profile-free')
         if self.environment is Environment.LOCAL and (self.profile_path is not None or self.account_ref not in ('local-stock', 'local-futures')):
             raise DomainError('capability_missing', 'local lab cannot consume a broker profile or account')
         if self.environment is not Environment.LOCAL and self.account_ref in ('local-stock', 'local-futures'):

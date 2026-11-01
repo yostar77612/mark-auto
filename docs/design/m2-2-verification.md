@@ -126,3 +126,12 @@ intent/fence ordering and original submit inventory remain exact. Strict layers
 reported0 findings and changed Python Ruff check/format passed. Complete own
 forced-index detect:44 changed symbols/13 files,LOW,0 empty ids and no partial or
 truncated flag. This does not waive the separately warned HIGH exit_lot impact.
+
+The frozen78e1f83 shared-owner/resources backend was adopted with --no-commit.
+Two append-only documentation conflicts retain both intents; existing central
+SDK guards remain present. Own prebuilt forced-index complete detect reports220
+symbols/32 files/28 flows,CRITICAL,0 empty ids and no partial/truncated flags.
+The risk is warned, not waived. Current own LIVE wall tests6/6 and incoming tiny
+shared-session fake tests3/3 pass. No new index/native/Qt tests are run during
+the coordinating agent's isolated full8 window; subsequent source work remains
+uncommitted until its own complete review is possible.

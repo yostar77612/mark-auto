@@ -592,3 +592,111 @@ and the old oracle it reports exactly one LIVE policy error; its original log
 is .tmp/m2-2-live-old-oracle-red.log. After the precise oracle update both cases
 are required to pass. Graph reports UNKNOWN static callers for the test method;
 direct source and unittest discovery establish its actual invocation.
+
+## M2-1 / shared native owner — 2026-11-01
+
+One SharedSDKSession authenticates with trade reports enabled. Typed facade
+consumers retain the same immutable environment and execution guards. Native
+callback registration occurs once per event; callback failures are counted,
+sanitized and isolated from other consumers. Quote/scanner leases are shared;
+consumer logout detaches only its callbacks/subscriptions. Native logout is
+the owner's responsibility. Existing MarketSession can adopt a consumer, so
+directory, history, tick and scanner services use the authenticated session.
+
+Four new fake-only tests were RED before implementation. With the existing
+market session and controller regressions, all13 focused tests pass in0.050s.
+No SDK import, real credentials, CA, broker orders or engine process occurred.
+MarketSession.connect impact was UNKNOWN (dynamic receivers), confirmed by
+runtime and test source references. Disconnect impact was CRITICAL (2direct,
+167flows); its existing body remains unchanged. Adoption reuses that body via
+the consumer's detach-only logout, preserving legacy independent sessions.
+
+## M2-1 / unified backend acceptance and routing — 2026-11-01
+
+The explicit profile-free RuntimeLaunch.sinopac mode owns a single SDK session
+in one stable environment host (SINOPAC:environment). Its process seed stays
+sinopac-pending; navigating discovered account aliases changes only the client
+view. LOCAL first-connect routes connection/market intents to that host while
+preserving LOCAL cash, positions, book version and selected context. Switching
+to SIM remains a separate navigation intent. Environment replacement confirms
+the previous native logout before constructing/logging in the next client.
+Unknown logout remains blocked on retries; no process termination is used.
+An existing connected legacy market/profile session is retired through the same
+bounded explicit transition before unified login; legacy profile files and
+hash-pinned resource loading remain supported for their existing callers.
+
+Connection generation is an opaque UUID. Material accepted state changes use a
+persisted monotonic revision, independent of ticks/book version. Composite
+projection offsets revisions across environment hosts and maps CAS back without
+refreshing a stale intent to a newer native revision. Owned workers have the
+existing eight-second acceptance deadline. Disconnect waits on an Event for at
+most7.5seconds outside book locks. Expired login/account/CA completions cannot
+promote; candidates clean up normally. Close is bounded and reports uncertainty.
+Trusted factory/SecretResolver/resource-factory injection passes through
+serve/build_runtime for offline integration; startup never resolves secrets.
+
+Discovered aliases derive from the complete environment/account-type/broker/id
+identity. Only masked labels, signed tri-state and reason codes cross the wire.
+Preferences preserve references, selected aliases and generated masked metadata
+with identity hashes; raw account IDs/person_id/passwords are never saved.
+Historical/unselected/disappeared aliases remain available for book navigation,
+with unknown or unavailable evidence, independently of current selection. This
+never removes trading obligations; M2-2 owns canonical ledger reconciliation.
+Query readiness requires successful selected-account position queries. Callback
+delivery failures explicitly degrade readiness; simulation execution remains
+implementation_pending in this M2-1 slice and production is always blocked.
+
+The generated catalogue initially supports ordinary cash security2330 and the
+nearest actual, unexpired TMF month. Native ContractV2 supplies lot, multiplier,
+month/expiry, ticks and optional daily price limits. Missing limits remain
+missing. Stock classification comes from bounded automatic public ISIN data,
+not SDK industry codes or symbol guesses. Publication date and full response
+SHA are retained. The official page observed2026-11-01 was10,186,180bytes,
+SHA256 de68b53f834f4b17dab7a9125f932c4a270c202ec9deed7e672d564ddf170e54;
+its2330 row parsed TW0002330008/ESVUFR with publication2026-11-01. Read budget
+is2.5seconds and32MiB; unavailable/stale classification blocks that stock's
+resource generation while market/account services remain usable.
+
+Calendar coverage is explicitly2026 only:242 positive scheduled common dates,
+after excluding the independently recorded July10 TAIFEX closure. Its window
+09:00<=t<13:30 is a conservative shared manual window, not full TMF hours or an
+actual-open/emergency-completeness guarantee. 2027 is unavailable, never guessed.
+M1 quote/history sessions retain their independent received-timestamp behavior.
+Fees are versioned application estimates (adjustable stock-fee discount), not
+broker billing. TMF35050TWD initial margin is the dated TAIFEX exchange reference
+2026-08-12 observed2026-11-01, never fabricated broker funds. No positive broker
+cash/equity or global atomic order observation is inferred from simulation zeros.
+
+New CA enrollment stores only ca_password under the certificate reference. The
+legacy triple credential schema remains intact for its existing path. Explicit
+optional activation derives person_id from selected native accounts and uses a
+user-selected PFX path; references alone cross UI/IPC. SIM defaults NOT_REQUIRED
+based on official documentation, not owner real-SIM verification. Tests use an
+invalid fake certificate file and fake SDK callable only; no real CA was used.
+
+Pre-edit routing impacts are CRITICAL for RuntimeLaunch, RuntimeBundle,
+RuntimeContextManager/_Entry, ContextIpcFacade, CompositeFacade, desktop entry
+points and server dispatch/serve (broad160+flow attribution). Resolver impact is
+CRITICAL as previously recorded. UNKNOWN targets were checked against source.
+The new calendar builder's first symbol lookup occurred after initial creation;
+this local workflow miss is retained rather than represented as a pre-edit
+check. Subsequent source review, fake boundary tests and full change detection
+cover the resulting definition. No FTS/vector extension was installed.
+
+## M2-1 / exact inventory baseline — 2026-11-01
+
+The source commit e640eb0 is followed by an independent inventory-only change
+for the seventeen new backend/test/tool modules since af262ab. Each row retains
+its actual path, line count and reviewed layer. The three DTO/environment rows
+already added by af262ab remain unchanged. Historical rows/producer hashes and
+all existing assertions remain intact; no appearance/catalog baseline is reset.
+The existing bootstrap module remains an explicit composition boundary rather
+than moving its public lifecycle during this feature; new owner/resource modules
+are bounded and their functions meet the50-line readability target.
+
+Complete source detect reported130symbols/29files/608flows at CRITICAL risk,
+with no partial/truncated flags. One existing desktop.py parse_args record has
+an empty graph UID (its pre-edit impact still reported187direct callers). This
+is retained as an index limitation, not an unused/unaffected claim. Actual parser
+source and existing CLI tests were independently verified. Raw CLI report and
+structured flag/UID summary are in ignored .tmp/m2-backend-detect files.

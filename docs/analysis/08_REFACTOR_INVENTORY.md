@@ -752,6 +752,23 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/application/sinopac_contracts.py` | 113 | application | `quantlab/trading/application/sinopac_contracts.py` | M2-1: scoped reference settings, redacted accounts and independent connection read model; no SDK or IO. |
 | `tests/test_sinopac_contracts.py` | 98 | tooling | `tests/test_sinopac_contracts.py` | M2-1: pure boundary and old-wire compatibility checks; no engine or broker. |
 | `tests/test_sinopac_facade_environment.py` | 30 | tooling | `tests/test_sinopac_facade_environment.py` | M2-1: explicit immutable facade environment using inert SDK stand-ins. |
+| `quantlab/trading/adapters/shioaji/account_discovery.py` | 44 | infrastructure | `quantlab/trading/adapters/shioaji/account_discovery.py` | M2-1: full native identity to stable masked alias; no persistence or SDK construction. |
+| `quantlab/trading/adapters/shioaji/shared_session.py` | 199 | infrastructure | `quantlab/trading/adapters/shioaji/shared_session.py` | M2-1: one native owner, independent callback consumers and quote/scanner leases. |
+| `quantlab/trading/runtime/sinopac_calendar.py` | 72 | composition | `quantlab/trading/runtime/sinopac_calendar.py` | M2-1: explicit 2026 common-window dates and versioned source references. |
+| `quantlab/trading/runtime/sinopac_certificate.py` | 35 | composition | `quantlab/trading/runtime/sinopac_certificate.py` | M2-1: optional reference-only CA transition; native person identity remains internal. |
+| `quantlab/trading/runtime/sinopac_classification.py` | 42 | composition | `quantlab/trading/runtime/sinopac_classification.py` | M2-1: bounded public ISIN classification with published date and response hash. |
+| `quantlab/trading/runtime/sinopac_connection.py` | 177 | composition | `quantlab/trading/runtime/sinopac_connection.py` | M2-1: explicit generation/revision owner lifecycle; inert startup and deadline acceptance. |
+| `quantlab/trading/runtime/sinopac_legacy.py` | 54 | composition | `quantlab/trading/runtime/sinopac_legacy.py` | M2-1: bounded confirmed legacy logout barrier before unified login. |
+| `quantlab/trading/runtime/sinopac_resources.py` | 151 | composition | `quantlab/trading/runtime/sinopac_resources.py` | M2-1: generated account-scoped contract/calendar/estimated-fee resources and daily limits. |
+| `quantlab/trading/runtime/sinopac_settings.py` | 110 | composition | `quantlab/trading/runtime/sinopac_settings.py` | M2-1: reference preferences and masked historical alias metadata; no credentials. |
+| `quantlab/trading/runtime/sinopac_transition.py` | 210 | composition | `quantlab/trading/runtime/sinopac_transition.py` | M2-1: owned SDK candidate acceptance/cleanup, discovery, selection and truthful readiness. |
+| `tests/test_sinopac_ca_classification.py` | 48 | tooling | `tests/test_sinopac_ca_classification.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_connection.py` | 182 | tooling | `tests/test_sinopac_connection.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_market_adoption.py` | 41 | tooling | `tests/test_sinopac_market_adoption.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_resources.py` | 72 | tooling | `tests/test_sinopac_resources.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_runtime_routing.py` | 227 | tooling | `tests/test_sinopac_runtime_routing.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tests/test_sinopac_shared_session.py` | 70 | tooling | `tests/test_sinopac_shared_session.py` | M2-1: fake-only connection/resource/routing regression; no real SDK or broker. |
+| `tools/store_sinopac_ca.py` | 30 | tooling | `tools/store_sinopac_ca.py` | M2-1: explicit password-only Windows credential enrollment; never loads SDK or activates CA. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

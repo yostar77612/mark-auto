@@ -101,3 +101,6 @@ class WindowsSecretResolver:
     def certificate_credentials(self, reference: str) -> CertificateCredentials:
         value = self._read(reference, 'certificate', frozenset(('ca_path', 'ca_password', 'person_id')))
         return CertificateCredentials(value['ca_path'], value['ca_password'], value['person_id'])
+
+    def certificate_password(self, reference: str) -> str:
+        return self._read(reference, 'certificate', frozenset(('ca_password',)))['ca_password']

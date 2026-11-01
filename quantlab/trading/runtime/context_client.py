@@ -80,7 +80,10 @@ class ContextIpcFacade(IpcFacade):
             state = response.state
             configured = any(item.account_ref == self.launch.account_ref and item.environment is self.launch.environment for item in state.accounts)
             pending_alias = not state.accounts and not state.financial_facts_verified and state.account_ref == self.launch.account_ref
-            if state.environment is not self.launch.environment or not (configured or pending_alias):
+            connection_owner = (
+                self.launch.sinopac and self.launch.account_ref == 'sinopac-pending' and state.configuration_id == 'SINOPAC:' + self.launch.environment.value
+            )
+            if state.environment is not self.launch.environment or not (configured or pending_alias or connection_owner):
                 raise DomainError('capability_missing', 'host identity differs from selected context')
             if self.configuration_id and state.configuration_id != self.configuration_id:
                 raise DomainError('startup_workspace_incompatible', 'running profile differs from explicitly selected profile')
@@ -125,6 +128,8 @@ def ensure_engine(root: Path, *, launch: RuntimeLaunch | None = None, configurat
     args.extend(('--trading-engine', str(root), '--trading-environment', launch.environment.value, '--trading-account', launch.account_ref))
     if launch.profile_path is not None:
         args.extend(('--trading-profile', str(launch.profile_path)))
+    if launch.sinopac:
+        args.append('--trading-sinopac')
     with (root / 'engine-startup.log').open('ab') as log:
         process = subprocess.Popen(
             args, stdin=subprocess.DEVNULL, stdout=log, stderr=log, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0, close_fds=True
@@ -157,6 +162,12 @@ class _Entry:
     error: str = ''
 
     def accounts(self) -> tuple[str, ...]:
+        if self.launch.sinopac:
+            from .sinopac_settings import SinopacSettingsStore
+
+            store = SinopacSettingsStore(self.launch.root)
+            _, selected = store.load()
+            return tuple(dict.fromkeys((*selected, *(row['alias'] for row in store.known_accounts())))) or (self.launch.account_ref,)
         if self.profile:
             config = self.profile.configuration
             return tuple(ref for ref in (config.stock_account_ref, config.futures_account_ref) if ref)
@@ -168,6 +179,8 @@ class _Entry:
         return ContextOption(self.context_id, self.label, self.launch.environment, self.accounts(), 'UNAVAILABLE' if self.error else 'CONFIGURED')
 
     def expected_configuration(self) -> str:
+        if self.launch.sinopac:
+            return 'SINOPAC:' + self.launch.environment.value
         if self.profile:
             return self.profile.source_sha256
         if self.launch.environment is Environment.LOCAL:
@@ -186,6 +199,7 @@ class RuntimeContextManager:
         self._entries: dict[str, _Entry] = {}
         self._registry_body: dict | None = None
         self.selected_context, self.selected_account = '', ''
+        self.connection_context = ''
         self._lock = RLock()
         if self.registry_path.exists():
             self._load()
@@ -222,14 +236,21 @@ class RuntimeContextManager:
     def _load(self) -> None:
         body = read_runtime_document(self.registry_path)
         if (
-            set(body) != {'schema_version', 'selected_context', 'selected_account', 'contexts'}
+            set(body)
+            not in (
+                {'schema_version', 'selected_context', 'selected_account', 'contexts'},
+                {'schema_version', 'selected_context', 'selected_account', 'contexts', 'connection_context'},
+            )
             or type(body['contexts']) is not list
             or not 1 <= len(body['contexts']) <= 32
         ):
             raise DomainError('validation_failed', 'context registry schema')
         entries, roots = {}, set()
         for item in body['contexts']:
-            if type(item) is not dict or set(item) != {'context_id', 'label', 'root', 'environment', 'account_ref', 'profile_path'}:
+            if type(item) is not dict or set(item) not in (
+                {'context_id', 'label', 'root', 'environment', 'account_ref', 'profile_path'},
+                {'context_id', 'label', 'root', 'environment', 'account_ref', 'profile_path', 'sinopac'},
+            ):
                 raise DomainError('validation_failed', 'context record schema')
             if any(type(item[name]) is not str for name in ('context_id', 'label', 'root', 'environment', 'account_ref')) or (
                 item['profile_path'] is not None and type(item['profile_path']) is not str
@@ -239,7 +260,13 @@ class RuntimeContextManager:
                 environment = Environment(item['environment'])
             except ValueError as exc:
                 raise DomainError('validation_failed', 'unknown configured runtime environment') from exc
-            launch = RuntimeLaunch(Path(item['root']), environment, Path(item['profile_path']) if item['profile_path'] else None, item['account_ref'])
+            launch = RuntimeLaunch(
+                Path(item['root']),
+                environment,
+                Path(item['profile_path']) if item['profile_path'] else None,
+                item['account_ref'],
+                sinopac=item.get('sinopac', False),
+            )
             root = launch.root.resolve()
             if item['context_id'] in entries or root in roots:
                 raise DomainError('validation_failed', 'contexts must have independent engine directories')
@@ -255,6 +282,10 @@ class RuntimeContextManager:
         ):
             raise DomainError('validation_failed', 'selected registry context/account is unavailable')
         self._entries, self.selected_context, self.selected_account = entries, selected, account
+        connection = body.get('connection_context', '')
+        if type(connection) is not str or connection and (connection not in entries or not entries[connection].launch.sinopac):
+            raise DomainError('validation_failed', 'connection context identity')
+        self.connection_context = connection
         self._registry_body = body
 
     def _save(self, entries: dict[str, _Entry], selected: str, account: str) -> None:
@@ -272,10 +303,13 @@ class RuntimeContextManager:
                     'environment': entry.launch.environment.value,
                     'account_ref': entry.launch.account_ref,
                     'profile_path': str(entry.launch.profile_path) if entry.launch.profile_path else None,
+                    **({'sinopac': True} if entry.launch.sinopac else {}),
                 }
                 for entry in entries.values()
             ],
         }
+        if self.connection_context:
+            body['connection_context'] = self.connection_context
         self.registry_path.parent.mkdir(parents=True, exist_ok=True)
         for path in (self.registry_path, *self.registry_path.parents):
             try:
@@ -310,7 +344,39 @@ class RuntimeContextManager:
         if entry.error:
             raise DomainError(entry.error, 'selected profile is unavailable; current context retained')
         launch = replace(entry.launch, account_ref=account_ref)
+        if entry.launch.sinopac:
+            # The process seed and configuration identity do not change when a
+            # client selects another discovered account in the same host.
+            ensure_engine(entry.launch.root, launch=entry.launch, configuration_id=entry.expected_configuration())
+            return ContextIpcFacade(launch, entry.expected_configuration())
         return ensure_engine(launch.root, launch=launch, configuration_id=entry.expected_configuration())
+
+    def open_sinopac(self, environment: Environment) -> IpcFacade:
+        if environment not in (Environment.BROKER_SIMULATION, Environment.LIVE):
+            raise DomainError('capability_missing', 'broker connection environment required')
+        context_id = 'sinopac-simulation' if environment is Environment.BROKER_SIMULATION else 'sinopac-live'
+        with self._lock:
+            entry = self._entries.get(context_id)
+            if entry is None:
+                launch = RuntimeLaunch(self.base_root / 'context-engines' / context_id, environment, account_ref='sinopac-pending', sinopac=True)
+                entry = self._entry(context_id, '', launch)
+            entries = {**self._entries, context_id: entry}
+            previous = self.connection_context
+            self.connection_context = context_id
+            try:
+                self._save(entries, self.selected_context, self.selected_account)
+            except Exception:
+                self.connection_context = previous
+                raise
+            self._entries = entries
+        return ensure_engine(entry.launch.root, launch=entry.launch, configuration_id=entry.expected_configuration())
+
+    def current_sinopac(self):
+        with self._lock:
+            entry = self._entries.get(self.connection_context)
+        if entry is None:
+            return None
+        return ensure_engine(entry.launch.root, launch=entry.launch, configuration_id=entry.expected_configuration())
 
     def register_profile(self, profile_ref: str, environment: Environment) -> ContextOption:
         if environment is Environment.LOCAL:

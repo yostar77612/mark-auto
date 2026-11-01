@@ -167,6 +167,11 @@ class ShioajiSDKFacade:
             raise DomainError('validation_failed', 'watch security type')
         return _rows(_callable(self.contracts._store(), 'list')(security_type))
 
+    def execution_contracts(self, security_type: str) -> list[object]:
+        if security_type not in ('STK', 'FUT'):
+            raise DomainError('validation_failed', 'execution security type')
+        return _rows(_callable(self.contracts._store(), 'list')(security_type))
+
     def market_contract(self, code: str) -> object:
         identity(code)
         return _callable(self.contracts._store(), 'get')(code)
@@ -269,6 +274,12 @@ class ShioajiSDKFacade:
     def list_trades(self) -> list[object]:
         # Official list_trades is a local snapshot API without timeout argument.
         return _rows(_callable(self._client, 'list_trades')())
+
+    def trade_cache_health(self, *, account: object) -> object:
+        # Pinned 1.7.9 is account-scoped and has no timeout parameter.
+        if account is None:
+            raise DomainError('capability_missing', 'explicit SDK account required')
+        return _callable(self._client, 'trade_cache_health')(account)
 
     def _callback(self, name: str, callback: Callable[..., None], *, bind: bool | None = None) -> None:
         if not callable(callback) or bind is not None and type(bind) is not bool:

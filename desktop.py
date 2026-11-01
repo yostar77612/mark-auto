@@ -97,7 +97,10 @@ def parse_args(argv=None):
     parser.add_argument('--trading-account', help='Explicit configured v2 account alias')
     parser.add_argument('--trading-profile', type=Path, help='Absolute versioned broker runtime profile; metadata only on startup')
     parser.add_argument('--trading-contexts', type=Path, help='Absolute configured v2 context registry for the desktop')
+    parser.add_argument('--trading-sinopac', action='store_true', help='Explicit profile-free unified broker host; startup stays disconnected')
     args = parser.parse_args(argv)
+    if args.trading_sinopac and (args.trading_engine is None or args.trading_environment in (None, 'LOCAL') or args.trading_profile is not None):
+        parser.error('--trading-sinopac requires an explicit profile-free broker engine')
     if args.research_bootstrap is not None and (not args.platform_v2 or not args.research_bootstrap.is_absolute()):
         parser.error('--research-bootstrap requires --platform-v2 and an absolute isolated directory')
     if args.tls_smoke is not None:
@@ -393,7 +396,11 @@ def main(argv=None):
         from quantlab.trading.runtime.config import RuntimeLaunch
 
         launch = RuntimeLaunch(
-            args.trading_engine, Environment(args.trading_environment or 'LOCAL'), args.trading_profile, args.trading_account or 'local-stock'
+            args.trading_engine,
+            Environment(args.trading_environment or 'LOCAL'),
+            args.trading_profile,
+            args.trading_account or 'local-stock',
+            sinopac=args.trading_sinopac,
         )
         return serve(args.trading_engine, launch=launch)
     if args.platform_v2:
