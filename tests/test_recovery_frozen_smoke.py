@@ -145,5 +145,106 @@ class RecoveryFrozenSmokeTests(unittest.TestCase):
         self.assertIn('os._exit(124)', text)
 
 
+class RecoverySmokeSchedulingTests(unittest.TestCase):
+    """Run the real timer callback with controlled worker replies and elapsed time."""
+
+    def _run_smoke(self, *, before_walk_forward=70, tail=102):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        import desktop_app.smoke.runner as runner
+
+        clock, actions = [0.0], []
+        timer = Mock()
+        reply = {
+            'source_type': 'synthetic',
+            'bars': 120,
+            'reports': [{'result': {}}],
+            'status': 'completed',
+            'attempts': [{'status': 'evaluated'}],
+            'real_model_status': 'not_verified',
+            'account': {'kill_switch': True},
+            'replay': {'cursor': 25},
+            'request': {},
+        }
+
+        def manager(paths):
+            jobs = Mock(paths=paths, active=False)
+
+            def start(operation, payload):
+                jobs.operation, jobs.active = operation, True
+                actions.append(operation)
+
+            def poll():
+                jobs.active = False
+                if jobs.operation == 'ui_market_refresh':
+                    clock[0] = before_walk_forward
+                elif jobs.operation == 'ui_walk_forward_run':
+                    clock[0] = tail
+                return [{'type': 'result', 'result': reply}]
+
+            jobs.start.side_effect, jobs.poll.side_effect = start, poll
+            jobs.close.side_effect = lambda: actions.append('close')
+            return jobs
+
+        def recovery(paths, campaign, *, deadline):
+            actions.append('recovery')
+            remaining = deadline - clock[0]
+            clock[0] += 1
+            return {'status': 'passed' if remaining >= smoke.CAP_SECONDS else 'failed', 'frozen': True, 'cleanup_verified': True}
+
+        with tempfile.TemporaryDirectory() as folder:
+            paths = AppPaths(Path(folder)).ensure()
+            state = SimpleNamespace(paths=paths, settings_paths=paths, app=Mock(), window=Mock(), args=SimpleNamespace(), smoke_cleanup_verified=True)
+            state.window.isVisible.return_value = True
+            with (
+                patch('PySide6.QtCore.QTimer', return_value=timer),
+                patch('time.monotonic', side_effect=lambda: clock[0]),
+                patch.object(runner, 'sys', SimpleNamespace(platform='win32', frozen=True)),
+                patch('desktop_app.research_bootstrap.create_job_manager', side_effect=manager),
+                patch.object(runner, '_auth_smoke_dependencies', return_value={'status': 'passed'}),
+                patch.object(runner, '_market_smoke_ui', return_value=({'steps': []}, {}, {})),
+                patch.object(runner, '_market_smoke_response', return_value='fixture'),
+                patch.object(runner, '_check_market_worker_result', return_value={}),
+                patch.object(runner, '_history_smoke_fixture', return_value=({'steps': [], 'fixture_sha256': 'fixture'}, {})),
+                patch.object(runner, '_check_history_worker_result', return_value=(None, {})),
+                patch.object(runner, '_history_smoke_ui', return_value={}),
+                patch.object(runner, '_walk_forward_smoke_fixture', return_value=({'steps': []}, {})),
+                patch.object(runner, '_check_walk_forward_smoke_result', return_value={'reference': 'fixture', 'read_verified': True}),
+                patch.object(smoke, 'run_recovery_smoke', side_effect=recovery) as proof,
+            ):
+                runner.run_smoke(state)
+                callback = timer.timeout.connect.call_args.args[0]
+                for _ in range(20):
+                    callback()
+                    if hasattr(state, 'smoke_report'):
+                        break
+                proof.assert_called_once()
+                self.assertEqual(proof.call_args.kwargs['deadline'], 120)
+                state.app.exit.assert_called_once_with(0 if state.smoke_report['status'] == 'passed' else 1)
+            state.smoke_directory.cleanup()
+            return state.smoke_report, actions
+
+    def test_recovery_runs_after_join_before_walk_forward_uses_shared_budget(self):
+        report, actions = self._run_smoke()
+        self.assertEqual(report['status'], 'passed')
+        self.assertEqual(actions[actions.index('recovery') - 1], 'close')
+        self.assertLess(actions.index('recovery'), actions.index('ui_walk_forward_preview'))
+        self.assertEqual(len(report['steps']), 7)
+        self.assertEqual(len(report['walk_forward_smoke']['steps']), 3)
+        self.assertTrue(all(step['passed'] for step in report['steps']))
+        self.assertTrue(report['worker_completed'])
+        self.assertTrue(report['paper_completed'])
+
+    def test_earlier_recovery_does_not_extend_whole_smoke_deadline(self):
+        report, _ = self._run_smoke(tail=121)
+        self.assertEqual(report['status'], 'failed')
+        self.assertTrue(report['timed_out'])
+
+    def test_insufficient_budget_still_fails(self):
+        report, _ = self._run_smoke(before_walk_forward=85)
+        self.assertEqual(report['status'], 'failed')
+        self.assertEqual(report['recovery_helper_smoke']['status'], 'failed')
+
+
 if __name__ == '__main__':
     unittest.main()
