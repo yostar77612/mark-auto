@@ -211,3 +211,36 @@ shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
   unknown financial facts, and refresh both empty screenshot sizes.
 - Catalogue maximum stays2805; exactly two existing values change in a separate
   baseline commit. Root repeats actual startup/full checks after this head.
+
+## M2-0 / completed verification and owner follow-up — 2026-11-01T14:57+08:00
+
+- The owner's follow-up assigns the absent market-settings prerequisite to
+  this run and permits dependent implementation after its own green CI,
+  without a main merge. PR #129 reached all35 SUCCESS on run41279585267,
+  attempt2, exact2d8319b. M2-1/M2-2 now proceed in separate worktrees.
+  This supersedes the initial wait-for-merge decision; it does not enable
+  LIVE or authorize second-round automatic trading.
+- Final complete M2-0 discovery on unchanged97e2a8b: 3,888 tests in 2,380.898 s; FAILED (failures=10, errors=27, skipped=42).
+  No new failure identities; all actual traceback differences were reviewed.
+  Preserve the nonzero main-host result honestly. The initial new smoke-marker
+  failure passed on this complete unchanged retry; the separate incomplete
+  permission-loop attempt is excluded rather than called a pass.
+- Use normal user execution for later full suites after diagnosing the
+  restricted-run tempfile retry. Do not change test limits, Windows policy,
+  ACLs, application code or dependencies to hide that harness mistake.
+- Actual LOCAL and fake BROKER_SIMULATION windows returned0 and released their
+  owned resources. Source PR128 had35/35 CI success; final documentation-head
+  CI is verified separately before delivery. Evidence and limitations are in
+  docs/analysis/m2-policy/verification.md and its companion files.
+- This commit adds verification documentation only. No product/test/fixture
+  behavior, G3 source, SDK pin, PROJECT_STATE or acceptance score changes.
+
+
+## M2-6 / final policy evidence merge — 2026-11-01 Asia/Taipei
+
+- Normally merge the completed M2-0 verification documentation, preserving
+  both decision histories. No product, test, tool, catalogue or fixture content
+  changes from tested M2-6 source5285742. No history rewrite or main merge.
+- M2-6 actual LOCAL/fake-SIM startup checks already passed on5285742 with
+  clean normal release. Final branch full discovery is still scheduled after
+  the active M2-8 full suite; no focused/startup pass substitutes for it.
