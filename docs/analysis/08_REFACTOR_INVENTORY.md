@@ -288,7 +288,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/trading/ports/storage.py` | 30 | application | `quantlab/trading/ports/storage.py` | port／資料契約，不是服務實作；保留路徑；`Fence`，`quantlab/trading/ports/storage.py:10` |
 | `quantlab/trading/ports/tick_stream.py` | 38 | application | `quantlab/trading/ports/tick_stream.py` | port／資料契約，不是服務實作；保留路徑；`TickLoss`，`quantlab/trading/ports/tick_stream.py:9` |
 | `quantlab/trading/runtime/__init__.py` | 1 | composition | `quantlab/trading/runtime/__init__.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`quantlab/trading/runtime/__init__.py:1` |
-| `quantlab/trading/runtime/bootstrap.py` | 651 | composition | `quantlab/trading/runtime/bootstrap.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WallClock`，`quantlab/trading/runtime/bootstrap.py:26` |
+| `quantlab/trading/runtime/bootstrap.py` | 703 | composition | `quantlab/trading/runtime/bootstrap.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WallClock`，`quantlab/trading/runtime/bootstrap.py:26` |
 | `quantlab/trading/runtime/broker.py` | 353 | composition | `quantlab/trading/runtime/broker.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`_pairs`，`quantlab/trading/runtime/broker.py:31` |
 | `quantlab/trading/runtime/build.py` | 366 | composition | `quantlab/trading/runtime/build.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`SimulationClock`，`quantlab/trading/runtime/build.py:28` |
 | `quantlab/trading/runtime/config.py` | 360 | composition | `quantlab/trading/runtime/config.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`RuntimeLaunch`，`quantlab/trading/runtime/config.py:27` |
@@ -1824,19 +1824,19 @@ Measured spans: window.py655 lines (TradingWindow563, operation helper55); tradi
 ## M2-1 runtime composition readability exceptions
 
 These are measured current-source exceptions, not raised targets or claimed
-compliance. M2-1 extends the retained LOCAL/legacy-readonly host with shared
-SinoPac composition and explicit old-session retirement. The small final fix
+compliance. M2-1 and M2-2 extend the retained LOCAL/legacy-readonly host with shared
+SinoPac/manual composition and explicit old-session retirement. The small final fix
 initializes three internal flags and refuses re-entry after unknown logout;
 no guard, deadline, journal or financial caller changes.
 
 | Kind | Path / symbol | Current lines | Reason |
 | --- | --- | ---: | --- |
-| file | `quantlab/trading/runtime/bootstrap.py` | 651 | Retained three-environment composition, public-version durability and legacy/shared lifecycle admission; narrow split plan below. |
-| class | `bootstrap.py` / `RuntimeBundle` | 517 | One existing lifecycle lock, version journal and writer owner; keep shutdown/UNKNOWN semantics together during this safety handoff. |
-| function | `RuntimeBundle.__post_init__` | 55 | Ordered owner/store restoration and explicit lifecycle initialization. |
-| function | `RuntimeBundle.execute` | 66 | Existing public dispatch, short-lock scope and fail-closed legacy admission. |
+| file | `quantlab/trading/runtime/bootstrap.py` | 703 | Retained three-environment composition, public-version durability and legacy/shared lifecycle admission; narrow split plan below. |
+| class | `bootstrap.py` / `RuntimeBundle` | 561 | One existing lifecycle lock, version journal and writer owner; keep shutdown/UNKNOWN semantics together during this safety handoff. |
+| function | `RuntimeBundle.__post_init__` | 61 | Ordered owner/store restoration and explicit lifecycle initialization. |
+| function | `RuntimeBundle.execute` | 76 | Existing public dispatch, short-lock scope and fail-closed legacy admission. |
 | function | `RuntimeBundle._connect_worker` | 65 | Owned candidate validation, late-completion rejection and close ordering remain atomic in responsibility. |
-| function | `bootstrap.build_runtime` | 67 | Explicit LOCAL, pinned legacy profile and unified host composition share the existing lifecycle owner. |
+| function | `bootstrap.build_runtime` | 74 | Explicit LOCAL, pinned legacy profile and unified host composition share the existing lifecycle owner. |
 
 Required narrow split for the file over600: first move read-only public/market
 snapshot projection to a dedicated runtime projection helper, then the existing
