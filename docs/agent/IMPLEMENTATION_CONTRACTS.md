@@ -6674,5 +6674,6 @@ Cleanup errors remain failures, attempt remaining owned handles, and never
 authorize broad termination, other processes or data deletion. Load-probe partial
 initialization has the same normal shutdown and truthful failure reporting.
 Production lifecycle/ownership/security, broker gates, deadlines and applicability
-are unchanged. Exact focused and pending controller evidence is recorded in
+are unchanged. Exact focused, complete-run comparison and actual-window evidence,
+including retained first-run failure and pending CI, is recorded in
 docs/design/m2-8-verification.md.

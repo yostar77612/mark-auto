@@ -109,5 +109,94 @@ or shut down. Candidate/log details remain local-only under `.tmp`.
 After this result the controller resumed its serial full-suite queue. No further
 engine/native test run was attempted. Source implementation remains commit
 `38da68dc1823aa5d070548e0804f29dbba8eb25d`; this evidence update is documentation
-only. Branch full-suite comparison, final actual startup and all-green CI remain
-controller-scheduled and must be verified separately before delivery.
+only. Subsequent controller evidence follows; all-green CI remains pending.
+
+## Complete discovery and retained smoke failure
+
+Both branch runs used source `8f03a9905c337680f2f963ba284bed5bf3638bcb`.
+The comparison baseline is main `045313634a6fe4c33aeacfc972182d00e83cd58e`.
+
+| Complete run | Tests | Seconds | Failures | Errors | Existing skips | New failure IDs versus main |
+|---|---:|---:|---:|---:|---:|---:|
+| Main | 3888 | 1968.015 | 10 | 27 | 42 | Baseline |
+| M2-8 first | 3909 | 1945.460 | 11 | 22 | 42 | 1 |
+| M2-8 unchanged retry | 3909 | 1487.114 | 10 | 22 | 42 | 0 |
+
+These are failed local suites, not all-green acceptance. The first NEW identity,
+`test_desktop_smoke_terminal.GenericSmokeTerminalProcessTests.test_success_publishes_once_only_after_verified_cleanup`,
+remains retained. It reached the unchanged 40-second outer capture deadline
+while WFO preview was pending; no WFO run or final report had started. The
+timeout artifact verified all 11 recorded workers stopped, no report writes,
+and no cleanup error. Cumulative stage latency is observed, but its underlying
+cause is unproven; unchanged source does not waive a newly observed failure.
+
+After the controller paused indexing and process-heavy work, the exact unchanged
+case ran sequentially: main passed in 15.027s, then M2-8 passed in 13.915s, both
+exit 0. Original cleanup, single publication, 22 evaluation and 63 save assertions
+remained. This does not establish full-order independence or erase the first run.
+
+The unchanged retry began at 15:33 Asia/Taipei. Its smoke-sensitive prefix was
+quiescent and the previously new case passed. After that prefix, the controller
+allowed one other-worktree index and small Qt/metadata checks during later tests.
+Only the prefix was isolated; the whole retry was not background-free.
+
+## Raw traceback and cause comparison
+
+The retry contains 31 distinct failed identities and 32 traceback blocks (one
+subtest adds a second block). Absolute-path-aware review found 30/32 identical
+ordered frame sequences, 32/32 identical exception type chains and 15/16
+referenced repository blobs identical to main. The two frame differences are
+line offsets in the intentionally changed installer cleanup fixture; both stop
+at the same original preexisting-lifetime assertion. Type/ID matches alone are
+not cause equivalence. Reviewed raw differences are:
+
+| Blocks | Observation relative to main |
+|---:|---|
+| 20 | Same symlink creation WinError 1314; generated temporary/archive paths differ. |
+| 1 | Same repeated WinError 32 on the retained research worker log; temporary path differs. |
+| 1 | Same native-versus-launcher PID assertion, with different PID values. Subsequent SQLite cleanup differs: retry WinError 5 on `.sqlite-shm`, main WinError 32 on `.sqlite`. These cleanup causes are not identical. |
+| 3 | Nonzero mutex handle value differs in one case; two cases have the exact preexisting-app-lifetime assertion. No installer fixture begins in those two cases. |
+| 4 | Same paper-probe return 1/no completed diagnostic, missing `error_type` or return-code assertions; paths, PIDs and timings differ. Those records do not independently prove the child exit cause. |
+| 3 | Same Errno 6 receiving a retained grandchild handle, followed by the same unconfirmed cooperative-cleanup assertion. |
+
+Five main failure IDs are absent in the retry: four RuntimeContextClientTests
+cases and IndependentEngineRuntimeTests.setUpClass. This is observed comparison,
+not a claim that all host failures were fixed. Sanitized per-block identities,
+meaningful WinError differences and raw-log SHA256 values are retained in
+[m2-8-full-comparison.json](m2-8-full-comparison.json). Raw local logs and the
+original smoke artifact remain available to the controller; user paths, generated
+PIDs and report dictionaries are excluded from the committed artifact.
+
+## Actual window startup
+
+Controller result JSONs under the disposable launch-probe directory
+`.tmp/m2-8-8f03a99/{local,broker}/result.json` identify the same source head above.
+Both use the real `_run_window`, TradingWindow and runtime composition, render
+seven embedded research pages and 2726 widgets at 780x720, return 0, release the
+research session and shut down the owned engine normally, with no errors.
+
+| Mode | Seconds | Broker evidence |
+|---|---:|---|
+| LOCAL | 8.831 | No real SDK import. |
+| BROKER_SIMULATION | 6.087 | Actual authenticated named-pipe server in an owned thread; fake login/logout 1/1, two subscriptions, zero order constructors/orders, no real SDK import. |
+
+These checks establish startup/render/normal-cleanup behavior for these fixtures;
+they do not establish real broker login, CA or order acceptance. The local native
+installer precondition limitation above remains. GitHub CI is pending and must
+be recorded by the controller after push. No formal acceptance score changed.
+
+## Documentation finalization audit
+
+`python -B -m unittest discover -s tests -p test_docs_layering.py -v` passed
+all eight checks in 0.973s using the provisioned root venv with `PYTHONUTF8=1`.
+`git diff --check` passed. All 1169 tracked non-documentation checkout files
+retain their task-entry SHA256 bytes, and the non-documentation diff against
+tested source `8f03a99` is empty. No full, native, Qt or engine test was rerun
+for this documentation commit. The controller owns subsequent integration,
+push and CI; no later main merge is implied by these source-specific results.
+After the coordinator released the graph slot, a single-worker local refresh
+indexed the new evidence sections. Final all/staged change checks each report
+four documentation files, 11 sections, zero affected processes and LOW risk,
+without error, partial or truncation flags. Standard whole-index candidate,
+cross-language and flow-budget warnings remain in the local log; absent graph
+flows are not used as proof about product behavior.

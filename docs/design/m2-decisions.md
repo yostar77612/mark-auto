@@ -95,3 +95,19 @@ those non-fixture processes, use a different mutex, add a skip, or claim native
 acceptance passed. No further engine tests run while the controller resumes
 the next full suite. Details and pending full/startup/CI evidence are in
 [m2-8-verification.md](m2-8-verification.md).
+
+## M2-8 — 2026-11-01 complete-run evidence boundary
+
+Retain the first complete run's NEW positive-smoke timeout as a real failure,
+even though the exact unchanged case subsequently passes sequentially on main
+(15.027s) and M2-8 (13.915s). The unchanged full retry completes 3909 tests in
+1487.114s with 10 failures, 22 errors, 42 existing skips and no new failed IDs
+versus main. Only its smoke-sensitive prefix was quiescent; other-worktree index
+and small Qt/metadata checks resumed later. Do not claim full-run isolation,
+prove a latency cause from correlation, raise deadlines or label the first
+failure a waived flake. Raw review retains the E06 cleanup WinError/path
+difference even though exception types and failed IDs match. Normal actual
+LOCAL/fake-SIM startup passes at the same source head are independent evidence;
+they do not turn failed native-host suites into acceptance. Commit only reviewed,
+sanitized evidence and documentation; leave executable/test/tool bytes unchanged
+from `8f03a9905c337680f2f963ba284bed5bf3638bcb`. Controller owns push and CI.
