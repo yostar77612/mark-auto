@@ -1939,3 +1939,8 @@ Include the final report itself in the final CI head and use live PR Checks
 as the handoff gate. Earlier literal head/run/status rows are historical
 snapshots. Do not create another cosmetic commit merely to copy a green badge
 back into a report and restart validation. No second-round work or main merge.
+
+Final metadata observes an external merge of #130 at2026-11-01T20:34:42Z
+and #131 retargeted to main. Record that actor boundary in the report and
+describe four delivery PRs rather than four open PRs. No main merge was
+performed by this agent; all runtime/test/fixture blobs remain unchanged.

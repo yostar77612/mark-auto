@@ -2,7 +2,7 @@
 
 ## 最新補正驗證與交付基準（2026-11-02T04:43+08:00）
 
-功能範圍已全部完成；交付須以四個開放 PR 最新 Head 的全部適用 CI 成功為準。
+功能範圍已全部完成；交付須以四個交付 PR 最新 Head 的全部適用 CI 成功為準。
 此段取代下方較早的 Head／CI 快照；舊失敗、重跑與原始來源記錄均保留。
 本報告本身包含在最後提交的 CI 中，因此最終綠燈以每列 Checks 連結為準。
 
@@ -10,10 +10,13 @@
 | --- | --- | --- | --- |
 | 行情設定 #129 | 34673c2／2d8319b（他人已合併） | 3893 項、2094.353s；無新增失敗；既錄 LOCAL／fake SIM 啟動 | [35/35 成功](https://github.com/yostar77612/mark-auto/pull/129/checks) |
 | M2-0 #128 | 66c3957／e7e3e13（他人已合併） | 3888 項、2380.898s；無新增失敗；既錄兩種啟動 | [35/35 成功](https://github.com/yostar77612/mark-auto/pull/128/checks) |
-| M2-8 #130 | 5906460／8b55c3d | 3916 項、1422.446s；LOCAL5.692s／fake SIM3.718s | [35/35 成功；run41345845844](https://github.com/yostar77612/mark-auto/pull/130/checks) |
+| M2-8 #130 | 5906460／8b55c3d（外部已合併） | 3916 項、1422.446s；LOCAL5.692s／fake SIM3.718s | [35/35 成功；run41345845844](https://github.com/yostar77612/mark-auto/pull/130/checks) |
 | M2-6 #131 | b39af9c／58a233a | 3943 項、1456.190s；LOCAL5.496s／fake SIM3.557s | [最新版本 CI 為必要交付檢查；run41348100137](https://github.com/yostar77612/mark-auto/pull/131/checks) |
 | M2-1 #132 | b605466／d2c11f2 | 4005 項、1426.235s；原有三項真實視窗啟動來源不變 | [離線全工作流程重跑及安裝驗證](https://github.com/yostar77612/mark-auto/pull/132/checks) |
 | M2-2 #136 | 7d72c5f／本報告所屬最後文件提交 | 4125 項、1442.544s；原有三項啟動／功能流程來源不變 | [最後報告版本須全綠後交付](https://github.com/yostar77612/mark-auto/pull/136/checks) |
+
+外部已於2026-11-01T20:34:42Z合併#130，#131目前base為main；本代理未執行該合併。
+其餘合併狀態及CI以PR頁面為準，下面保留已驗證來源。
 
 上述最新四個實作來源的本機完整結果均為10F22E42既有skip，屬非零結果，
 不是宣稱本機全數通過。每次全部32筆／31個失敗身份的實際原因逐項與原main0453136
@@ -43,7 +46,7 @@ M2-1 d2c11f2的所有非docs內容與完整驗證的b605466逐位元相同；對
 58a233a做真正三方merge-tree可無衝突，合併後所有非docs內容仍相同。保留此版本
 的安裝驗證持續執行。M2-2正常合入M2-1及最新上游證據，所有非docs內容仍等同
 已完整測試且實際啟動的7d72c5f；不因文件重組重跑相同程式的本機全測。
-最終報告提交仍實際跑完整遠端CI。全部正常merge，沒有rebase、force或main合併。
+最終報告提交仍實際跑完整遠端CI。本代理只執行正常merge，未rebase、force或合併到main。
 
 另保留 #132 run41344493949 attempt1：Linux3.11 Qt原生程序在
 `CommandPalette.populate` line99（toggle137，原測試264）崩潰，exit139；另三個
