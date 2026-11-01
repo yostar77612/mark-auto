@@ -212,6 +212,39 @@ shell `theme`; strings `m2_trading`, `catalog`, `translation_parts`;
 - Catalogue maximum stays2805; exactly two existing values change in a separate
   baseline commit. Root repeats actual startup/full checks after this head.
 
+## M2-0 / completed verification and owner follow-up — 2026-11-01T14:57+08:00
+
+- The owner's follow-up assigns the absent market-settings prerequisite to
+  this run and permits dependent implementation after its own green CI,
+  without a main merge. PR #129 reached all35 SUCCESS on run41279585267,
+  attempt2, exact2d8319b. M2-1/M2-2 now proceed in separate worktrees.
+  This supersedes the initial wait-for-merge decision; it does not enable
+  LIVE or authorize second-round automatic trading.
+- Final complete M2-0 discovery on unchanged97e2a8b: 3,888 tests in 2,380.898 s; FAILED (failures=10, errors=27, skipped=42).
+  No new failure identities; all actual traceback differences were reviewed.
+  Preserve the nonzero main-host result honestly. The initial new smoke-marker
+  failure passed on this complete unchanged retry; the separate incomplete
+  permission-loop attempt is excluded rather than called a pass.
+- Use normal user execution for later full suites after diagnosing the
+  restricted-run tempfile retry. Do not change test limits, Windows policy,
+  ACLs, application code or dependencies to hide that harness mistake.
+- Actual LOCAL and fake BROKER_SIMULATION windows returned0 and released their
+  owned resources. Source PR128 had35/35 CI success; final documentation-head
+  CI is verified separately before delivery. Evidence and limitations are in
+  docs/analysis/m2-policy/verification.md and its companion files.
+- This commit adds verification documentation only. No product/test/fixture
+  behavior, G3 source, SDK pin, PROJECT_STATE or acceptance score changes.
+
+
+## M2-6 / final policy evidence merge — 2026-11-01 Asia/Taipei
+
+- Normally merge the completed M2-0 verification documentation, preserving
+  both decision histories. No product, test, tool, catalogue or fixture content
+  changes from tested M2-6 source5285742. No history rewrite or main merge.
+- M2-6 actual LOCAL/fake-SIM startup checks already passed on5285742 with
+  clean normal release. Final branch full discovery is still scheduled after
+  the active M2-8 full suite; no focused/startup pass substitutes for it.
+
 ## Market-settings prerequisite fix / owner steering — 2026-11-01 Asia/Taipei
 
 The owner explicitly assigned the three installed 0.3.0 market regressions in
@@ -363,6 +396,29 @@ refresh completed; complete change analysis reported 10 document symbols,
 12 evidence files and LOW risk with no partial/truncation flag. No graph
 absence is used to waive tests or the full-run native-cause limits above.
 
+## M2-6 / first complete-run corrections and cleanup prerequisite
+
+Retain the first complete run's 3914/1638.307s, 14 failures, 27 errors and 42
+existing skips as FAILED, including all four new identities. Replace the real
+page-boundary violation with an explicit owned trading-page argument; do not
+relax the original no-parent/shell-discovery test or move that lookup elsewhere.
+The established page-3 contract is checked in a real widget regression that
+separately supplies a page different from the layout owner.
+
+Commit that source correction with the normal pinned-main `67249dc` merge as
+`f98d98c`, then independently update the three feature-caused visible-label test
+references. Preserve all identity/finance/repaint assertions and add exact original
+full-warning help/accessibility checks. No catalogue value, historical fixture,
+skip, cap or timeout is changed to hide a failure. Source and exact text-baseline
+changes remain separate commits.
+
+Normally integrate final M2-8 `fdfde06` as the next test-cleanup prerequisite,
+retaining its seven source/test/tool blobs exactly. Delivery dependency becomes
+M2-8 → M2-6 → M2-1 → M2-2; root runs one new final-composite M2-6 full suite and
+actual startup serially after M2-8. Prior runs keep their original source IDs.
+No real key, CA, broker operation, installed-app control or git-history rewrite
+is performed. Detailed focused evidence and the retained first-run comparison
+are in [M2-6 verification](../analysis/m2-trading/verification.md).
 
 ## M2-8 — 2026-11-01 13:09 Asia/Taipei
 
@@ -727,39 +783,6 @@ remain unchanged. Its named helper impact is CRITICAL (45 upstream sites,
 waived by the graph's shared-name/dynamic gaps. Final backend accounts_unavailable
 and callback_failed reasons map to existing Chinese next-step copy, with explicit
 unknown-readiness tests; no new catalogue records were needed.
-## M2-0 / completed verification and owner follow-up — 2026-11-01T14:57+08:00
-
-- The owner's follow-up assigns the absent market-settings prerequisite to
-  this run and permits dependent implementation after its own green CI,
-  without a main merge. PR #129 reached all35 SUCCESS on run41279585267,
-  attempt2, exact2d8319b. M2-1/M2-2 now proceed in separate worktrees.
-  This supersedes the initial wait-for-merge decision; it does not enable
-  LIVE or authorize second-round automatic trading.
-- Final complete M2-0 discovery on unchanged97e2a8b: 3,888 tests in 2,380.898 s; FAILED (failures=10, errors=27, skipped=42).
-  No new failure identities; all actual traceback differences were reviewed.
-  Preserve the nonzero main-host result honestly. The initial new smoke-marker
-  failure passed on this complete unchanged retry; the separate incomplete
-  permission-loop attempt is excluded rather than called a pass.
-- Use normal user execution for later full suites after diagnosing the
-  restricted-run tempfile retry. Do not change test limits, Windows policy,
-  ACLs, application code or dependencies to hide that harness mistake.
-- Actual LOCAL and fake BROKER_SIMULATION windows returned0 and released their
-  owned resources. Source PR128 had35/35 CI success; final documentation-head
-  CI is verified separately before delivery. Evidence and limitations are in
-  docs/analysis/m2-policy/verification.md and its companion files.
-- This commit adds verification documentation only. No product/test/fixture
-  behavior, G3 source, SDK pin, PROJECT_STATE or acceptance score changes.
-
-
-## M2-6 / final policy evidence merge — 2026-11-01 Asia/Taipei
-
-- Normally merge the completed M2-0 verification documentation, preserving
-  both decision histories. No product, test, tool, catalogue or fixture content
-  changes from tested M2-6 source5285742. No history rewrite or main merge.
-- M2-6 actual LOCAL/fake-SIM startup checks already passed on5285742 with
-  clean normal release. Final branch full discovery is still scheduled after
-  the active M2-8 full suite; no focused/startup pass substitutes for it.
-
 ## M2-1 / explicit unified broker startup identity — 2026-11-01
 
 Static review of the prepared actual-startup probe found a genuine entry-path
@@ -1051,3 +1074,79 @@ in the changed catalogue-count test. Normalizing to the repository LF rule
 leaves its sole Git difference2878→2950. The repeated static pre-push passed:
 Ruff lint, formatting1166files, Python3.11 syntax1082trackedfiles and the
 unchanged quality gate with zero findings.
+
+## M2-8 — 2026-11-01 complete-run evidence boundary
+
+Retain the first complete run's NEW positive-smoke timeout as a real failure,
+even though the exact unchanged case subsequently passes sequentially on main
+(15.027s) and M2-8 (13.915s). The unchanged full retry completes 3909 tests in
+1487.114s with 10 failures, 22 errors, 42 existing skips and no new failed IDs
+versus main. Only its smoke-sensitive prefix was quiescent; other-worktree index
+and small Qt/metadata checks resumed later. Do not claim full-run isolation,
+prove a latency cause from correlation, raise deadlines or label the first
+failure a waived flake. Raw review retains the E06 cleanup WinError/path
+difference even though exception types and failed IDs match. Normal actual
+LOCAL/fake-SIM startup passes at the same source head are independent evidence;
+they do not turn failed native-host suites into acceptance. Commit only reviewed,
+sanitized evidence and documentation; leave executable/test/tool bytes unchanged
+from `8f03a9905c337680f2f963ba284bed5bf3638bcb`. Controller owns push and CI.
+
+## M2-8 — latest-main normal integration
+
+Merge main `67249dc126423212bbcced2048992c4c50a1be48` normally into the M2-8
+branch, preserving all market, policy and cleanup decision/contract blocks.
+Keep every inherited source/test/baseline blob exact; resolve only appended
+documentation, with no rebase, source rewrite or new baseline change. The
+result combines separately tested sources and needs new full discovery and
+actual startup at the final head. Preserve earlier failed-run evidence under
+its original `8f03a99` scope; do not present it as final composite acceptance.
+Controller serializes native/engine/full validation after M2-6 completes.
+
+## M2-1 / source-identical M2-8 documentation integration and startup
+
+Normally merge final M2-8 `fdfde06` into M2-1 `8d98564`, retaining every M2-1,
+M2-6, policy, market and cleanup decision/contract section. Resolve only the two
+documentation conflicts. All 1202 non-documentation checkout byte hashes and
+all non-documentation Git blobs remain identical to `8d98564`; no fixture or
+source change is introduced. Review and sanitize the three actual startup result
+JSONs, retaining their original source identity, guard/cleanup facts and explicit
+resource_calls=0 limitation. Their source-equivalent applicability is stated;
+they are not falsely described as rerun on the new documentation commit. Full
+discovery and current-head CI remain separate coordinator gates. No engine,
+native lifetime, Qt or startup test is executed for this documentation merge.
+
+## M2-6 / exact cleanup inheritance and two runtime copy oracles
+
+Normal merge `dc58096` preserves all seven M2-8 source/test/tool files exactly.
+Only afterward apply a separately authorized presentation-baseline delta to
+two RuntimeContextClientTests cases: expect the existing short facts-pending
+label, while retaining the complete original warning and its no-empty-exposure
+meaning in actual help/accessibility assertions. Their prior startup-PID errors
+had hidden these body assertions. Real SIM/LIVE widget surrogates reproduce the
+old expectation failure and verify the corrected text plus unknown financial
+facts and zero commands. Do not claim the native IPC bodies were rerun alongside
+the active M2-8 full suite. Preserve every other context/finance/ownership and
+no-engine-creation assertion and all cleanup behavior; no cap, skip, timeout or
+catalogue change. Stop the audit after all actual changed-copy references are
+accounted for. Final full discovery/startup/CI remain root's serialized gates.
+
+## M2-1 / inherit the final M2-6 full-suite corrections
+
+Normally merge M2-6 `4fd1f6e` into M2-1. Only six non-documentation paths
+change: the explicit trading page owner, its real Qt regression and five
+feature-specific visible-label oracles (four test files). Preserve full help,
+unknown financial facts, ownership and no-implicit-connection assertions. All
+other source/test/tool blobs remain the exact M2-1 parent; workspaces retains
+its connection wiring plus only the explicit page argument. The runtime test
+retains M2-1s existing programmatic legacy command after its obsolete button was
+removed; this merge adds only the two reviewed short-copy/full-help changes.
+Resolve three doc conflicts additively and remove only two exactly duplicated
+decision sections. Exact blob audit covers1215 non-doc paths using NUL-delimited
+Git paths, including non-ASCII filenames.
+
+Pre-merge install/helper impacts resolve the build caller at LOW risk (3/2
+nodes, one flow); unchanged test methods are unittest-discovered boundaries,
+not unused code when no callers resolve. The84 affected Qt, connection, page
+boundary, document and layer tests pass in29.786s. Prior M2-1 startup evidence
+remains source-specific. New complete discovery and actual startup follow on
+this composite; no old full/startup evidence is relabeled.

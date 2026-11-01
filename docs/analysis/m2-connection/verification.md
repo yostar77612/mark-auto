@@ -201,3 +201,69 @@ The source commit's complete all/staged graph checks both returned23 symbols
 across10 files/eight affected flows, HIGH, with no empty IDs, partial or truncated
 results. Python3.11 compilation and changed-file Ruff checks passed. Actual
 window/IPC startup and complete-source validation remain coordinator gates.
+
+## Actual unified connection startup — source 8d98564
+
+The final source head is `8d985640f51646938248726215544611a2cf09b5`.
+The coordinator ran the actual `_run_window` with the provisioned private
+SQLite interpreter, `-B -S`, repository/tests and existing venv site packages,
+offscreen Qt, disposable trading/research roots and injected fake ports.
+
+| Path | Result | Time | Observed composition |
+| --- | --- | --- | --- |
+| LOCAL | return0 |6.205s| Real original LOCAL child;7 research pages;2727 widgets |
+| LOCAL → save/connect → account Space selection → explicit SIM navigation | return0 |6.756s| Original LOCAL child plus owned fake SIM server thread;7 pages;2728 widgets |
+| Direct `_run_window(environment=BROKER_SIMULATION)` after natural owner connect/select/persist | return0 |3.937s| Reused registered unified host;7 pages;2728 widgets |
+
+The UI transition retained the LOCAL book and selector after connection and
+account selection; only explicit navigation selected SIM. Each SIM path used
+one fake constructor/login/logout and one fake key lookup, two quote subscriptions,
+zero CA calls, zero order constructions and zero order calls. No real SDK was
+imported. LOCAL used zero SDK factories, secret reads or broker operations.
+
+The real LOCAL child remained the original process entry; a same-interpreter
+guard handshake preceded it, and its own startup/exit audit confirmed all forbidden
+SDK/key/CA/order seams stayed blocked. Every retained owned child exited normally;
+every owned fake server thread joined and its endpoint disappeared. The research
+session released normally. No owner-installed process was controlled.
+
+The fake broker host is an owned `Thread(serve)` using natural factory/secrets/
+resource ports and authenticated IPC, not a broker subprocess-boot test. Both
+SIM snapshots truthfully retain unknown/unverified financial facts and a
+DISCONNECTED book while the connection is CONNECTED. `resource_calls=0` is
+recorded; these startup observations do not prove generated-resource validation
+or execution readiness. Those have independent fake tests. No actual key trading
+permission, service availability, CA behavior or broker account was verified.
+
+Raw result paths are coordinator scratch `.tmp-m2-qa/startup-1-8d98564/`
+`local-1/result.json`, `broker-1/result.json`, and `direct-broker-1/result.json`.
+Copy only reviewed sanitized evidence to this PR's verification directory.
+Full suite and current-head remote CI remain independent delivery gates.
+
+Reviewed sanitized results: [LOCAL](startup-local-8d98564.json),
+[LOCAL-to-SIM UI flow](startup-ui-broker-8d98564.json), and
+[direct SIM](startup-direct-broker-8d98564.json). Each includes the raw result's
+SHA256 and states exactly which private paths/PIDs were omitted.
+
+## Documentation integration after startup
+
+The normal merge takes M2-8 `fdfde06f66fb65271af80ac4fb29f4dd362ca91e` into
+M2-1 `8d985640f51646938248726215544611a2cf09b5`. Both contract/decision document
+conflicts preserve the M2-1, M2-6, policy, market and M2-8 sections; no executable,
+test, tool or fixture changes occur. All 1202 non-documentation checkout
+byte hashes remain identical to the pre-merge M2-1 source, and the non-doc staged
+diff against `8d98564` is empty. The actual startup results above retain their
+original `8d98564` identity and are applicable by this explicit source equivalence;
+no prior focused tests are relabeled as freshly run on the documentation head.
+Complete discovery and current-head remote CI are still PENDING coordinator
+execution. M2-8's older full results remain attributed to their own source.
+
+Documentation-only checks after resolution used the provisioned root venv,
+`PYTHONUTF8=1`, and `-B -m unittest discover -s tests -p <module> -v`:
+`test_docs_layering.py` passed eight tests in 0.736s; `test_repo_layout.py` passed
+29 in 1.579s, both exit 0. No actual engine, native lifetime, Qt or startup test
+was rerun for this merge. Final complete graph checks precede the merge commit.
+The refreshed all/staged graph results each cover eight documentation files and
+18 sections, LOW risk, zero affected processes, no error/partial/truncation flags
+and no empty IDs. Global index candidate/trace limits remain recorded locally;
+no product safety conclusion relies on absent graph edges.
