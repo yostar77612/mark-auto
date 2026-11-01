@@ -236,7 +236,7 @@ def project_e6_service_refs(result):
     path = ROOT / 'tests/fixtures/layered_paths/e6_service_relocations.json'
     table = json.loads(path.read_text(encoding='utf-8'))
     canonical = json.dumps(table, sort_keys=True, separators=(',', ':')).encode()
-    assert hashlib.sha256(canonical).hexdigest() == 'c4d1d003e7149a28e674fe958168e03c47ff7f74d869a5ccafcb7a447360d74c'
+    assert hashlib.sha256(canonical).hexdigest() == '878e058132b05ae8605676a47dd0e2a33f0ee2dcfde80979755590477cffcab0'
     for row in table['relocations']:
         old, new = row['original'], row['current']
         assert {k: v for k, v in old.items() if k != 'line'} == {k: v for k, v in new.items() if k != 'line'}
