@@ -10,8 +10,13 @@ or present unverified work as passed. Formal acceptance remains 230/300 in
 
 ## Safety and ownership
 
-Live trading is permanently disabled. Do not add a real order-placing path or
-broker import. Never loosen fail-closed gates, OOS one-time consumption,
+Production orders disabled by default: future enablement requires a separate,
+explicit owner decision. Under the owner's 2026-11-01 decision D1, M2 must keep
+production orders hard-disabled; there is no UI or configuration opt-in for LIVE.
+SinoPac broker-simulation orders are authorized for later M2 implementation and
+verification, not enabled by this policy update. The v1 research/Paper real-order
+prohibition remains permanent. Do not add a production order path or bypass the
+existing controlled SDK import boundary. Never loosen fail-closed gates, OOS one-time consumption,
 irreversible budgets or timeouts (Paper 30 s, smoke 40 s, 15 min per research job).
 Failures, cancellation and unknown outcomes do not refund consumed budget.
 OUT-OF-SAMPLE and FINAL-HOLDOUT data must never enter AI conversations, tool
@@ -72,9 +77,13 @@ conceal behavior changes.
 The separate `quantlab/trading` and `desktop_app/features/trading` platform is governed by
 [the v2 upgrade contract](implementation/multi-market/UPGRADE_CONTRACT.md).
 The owner authorized its controlled connector implementation and necessary
-engineering upgrades. The permanent live prohibition above remains the v1
-contract; it is not silently removed. V2 defaults to local simulation and its
-broker connector remains disconnected/read-only/execution-disabled. This mission
+engineering upgrades. The v1 research/Paper real-order prohibition remains
+permanent. The owner's 2026-11-01 D1 decision supersedes the earlier permanent
+product-wide prohibition for v2: production orders are disabled by default and
+remain hard-disabled throughout M2; future enablement is separate owner-approved
+work. Only SinoPac broker-simulation orders are authorized by M2, for subsequent
+M2-2 implementation and verification. V2 defaults to local simulation and its
+current broker connector remains disconnected/read-only/execution-disabled. This mission
 does not authorize real financial operations, credential discovery, remote pushes,
 merges or releases. Preserve all historical v1 profiles, results and safeguards.
 Run the additional AST layer gate and v2 behavior tests alongside existing gates.

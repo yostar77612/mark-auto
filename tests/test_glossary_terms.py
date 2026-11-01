@@ -165,8 +165,16 @@ class GlossaryTermTests(unittest.TestCase):
     def test_live_disabled_catalog_bytes(self):
         # Independent pre-U11 UTF-8 digests pin the entire messages, not just a
         # permissive "disabled" substring. Also reject unreviewed extra messages.
-        expected = LIVE_DISABLED_SHA256
-        actual = {key: sha256(text.encode('utf-8')).hexdigest() for key, text in strings.ZH_TW.items() if '實盤' in text or 'live trading' in text.casefold()}
+        # Owner D1 (2026-11-01) changes only the two equivalent banner records;
+        # retain their historical hashes below and every other message exactly.
+        banner_keys = ('ui.init.research_mode_banner', 'header.live_disabled')
+        banner_sha256 = '4cf629db795c99398b31c137973bd134f6c685d2324ddcdfff1504594ce1d51b'
+        expected = LIVE_DISABLED_SHA256 | dict.fromkeys(banner_keys, banner_sha256)
+        actual = {
+            key: sha256(text.encode('utf-8')).hexdigest()
+            for key, text in strings.ZH_TW.items()
+            if '實盤' in text or 'live trading' in text.casefold() or key in banner_keys
+        }
         self.assertEqual(actual, expected)
 
 

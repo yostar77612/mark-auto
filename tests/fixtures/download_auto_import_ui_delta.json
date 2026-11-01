@@ -655,7 +655,7 @@
           "row": {
             "file": "tests/test_r7_characterization.py",
             "kind": "setattr",
-            "line": 73,
+            "line": 74,
             "name": "_busy",
             "receiver": "shell"
           },
@@ -665,7 +665,7 @@
           "row": {
             "file": "tests/test_r7_characterization.py",
             "kind": "setattr",
-            "line": 73,
+            "line": 74,
             "name": "_safe",
             "receiver": "shell"
           },

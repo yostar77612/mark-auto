@@ -30,6 +30,7 @@ BASE = json.loads((ROOT / 'tests/fixtures/r7_base.json').read_text(encoding='utf
 REDESIGN = json.loads((ROOT / 'tests/fixtures/ui_redesign_characterization_delta.json').read_text(encoding='utf-8'))
 AUTO_IMPORT = json.loads((ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))
 M1_UI = json.loads((ROOT / 'tests/fixtures/m1_u_ui_delta.json').read_text(encoding='utf-8'))
+M2_POLICY = json.loads((ROOT / 'tests/fixtures/m2_policy_text_delta.json').read_text(encoding='utf-8'))
 
 
 def semantic_rows(rows):
@@ -133,7 +134,9 @@ class CharacterizationTests(unittest.TestCase):
         for index, (actual, historical) in enumerate(zip(self.actual['window']['states'], BASE['window']['states'])):
             self.assertEqual(
                 semantic_rows(actual),
-                reviewed_ui_rows(historical, REDESIGN['refresh_states'], AUTO_IMPORT['refresh_states'], M1_UI['refresh_states'][index]),
+                reviewed_ui_rows(
+                    historical, REDESIGN['refresh_states'], AUTO_IMPORT['refresh_states'], M1_UI['refresh_states'][index], M2_POLICY['refresh_states']
+                ),
                 index,
             )
 
@@ -142,7 +145,8 @@ class CharacterizationTests(unittest.TestCase):
         # every historical semantic row except the explicit UI-only delta;
         # test_accessibility_walk checks the new real keyboard traversal order.
         self.assertEqual(
-            semantic_rows(self.actual['window']['focus']), reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus'], AUTO_IMPORT['focus'], M1_UI['focus'])
+            semantic_rows(self.actual['window']['focus']),
+            reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus'], AUTO_IMPORT['focus'], M1_UI['focus'], M2_POLICY['focus']),
         )
 
     def test_reviewed_refresh_delta_changes_only_layout_controls_and_captions(self):
