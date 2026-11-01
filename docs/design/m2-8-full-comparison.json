@@ -55,37 +55,442 @@
   ],
   "sanitization": "No absolute user paths, generated PIDs, credentials, raw report dictionaries or user workspace contents copied. Test identities and meaningful WinError differences retained.",
   "records": [
-    {"id":"test_analysis_recovery.RecoveryLedgerTests.test_links_hardlinks_and_oversize_are_rejected","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_automatic_backup.AutomaticBackupTests.test_managed_hardlink_and_success_symlink_are_rejected","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata","kind":"ERROR","subtest":"(name='markauto-<generated>-linked.zip', kind='symlink')","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata","kind":"ERROR","subtest":"(name='orphan.zip.tmp', kind='symlink')","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_automatic_backup.AutomaticBackupTests.test_unsafe_destinations_do_not_write_config","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_chatgpt_auth.AuthTests.test_dpapi_rejects_dangling_links_and_junction_lstat_attributes","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_chatgpt_auth.AuthTests.test_first_use_guard_rejects_prior_host_control_and_partial_vault_evidence","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_downloads.DownloadTests.test_failure_preserves_latest_and_refuses_symlink","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_market.MarketTests.test_cache_rejects_symlink","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_market_history.HistoryBoundaryTests.test_cache_tamper_symlinks_and_bad_policy","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_market_history.HistoryTests.test_cache_tamper_symlinks_and_bad_policy","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_notice_collector.ZipCollectorTests.test_dangling_source_parent_fails","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_notice_collector.ZipCollectorTests.test_destination_file_symlink_fails_preserves_target","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_notice_collector.ZipCollectorTests.test_destination_parent_symlink_fails","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_notice_collector.ZipCollectorTests.test_source_file_symlink_fails","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_notice_collector.ZipCollectorTests.test_source_parent_symlink_fails","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_qt_licenses.QtLicenseTests.test_destination_symlink_preserves_target","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_qt_licenses.QtLicenseTests.test_payload_directory_symlink_fails_before_audit","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_qt_licenses.QtLicenseTests.test_source_symlink_and_simulated_junction_fail","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_reporting.ReportingTests.test_symlink_output_refused","kind":"ERROR","subtest":"","category":"symlink_privilege_1314","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["1314"],"main_winerrors":["1314"]},
-    {"id":"test_test_group.ParallelResearchGroupTests.test_native_windows_natural_parent_exit_with_descendant_cannot_pass","kind":"ERROR","subtest":"","category":"native_worker_cleanup_file_lock","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["32","32"],"main_winerrors":["32","32"]},
-    {"id":"test_trading_acceptance_combinations.AcceptanceCombinationTests.test_e06_parent_os_kill_before_submit_and_after_remote_accept_preserves_unknown","kind":"ERROR","subtest":"","category":"crash_driver_pid_mismatch","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":["5","5"],"main_winerrors":["32","32"]},
-    {"id":"test_desktop_runtime.WindowsRuntimeTests.test_installer_mutex_lifetime","kind":"FAIL","subtest":"","category":"named_mutex_visibility","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_paper_diagnostics.ConnectionDiagnosticTests.test_external_observer_failure_stops_waiting_probe_and_cleans_owned_fixture","kind":"FAIL","subtest":"","category":"paper_probe_parent_pid_guard","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_paper_diagnostics.ConnectionDiagnosticTests.test_fixed_matrix_uses_full_commits_real_external_control_and_owned_cleanup","kind":"FAIL","subtest":"","category":"paper_probe_parent_pid_guard","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_paper_diagnostics.ConnectionDiagnosticTests.test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture","kind":"FAIL","subtest":"","category":"paper_probe_parent_pid_guard","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_paper_diagnostics.ConnectionDiagnosticTests.test_wrong_commit_count_cannot_be_certified","kind":"FAIL","subtest":"","category":"paper_probe_parent_pid_guard","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first","kind":"FAIL","subtest":"","category":"named_mutex_visibility","same_ordered_frames":false,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace","kind":"FAIL","subtest":"","category":"named_mutex_visibility","same_ordered_frames":false,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_gui_death_quiesces_before_test_only_durable_receipt","kind":"FAIL","subtest":"","category":"retained_grandchild_handle_invalid","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_after_gui_before_quiescence_never_publishes_receipt","kind":"FAIL","subtest":"","category":"retained_grandchild_handle_invalid","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]},
-    {"id":"test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_before_gui_never_publishes_receipt","kind":"FAIL","subtest":"","category":"retained_grandchild_handle_invalid","same_ordered_frames":true,"same_exception_type_chain":true,"current_winerrors":[],"main_winerrors":[]}
-  ]
+    {
+      "id": "test_analysis_recovery.RecoveryLedgerTests.test_links_hardlinks_and_oversize_are_rejected",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_managed_hardlink_and_success_symlink_are_rejected",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+      "kind": "ERROR",
+      "subtest": "(name='markauto-<generated>-linked.zip', kind='symlink')",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_managed_links_rejected_despite_incomplete_directory_metadata",
+      "kind": "ERROR",
+      "subtest": "(name='orphan.zip.tmp', kind='symlink')",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_automatic_backup.AutomaticBackupTests.test_unsafe_destinations_do_not_write_config",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_chatgpt_auth.AuthTests.test_dpapi_rejects_dangling_links_and_junction_lstat_attributes",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_chatgpt_auth.AuthTests.test_first_use_guard_rejects_prior_host_control_and_partial_vault_evidence",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_downloads.DownloadTests.test_failure_preserves_latest_and_refuses_symlink",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_market.MarketTests.test_cache_rejects_symlink",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_market_history.HistoryBoundaryTests.test_cache_tamper_symlinks_and_bad_policy",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_market_history.HistoryTests.test_cache_tamper_symlinks_and_bad_policy",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_dangling_source_parent_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_destination_file_symlink_fails_preserves_target",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_destination_parent_symlink_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_source_file_symlink_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_notice_collector.ZipCollectorTests.test_source_parent_symlink_fails",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_qt_licenses.QtLicenseTests.test_destination_symlink_preserves_target",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_qt_licenses.QtLicenseTests.test_payload_directory_symlink_fails_before_audit",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_qt_licenses.QtLicenseTests.test_source_symlink_and_simulated_junction_fail",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_reporting.ReportingTests.test_symlink_output_refused",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "symlink_privilege_1314",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "1314"
+      ],
+      "main_winerrors": [
+        "1314"
+      ]
+    },
+    {
+      "id": "test_test_group.ParallelResearchGroupTests.test_native_windows_natural_parent_exit_with_descendant_cannot_pass",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "native_worker_cleanup_file_lock",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "32",
+        "32"
+      ],
+      "main_winerrors": [
+        "32",
+        "32"
+      ]
+    },
+    {
+      "id": "test_trading_acceptance_combinations.AcceptanceCombinationTests.test_e06_parent_os_kill_before_submit_and_after_remote_accept_preserves_unknown",
+      "kind": "ERROR",
+      "subtest": "",
+      "category": "crash_driver_pid_mismatch",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [
+        "5",
+        "5"
+      ],
+      "main_winerrors": [
+        "32",
+        "32"
+      ]
+    },
+    {
+      "id": "test_desktop_runtime.WindowsRuntimeTests.test_installer_mutex_lifetime",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "named_mutex_visibility",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_external_observer_failure_stops_waiting_probe_and_cleans_owned_fixture",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_fixed_matrix_uses_full_commits_real_external_control_and_owned_cleanup",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_keyboard_interrupt_joins_probe_and_observer_before_removing_fixture",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_paper_diagnostics.ConnectionDiagnosticTests.test_wrong_commit_count_cannot_be_certified",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "paper_probe_parent_pid_guard",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "named_mutex_visibility",
+      "same_ordered_frames": false,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "named_mutex_visibility",
+      "same_ordered_frames": false,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_gui_death_quiesces_before_test_only_durable_receipt",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "retained_grandchild_handle_invalid",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_after_gui_before_quiescence_never_publishes_receipt",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "retained_grandchild_handle_invalid",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    },
+    {
+      "id": "test_windows_recovery_feasibility.WindowsRecoveryFeasibilityTests.test_helper_death_before_gui_never_publishes_receipt",
+      "kind": "FAIL",
+      "subtest": "",
+      "category": "retained_grandchild_handle_invalid",
+      "same_ordered_frames": true,
+      "same_exception_type_chain": true,
+      "current_winerrors": [],
+      "main_winerrors": []
+    }
+  ],
+  "final_composite": {
+    "source_head": "fdfde06f66fb65271af80ac4fb29f4dd362ca91e",
+    "tests": 3914,
+    "seconds": 1593.006,
+    "failures": 10,
+    "errors": 22,
+    "skips": 42,
+    "new_ids": 0,
+    "distinct_failure_ids": 31,
+    "traceback_blocks": 32,
+    "log_sha256": "ecb0600cba7aa97d133226ba2e5f66f9819a2add9d01cc8eeff223b744475de7",
+    "ordered_frames_equal": 30,
+    "exception_type_chains_equal": 32,
+    "referenced_source_blobs_equal": 15,
+    "referenced_source_blobs_total": 16,
+    "categories": {
+      "symlink_privilege_1314": 20,
+      "native_worker_cleanup_file_lock": 1,
+      "crash_driver_pid_mismatch": 1,
+      "named_mutex_visibility": 3,
+      "paper_probe_parent_pid_guard": 4,
+      "retained_grandchild_handle_invalid": 3
+    },
+    "review_note": "All 32 blocks reviewed. E06 final cleanup matches main WinError32 on .sqlite, unlike earlier retry WinError5 on .sqlite-shm. Only two expected installer assertion line offsets differ. Paper parent-PID causes remain inferred from recorded parent guard evidence, not from identity alone."
+  }
 }

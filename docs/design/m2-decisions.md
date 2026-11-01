@@ -361,3 +361,12 @@ result combines separately tested sources and needs new full discovery and
 actual startup at the final head. Preserve earlier failed-run evidence under
 its original `8f03a99` scope; do not present it as final composite acceptance.
 Controller serializes native/engine/full validation after M2-6 completes.
+
+## M2-8 / final composite full and startup evidence
+
+Record finalfdf3914/1593.006s10F22E42skip honestly as a nonzero local suite with
+zero new failures. Review all32 actual blocks, including finalE06 WinError32
+matching main rather than borrowing the earlier WinError5 cause. Retain original
+smoke failure/retry evidence. Both final actual startups return0 with normal owned
+cleanup and fake-only broker operations. This commit is documentation only; CI
+is checked on the pushed head. No source, assertions, thresholds or skips change.
