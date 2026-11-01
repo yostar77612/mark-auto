@@ -6660,3 +6660,29 @@ also bind compact-header visibility/height. No action eligibility, execution,
 G3 files, source profiles, OOS/budget/timeouts, PROJECT_STATE or acceptance score
 changed. Offline evidence and before/after screenshots are recorded in
 docs/design/m1-u-notes.md; real-App owner visual verification remains pending.
+
+## Installed 0.3.0 market-settings regressions (2026-11-01)
+
+MarketDataPanel reconstructs Environment from actual Qt combo data before
+creating MarketDataSettings. Both existing broker-simulation and LIVE choices
+emit the original typed, reference-only save intent through the real save
+button. Domain validation and the explicit separate connect action remain.
+Disabled settings display the existing disconnected label regardless of a
+supplied local-engine status/error; enabled settings preserve their own
+connecting/connected/disconnected/failure display. The runtime snapshot's
+market_connection projection and all other consumers are unchanged.
+
+CandlestickChart retains its normal empty centering and nonempty painter path.
+At compressed heights, only an empty/error message whose centered text would
+overlap the legend moves into the area below it. Actual QPainter text bounds
+at terminal-minimum and normal sizes verify the separation. No UI strings,
+catalog order, theme or execution behavior changes.
+
+The trading currentData audit found existing typed enum reconstruction in
+BrokerPanel, TradingWindow, StrategyWizard and AlertRuleDialog; a real Qt test
+also creates all twelve typed alert rules. New tests use only offline widgets
+and original painting. New module registration and any observed baseline
+changes are isolated from source fixes; historical fixture bytes and test
+strength remain authoritative. Decisions and verification ownership are in
+docs/design/m2-decisions.md. Real broker operations, G3/SDK pin/PROJECT_STATE,
+OOS, budgets, deadlines and source profiles remain untouched.
