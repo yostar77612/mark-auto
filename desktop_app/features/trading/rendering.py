@@ -1,5 +1,7 @@
 """Read-model projection into tables; each market uses the same typed widgets."""
 
+from PySide6.QtCore import Qt
+
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiState
 from desktop_app.features.trading.labels import policy_label, state_label
@@ -77,8 +79,8 @@ def _render_orders(self, state: UiState) -> None:
                 (
                     item.instrument_id,
                     ui_text('v2.long' if item.side.value == 'BUY' else 'v2.short'),
-                    f'{item.quantity} {self._unit_label(item.unit.value)}',
-                    str(item.filled),
+                    position_quantity(item.quantity, item.unit),
+                    position_quantity(item.filled, item.unit),
                     state_label(item.state),
                     ui_text('v2.exit_order' if item.reduce_only else 'v2.entry_order'),
                     item.account_ref,
@@ -87,6 +89,15 @@ def _render_orders(self, state: UiState) -> None:
             for item in state.orders
         ),
     )
+
+    by_id = {item.order_id: item for item in state.orders}
+    for row in range(self.orders.rowCount()):
+        item = by_id[self.orders.item(row, 0).data(Qt.ItemDataRole.UserRole)]
+        for column, quantity in ((2, item.quantity), (3, item.filled)):
+            cell = self.orders.item(row, column)
+            cell.setToolTip(f'{quantity:,} {self._unit_label(item.unit.value)}')
+            cell.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.orders.item(row, 6).setToolTip(item.account_ref)
 
 
 def _render_reconciliation(self, state: UiState) -> None:

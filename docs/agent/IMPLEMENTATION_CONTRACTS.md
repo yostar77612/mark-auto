@@ -7071,3 +7071,14 @@ True markers on unsupported/LOCAL/LIVE/malformed paths cannot fall through.
 Actual bundle/Composite/codec/authenticated-Pipe tests assert zero added SDK
 mutations, no context opening, exact original scope/request IDs and preserved
 UNKNOWN; the old-wire omission defaults false in the core compatibility tests.
+
+## M2-2 order presentation and remembered columns
+
+The existing owned column selector keeps six position defaults and now provides
+six order defaults, with the full account available as an optional remembered
+column. Position/order saves merge the dedicated presentation dictionary and
+preserve other preferences. Canonical order IDs, account values and quantity DTOs
+are unchanged; native dangerous confirmations still include the account.
+Stock total and cumulative fills display exact fractional lots, including0.5 lots
+for500 shares, with canonical share tooltips; futures remain contracts. Choices
+and failed preference writes do not invoke a trading command.

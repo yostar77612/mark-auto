@@ -306,6 +306,17 @@ def _trading_page(self) -> None:
     self.positions_empty = EmptyTableState(self.positions, ui_text('m2t.empty_positions'), lambda: self.manual_controls.next_step())
     layout.addWidget(label('v2.orders'))
     self.orders = table(('v2.instrument', 'v2.direction', 'v2.quantity', 'v2.filled', 'v2.state', 'v2.order_scope', 'v2.account'), 'orders')
+    self.order_columns = PositionColumns(
+        self.orders,
+        self.page_headers['trading'],
+        self._order_columns,
+        self._save_order_columns,
+        self._feedback,
+        defaults=(0, 1, 2, 3, 4, 5),
+        name='order_columns',
+        caption=ui_text('m2m.order_columns'),
+        hint=ui_text('m2m.order_columns_hint'),
+    )
     layout.addWidget(self.orders)
     self.orders_empty = EmptyTableState(self.orders, ui_text('m2t.empty_orders'), lambda: self.manual_controls.next_step())
     self.manual_controls = ManualActions(self, layout)

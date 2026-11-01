@@ -42,6 +42,28 @@ def run_window(
         )
 
 
+def _presentation_options(root: Path) -> dict:
+    from quantlab.research_core.adapters.settings_store import SettingsStore
+
+    store = SettingsStore(root / 'trading-presentation-v1.json')
+    try:
+        saved = store.load()
+    except (OSError, ValueError, RuntimeError):
+        saved = {}
+
+    def save(key, values):
+        current = store.load()
+        current[key] = list(values)
+        store.save(current)
+
+    return {
+        'position_columns': saved.get('position_columns'),
+        'save_position_columns': lambda values: save('position_columns', values),
+        'order_columns': saved.get('order_columns'),
+        'save_order_columns': lambda values: save('order_columns', values),
+    }
+
+
 def _run_window(
     root: Path | None = None,
     *,
@@ -61,7 +83,6 @@ def _run_window(
     from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
-    from quantlab.research_core.adapters.settings_store import SettingsStore
     from desktop_app.features.market.workspace import WorkspacePanel
     from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme, _apply_trading_page_theme
 
@@ -123,17 +144,11 @@ def _run_window(
         alerts_panel=alerts.panel,
         style_terminal=_apply_terminal_theme,
     )
-    presentation_store = SettingsStore((root or default_root()) / 'trading-presentation-v1.json')
-    try:
-        position_columns = presentation_store.load().get('position_columns')
-    except (OSError, ValueError, RuntimeError):
-        position_columns = None
     window = TradingWindow(
         facade,
         initial,
         market_watch=terminal,
-        position_columns=position_columns,
-        save_position_columns=lambda values: presentation_store.save({'position_columns': list(values)}),
+        **_presentation_options(root or default_root()),
     )
     _apply_trading_page_theme(window)
     from desktop_app.research_session import ResearchSession, UnifiedResearch
