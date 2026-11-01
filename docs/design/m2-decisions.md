@@ -1185,3 +1185,7 @@ handler and terminal-finally hashes, budgets and all skip conditions stay
 unchanged. All11 startup-contract tests PASS0.180s after the baseline update.
 Repeat complete discovery on both final branches before push; do not waive this
 new failure or infer the new complete result solely from the focused check.
+
+## connection-recovery-budget-verified / final complete source evidence
+
+Publish exactb605466455655b17251122347ba28da202776653 complete discovery 4005/1426.235s with zero new failures after individual actual-cause review. Retain previous failed CI/full attempts and previous successful source evidence. Only documentation changes follow; final runtime blobs must match this full/actual source. Do not reuse historical CI as the new final-head result.
