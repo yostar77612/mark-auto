@@ -254,3 +254,10 @@ jobs:
             'See build-manifest.json, SHA256SUMS.txt and validation/*.json for exact build/OS evidence.' > release-notes.txt
           mapfile -d '' assets < <(find release -type f -print0)
           gh release create "$tag" "${assets[@]}" --target "$SOURCE_SHA" --prerelease --title "Mark Auto Windows preview $tag" --notes-file release-notes.txt
+          # The in-app update check reads this fixed pointer; releases/latest skips prereleases.
+          version=$(sed -n 's/^__version__ = "\([0-9.]*\)"$/\1/p' quantlab/__init__.py)
+          printf '{"version": "%s", "commit": "%s"}\n' "$version" "$SOURCE_SHA" > release-manifest.json
+          printf '%s  release-manifest.json\n' "$(sha256sum release-manifest.json | cut -d' ' -f1)" > release-manifest.json.sha256
+          gh release view desktop-preview-latest >/dev/null 2>&1 || gh release create desktop-preview-latest --target "$SOURCE_SHA" --prerelease \
+            --title 'Mark Auto latest preview pointer' --notes 'Machine-readable pointer for the in-app update check. Download installers from the dated preview releases.'
+          gh release upload desktop-preview-latest release-manifest.json release-manifest.json.sha256 --clobber
