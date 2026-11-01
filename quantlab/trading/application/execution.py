@@ -87,11 +87,22 @@ class ExecutionService:
         order = next((v for v in state.orders if v.order_id == order_id), None)
         if order is None or order.status not in ACTIVE:
             raise DomainError('state_conflict', 'order is not cancelable')
+        if not orders_enabled(order.plan.environment):
+            raise DomainError('production_orders_disabled')
+        if order.plan.environment is not state.environment:
+            raise DomainError('capability_missing', 'cancellation environment mismatch')
         if order.status in (OrderStatus.UNKNOWN, OrderStatus.SUBMITTING):
             raise DomainError('reconciliation_required', 'unknown order must be located before cancel')
         self.persist('cancel_pending', replace_order(state, replace(order, status=OrderStatus.CANCEL_PENDING)))
         self.fence()
-        self.broker.cancel(order_id)
+        try:
+            receipt = self.broker.cancel(order_id)
+            if receipt.status is OrderStatus.UNKNOWN:
+                raise DomainError('outcome_unknown')
+        except Exception:
+            unknown = replace_order(state, replace(order, status=OrderStatus.UNKNOWN))
+            self.persist('cancel_unknown', replace(unknown, stopped=True, reconciled=False, issues=tuple(sorted(set((*unknown.issues, 'outcome_unknown'))))))
+            raise DomainError('outcome_unknown', 'cancellation needs remote reconciliation') from None
 
 
 def check_event(state: AppState, event: OrderEvent) -> LocalOrder | None:

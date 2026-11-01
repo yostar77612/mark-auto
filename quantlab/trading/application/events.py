@@ -136,6 +136,20 @@ def apply_event(engine: 'TradingEngine', event: OrderEvent, *, reconciled: bool 
         event_hashes=(*state.event_hashes, (event_key, sha256(dumps(event).encode()).hexdigest())),
     )
     state = with_cursor(state, account, max(previous, event.sequence))
+    if delta and spec.market is Market.STOCK and any(book.book_id == order.plan.strategy_id for book in state.manual_books):
+        from .manual_book import ManualAcquisition, ManualReceivable
+        from .sessions import resolve_session
+
+        # A cumulative query can report older fills. T+2 from the latest possible
+        # observed session is conservative and is not broker cash evidence.
+        day = resolve_session(engine.calendar, engine.clock.now()).trade_date
+        available_on = engine.calendar.advance(day, 2)
+        if order.plan.reduce_only:
+            receivable = ManualReceivable(account, event.event_id, max(ZERO, event.last_fill_price * delta - fee), available_on)
+            state = replace(state, manual_receivables=(*state.manual_receivables, receivable))
+        else:
+            acquisition = ManualAcquisition(order.order_id, event.event_id, delta, available_on)
+            state = replace(state, manual_acquisitions=(*state.manual_acquisitions, acquisition))
     engine._persist('broker_event_' + event.status.value.lower(), state)
 
 

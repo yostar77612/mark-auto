@@ -6902,3 +6902,22 @@ Persisted alias metadata does not grant native query/execution capability.
 Selection/discovery must never delete historical manual orders or positions.
 M2-1 never enables automatic strategies or sends broker orders. M2-2 owns the
 canonical manual engine and execution guard; LIVE remains prohibited.
+
+M2-2 ManualTradingService accepts typed UI intent and uses one aggregate
+TradingEngine plus its existing journal. Its execute/snapshot/adopt seam keeps
+native observation collection outside the writer. ManualAccountObservation
+contains orders, positions, events and source timing, never fabricated account
+funds. The runtime validates the immutable accepted environment/account/owner
+generation/revision before adoption and command admission. Its manual pump does
+not run automatic strategy cycles or normal financial-baseline reconciliation.
+Internal ManualRiskCapacity is app-owned virtual capital, not a broker balance.
+Only a matching durable manual intent can use the canonical submit branch;
+automatic ACTIVE/OOS/previous-close requirements remain unchanged.
+
+Manual acquisition/receivable tranches are part of the existing atomic fill
+event. Conservative settled owned cash-stock availability is app-derived and
+does not rewrite the automatic/native sellability path. Existing ExitCoordinator
+subtracts pending owned exits once. A confirmed canceled/unfilled current-owner
+TMF diagnostic is the shared first-attempt proof; UNKNOWN or a fill cannot pass.
+Restart, missing closing evidence, lost scope, external orders or degraded
+observations halt new risk without resetting the confirmed book or retry key.

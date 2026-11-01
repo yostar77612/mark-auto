@@ -159,3 +159,47 @@ Five new consumer cases and the existing DTO/shared-session/LIVE/SDK cases pass:
 29 tests in 0.013 seconds. RED and GREEN logs remain in ignored .tmp. These are
 pure in-memory fakes, with no SDK import, native client, Qt or engine process.
 The pending manual core is deliberately not part of this small source commit.
+
+## Manual core freeze candidate
+
+Focused evidence: 68 tests PASS in 2.369 seconds. This comprises 19 new strict
+offline SDK/shared-session/adapter/engine/service cases, existing adapters 32,
+consumer revocation 5, manual DTO 4, LIVE guard 6 and the two execution AST
+guards. No real SDK module/client/login, credentials/CA/order, native engine or
+Qt window is involved. Runtime/IPC and actual startup remain coordinator work.
+
+The original exhaustive submit inventory first failed with exactly the new
+manual_trading._submit -> engine.submit caller. Its independent baseline adds
+only that sixth caller and documents its purpose. The unique state-bearing
+ExecutionService.commit caller remains TradingEngine.submit, and the unchanged
+AST binds locked risk preview/rejection, reservation, durable SUBMITTING and
+fence. The original automatic daily-baseline and OOS/deployment checks remain;
+new tests explicitly observe no strategies and no DailyBaselineEvidence.
+
+New cases cover two-phase backend-only diagnostic preparation, one native submit
+and known-reference cancel, UNKNOWN identity/reserves/no retry, cancel/full-fill
+race without an opposite order, native price-only amendment after entry TTL,
+actual fill/fee/position adoption, manual stop estimates without automatic
+orders, scope/generation invalidation, restart/reconcile/explicit resume without
+capital reset, stop-latch/bare-resume refusal, quantity/tick/risk refusal,
+external native quantity/price changes, healthy-cache requirements, stock
+canonical shares/native lots and partial cancel, and conservative T+2 owned
+stock exit while cross-day new risk remains stopped. Durable event replay
+asserts sale fills never appear without their unsettled receivable reservation.
+
+App-owned virtual capacity and estimated fee provenance remain separate from
+unavailable broker financial facts. TMF cash uses 35050 per-contract exchange
+margin plus named costs, not the larger futures notional. See
+[stock evidence](m2-2-stock-exit-evidence.md) and the owner decisions for the
+deliberately limited derived-stock exit contract. The current implementation
+does not invent a missing manual closing baseline to open risk on a later day.
+A never-used confirmed empty book may align its initial session after complete
+fresh empty reconciliation. Any order/request, restart halt, loss lock or
+STOP_NEW excludes that initial-only alignment; it cannot reset history.
+
+Pre-edit graph warns HIGH for submit and quote, with unresolved dynamic call
+boundaries explicitly retained. Existing event reducer/availability/control
+methods were reviewed before edits; new symbols were UNKNOWN/absent and source
+confirmed, never treated as an all-clear. Full fresh indexed all/staged change
+analysis precedes each source/baseline commit; complete runtime/full/CI evidence
+must still be supplied after composition.
