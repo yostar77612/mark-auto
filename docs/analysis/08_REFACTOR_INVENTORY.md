@@ -831,6 +831,21 @@ sets, the sole TradingEngine.submit→execution.commit set and all guard-order
 assertions remain exact. These five path rows are additive; historical source
 counts, relocations, fixture hashes and unrelated baselines are not regenerated.
 
+
+| `quantlab/trading/application/manual_routing.py` | 71 | application | `quantlab/trading/application/manual_routing.py` | M2-2 P1: pure confirmed-request deny copy and already-held same-owner facade routing; no host opening, financial call, scope rewriting or new operation. |
+| `tests/test_manual_no_admission_routing.py` | 193 | tooling | `tests/test_manual_no_admission_routing.py` | M2-2 P1: real Composite/bundle/codec/authenticated-Pipe proof for outer-CAS refusal, original identity, no added SDK mutation, current/stale owner and preserved UNKNOWN. |
+
+P1 routing adds only these two Python paths; prior source/fixture identity rows
+remain historical. The new modules have no function over 50 lines and are below
+400 lines. CompositeFacade remains below 300 lines; its execute function grows
+to 86 while preserving one accepted-intent boundary. Existing ManualRuntime
+becomes 306 lines (file 374): the six lines over the readability target keep the
+deny-only action guard and exact authoritative-result scope retention beside
+the same command dispatch, without a second lifecycle owner or result cache.
+Its existing _materialize 95 / refresh 53 exceptions and bootstrap split plan
+remain unchanged. No caller/commit oracle, risk threshold, catalogue or other
+historical baseline is relaxed or repinned by this independent path baseline.
+
 ## 3 跨層匯入違規（GitNexus + AST）
 
 ### 3.1 靜態匯入明細
