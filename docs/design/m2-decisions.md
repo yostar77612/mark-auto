@@ -370,3 +370,12 @@ matching main rather than borrowing the earlier WinError5 cause. Retain original
 smoke failure/retry evidence. Both final actual startups return0 with normal owned
 cleanup and fake-only broker operations. This commit is documentation only; CI
 is checked on the pushed head. No source, assertions, thresholds or skips change.
+
+## M2-8 / explicit new-test inventory registration
+
+A final all-new-Python-path audit found the new cleanup regression module was
+not explicitly listed in section2, although architecture tests already passed.
+Register only that existing test file and its measured line count in a separate
+inventory baseline commit. Test code and every other non-doc blob stay unchanged;
+the completed full/startup results remain source-equivalent. This repairs the
+specification documentation requirement without changing any test assertion.

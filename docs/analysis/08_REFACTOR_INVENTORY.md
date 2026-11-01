@@ -741,6 +741,8 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/runtime/market_alerts.py` | 137 | composition | `quantlab/trading/runtime/market_alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `tests/test_market_settings_fix.py` | 127 | tooling | `tests/test_market_settings_fix.py` | Owner-requested installed 0.3.0 regressions: actual Qt save/status, typed alert selections and nonoverlapping empty-chart text; no SDK or financial operations. |
 
+| `tests/test_trading_engine_cleanup.py` | 211 | tooling | `tests/test_trading_engine_cleanup.py` | M2-8: retained-owned-process success/failure/timeout cleanup and foreign-host preservation regressions; fake SDK only. |
+
 ## 3 跨層匯入違規（GitNexus + AST）
 
 ### 3.1 靜態匯入明細
