@@ -1,6 +1,6 @@
 # M2 第一輪實作與驗證報告
 
-報告時間：2026-11-02T00:24+08:00（Asia/Taipei）。
+報告時間：2026-11-02T03:02+08:00（Asia/Taipei；含兩次安裝復原失敗後的預算判斷與順序修正）。
 
 本輪涵蓋行情設定前置修正、M2-0、M2-8、M2-6（含擁有者追加第6–8點）、
 M2-1、M2-2。未開始第二輪 M2-3／4／5／7／9，也未擴充成全站 UX-1 改版。
@@ -21,11 +21,15 @@ M2-1、M2-2。未開始第二輪 M2-3／4／5／7／9，也未擴充成全站 UX
 | M2-0 政策 | [#128](https://github.com/yostar77612/mark-auto/pull/128) |3,888／2,380.898s；10F27E42skip；無新增失敗|35/35成功，外部最終heade7e3e13，run41286744449|
 | M2-8 引擎清理 | [#130](https://github.com/yostar77612/mark-auto/pull/130) |3,914／1,593.006s；10F22E42skip；無新增失敗|35/35成功，head868da0c，run41292665501|
 | M2-6 交易頁與顯示 | [#131](https://github.com/yostar77612/mark-auto/pull/131) |3,941／1,543.784s；10F22E42skip；無新增失敗|35/35成功，headd2db0d6，run41293906679|
-| M2-1 永豐連線 | [#132](https://github.com/yostar77612/mark-auto/pull/132) |4,000／1,436.847s；10F22E42skip；無新增失敗|離線35/35成功，heada62a110，run41323736469；Windows安裝流程為最終必要檢查；[最終Checks](https://github.com/yostar77612/mark-auto/pull/132/checks)|
-| M2-2 手動模擬交易 | [#136](https://github.com/yostar77612/mark-auto/pull/136) |4,120／1,508.968s；10F22E42skip；無新增失敗|本報告所在最終Head一併驗證；[最終Checks](https://github.com/yostar77612/mark-auto/pull/136/checks)|
+| M2-1 永豐連線 | [#132](https://github.com/yostar77612/mark-auto/pull/132) |4,005／1,426.235s；10F22E42skip；無新增失敗；sourceb605466|最新分支提交獨立接受完整CI，以[最終Checks](https://github.com/yostar77612/mark-auto/pull/132/checks)為交付門檻；不沿用歷史Head的成功結果|
+| M2-2 手動模擬交易 | [#136](https://github.com/yostar77612/mark-auto/pull/136) |4,125／1,442.544s；10F22E42skip；無新增失敗；source7d72c5f|最新分支提交獨立接受完整CI，以[最終Checks](https://github.com/yostar77612/mark-auto/pull/136/checks)為交付門檻；不沿用歷史Head的成功結果|
 
 F／E／skip 為原始 unittest 結果。本機完整測試仍是非零 FAILED，不能描述成全部
 通過；最終接受的是逐項核對後僅剩 main 既有 Windows 主機限制，且無新增失敗。
+
+本報告提交前已核對 #132 head2901ea7 的離線流程41337526546：35/35成功。
+Windows安裝流程41337526430及 #136 本報告所在最終提交，仍須以各最新Head的
+Checks全部適用工作成功為交付條件；此處不預先宣稱尚未完成的工作成功。
 
 #129 與 #128 由其他執行者合併到 main；本代理未合併任何 PR。其餘堆疊為
 **#130 → #131 → #132 → #136**，全部以正常 merge／fast-forward 整合，沒有改寫
@@ -61,20 +65,22 @@ F／E／skip 為原始 unittest 結果。本機完整測試仍是非零 FAILED�
 
 | 測試程式提交 | LOCAL | fake SIM | 完整 UI／IPC 功能流程 |
 | --- | --- | --- | --- |
-| M2-1 f77d2b0 |0／5.835s|設定儲存連線與鍵盤選帳戶0／6.661s；直接啟動0／3.621s|連線組合，resource_calls0，0 CA／委託|
-| M2-2 32ad384 |0／5.952s|真實週日直接啟動0／3.669s，休市且0委託|0／7.417s；2次canonical送單鏈、2次place、1次amend、2次cancel|
+| M2-1 b605466 |0／6.145s|設定儲存連線與鍵盤選帳戶0／6.613s；直接啟動0／3.602s|連線組合，resource_calls0，0 CA／委託|
+| M2-2 7d72c5f |0／5.976s|實際週一時鐘直接啟動0／3.749s，未確認資金故0委託|0／7.416s；2次canonical送單鏈、2次place、1次amend、2次cancel|
 
 最後一列的正向操作明確使用涵蓋的10月假市場時鐘及窄範圍 UI 時間讀取，沒有
-改變真實 UTC 租約或期限，也沒有聲稱週日實際可交易。流程確認虛擬資金40000、
+改變真實 UTC 租約或期限，也沒有聲稱實際當日可交易。流程確認虛擬資金40000、
 拒絕過期31秒的預覽、TMF診斷送單後已知未成交撤單，再完成一般假委託改價撤單。
 五個真實危險確認框預設 Cancel；financial_query_calls0、CA_calls0、resource_calls1。
 每個自有 LOCAL 程序正常退出，fake host thread join、research 釋放與端點移除均成功。
 這些啟動檢查沒有匯入真實 SDK。
 
-M2-1 完整測試來源為 f77d2b07f5ed24bd276f42c520b26efc033f6f49，原始日誌 SHA256：
+前次歷史 M2-1 完整測試來源為 f77d2b07f5ed24bd276f42c520b26efc033f6f49，原始日誌 SHA256：
 `6c3f6e05332ab30fbf107039caa1873f94047d639bc1cf0d9011ab289a1af313`。
-M2-2 完整測試來源為32ad38428e5da8959c18aad9fa403e15edbce55d，原始日誌 SHA256：
-`393d28bd1c61cb5ac703594a853d87aaca7014cbc14cc191f02a056524e203f1`。後續僅整合驗證文件／報告，逐一確認非文件 Git blobs 相同。
+前次歷史 M2-2 完整測試來源為32ad38428e5da8959c18aad9fa403e15edbce55d，原始日誌 SHA256：
+`393d28bd1c61cb5ac703594a853d87aaca7014cbc14cc191f02a056524e203f1`。上述兩份保留為歷史；新的順序修正另以本次完整測試驗證。
+
+最新完整測試來源：M2-1 `b605466455655b17251122347ba28da202776653`，原始日誌 SHA256 `b74e4e04a3d03103cec67db72fdb63f6d21f62a5946009c6cd9397cb19154cdc`；M2-2 `7d72c5f38ac32d38709a39bcfb6ecb0ce23c7177`，原始日誌 SHA256 `c7d319dbf306ba8357815ef5902a56180ab189978103c878980dd2364e015b95`。各實際失敗均個別比對，日誌不改寫；後續僅提交證據文件，非文件 Git blobs 必須與新完整測試來源相同。
 
 ## 失敗歷史與修正
 
@@ -101,7 +107,7 @@ M2-2 完整測試來源為32ad38428e5da8959c18aad9fa403e15edbce55d，原始日�
 ## 檢查、安全邊界與待擁有者實測
 
 M2-1／M2-2 全專案 Ruff lint／format、Python3.11 syntax與credential/static gate
-皆通過；最終分別1154／1181個格式檔、1071／1094個語法檔，static finding0。
+皆通過；最終分別1154／1182個格式檔（後者含本地檢查檔）、1071／1094個語法檔，static finding0。
 新增 Python 路徑均登記清冊；字串連續且在 Lane 區塊，樣式僅在 theme。功能造成
 的字串、樣式、AST與清冊基準均用獨立且逐項說明的提交；沒有調高限制、削弱
 斷言或新增 skip。精確閱讀性例外與後續窄範圍拆分計畫照實記錄。
@@ -125,3 +131,9 @@ e833622，沒有把視覺 fake DTO 當成真實 IPC 或券商驗收。
 [交易頁](../analysis/m2-trading/verification.md)、
 [連線](../analysis/m2-connection/verification.md)、[手動模擬](m2-2-verification.md)、
 [自主決策](m2-decisions.md)。
+
+## 安裝復原預算與順序修正的最終驗證
+
+原41323736442 attempt1／2分別在 retained-candidate／recovered-candidate 自測回報 InsufficientExistingSmokeBudget，artifact13091592701／13092473832均保留，未歸入main允許失敗。實際attempt2新程式執行最多30.359秒，排除一般預算耗盡；原浮點減法會將40秒誤算為39.99999999999994。三個指數邊界的實際函式控制先RED後GREEN；改比較相同期限端點，不加epsilon或寬限，短一個浮點單位仍拒絕。實際callback以70s前段、102s尾段在原120s總期限內重現失敗，再將原復原呼叫移到原工作manager.join/close後、walk-forward manager建立前，控制案例轉綠。40s復原、6s準備、120s總期限與全部原檢查不變。順序控制證明可能的晚啟動問題，不能單獨歸因為實際CI根因；舊db1候選的中斷測試未當作完整結果。共五個新案例保留不足預算與總時限失敗；31項相關測試完成含4個既有skip，另43項分層／頁面檢查通過。caa首輪4005項／1427.181s另發現自測AST指紋尚未更新；獨立基準提交僅重釘SMOKE_DIGEST，原相等斷言、metadata計數、handler／finally指紋、預算與skip不變；11項啟動契約通過後再完整重測，該失敗輪未放行。此為來源／fake時間證據，最終實際frozen安裝復原仍由最新Head CI確認，不能用過去成功或同名失敗代替。
+
+新完整測試後保留原先完整結果與raw SHA；兩分支實際啟動重新驗證且均正常零退出、owned清理與端點移除。修正沒有改券商／金融寫入／GUI樣式或G3。新force graph all／staged完整，排程的9個與期限比較的2個新增定義都對應實際UID；共用smoke流程HIGH風險已記錄。runner276→282、run_smoke262→268、complete_smoke175→181的當前量測以獨立基準提交記錄；歷史列、限制值、舊斷言與skip不變。

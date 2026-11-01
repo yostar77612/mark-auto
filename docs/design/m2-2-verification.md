@@ -436,3 +436,14 @@ Only evidence/report documents follow the exact tested source; verify every
 non-documentation Git blob identical. The final current-head PR CI remains a
 separate required delivery gate, including the bundled final first-round report.
 No main merge, second-round functionality or actual broker operation is included.
+
+
+## Final recovery budget verification / 7d72c5f
+
+Exact source `7d72c5f38ac32d38709a39bcfb6ecb0ce23c7177` completes 4125 tests in 1442.544s: `FAILED (failures=10, errors=22, skipped=42)`. Zero new failed identities; all32 actual occurrences/31 identities reviewed, 30 ordered-frame and 32 exception-chain matches. The nonzero host-baseline suite is FAILED, not described as passing. Symlink/worker-log/mutex/PID/retained-handle and early paper-probe categories remain compared individually; earlier control provenance is not a proof supplied by the current trace alone. Launcher first assertion remains the original native PID mismatch. Current secondary cleanup [{"type": "PermissionError", "winerror": ["32"], "storage_suffix": ".sqlite"}, {"type": "PermissionError", "winerror": ["32"], "storage_suffix": ".sqlite"}]; main secondary cleanup [{"type": "PermissionError", "winerror": ["32"], "storage_suffix": ".sqlite"}, {"type": "PermissionError", "winerror": ["32"], "storage_suffix": ".sqlite"}]. Different WinError/path suffixes are explicit, not called an identical secondary cause; full messages remain private.
+
+Raw SHA256 `c7d319dbf306ba8357815ef5902a56180ab189978103c878980dd2364e015b95`. Sanitized occurrence details: [recovery-budget-full-comparison.json](../analysis/m2-manual/recovery-budget-full-comparison.json).
+
+New exact-source actual window checks: local 5.976s, broker-startup 3.749s, manual-direct 7.416s; all normal zero exits/owned cleanup/endpoint removal, fake ports only. The actual default-clock probe is now Monday, without the former Sunday assertion. Positive manual execution still uses the explicitly covered October23 fake clock and canonical fake gateway; it proves no actual broker availability or order. No real SDK/key/CA or actual real/simulator order.
+
+Installer41323736442 attempts1/2 remain failed historical evidence, artifacts13091592701/13092473832. Actual attempt2 recovered-executable lifetime is at most30.359s, excluding ordinary budget exhaustion. Actual function controls reproduce false subtraction rejection across three float exponent boundaries; endpoint comparison admits the exact same cap while nextafter-shorter deadlines still refuse. Two arithmetic methods first RED3 subcases/0.004s then GREEN0.061s. The separate real-callback scheduling case was RED then GREEN; total120s, helper40s and prep6s caps, all seven original operations and manual/history/walk-forward checks remain unchanged. Full/staged graph and nine added definitions are complete; shared smoke flow HIGH risk is recorded. Final actual frozen recovery and all applicable current-head CI remain required before handoff.

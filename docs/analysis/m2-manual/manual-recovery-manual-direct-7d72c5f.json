@@ -1,0 +1,89 @@
+{
+  "head": "7d72c5f38ac32d38709a39bcfb6ecb0ce23c7177",
+  "mode": "manual-direct",
+  "no_site": true,
+  "sqlite": "3.54.0",
+  "real_run_window": true,
+  "real_trading_window": true,
+  "real_research_session": true,
+  "local_child_delegates_original": true,
+  "sinopac_host": "owned Thread(serve) with natural factory/secrets/resource ports",
+  "scenario": "manual-direct",
+  "fake_time_functional_integration": true,
+  "actual_sunday_availability_claim": false,
+  "clock_fixture": "2026-10-23 01:00 UTC + monotonic elapsed + explicit expiry advance",
+  "manual_flow_acceptance": true,
+  "original_local_child_safety_bootstrap": true,
+  "research_pages": 7,
+  "actual_manual_service_materialized": true,
+  "environment": "BROKER_SIMULATION",
+  "engine_state": "RUNNING",
+  "window_visible": true,
+  "rendered_size": [
+    780,
+    720
+  ],
+  "widget_count": 2777,
+  "financial_facts_verified": false,
+  "research_released": true,
+  "return_code": 0,
+  "elapsed_seconds": 7.416,
+  "ui_steps": [
+    "initial_direct_sim",
+    "manual_materialize",
+    "manual_book_pending",
+    "manual_expiry_preview",
+    "manual_expiry_refresh",
+    "manual_diagnostic_preview",
+    "manual_diagnostic_result",
+    "manual_normal_preview",
+    "manual_normal_result",
+    "manual_amend_result",
+    "manual_cancel_result",
+    "finish",
+    "closed"
+  ],
+  "owned_local_processes": 0,
+  "owned_fake_hosts": 1,
+  "fake_sdk": {
+    "constructors": 1,
+    "login_count": 1,
+    "logout_count": 1,
+    "resource_calls": 1,
+    "subscription_count": 2,
+    "ca_calls": 0,
+    "order_constructions": 2,
+    "order_calls": 5,
+    "place_calls": 2,
+    "amend_calls": 1,
+    "cancel_calls": 2,
+    "financial_query_calls": 0
+  },
+  "real_sdk_imported": false,
+  "fake_secret_lookup_count": 1,
+  "owned_endpoints_removed": true,
+  "canonical_submit_commit_chains": 2,
+  "actual_default_clock": false,
+  "passed": true,
+  "preview_expiry_31s_rejected_by_unchanged_predicate": true,
+  "known_report": {
+    "status": "CANCELED",
+    "outcome_known": true,
+    "filled": 0,
+    "price_only_amend_observed": true
+  },
+  "owned_lifetimes": [
+    {
+      "exit_code": null,
+      "thread_alive": false,
+      "cleanup_completed": true,
+      "endpoint_exists": false
+    }
+  ],
+  "errors": [],
+  "host_errors": [],
+  "raw_sha256": "3bb797a295d93033a533115e2dadc1d1c181647b9a9cbb5d3aaccd439daccb90",
+  "redactions": [
+    "Private checkout/workspace paths, PIDs, process command lines and local stack paths omitted; only whitelist facts retained. Broker values/counters come exclusively from injected fake ports."
+  ]
+}
