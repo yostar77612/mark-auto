@@ -1150,3 +1150,16 @@ not unused code when no callers resolve. The84 affected Qt, connection, page
 boundary, document and layer tests pass in29.786s. Prior M2-1 startup evidence
 remains source-specific. New complete discovery and actual startup follow on
 this composite; no old full/startup evidence is relabeled.
+
+## M2-2 / prepared-book exit baseline after final M2-1 integration
+
+The normal M2-1 merge preserves the explicit page-owner API and all full-help
+assertions. Its first93-check batch exposed one obsolete positive expectation:
+leaving LIVE for SIM with the default unconfirmed ManualTradingView expected
+flatten enabled. The implemented owned-book exit gate correctly keeps it disabled.
+Update only that feature oracle to assert unconfirmed and disabled; retain both
+selector acceptance, pending LIVE prohibition and no-command assertions. The
+independent29 real-widget cases prove owned confirmed halted-book exits remain
+possible and unknown/foreign exits remain blocked. The unchanged93-test batch
+then passes in28.500s. Commit this feature baseline independently of the merge;
+no guard, timeout, skip or existing assertion is removed.

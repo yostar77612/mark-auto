@@ -212,7 +212,8 @@ class M2TradingPageTests(unittest.TestCase):
             self.facade.release.set()
         self.drain()
         self.assertIs(window.state.environment, Environment.BROKER_SIMULATION)
-        self.assertTrue(window.flatten_button.isEnabled())
+        self.assertFalse(window.state.manual.confirmed)
+        self.assertFalse(window.flatten_button.isEnabled())
 
     def test_live_disables_controls_and_rejects_every_current_order_intent(self):
         window = self.window
