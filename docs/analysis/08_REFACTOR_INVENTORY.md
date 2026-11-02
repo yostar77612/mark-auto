@@ -902,6 +902,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/runtime/automatic.py` | 348 | composition | `quantlab/trading/runtime/automatic.py` | M2-3 completed-bar execution, durable claims, shared SIM capacity, trusted close evidence and runtime owner binding; engine-only delivery |
 
 | `tests/test_minute_research_basis.py` | 136 | tooling | `tests/test_minute_research_basis.py` | M2-7: explicit fixed-model assumption/UNKNOWN basis, generated SDK host, unchanged legacy wire hashes and preserved contract/grid/cancellation guards. |
+| `quantlab/trading/application/daily_closes.py` | 267 | application | `quantlab/trading/application/daily_closes.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/application/daily_execution.py` | 327 | application | `quantlab/trading/application/daily_execution.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/application/daily_recovery.py` | 61 | application | `quantlab/trading/application/daily_recovery.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/application/daily_state.py` | 232 | application | `quantlab/trading/application/daily_state.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/runtime/daily_automatic.py` | 75 | composition | `quantlab/trading/runtime/daily_automatic.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
 | `desktop_app/features/trading/readiness_guidance.py` | 64 | presentation | `desktop_app/features/trading/readiness_guidance.py` | U1 read-only account readiness disclosure and copy; no engine contract changes. |
 | `desktop_app/strings/account_readiness.py` | 47 | shared | `desktop_app/strings/account_readiness.py` | U1 read-only account readiness disclosure and copy; no engine contract changes. |
 | `desktop_app/features/trading/manual_exit_preview.py` | 113 | presentation | `desktop_app/features/trading/manual_exit_preview.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
@@ -910,6 +915,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/strategy_controls.py` | 191 | presentation | `desktop_app/features/trading/strategy_controls.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/strategy_options.py` | 176 | presentation | `desktop_app/features/trading/strategy_options.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/strings/strategy_management.py` | 46 | shared | `desktop_app/strings/strategy_management.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/candidate_catalog.py` | 78 | composition | `quantlab/trading/runtime/candidate_catalog.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
+| `quantlab/trading/runtime/v1_signal_source.py` | 62 | composition | `quantlab/trading/runtime/v1_signal_source.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

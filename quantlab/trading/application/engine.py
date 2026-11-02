@@ -555,8 +555,6 @@ class TradingEngine:
                 from quantlab.trading.domain.strategy import resolve_tmf_near
 
                 parameters = strategy.parameters
-                if parameters.bar_interval == '1d' and self.configuration.environment is Environment.BROKER_SIMULATION:
-                    raise DomainError('automatic_daily_execution_pending')
                 if parameters.instrument_rule == 'TMF_NEAR':
                     strategy_instrument = resolve_tmf_near(self.catalog.instruments, self.calendar, self.state.trading_day).instrument_id
                 if spec.expiry == self.state.trading_day:
@@ -694,6 +692,14 @@ class TradingEngine:
                     raise DomainError('capability_missing', 'current owner submission boundary required')
                 submission = guard(plan.account_ref, reduce_only=plan.reduce_only)
             with submission:
+                if (
+                    automatic
+                    and self.configuration.environment is Environment.BROKER_SIMULATION
+                    and (strategy.parameters.bar_interval == '1d' and not plan.reduce_only or any(row.key == key for row in self.state.automatic.daily.intents))
+                ):
+                    from .daily_execution import assert_daily_dispatch
+
+                    assert_daily_dispatch(self, plan, key)
                 return execution.commit(self.state, plan, policy, reservation, key, lambda: self.fence(), request_hash=digest)
 
     def _check_exit(self, plan: OrderPlan) -> None:

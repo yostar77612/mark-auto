@@ -11,7 +11,8 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, cast
 
 from quantlab.trading.domain.arithmetic import decimal_operation
-from quantlab.trading.domain.models import PositionLot, Side
+from quantlab.trading.domain.models import InstrumentSpec, PositionLot, Quote, Side
+from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.freshness import Freshness
 from quantlab.trading.domain.quote_stats import unrealized_pnl
 from quantlab.trading.domain.validation import DomainError, aware, decimal_value, identity, integer, trading_date
@@ -76,6 +77,20 @@ def seed_track(strategy_id: str, version: int, now: datetime, day: date) -> Vers
 
 
 @decimal_operation
+def liquidation_value(spec: InstrumentSpec, lot: PositionLot, quote: Quote, fees: FeeSchedule) -> Decimal:
+    """Pure net liquidation using an actual quote; caller owns its time proof."""
+    if not lot.quantity:
+        return ZERO
+    sign = 1 if lot.direction is Side.BUY else -1
+    price = quote.bid if sign == 1 else quote.ask
+    side = Side.SELL if sign == 1 else Side.BUY
+    cost = lot.entry_price * lot.quantity * spec.multiplier * sign + (
+        fees.transaction(spec, side, price, lot.quantity) + fees.slippage(spec, lot.quantity, legs=1, prices=(price,))
+    )
+    return cast(Decimal, unrealized_pnl(price, lot.quantity * sign, spec, cost, freshness=Freshness.LIVE))
+
+
+@decimal_operation
 def unrealized_liquidation(engine: 'TradingEngine', lot: PositionLot) -> Decimal:
     """The same executable-side, fee/slippage basis used by portfolio risk."""
     if not lot.quantity:
@@ -84,13 +99,7 @@ def unrealized_liquidation(engine: 'TradingEngine', lot: PositionLot) -> Decimal
     quote = engine.quotes.get(lot.instrument_id)
     if quote is None or not 0 <= (engine.clock.now() - quote.source_at).total_seconds() <= 30:
         raise DomainError('stale_quote', 'open position valuation is unknown')
-    sign = 1 if lot.direction is Side.BUY else -1
-    price = quote.bid if sign == 1 else quote.ask
-    side = Side.SELL if sign == 1 else Side.BUY
-    cost = lot.entry_price * lot.quantity * spec.multiplier * sign + (
-        engine.fees.transaction(spec, side, price, lot.quantity) + engine.fees.slippage(spec, lot.quantity, legs=1, prices=(price,))
-    )
-    return cast(Decimal, unrealized_pnl(price, lot.quantity * sign, spec, cost, freshness=Freshness.LIVE))
+    return liquidation_value(spec, lot, quote, engine.fees)
 
 
 def _next_track(
