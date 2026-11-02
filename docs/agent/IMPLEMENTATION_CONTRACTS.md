@@ -7646,3 +7646,25 @@ failure bound if dispatch never occurs. The real deadline check and cleanup run
 unchanged; the original under-one-second return, retiring worker, absent receipt,
 empty cache and complete missing-range assertions remain. No production behavior,
 SDK access, execution policy or acceptance score changes.
+
+## M2 engine gaps: daily signal source contract (2026-11-02)
+
+- Append `AutomaticView.daily_signal_data=()` containing `DailySignalDataView`:
+  strategy/version/instrument, status, source, price_mode, adjustment_method,
+  completed trade_date, actual available_at, source_digest and reason. Empty
+  defaults preserve old payloads; UNVERIFIED is never a claim of readiness.
+- No new UiAction or client-supplied price/source authority. Existing RESEARCH
+  and server-driven daily evaluation consume one explicit data policy. Research
+  and execution use the same official source, session/volume scope, adjustment
+  method and point-in-time construction; rebuild the whole signal window for
+  every as-of date. Never append a raw close to an adjusted historical window.
+- Sparse trading does not invalidate a complete official daily observation.
+  Minute completeness and the13:30 auction cannot substitute for this source.
+  Execution prices, sizing and account valuation still use current raw quotes
+  and FeeSchedule; adjusted signal prices confer no execution authority.
+- New codes: daily_signal_source_unverified, daily_signal_basis_mismatch,
+  daily_signal_not_available. Missing/late/unattested data do not authorize a
+  new entry or a next-day catch-up. Existing protective exits remain separate.
+- Engine lane only; desktop_app/, LIVE hard guard, G3, SDK pin, PROJECT_STATE,
+  costs and workflow/layer rules are unchanged. Order-path PRs require green
+  complete CI and Claude review; this agent does not merge them.

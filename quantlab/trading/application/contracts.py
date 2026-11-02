@@ -382,12 +382,28 @@ class DailyIntentView:
 
 
 @dataclass(frozen=True)
+class DailySignalDataView:
+    strategy_id: str
+    version: int
+    instrument_id: str
+    status: str = 'UNVERIFIED'
+    source: str = ''
+    price_mode: str = ''
+    adjustment_method: str = ''
+    trade_date: date | None = None
+    available_at: datetime | None = None
+    source_digest: str = ''
+    reason: str = 'daily_signal_source_unverified'
+
+
+@dataclass(frozen=True)
 class AutomaticView:
     state: str = 'PAUSED_WAITING_RESUME'
     reasons: tuple[str, ...] = ('program_restarted',)
     evaluations: tuple[EvaluationStatus, ...] = ()
     daily_intents: tuple[DailyIntentView, ...] = ()
     next_session_at: datetime | None = None
+    daily_signal_data: tuple[DailySignalDataView, ...] = ()
 
 
 @dataclass(frozen=True)
