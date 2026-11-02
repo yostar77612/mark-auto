@@ -64,7 +64,14 @@ class AutomaticEngineTests(unittest.TestCase):
         accounts = tuple(SinopacAccountView(ref, '***' + ref, next(iter(case.adapter.capabilities[ref].markets)), True, True) for ref in self.engine.gateways)
         self.owner_view = SinopacConnectionView(environment=SIM, phase='CONNECTED', generation=case.scope.connection_generation, revision=3, accounts=accounts)
         selected = tuple(sorted(self.engine.gateways))
-        owner = SimpleNamespace(lock=RLock(), snapshot=lambda: self.owner_view, selected=selected, shared=case.owner, query_ready=True)
+        owner = SimpleNamespace(
+            preferences=SimpleNamespace(check_selection=lambda selected: None),
+            lock=RLock(),
+            snapshot=lambda: self.owner_view,
+            selected=selected,
+            shared=case.owner,
+            query_ready=True,
+        )
         runtime = SimpleNamespace(owner=owner, stamp=(self.owner_view.generation, 3, selected, case.owner), error='')
         self.bundle = SimpleNamespace(
             engine=self.engine,

@@ -109,6 +109,7 @@ class TradingWindow(QMainWindow):
         save_strategy_columns=None,
         strategy_error_texts=None,
         style_strategy_table=None,
+        style_automatic_controls=None,
     ):
         super().__init__(parent)
         self.facade = facade
@@ -119,6 +120,7 @@ class TradingWindow(QMainWindow):
         self._strategy_columns, self._save_strategy_columns = strategy_columns, save_strategy_columns
         self.strategy_error_texts = strategy_error_texts or {}
         self.style_strategy_table = style_strategy_table
+        self.style_automatic_controls = style_automatic_controls
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
@@ -189,6 +191,7 @@ class TradingWindow(QMainWindow):
         connection_revision=None,
         connection_generation='',
         strategy_parameters=None,
+        account_risk=None,
     ) -> None:
         if self.state.environment is Environment.LIVE and action in LIVE_ORDER_ACTIONS:
             self._feedback(ui_text('m2t.orders_disabled'))
@@ -219,6 +222,7 @@ class TradingWindow(QMainWindow):
                 connection_revision=connection_revision,
                 connection_generation=connection_generation,
                 strategy_parameters=strategy_parameters,
+                account_risk=account_risk,
             )
         )
 
@@ -284,6 +288,8 @@ class TradingWindow(QMainWindow):
         operation = self._operation if action is not UiAction.STOP_NEW else self._priority_operation
         self.manual_controls.received(operation.command if operation is not None else None, state, receipt)
         self.strategy_controls.received(operation.command if operation is not None else None, state, receipt)
+        self.automatic_controls.received(operation.command if operation is not None else None, state, receipt)
+        self.account_risk_controls.received(operation.command if operation is not None else None, state, receipt)
         if self._stamp(state) < self._stamp(self.state):
             return
         self._engine_reachable = True
@@ -536,6 +542,8 @@ class TradingWindow(QMainWindow):
         if self._stamp(state) < self._stamp(self.state):
             return
         self.manual_controls.render(state)
+        self.automatic_controls.render(state)
+        self.account_risk_controls.render(state)
         market_changed = state.market_revision != self.state.market_revision
         market_only = (
             self._rendered_version is not None

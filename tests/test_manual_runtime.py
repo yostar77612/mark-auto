@@ -34,6 +34,7 @@ class ManualRuntimePureTests(unittest.TestCase):
             query_ready=True,
             shared=self.shared,
             accounts=(SimpleNamespace(alias='future-alias', signed=True),),
+            preferences=SimpleNamespace(check_selection=lambda selected: None),
         )
         self.bundle = SimpleNamespace(
             sinopac_connection=self.owner,

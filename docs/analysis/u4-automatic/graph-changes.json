@@ -1,0 +1,651 @@
+{
+  "summary": {
+    "changed_count": 73,
+    "affected_count": 10,
+    "changed_files": 37,
+    "risk_level": "high"
+  },
+  "changed_symbols": [
+    {
+      "id": "Class:desktop_app/features/trading/account_risk_controls.py:AccountRiskControls",
+      "name": "AccountRiskControls",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/account_risk_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/account_risk_controls.py:AccountRiskControls.__init__#1",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/account_risk_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/account_risk_controls.py:AccountRiskControls.dirty#0",
+      "name": "dirty",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/account_risk_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/account_risk_controls.py:AccountRiskControls.render#1",
+      "name": "render",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/account_risk_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/account_risk_controls.py:AccountRiskControls.submit#0",
+      "name": "submit",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/account_risk_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/account_risk_controls.py:AccountRiskControls.received#3",
+      "name": "received",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/account_risk_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/automatic_status.py:error_next",
+      "name": "error_next",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/automatic_status.py:plain_label",
+      "name": "plain_label",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/automatic_status.py:AutomaticControls",
+      "name": "AutomaticControls",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls.__init__#2",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/features/trading/automatic_status.py:AutomaticControls.__init__.cards@43:8",
+      "name": "cards",
+      "type": "Variable",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls.scope#1",
+      "name": "scope",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls._preflight#0",
+      "name": "_preflight",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls.check#0",
+      "name": "check",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls.reconcile#0",
+      "name": "reconcile",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls.received#3",
+      "name": "received",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls.resume#0",
+      "name": "resume",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/automatic_status.py:AutomaticControls.render#1",
+      "name": "render",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/automatic_status.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/daily_execution.py:phase_text",
+      "name": "phase_text",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/daily_execution.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/daily_execution.py:DailyExecution",
+      "name": "DailyExecution",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/daily_execution.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/daily_execution.py:DailyExecution.__init__#2",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/daily_execution.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/daily_execution.py:DailyExecution.render#1",
+      "name": "render",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/daily_execution.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/features/trading/trading_page.py:LIVE_ORDER_ACTIONS",
+      "name": "LIVE_ORDER_ACTIONS",
+      "type": "Variable",
+      "filePath": "desktop_app/features/trading/trading_page.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/window.py:TradingWindow",
+      "name": "TradingWindow",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.__init__#13",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.command#20",
+      "name": "command",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow._result#3",
+      "name": "_result",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.apply_state#1",
+      "name": "apply_state",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/workspaces.py:build",
+      "name": "build",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/workspaces.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/shell/theme.py:style_automatic_controls",
+      "name": "style_automatic_controls",
+      "type": "Function",
+      "filePath": "desktop_app/shell/theme.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/automatic_risk.py:ENTRIES",
+      "name": "ENTRIES",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/automatic_risk.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/translation_parts.py:PARTS",
+      "name": "PARTS",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/translation_parts.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L1:分層式重構盤點報告（R0）",
+      "name": "分層式重構盤點報告（R0）",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L27:2 逐檔分層與目標路徑",
+      "name": "2 逐檔分層與目標路徑",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L582:2.2 PR C slice 2 added responsibilities",
+      "name": "2.2 PR C slice 2 added responsibilities",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L921:3 跨層匯入違規（GitNexus + AST）",
+      "name": "3 跨層匯入違規（GitNexus + AST）",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L923:3.1 靜態匯入明細",
+      "name": "3.1 靜態匯入明細",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/u4-automatic/verification.md:L1:U4 risk and automatic execution presentation",
+      "name": "U4 risk and automatic execution presentation",
+      "type": "Section",
+      "filePath": "docs/analysis/u4-automatic/verification.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/u4-automatic/verification.md:L8:Behavior",
+      "name": "Behavior",
+      "type": "Section",
+      "filePath": "docs/analysis/u4-automatic/verification.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/u4-automatic/verification.md:L33:Local validation",
+      "name": "Local validation",
+      "type": "Section",
+      "filePath": "docs/analysis/u4-automatic/verification.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/u4-automatic/verification.md:L62:Strings, baselines and graph",
+      "name": "Strings, baselines and graph",
+      "type": "Section",
+      "filePath": "docs/analysis/u4-automatic/verification.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/u4-automatic/verification.md:L81:Visual checks and limits",
+      "name": "Visual checks and limits",
+      "type": "Section",
+      "filePath": "docs/analysis/u4-automatic/verification.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L1:M1 自主決策紀錄",
+      "name": "M1 自主決策紀錄",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L209:2026-11-02 19:35 Asia/Taipei — U3 strategy presentation",
+      "name": "2026-11-02 19:35 Asia/Taipei — U3 strategy presentation",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L232:2026-11-02 — U4 risk and automatic execution desktop",
+      "name": "2026-11-02 — U4 risk and automatic execution desktop",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_desktop_catalog_split.py:CatalogSplitTests",
+      "name": "CatalogSplitTests",
+      "type": "Class",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_desktop_catalog_split.py:CatalogSplitTests.test_all_feature_records_are_literal_and_keep_unique_phase_keys#0",
+      "name": "test_all_feature_records_are_literal_and_keep_unique_phase_keys",
+      "type": "Method",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_m2_trading_page.py:M2TradingPageTests",
+      "name": "M2TradingPageTests",
+      "type": "Class",
+      "filePath": "tests/test_m2_trading_page.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_m2_trading_page.py:M2TradingPageTests.test_live_disables_controls_and_rejects_every_current_order_intent#0",
+      "name": "test_live_disables_controls_and_rejects_every_current_order_intent",
+      "type": "Method",
+      "filePath": "tests/test_m2_trading_page.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_u4_automatic_ui.py:AutomaticUiTests",
+      "name": "AutomaticUiTests",
+      "type": "Class",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_u4_automatic_ui.py:setUpClass",
+      "name": "setUpClass",
+      "type": "Variable",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.setUp#0",
+      "name": "setUp",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_u4_automatic_ui.py:tearDown",
+      "name": "tearDown",
+      "type": "Variable",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_u4_automatic_ui.py:drain",
+      "name": "drain",
+      "type": "Variable",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.apply",
+      "name": "apply",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.accepted_reconciliation#0",
+      "name": "accepted_reconciliation",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_stop_is_persistent_danger_and_cancel_default_without_send#0",
+      "name": "test_stop_is_persistent_danger_and_cancel_default_without_send",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_stop_is_persistent_danger_and_cancel_default_without_send.cancel@56:8#1",
+      "name": "cancel",
+      "type": "Function",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_pause_reason_visible_in_header_overview_and_trading#0",
+      "name": "test_pause_reason_visible_in_header_overview_and_trading",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_unverified_empty_position_projection_does_not_claim_zero_positions#0",
+      "name": "test_unverified_empty_position_projection_does_not_claim_zero_positions",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_resume_requires_accepted_auto_reconciliation_then_explicit_cancel_default#0",
+      "name": "test_resume_requires_accepted_auto_reconciliation_then_explicit_cancel_default",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_resume_requires_accepted_auto_reconciliation_then_explicit_cancel_default.cancel@88:8#1",
+      "name": "cancel",
+      "type": "Function",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_resume_rejects_scope_change_inside_confirmation#0",
+      "name": "test_resume_rejects_scope_change_inside_confirmation",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_resume_rejects_scope_change_inside_confirmation.changed@104:8#1",
+      "name": "changed",
+      "type": "Function",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_live_resume_widgets_handler_and_command_do_not_send#0",
+      "name": "test_live_resume_widgets_handler_and_command_do_not_send",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_preflight_shows_all_reasons_and_next_steps_without_inventing_pass#0",
+      "name": "test_preflight_shows_all_reasons_and_next_steps_without_inventing_pass",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_evaluation_uses_taipei_time_and_backend_result#0",
+      "name": "test_evaluation_uses_taipei_time_and_backend_result",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_risk_defaults_account_draft_survives_poll_and_sends_typed_limits#0",
+      "name": "test_risk_defaults_account_draft_survives_poll_and_sends_typed_limits",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_invalid_nonfinite_risk_input_sends_nothing#0",
+      "name": "test_invalid_nonfinite_risk_input_sends_nothing",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_normal_daily_wait_is_neutral_and_does_not_request_resume#0",
+      "name": "test_normal_daily_wait_is_neutral_and_does_not_request_resume",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_daily_intents_display_backend_window_and_unknown_without_financial_proposal#0",
+      "name": "test_daily_intents_display_backend_window_and_unknown_without_financial_proposal",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u4_automatic_ui.py:AutomaticUiTests.test_daily_dispatched_does_not_claim_a_fill_and_expiry_does_not_retarget#0",
+      "name": "test_daily_dispatched_does_not_claim_a_fill_and_expiry_does_not_retarget",
+      "type": "Method",
+      "filePath": "tests/test_u4_automatic_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:trading_runtime.py:_run_window",
+      "name": "_run_window",
+      "type": "Function",
+      "filePath": "trading_runtime.py",
+      "change_type": "touched"
+    }
+  ],
+  "affected_processes": [
+    {
+      "id": "proc_44_new_version",
+      "name": "New_version → _feedback",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_295_add_context",
+      "name": "Add_context → _feedback",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_394_transfer_selected",
+      "name": "Transfer_selected → _feedback",
+      "process_type": "intra_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_408_render",
+      "name": "Render → Selected_id",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "render",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_565_new_version",
+      "name": "New_version → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_573_build",
+      "name": "Build → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "build",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_589_add_context",
+      "name": "Add_context → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_593_transfer_selected",
+      "name": "Transfer_selected → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_656_render",
+      "name": "Render → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "error_next",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_657_render",
+      "name": "Render → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "phase_text",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 1
+        }
+      ]
+    }
+  ]
+}

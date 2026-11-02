@@ -5,6 +5,7 @@ from dataclasses import replace
 from . import automatic_state as claims, daily_state as pending
 from .automatic_baseline import automatic_baseline_rows
 from .daily_closes import SOURCE_ID, daily_close_evidence, observe_daily_closes
+from .daily_signal_data import assert_daily_intent_source, stock_daily_window, uses_official_daily
 from .preflight import PreflightFacts, assert_preflight, record_preflight
 from .research import entry_signal, exit_signal
 from .state import ACTIVE
@@ -119,7 +120,13 @@ def observe_daily(engine, bars):
             for instrument_id in sorted(instruments):
                 calendar = calendar_for_instrument(engine.calendar, engine.catalog.resolve(instrument_id))
                 session = calendar.day_session(engine.state.trading_day)
-                buckets = complete_buckets(cache.get(instrument_id, ()), '1d', session, engine.clock.now())
+                official = stock_daily_window(engine, record, instrument_id, calendar) if uses_official_daily(record) else None
+                if uses_official_daily(record):
+                    if official is None:
+                        continue
+                    buckets = (official[0],)
+                else:
+                    buckets = complete_buckets(cache.get(instrument_id, ()), '1d', session, engine.clock.now())
                 for bar in buckets:
                     cursor = EvaluationCursor(record.strategy_id, record.version, instrument_id, '1d', bar.end)
                     target = pending.next_session(calendar, cursor)
@@ -127,8 +134,10 @@ def observe_daily(engine, bars):
                     if claimed is None:
                         continue
                     engine._persist('daily_evaluation_claimed', replace(engine.state, automatic=claimed))
-                    history = automatic._history(engine, instrument_id, '1d', buckets)[instrument_id]
+                    history = official[1] if official is not None else automatic._history(engine, instrument_id, '1d', buckets)[instrument_id]
                     actions = _make_actions(engine, record, cursor, calendar, history)
+                    if official is not None:
+                        actions = tuple(replace(row, data_fingerprint=official[2], data_policy_fingerprint=official[3]) for row in actions)
                     daily = pending.append_batch(engine.state.automatic.daily, actions)
                     completed = claims.complete_evaluation(engine.state.automatic, cursor)
                     engine._persist(
@@ -214,6 +223,7 @@ def _matching_record(engine, intent):
         and (record.state != 'ACTIVE' or _entry_instrument(engine, record) != intent.instrument_id)
     ):
         raise DomainError('daily_signal_invalidated')
+    assert_daily_intent_source(engine, record, intent)
     return record
 
 

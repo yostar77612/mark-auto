@@ -225,6 +225,7 @@ class M2TradingPageTests(unittest.TestCase):
             control.click()
         expected = frozenset(
             (
+                UiAction.AUTO_RESUME,
                 UiAction.DEPLOY,
                 UiAction.STEP,
                 UiAction.RESUME,

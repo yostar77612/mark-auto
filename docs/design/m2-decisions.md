@@ -1945,6 +1945,40 @@ and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
 
+## 2026-11-02 — Account alias hardening (independent work B)
+
+- Decision: HMAC a domain-separated legacy identity digest with a random local
+  32-byte key. This permits exact migration without recovering account numbers;
+  both displayed aliases and persisted identity values change together.
+- Key loss/replacement: clear remembered selection and require reselection.
+  Do not match masked labels or account tails. Corrupt/inaccessible key files
+  preserve settings and fail closed. The key never belongs in git or settings.
+- Historical manual ledger: retain every byte and block nonempty selection with
+  the existing reconciliation-required error. Automatically renaming financial
+  journal identities or treating a new alias as an empty account is outside this
+  narrow security fix. This conservative gate needs separate controlled
+  reconciliation for such existing workspaces; no automatic reset is offered.
+- No new UI strings; reuse the existing reconciliation error. Linux fake tests
+  cover migration, key continuity/loss, native alias privacy and retained pending
+  obligations. Windows ACLs, installed-client upgrade and native SDK behavior
+  remain explicitly unverified. GitNexus/root AGENTS.md/CLAUDE.md are absent in
+  this checkout; grep callers and `tools/affected_tests.py` import graph replace
+  impact/detect-changes for this work.
+
+### 2026-11-02 continuation — stale selections and empty-ledger boundary
+
+- Revalidate cached aliases at the existing manual readiness/admission boundary
+  against fresh keyed settings. A second runtime observing key loss must not
+  leave a first runtime able to materialize or submit under stale aliases.
+- Retain the existing-ledger reconciliation gate, even for a verified empty
+  schema-v2 ledger. SQLite inspection ownership ends before a stale runtime's
+  lazy lease acquisition; no root-wide settings/ledger ownership fence exists.
+  Automatic exemption is blocked on safe shared ownership or verified
+  quiescence, not on an inability to recognize the empty schema.
+- The added deny-only check covers current-version runtimes at their admission
+  boundary; it is not retroactive protection for old running binaries or a
+  replacement for an atomic cross-process ownership protocol.
+
 ## 2026-11-02 — M2-9 isolated data/cost/maintenance slice
 
 Use additive M1 daily/event tables and retain original official response bytes
@@ -2220,6 +2254,16 @@ releases a reservation. GitNexus reconcile_automatic impact:294 upstream,
 166 processes,20 modules,CRITICAL. Regression tests use the actual fake SDK;
 independent guard mutations accompany the correction.
 
+### 2026-11-02 — Alias integration with updated automatic SIM main
+
+The M2-3 engine uses manual materialization but separate automatic entry and
+protective observation admission. Preserve upstream execution behavior and add
+only fresh alias-selection rejection to those existing boundaries. The
+preflight collector also supplies automatic resume/completed-bar health; it
+still performs no SDK queries. Empty-ledger automatic exemption remains blocked
+on ownership/quiescence; this sync introduces neither journal migration nor
+new execution capability.
+
 ### M2-3 next round: daily signal contract and execution window
 
 2026-11-02 14:23 Taipei start; estimate150 minutes before R5 reassessment at225.
@@ -2283,3 +2327,158 @@ that close, reset budgets, send an order or resume. Any dispatcher uncertainty,
 minute claim, missing provenance or unknown manual observation remains blocked.
 This avoids turning a harmless pure-evaluation crash into a permanently
 unrecoverable pause while preserving unknown financial outcomes.
+
+### M2 engine gaps: ordered independent delivery, daily source contract
+
+2026-11-02 Taipei, branch codex/m2-engine-gaps from main f0e974f. First scope is
+official daily signal/research basis; estimate150 minutes, R5 reassess225 minutes.
+Subsequent independent PRs cover bounded no-send proof and authoritative
+performance summaries. No PR stacks on pending PR155; it remains unmerged for
+Claude. Later contracts/implementation can be prepared without publishing a
+dependent PR. Full tests stay in CI; local affected modules and real LOCAL/fake
+SIM startup remain mandatory. Baselines are generated as one final separate batch.
+
+Choose explicit official daily provenance and the existing M2-9 point-in-time
+adjustment semantics. Unknown source/basis is unavailable, not a synthetic minute
+fallback. A raw execution quote is never an adjusted signal bar. This first small
+commit exposes read-only source status and three error codes before behavior.
+AutomaticView impact is CRITICAL112 upstream/55 direct; source confirms the
+dynamic IPC/snapshot callers despite bounded process omissions. New type/error
+names are absent by text search; graph UNKNOWN is not used as an all-clear.
+
+Visible Chat delegation failed before sending: ExistingTabSelectionError,
+existing_tab_not_found, diagnostic conversation_id_mismatch. Do not resubmit or
+create a replacement chat; reuse the already recorded public S1 fixtures and
+verify implementation invariants locally. No credentials or OOS data were sent.
+
+### Daily source implementation: official, point in time, no late catch-up
+
+Use the official exchange-reported daily volume/session scope for typed stock
+1d BROKER_SIMULATION research and signals. Rebuild the20-row signal window with
+the existing backward adjustment through each completed decision's ex-date;
+historical/real execution prices remain RAW with existing FeeSchedule. A held
+position crossing an unimplemented entitlement still refuses research PnL.
+
+The runtime provider reads only existing immutable cache payloads and requires
+the completed date to precede the current Taipei civil date. Official product
+publication times do not prove monthly-endpoint finality. Unknown raw/day/action
+coverage refuses new signals; valid sparse official days no longer depend on a
+full minute grid. The existing legacy downloader is not a new TWT49U producer.
+The recorded TWT49U global schema receives its own parser, including validated
+negative coverage, without changing legacy raw payloads or fields.
+
+Bind research to canonical semantic raw/action facts, tolerating transport-only
+refreshes. Also bind each intent to the complete saved signal window and policy,
+then recheck at final dispatch/commit; corrections after training cannot bypass
+admission. No old signal is silently upgraded or late signal caught up. Rendering
+uses cached status only. Existing LIVE guards and protective exits stay intact.
+
+Related regression exposed a changed minute result/receipt wire hash from the
+new empty daily_basis. Preserve the original asserted bytes by omitting only
+that empty field on the two exact research wire types; populated basis and all
+other null fields remain encoded. GitNexus codec impact is CRITICAL251, including
+164 direct callers and34 affected processes, so original byte-hash assertions
+and explicit new wire-contract tests both remain mandatory. See
+docs/analysis/m2-engine-gaps/daily-signal-basis-verification.md for fixtures,
+guard-deletion results, provenance limits and verification.
+
+### M2-3c: explicit no-send declaration and bounded daily projections
+
+2026-11-02 19:54 Taipei start, estimate150 minutes, R5 reassessment225 minutes.
+Base main c69d459 includes reviewed/merged PR147; branch
+codex/m2-3c-review-fixes is one PR directly to main. Never merge it autonomously;
+green CI precedes Claude review. Engine only, with unchanged LIVE hard guard.
+
+Choose a separate confirmed owner operation for the daily no-order crash gap.
+AUTO_RECONCILE remains read/reconcile-only; it cannot silently reinterpret UNKNOWN
+as no send. The new command carries only the exact intent key and confirmation;
+the server supplies current owner, cached reconciliation and journal proof.
+No order_submitting persistence AND no matching broker order are both necessary.
+Successful declaration settles the intent without changing money or resuming.
+
+Bound the daily projection with20 verified trading days and account audit digests;
+keep unconsumed, invalidated and unresolved/active canonical obligations. Old
+quotes/order lists stay decodable, but new closes use references/digests. Archive
+the projection, not the append-only audit journal. The250-day/30-instrument test
+must preserve late old-order fee/fill detection and unchanged reconciliation.
+
+Pre-edit graph binds this exact worktree/index c69d459. Common contract types are
+CRITICAL110 upstream, engine HIGH94, registry MEDIUM24. Snapshot/IPC/codec and
+startup callers are source-confirmed; missing bounded process flows are no
+evidence of no impact. Initial indexing refused our diagnostic-only unowned
+directory; preserve those files separately and initialize normal owned storage.
+
+### M2-3c: final recovery proof and audit findings
+
+The explicit owner declaration inspects every verified same-environment journal
+snapshot, including orders subsequently removed from current state. It requires
+one authorized READY-to-CLAIMED transition, unchanged intent identity and a full
+sequence through the current state version. Canonical submission keys compare
+UTC and historical offset timestamps semantically, including exact exit lot.
+Freshness is checked AFTER this potentially lengthy replay, inside the current
+owner guard. A clock-advance counterexample protects that ordering. No replay
+timestamp substitutes for a fresh broker observation.
+
+Without a saved yesterday plan, any uncorrelated same-instrument/same-side broker
+order remains a candidate even when price or quantity differ. Only an exact
+local-order ID, broker reference and complete plan correlation proves an order
+belongs to a different dispatch. This preserves recovery with the known canceled
+TMF diagnostic while refusing ambiguous or partially matching records. No cash,
+reservation, order or position is removed; declaration revokes authority and
+keeps stopped/paused. Explicit user resume remains a separate existing operation.
+
+Retention uses verified DAY sessions, never calendar-day age or guessed holidays.
+Validate financial evidence before pruning, including at the first startup write
+for old closed payloads. Consumed old closes become one latest account audit
+anchor; a digest of the full pre-close canonical order economics detects later
+fills, fees, deletions and backdated orders. New rows contain quote references and
+order digest/count; empty defaults keep historical nested payloads readable.
+Unconsumed, invalidated and unresolved/active obligations remain available.
+The 250-day/30-instrument regression bounds the normal consumed projection below
+2 MiB and limits final-100-day variation to under1000 bytes. This does not bound
+an indefinitely unresolved audit backlog, canonical order history or journal.
+
+S1 audit finds no verified official/adjusted historical bridge into typed broker
+automation today. Raw live-minute completeness and the13:30 call auction prevent
+claiming equivalence with official daily data. Actual6225 illiquid-day and2330
+ex-dividend public fixtures demonstrate the coverage/basis risks. Preserve strict
+incomplete-data rejection; propose a future same-source, same-basis, as-of signal
+envelope using M2-9 semantics, without silently splicing adjusted history and raw
+appends or inventing trade minutes. That integration remains outside this fix.
+
+F4 retains entry-level admission for ordinary daily exits by default. Relaxing
+to reduction-only admission improves availability but needs distinct verified
+lot/quantity, fresh scoped reconciliation and idempotency semantics, and could
+bypass a deliberate user pause. Existing protective exits remain separate.
+S3's shared APP-book next-day readiness is intentional only for an exact committed
+daily baseline with the same environment, account, dates, source and PnL. Missing
+or mismatched evidence still rejects; a pure manual book gains no bypass.
+
+F3 actual hash-chain SQLite full-state fixtures measured1000/5000 events at
+125.153/625.765 MB serialized payload. Warm uninstrumented replay plus provenance
+took4.385/23.199 seconds; traced full recovery took25.132/131.556 seconds with
+126.467/628.907 MB peak allocation. Tracing cost is not production latency.
+No claim of constant-time or bounded-memory recovery: a future streaming or
+checkpoint design must retain the complete causal no-submit proof. This PR
+changes the projection size, not the append-only audit journal or replay API.
+
+The public F1 command currently holds bundle/engine/owner locks through proof,
+so the worker cannot adopt a fresher observation mid-scan. If that proof itself
+exceeds30 seconds, repeated declaration attempts remain rejected by the existing
+freshness boundary. This is a disclosed long-journal availability limitation,
+not permission to extend freshness or infer no send from current rows. F3's
+23.199-second measurement concerns the evaluation-recovery helper, not a direct
+benchmark of F1. A staged proof/fresh-observation continuation needs a separately
+reviewed design; no such implicit authorization is introduced in this fix.
+
+### M2-3c: integrate concurrent main without crossing lanes
+
+After the first push, main advanced to f0e974f with merged M3-2 signal/catalog
+adapters, U3 strategy presentation and the minute-timeout fixture synchronization.
+Merge main with an ordinary merge commit; do not rebase or stack another PR.
+Only append sections in IMPLEMENTATION_CONTRACTS and inventory rows conflicted.
+Keep both M2-3c and main's U3/M3/minute contracts and all seven new inventory rows.
+No engine behavior conflicts or desktop edits are introduced by resolution;
+desktop/trading_runtime bytes remain exactly incoming main. Repeat relevant
+integration checks and real LOCAL/fake-SIM starts on this combined final tree,
+then require the final-head complete CI before leaving the PR for Claude.

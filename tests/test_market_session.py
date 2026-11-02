@@ -137,6 +137,20 @@ class MarketSessionTests(unittest.TestCase):
         self.assertIn(('subscribe', 'IX0001', 'quote'), self.api.calls)
         self.assertIn(('unsubscribe', '2330', 'tick'), self.api.calls)
 
+    def test_stock_subscription_never_asks_the_options_only_tick_band_route(self):
+        self.api.contracts.info = lambda base: SimpleNamespace(
+            name='Name ' + base.code, reference=100, code=base.code, security_type='STK', exchange='TSE', region='TW'
+        )
+
+        def options_only(info):
+            raise AttributeError('StockInfo has no attribute tick_rule')
+
+        self.api.contracts.tick_bands = options_only
+        self.session.connect()
+        self.session.subscribe(STOCK)
+        self.assertIn(('subscribe', '2330', 'tick'), self.api.calls)
+        self.assertNotIn('price_tick', self.session.quote_details(STOCK.instrument_id))
+
     def test_login_error_never_contains_credentials_or_vendor_message(self):
         self.api.fail_login = True
         with self.assertRaises(DomainError) as caught:

@@ -22,6 +22,7 @@ from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.bootstrap import build_runtime
 from quantlab.trading.runtime.config import RuntimeLaunch
 from quantlab.trading.runtime.manual_trading import ManualExecutionGateway
+from quantlab.trading.runtime.sinopac_aliases import workspace_alias_key
 from quantlab.trading.runtime.sinopac_resources import generated_resources
 from tests.test_minute_research import fixture
 from tests.test_minute_research_history import FakeSDK
@@ -85,7 +86,7 @@ class MinuteHostTests(unittest.TestCase):
         self.addCleanup(self.bundle.close)
         strategy, _, self.calendar, rows, _, self.settings = fixture(length=300, opening=8 * 60 + 45)
         self.sdk = GeneratedSDK(rows)
-        accounts = discover_accounts([self.sdk.account], Environment.BROKER_SIMULATION)
+        accounts = discover_accounts([self.sdk.account], Environment.BROKER_SIMULATION, alias_key=workspace_alias_key(self.root))
         self.clock = SimpleNamespace(now=lambda: datetime(2026, 11, 2, 6, tzinfo=timezone.utc))
         owner = SimpleNamespace(
             accounts=accounts,
