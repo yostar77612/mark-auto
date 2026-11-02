@@ -371,6 +371,8 @@ class TradingWindow(QMainWindow):
                 strategy_parameters=wizard.accepted_parameters,
             )
         else:
+            if wizard.open_settings_requested:
+                self.navigation.setCurrentRow(5)
             self._clear_pending_wizard()
 
     def _clear_pending_wizard(self) -> None:
