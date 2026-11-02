@@ -58,7 +58,7 @@ class ManualRuntimeIntegrationTests(unittest.TestCase):
         self.assertIs(owner.clock, self.clock)
         owner.shared = SharedSDKSession(ShioajiSDKFacade(self.native, module, environment=Environment.BROKER_SIMULATION))
         owner.shared.login(api_key='offline-fixture', secret_key='offline-fixture')
-        owner.accounts = discover_accounts(self.native._accounts, Environment.BROKER_SIMULATION)
+        owner.accounts = discover_accounts(self.native._accounts, Environment.BROKER_SIMULATION, alias_key=owner.preferences.alias_key)
         self.alias = next(row.alias for row in owner.accounts if row.market is Market.INDEX_FUTURE)
         owner.selected = tuple(row.alias for row in owner.accounts)
         owner.preferences.save_accounts(owner.accounts, Environment.BROKER_SIMULATION)
@@ -194,6 +194,85 @@ class ManualRuntimeIntegrationTests(unittest.TestCase):
         self.assertIsNone(state.remaining_risk)
         self.assertEqual(self.native.financial_queries, 0)
         self.assertEqual(len([row for row in self.native._seen if row[0] == 'login']), 1)
+
+    def _rotate_key_in_second_connection(self):
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+        from quantlab.trading.runtime.sinopac_connection import SinopacConnection
+
+        root = self.bundle.launch.root
+        cached_selection = self.bundle.sinopac_connection.selected
+        (root / KEY_FILE).unlink()
+        peer = SinopacConnection(root, factory=lambda environment: self.fail('peer must not log in'), secrets=SimpleNamespace(), clock=self.clock)
+        self.addCleanup(peer.close)
+        self.assertEqual(peer.selected, ())
+        self.assertEqual(self.bundle.sinopac_connection.selected, cached_selection)
+        before = len(self.native._seen)
+        self.bundle.poll_ports()
+        self.assertIsNone(self.bundle.engine)
+        self.assertEqual(self.bundle.manual_runtime.error, 'reconciliation_required')
+        self.assertEqual(len(self.native._seen), before)
+
+    def test_cached_aliases_cannot_materialize_after_key_loss_on_valid_empty_ledger(self):
+        from quantlab.trading.adapters.storage.ledger import Ledger
+
+        root = self.bundle.launch.root
+        journal = Ledger(root / 'manual-trading-v2.sqlite', 'manual-sim-trading-v2', datetime.now(timezone.utc))
+        self.assertEqual(journal.replay(), ())
+        journal.close()
+        self._rotate_key_in_second_connection()
+
+    def test_cached_aliases_cannot_materialize_after_key_loss_without_ledger(self):
+        self.assertFalse((self.bundle.launch.root / 'manual-trading-v2.sqlite').exists())
+        self._rotate_key_in_second_connection()
+        self.assertFalse((self.bundle.launch.root / 'manual-trading-v2.sqlite').exists())
+
+    def test_cached_ready_runtime_rejects_admission_after_alias_key_loss(self):
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+
+        self.ready()
+        command = self.command(UiAction.TEST_SIM_ORDER)
+        original = self.bundle.engine.state
+        before = len(self.native._seen)
+        (self.bundle.launch.root / KEY_FILE).unlink()
+        result = self.request(Operation.COMMAND, command)
+        self.assertFalse(result.receipt.accepted)
+        self.assertEqual(result.receipt.code, 'reconciliation_required')
+        view = self.state().manual
+        self.assertIn('reconciliation_required', view.reasons)
+        self.assertFalse(view.can_submit)
+        self.assertFalse(view.can_prepare)
+        self.assertEqual(self.bundle.engine.state, original)
+        self.assertEqual(len(self.native._seen), before)
+
+    def test_alias_key_loss_with_pending_order_cannot_admit_new_account_scope(self):
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+        from quantlab.trading.runtime.sinopac_transition import select_accounts
+
+        self.test_actual_dispatch_diagnostic_canceled_then_normal_order_and_no_financial_projection()
+        owner = self.bundle.sinopac_connection
+        original_orders = self.bundle.engine.state.orders
+        self.assertTrue(original_orders)
+        self.assertTrue(any(row.plan.account_ref == self.alias for row in original_orders))
+        journal_path = self.bundle.launch.root / 'manual-trading-v2.sqlite'
+        self.assertTrue(journal_path.exists())
+        stale_command = self.command(UiAction.TEST_SIM_ORDER)
+        before = len(self.native._seen)
+        (self.bundle.launch.root / KEY_FILE).unlink()
+        configuration, selected = owner.preferences.load()
+        self.assertEqual(selected, ())
+        self.assertEqual(owner.preferences.known_accounts(), ())
+        accounts = discover_accounts(self.native._accounts, Environment.BROKER_SIMULATION, alias_key=owner.preferences.alias_key)
+        owner.accounts, owner.selected = accounts, selected
+        with self.assertRaises(DomainError) as error:
+            select_accounts(owner, (accounts[0].alias,), owner.ticket)
+        self.assertEqual(error.exception.code, 'reconciliation_required')
+        self.assertEqual(len(self.native._seen), before)
+        self.assertEqual(self.bundle.engine.state.orders, original_orders)
+        self.assertEqual(owner.selected, ())
+        with self.assertRaises(DomainError) as refused:
+            self.request(Operation.COMMAND, stale_command)
+        self.assertEqual(refused.exception.code, 'capability_missing')
+        self.assertEqual(len(self.native._seen), before)
 
     def test_materialization_without_confirmation_cannot_submit_and_pump_never_auto_cycles(self):
         self.bundle.poll_ports()

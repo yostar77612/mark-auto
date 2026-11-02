@@ -175,3 +175,6 @@ nohup.out
 !desktop_app/features/data/
 desktop_app/features/data/*
 !desktop_app/features/data/*.py
+
+# Workspace-only account pseudonym secret (never version this key).
+.sinopac-account-alias.key

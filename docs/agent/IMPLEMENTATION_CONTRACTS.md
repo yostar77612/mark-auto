@@ -7171,6 +7171,38 @@ Stock total and cumulative fills display exact fractional lots, including0.5 lot
 for500 shares, with canonical share tooltips; futures remain contracts. Choices
 and failed preference writes do not invoke a trading command.
 
+## Account alias hardening (2026-11-02)
+
+The unified connection uses a random 256-bit workspace-only key in
+`.sinopac-account-alias.key` for domain-separated HMAC-SHA256 account identities.
+Both the persisted digest and public alias are keyed; the legacy unkeyed identity
+is only an intermediate, never newly persisted. Alias keys are excluded by
+`.gitignore`, never serialized into settings/logs, and created exclusively with
+POSIX mode 0600. A complete key is flushed before settings migration; malformed
+or inaccessible key files fail closed without replacing prior preferences.
+Windows inherited ACL and native filesystem behavior require Windows verification.
+
+Reading legacy `sinopac_accounts_v1` validates the original preferences and rows,
+keys the old identity digest, maps selected aliases exactly, removes the old
+hashes/aliases, and atomically saves `sinopac_accounts_v2` and a key fingerprint.
+Authenticated discovery uses the same derivation, so valid selections remain
+stable without recovering or writing raw account IDs. A missing/replaced key
+invalidates remembered identities/selections; users must explicitly reselect,
+never match by displayed suffix. Invalid legacy schemas preserve original bytes.
+
+If alias migration/key replacement encounters a manual-trading ledger, it keeps
+that ledger unchanged and persists a reconciliation-required gate. Market viewing
+can continue, but nonempty account selection is blocked; reopening preferences or
+saving connection settings does not clear that gate. This deliberately prefers
+blocking over reassigning historic obligations to a fresh namespace. Controlled
+historical-ledger reconciliation is separate work, not performed automatically.
+Already-written journal aliases/backups are not retroactively scrubbed.
+
+The protection is against offline account guessing from settings alone. It does
+not protect an attacker who also possesses the workspace key, process memory, or
+historical unkeyed backups. No API credentials, real accounts, LIVE execution,
+SDK version, G3 source, existing research evidence or assertion is changed.
+
 ## M2-9 official daily data and maintenance boundaries
 
 Official stock refresh is explicitly consented per call, half-open dated, limited
@@ -7238,6 +7270,26 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `MANUAL_MAX_PRICE_DEVIATION` (1%) beyond the opposite quote is refused with
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
+
+### Account alias continuation: cached-runtime admission fence (2026-11-02)
+
+Manual SIM materialization, readiness and command admission recheck the selected
+aliases against fresh workspace-keyed identity metadata and the persisted
+reconciliation marker. A current-version runtime retaining an old in-memory
+selection cannot create a new manual engine/book or admit an SDK mutation after
+key loss/replacement has invalidated that selection, including when another
+connection observed the change first and when no ledger exists yet. The check
+is deny-only: it neither remaps identities nor edits financial journal facts.
+
+All existing-ledger migration gates remain conservative, including valid empty,
+active-owner and write-locked ledgers. An empty read, even under BEGIN IMMEDIATE,
+does not establish quiescence: a previously accepted runtime can acquire the
+lazy ledger lease after the inspection transaction ends. Safe automatic empty-
+ledger exemption needs shared ownership or verified quiescence across settings
+and ledger admission; it is not implemented here. This boundary check is not an
+atomic cross-process lock, and already-running older binaries cannot be made to
+honor it retroactively. Fake two-connection and ready-runtime tests assert no
+native mutation and preserved state on rejection; no new UI strings are added.
 
 ## M2-9 continuation: executable stock training and pre-open checklist
 
@@ -7539,6 +7591,20 @@ is UNKNOWN when resolution is blocked.
   blocked. This transition changes neither reservations nor submission count
   and keeps automatic execution paused until separate AUTO_RESUME.
 
+### Alias fence after M2-3 engine integration (2026-11-02)
+
+Automatic SIM still materializes through ManualRuntime._materialize, so the
+manual alias fence applies to engine creation. Its already-materialized entry
+and protective execution paths have separate validators: the current-owner
+preflight collector and AutomaticRuntime.validate_observation now also check
+fresh workspace-keyed selection metadata. This rejects stale aliases before
+entry or reduce-only submission; automatic resume and completed-bar admission
+use the same preflight collector. Broker facts remain cache-only; this new
+check reads local alias metadata, not broker data. Fake integration tests cover
+a second connection observing key loss, both submission-guard branches, resume
+and completed-bar rejection with zero native side effects. Existing unknown
+orders/positions and conservative ledger migration gates are not reset.
+
 ## M2-3 daily close and next-session execution contract (2026-11-02)
 
 - `AutomaticView` appends `daily_intents: tuple[DailyIntentView, ...] = ()`
@@ -7683,6 +7749,79 @@ Update checks remain user triggered. A new release offers explicit download/inst
 The update handoff reuses normal close, confirms owned engines exited, releases the install guard and waits for desktop exit before running the quiet installer. Shutdown failure/timeout cancels installation; no process is forcibly terminated. Installer nonzero exit and restart failures remain explicit errors. Existing workspace/settings are never a download or cleanup destination.
 
 Autostart defaults off and only manages the current user's Run value named MarkAuto. Enabled paths repair on installed launch; disabling removes only that value. Startup does not resume trading or new entries. Sleep/shutdown cannot run trading. LIVE remains hard-disabled; G3 locked files and trading logic remain unchanged. Full CI and Windows installer validation must pass; Claude review is required before owner merge.
+## M2-9 explicit cash-only training accounting (2026-11-02)
+
+A trusted official-stock source port can supply `CashDividendAction`: positive
+issuer cash per share, cash-only status and a payment date on/after ex-date,
+bound to its original source URL/payload digest. The existing native TWSE/TPEx
+parser does not manufacture these facts from the reference-price ratio. This
+slice is verified with explicitly synthetic port fixtures, not recorded exchange
+samples. Cash/share native entitlement ingestion remains unverified; unknown,
+share and mixed-action crossings, and short-side cash obligations, still refuse
+publication. Duplicate/conflicting same-day events fail the atomic import.
+
+Original `CorporateAction`, `ResearchTrade`, `ResearchResult` and
+`StockResearchArtifact` wire shapes and old no-entitlement hashes remain intact.
+Cash facts use additive storage with a canonical facts checksum against ordinary
+row corruption; this is integrity of trusted adapter output, not an attestation
+that arbitrary JSON or an official-looking URL is authoritative. Historical
+source bytes remain preserved; a failed refresh rolls back prices and cash facts.
+
+The new `markauto-official-stock-cash-training-1` artifact stores separate gross
+issuer cash accrual under `gross-issuer-cash-accrual-v1`. Entry before ex-date
+qualifies, including sale on ex-date; ex-date purchases do not. The observation
+horizon is the final research bar date. `gross_payable` means distribution
+scheduled by that date, NOT verified bank receipt; later amounts remain gross
+receivables even after the shares are sold. Personal withholding and remittance
+fees are excluded from this gross basis, not assumed to be zero. Neither bucket
+funds another entry; the existing static-allocation check is unchanged.
+Per-share amounts are multiplied exactly; issuer-specific rounding is not modeled
+or represented as known. Typed `StrategyParameters` remain unsupported by this
+legacy daily runner; existing static one-lot sizing is unchanged.
+
+Standard trade gross PnL, result net PnL and drawdown remain raw-price-only.
+`cash_accounting.raw_net_plus_entitlement` is explicitly a separate gross-cash
+accrual total, not a total-return drawdown/performance feed or new activation
+permission. Every new cash fact, schedule, method and summary is frozen into the
+artifact hash and verified during replay. Existing fee/slippage models, TRAINING
+partition, completion/coverage checks, cancellation/deadline and append-only
+publication remain in force. No UI, G3, M3-1 contract, OOS, live-order, credentials
+or market-network path changes. See `docs/design/m2-9-cash-entitlements.md` for
+assumptions, primary references, scope and verification limits.
+## M2 engine gaps: daily signal source contract (2026-11-02)
+
+- Append `AutomaticView.daily_signal_data=()` containing `DailySignalDataView`:
+  strategy/version/instrument, status, source, price_mode, adjustment_method,
+  completed trade_date, actual available_at, source_digest and reason. Empty
+  defaults preserve old payloads; UNVERIFIED is never a claim of readiness.
+- No new UiAction or client-supplied price/source authority. Existing RESEARCH
+  and server-driven daily evaluation consume one explicit data policy. Research
+  and execution use the same official source, session/volume scope, adjustment
+  method and point-in-time construction; rebuild the whole signal window for
+  every as-of date. Never append a raw close to an adjusted historical window.
+- Sparse trading does not invalidate a complete official daily observation.
+  Minute completeness and the13:30 auction cannot substitute for this source.
+  Execution prices, sizing and account valuation still use current raw quotes
+  and FeeSchedule; adjusted signal prices confer no execution authority.
+- New codes: daily_signal_source_unverified, daily_signal_basis_mismatch,
+  daily_signal_not_available. Missing/late/unattested data do not authorize a
+  new entry or a next-day catch-up. Existing protective exits remain separate.
+- Engine lane only; desktop_app/, LIVE hard guard, G3, SDK pin, PROJECT_STATE,
+  costs and workflow/layer rules are unchanged. Order-path PRs require green
+  complete CI and Claude review; this agent does not merge them.
+
+Daily source implementation detail: typed STOCK1d BROKER_SIMULATION RESEARCH
+requires a server-owned OfficialDailySignalSource and immutable OfficialDailyHistory;
+generic engine history cannot substitute. ResearchResult.daily_basis is a new
+keyword-only field. Its absent value is omitted only for the two exact research
+wire types, preserving legacy minute receipt/result bytes; populated provenance
+is always encoded. Historical fees/fills use RAW bars, decisions rebuild the
+whole at-most20-row adjusted window through each completed day. Runtime cache
+reads require a prior Taipei civil date and complete verified raw/action ranges.
+No download or client-supplied source is introduced. DailyIntent appends
+data_fingerprint/data_policy_fingerprint defaults; old unattested rows load but
+cannot dispatch. Saved-window semantic corrections refuse at the final boundary.
+OFFICIAL_DAILY_TRAINING labels this research; legacy LOCAL retains its old label.
 
 ## M3-3 application contract (2026-11-02)
 

@@ -7,6 +7,7 @@ import json
 import unittest
 
 import test_m2_automatic_engine as native_fixtures
+from official_daily_fixtures import FakeOfficialDailySource, fake_official_history, install_fake_official_source, publish_fake_daily_close
 from quantlab.trading.application import automatic
 from quantlab.trading.application.daily_execution import continue_daily_session, dispatch_daily, observe_daily
 from quantlab.trading.application.account_risk import seed_account_baseline
@@ -77,7 +78,7 @@ class DailyNativeFixture:
     def placed(self):
         return self.base.placed()
 
-    def deploy(self, *, entry_amount=D('25000'), allocation=None, interval='1d', entry_below=None, exit_below=None):
+    def deploy(self, *, entry_amount=D('25000'), allocation=None, interval='1d', entry_below=None, exit_below=None, legacy=False):
         capital = next(book.capital for book in self.engine.state.manual_books if book.account_ref == self.account_ref)
         form = StrategyForm(
             'daily-next-session-native',
@@ -93,7 +94,7 @@ class DailyNativeFixture:
             D('.02'),
             'BUY_AND_HOLD',
         )
-        parameters = StrategyParameters(interval, D('.001'), entry_amount)
+        parameters = None if legacy else StrategyParameters(interval, D('.001'), entry_amount)
         if exit_below is not None:
             definition = {
                 'schema_version': 2,
@@ -112,6 +113,10 @@ class DailyNativeFixture:
             }
             form = replace(form, rule_kind='STRUCTURED_JSON', draft_json=json.dumps(definition))
         reference = self.engine.create_strategy(form, parameters)
+        if self.spec.market is Market.STOCK and interval == '1d' and not legacy:
+            # Explicit synthetic official-input tape; generic history alone is not source evidence.
+            historical = tuple(bar for bar in self.engine.history[self.spec.instrument_id] if bar.ended_at.date() < self.clock.now().date())
+            install_fake_official_source(self.engine, fake_official_history(self.spec.instrument_id, historical, self.clock.now()))
         with self.engine.lock:
             self.engine.validate_strategy(reference)
             run_research(self.engine, reference, self.engine.history[self.spec.instrument_id])
@@ -166,6 +171,16 @@ class DailyNativeFixture:
         for spec in self.engine.catalog.instruments:
             self.quote(spec, at, stock_price if spec.market is Market.STOCK else futures_price)
         self.adopt(at)
+        if self.spec.market is Market.STOCK and getattr(self.engine, 'daily_signal_source', None) is not None:
+            session = next(
+                (row for row in calendar_for_instrument(self.engine.calendar, self.spec).sessions if row.kind == 'DAY' and row.trade_date == at.date()), None
+            )
+            if session is not None and at >= session.closes_at:
+                self.publish_official_close(day=session.trade_date, price=stock_price)
+
+    def publish_official_close(self, *, day=None, price=D('20')):
+        if self.spec.market is Market.STOCK and isinstance(getattr(self.engine, 'daily_signal_source', None), FakeOfficialDailySource):
+            publish_fake_daily_close(self.engine, self.spec.instrument_id, day or self.signal_day, price)
 
     def close(self, *, day=None, price=None):
         session = self.session(day)
@@ -176,6 +191,7 @@ class DailyNativeFixture:
             futures_price=price if self.spec.market is not Market.STOCK else D('25000'),
         )
         self.clock.value = session.closes_at
+        self.publish_official_close(day=session.trade_date, price=price)
         minutes = self.minutes(day=day, price=price)
         daily = complete_buckets(minutes, '1d', session, self.clock.now())
         observe_daily(self.engine, minutes)
@@ -213,7 +229,17 @@ class DailyNativeTests(unittest.TestCase):
         self.assertEqual((record.parameters.bar_interval, record.state), ('1d', 'ACTIVE'))
         self.assertTrue(record.evidence_hash)
         self.assertTrue(record.research_blob)
+        self.assertEqual(record.evidence, 'OFFICIAL_DAILY_TRAINING')
+        self.assertEqual(fixture.placed(), before)
+        self.assertEqual(fixture.engine.state.automatic.daily.intents, ())
+
+    def test_legacy_daily_training_keeps_exact_synthetic_evidence_without_official_source(self):
+        fixture = self.fixture
+        before = fixture.placed()
+        record = fixture.deploy(legacy=True)
+        self.assertIsNone(record.parameters)
         self.assertEqual(record.evidence, 'LOCAL_SYNTHETIC_TRAINING')
+        self.assertIsNone(fixture.engine.daily_signal_source)
         self.assertEqual(fixture.placed(), before)
         self.assertEqual(fixture.engine.state.automatic.daily.intents, ())
 
@@ -366,6 +392,7 @@ class DailyNativeTests(unittest.TestCase):
             source_profile=old.profile,
             fees=old.fees,
             historical_bars=old.history,
+            daily_signal_source=old.daily_signal_source,
         )
         self.assertEqual(restarted.state.automatic.daily.intents, intents)
         self.assertTrue(restarted.state.automatic.auto_paused)
@@ -394,6 +421,7 @@ class DailyNativeTests(unittest.TestCase):
             source_profile=old.profile,
             fees=old.fees,
             historical_bars=old.history,
+            daily_signal_source=old.daily_signal_source,
         )
         intent = restarted.state.automatic.daily.intents[0]
         self.assertEqual((intent.phase, intent.code), ('UNKNOWN', 'daily_signal_unresolved'))

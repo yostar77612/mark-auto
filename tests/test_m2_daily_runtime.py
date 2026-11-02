@@ -131,6 +131,7 @@ class DailyRuntimeTests(unittest.TestCase):
         fixture.refresh(close - timedelta(seconds=1))
         fixture.clock.value = close
         before, orders = fixture.placed(), fixture.engine.state.orders
+        fixture.publish_official_close()
         self.deliver(fixture.minutes())
         self.assertEqual(len(self.bundle.market_terminal.deliveries), 1)
         self.assertEqual(self.bundle.market_terminal.deliveries[0][0], 'alert_bars')
@@ -144,12 +145,15 @@ class DailyRuntimeTests(unittest.TestCase):
         self.assertTrue(fixture.engine.state.automatic.daily.waiting_session)
 
     def test_public_pump_does_not_save_incomplete_or_forming_daily_tail(self):
+        """No official daily row is published; a forming minute tail supplies no fallback."""
         fixture = self.fixture
         fixture.deploy()
         fixture.start()
         close = fixture.session().closes_at
         fixture.refresh(close - timedelta(seconds=1))
         fixture.clock.value = close
+        # Deliberately withhold the independent official close in this negative scenario.
+        self.assertFalse(any(row.trade_date == fixture.signal_day for row in fixture.engine.daily_signal_source.histories[fixture.spec.instrument_id].bars))
         minutes = fixture.minutes()
         self.deliver((*minutes[:-1], replace(minutes[-1], final=False)))
         self.assertEqual(fixture.engine.state.automatic.daily.intents, ())
@@ -163,6 +167,7 @@ class DailyRuntimeTests(unittest.TestCase):
         close = fixture.session().closes_at
         fixture.refresh(close - timedelta(seconds=1))
         fixture.clock.value = close
+        fixture.publish_official_close()
         for reference, capability in tuple(fixture.case.adapter.capabilities.items()):
             fixture.case.adapter.capabilities[reference] = replace(capability, checked_at=close - timedelta(minutes=1), expires_at=close)
         before = fixture.placed()
@@ -185,6 +190,7 @@ class DailyRuntimeTests(unittest.TestCase):
         )
         self.assertTrue(receipt.accepted, receipt)
         fixture.clock.value = close
+        fixture.publish_official_close()
         self.deliver((minutes[-1],))
         self.assertEqual(len(fixture.engine.state.automatic.daily.intents), 1)
         self.assertEqual(fixture.placed(), fixture.initial_native_orders)

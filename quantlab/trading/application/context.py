@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from .provenance import ProducerProfile
     from quantlab.trading.domain.calendar import TradingCalendar
     from quantlab.trading.domain.costs import FeeSchedule
+    from quantlab.trading.domain.daily_signal_data import OfficialDailyHistory
     from quantlab.trading.domain.strategy import CompletedBar
 
 from quantlab.trading.domain.models import AccountSnapshot, CapabilitySnapshot, Environment, InstrumentSpec, Quote
@@ -37,6 +38,7 @@ class ResearchRunner(Protocol):
         *,
         deadline: datetime,
         source_profile: 'ProducerProfile | None' = None,
+        daily_history: 'OfficialDailyHistory | None' = None,
     ) -> 'ResearchResult': ...
     def close(self) -> None: ...
 

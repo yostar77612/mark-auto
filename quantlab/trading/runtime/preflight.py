@@ -1,4 +1,4 @@
-"""Current-owner preflight facts collected only from existing trusted caches."""
+"""Cached broker preflight facts gated by fresh local account-alias metadata."""
 
 from typing import TYPE_CHECKING
 
@@ -23,6 +23,7 @@ def sinopac_preflight_facts(bundle: 'RuntimeBundle', account_ref: str) -> Prefli
     owner = bundle.sinopac_connection
     view = owner.snapshot()
     selected, shared = tuple(sorted(owner.selected)), owner.shared
+    owner.preferences.check_selection(selected)
     stamp = view.environment, view.generation, view.revision, selected, shared
     environment, engine, manual = bundle.launch.environment, bundle.engine, bundle.manual_runtime
     connected = (

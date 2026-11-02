@@ -126,6 +126,7 @@ class ManualRuntime:
         if not self.owner.query_ready or self.owner.shared is None or self.owner.shared.callback_errors:
             raise DomainError('manual_account_observation_required')
         selected = tuple(sorted(self.owner.selected))
+        self.owner.preferences.check_selection(selected)
         if not selected:
             raise DomainError('accounts_not_selected')
         return view, selected, self.owner.shared
@@ -306,6 +307,10 @@ class ManualRuntime:
             engine.configuration, engine.catalog, engine.calendar, engine.fees = configuration, catalog, first.calendar, first.fees
             engine.automatic_capabilities = {row.account_ref: row for resource in resources for row in resource.capabilities}
             engine.automatic_entry_check = lambda: self._check_automatic_maintenance(engine)
+            from .official_daily_source import OfficialDailyStockSource
+
+            engine.daily_signal_source = OfficialDailyStockSource(self.bundle.kline_store, self.owner.clock)
+            engine.daily_signal_data_views = {}
             _update_automatic_margin_sources(engine, resources)
             if self.bundle.automatic_runtime is not None:
                 engine.automatic_observation_validator = self.bundle.automatic_runtime.validate_observation

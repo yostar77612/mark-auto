@@ -20,6 +20,9 @@ V2_ERROR_TEXT = {
     'daily_signal_unresolved': ErrorText('日 K 執行紀錄仍有未確認結果。', '保持停止新倉，先完成對帳；不會自動重送。'),
     'daily_close_unverified': ErrorText('缺少可驗證的帳戶收盤基準。', '核對收盤報價、完整對帳及日期；不會使用今日損益代替昨收。'),
     'daily_signal_not_authorized': ErrorText('日 K 送單缺少有效的已保存訊號授權。', '先完成對帳與檢查，並由使用者恢復；沒有明確訊號不會下單。'),
+    'daily_signal_source_unverified': ErrorText('日 K 訊號來源尚未驗證。', '先取得與研究一致的官方日 K 證據；不會使用分鐘合成或未知來源開新倉。'),
+    'daily_signal_basis_mismatch': ErrorText('研究與執行的日 K 價格基準不一致。', '核對官方來源、還原方式及觀察日期後重新研究，不會拼接不同基準。'),
+    'daily_signal_not_available': ErrorText('官方日 K 尚未完整可用。', '等待可信資料完成；不補造缺少的價格或跨交易日追單。'),
     'research_cancelled': ErrorText('研究已取消，未發布新的證據。', '既有研究結果保留；需要時可重新執行。'),
     'stock_entitlement_unknown': ErrorText(
         '研究持倉跨越尚未確認經濟權益的除權息事件，未產生證據。', '補齊可驗證的現金或股票權益資訊；不得由參考價比率猜測損益。'

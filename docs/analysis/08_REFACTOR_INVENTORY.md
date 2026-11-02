@@ -860,6 +860,10 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
+| `quantlab/trading/runtime/sinopac_aliases.py` | 43 | composition | `quantlab/trading/runtime/sinopac_aliases.py` | Account alias hardening: workspace-only random key lifecycle; exclusive create and fail-closed read; no broker credentials. |
+
+| `tests/test_sinopac_account_aliases.py` | 218 | tooling | `tests/test_sinopac_account_aliases.py` | Account alias hardening: offline HMAC migration, privacy, key loss and journal reconciliation guards. |
+
 | `desktop_app/strings/m2_maintenance.py` | 12 | shared | `desktop_app/strings/m2_maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
 | `quantlab/trading/adapters/official/stock_data.py` | 175 | infrastructure | `quantlab/trading/adapters/official/stock_data.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
 | `quantlab/trading/adapters/storage/daily_stock_store.py` | 157 | infrastructure | `quantlab/trading/adapters/storage/daily_stock_store.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
@@ -924,6 +928,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/autostart.py` | 89 | infrastructure | `quantlab/autostart.py` | M4a manual update and optional HKCU autostart boundary |
 | `quantlab/update_download.py` | 115 | infrastructure | `quantlab/update_download.py` | M4a manual update and optional HKCU autostart boundary |
 | `quantlab/update_install.py` | 193 | infrastructure | `quantlab/update_install.py` | M4a manual update and optional HKCU autostart boundary |
+| `quantlab/trading/adapters/official/daily_signal_events.py` | 66 | infrastructure | `quantlab/trading/adapters/official/daily_signal_events.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/daily_signal_data.py` | 152 | application | `quantlab/trading/application/daily_signal_data.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/daily_signal_data.py` | 147 | domain | `quantlab/trading/domain/daily_signal_data.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/ports/daily_signals.py` | 11 | application | `quantlab/trading/ports/daily_signals.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/official_daily_source.py` | 149 | composition | `quantlab/trading/runtime/official_daily_source.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/auto_strategy_views.py` | 57 | application | `quantlab/trading/application/auto_strategy_views.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
 | `quantlab/trading/application/candidate_intake.py` | 151 | application | `quantlab/trading/application/candidate_intake.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
 | `quantlab/trading/application/promotion_service.py` | 308 | application | `quantlab/trading/application/promotion_service.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
