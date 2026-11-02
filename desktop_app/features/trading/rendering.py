@@ -1,6 +1,7 @@
 """Read-model projection into tables; each market uses the same typed widgets."""
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiState
@@ -8,6 +9,8 @@ from desktop_app.features.trading.labels import policy_label, state_label
 from desktop_app.features.trading.widgets import rows
 from desktop_app.features.trading.reconciliation_rows import reconciliation_cells
 from desktop_app.features.trading.trading_page import refresh_position_details, position_quantity, position_time
+from desktop_app.features.trading.strategy_controls import recent_signal_text
+from desktop_app.shell.theme import align_table_item, set_financial_item, theme_colors
 
 
 def render_tables(window, state: UiState, *, state_changed: bool) -> None:
@@ -36,11 +39,24 @@ def _render_strategies(self, state: UiState) -> None:
                     state_label(item.state),
                     item.account_ref,
                     state_label(item.evidence),
+                    self._environment_label(item.environment),
+                    f'{item.today_pnl:,.2f}' if item.today_pnl is not None else ui_text('watch.unknown'),
+                    recent_signal_text(item.recent_signal),
                 ),
             )
             for item in state.strategies
         ),
     )
+    for row_index, strategy in enumerate(state.strategies):
+        for column in range(self.strategies.columnCount()):
+            item = self.strategies.item(row_index, column)
+            item.setToolTip(item.text())
+        pnl = self.strategies.item(row_index, 9)
+        align_table_item(pnl, numeric=True)
+        set_financial_item(self.strategies, pnl, strategy.today_pnl)
+        if strategy.today_pnl is None:
+            pnl.setForeground(QColor(theme_colors(self.strategies)['disabled_text']))
+    self.strategies_empty.setVisible(not state.strategies)
 
 
 def _render_positions(self, state: UiState) -> None:

@@ -30,6 +30,7 @@ from quantlab.trading.application.contracts import (
     PositionView,
     ReconciliationView,
     StrategyView,
+    StrategyProductView,
     UiAction,
     UiReceipt,
     UiState,
@@ -92,6 +93,10 @@ def state_fixture() -> UiState:
         accounts=(
             AccountView('local-stock', Environment.LOCAL, Market.STOCK, Decimal('60000'), 'LOCAL_READY'),
             AccountView('local-future', Environment.LOCAL, Market.INDEX_FUTURE, Decimal('40000'), 'LOCAL_READY'),
+        ),
+        strategy_products=(
+            StrategyProductView('TWSE:2330', Market.STOCK, (HoldingKind.SWING, HoldingKind.POSITION, HoldingKind.CUSTOM), True),
+            StrategyProductView('TAIFEX:TMF:202611', Market.INDEX_FUTURE, (HoldingKind.INTRADAY, HoldingKind.CUSTOM)),
         ),
     )
 
@@ -407,7 +412,7 @@ class TradingUiTests(unittest.TestCase):
         self.assertIsInstance(wizard.form().market, Market)
         self.assertIsInstance(wizard.form().holding_kind, HoldingKind)
         self.assertEqual(wizard.form().allocation, Decimal('60000'))
-        self.assertEqual((wizard.form().min_days, wizard.form().max_days), (3, 5))
+        self.assertEqual((wizard.form().min_days, wizard.form().max_days), (2, 10))
         wizard.policy.setCurrentIndex(1)
         self.assertEqual(wizard.form().holding_kind, HoldingKind.INTRADAY)
         self.assertEqual((wizard.form().min_days, wizard.form().max_days), (0, 0))
@@ -439,7 +444,9 @@ class TradingUiTests(unittest.TestCase):
         unrelated = replace(later, instrument_id='TAIFEX:OTHER:202612', underlying='OTHER')
         state = replace(self.window.state, markets=(self.window.state.markets[0], earlier, later, unrelated))
         wizard = StrategyWizard(state, self.window)
+        wizard.policy.setCurrentIndex(wizard.policy.findData(HoldingKind.CUSTOM))
         wizard.market.setCurrentIndex(1)
+        self.assertEqual(wizard.instrument.currentData(), earlier.instrument_id)
         wizard.expiry_action.setCurrentIndex(wizard.expiry_action.findData('ROLL'))
         self.assertEqual(wizard.roll_contract.count(), 1)
         self.assertEqual(wizard.form().roll_contract_id, later.instrument_id)
@@ -451,7 +458,9 @@ class TradingUiTests(unittest.TestCase):
 
     def test_roll_without_resolved_metadata_does_not_guess_near_month(self):
         wizard = StrategyWizard(self.window.state, self.window)
+        wizard.policy.setCurrentIndex(wizard.policy.findData(HoldingKind.CUSTOM))
         wizard.market.setCurrentIndex(1)
+        self.assertEqual(wizard.instrument.currentData(), self.window.state.markets[1].instrument_id)
         wizard.expiry_action.setCurrentIndex(wizard.expiry_action.findData('ROLL'))
         self.assertEqual(wizard.roll_contract.count(), 0)
         with self.assertRaises(ValueError):

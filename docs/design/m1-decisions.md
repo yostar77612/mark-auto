@@ -205,3 +205,19 @@
   不符打包所需 3.13.16，重建安裝版實測明列待擁有者確認。完整測試留給 CI，PR 直接對 main。
 - 15:08：main 的 M3 文件 code fence 只有 CRLF/LF 格式差異；依既有 ADR 規則在
   `.gitattributes` 單檔固定 LF，獨立 baseline commit，不改文件文字、產品邏輯或測試斷言。
+
+## 2026-11-02 19:35 Asia/Taipei — U3 strategy presentation
+
+- Start from merged PR150 main0b760665; append phase67/orders2990–3031 after the
+  accepted M2-9/U2 strings. Separate source and generated-baseline commits.
+- Use only merged typed strategy commands/DTOs. Original direction/rules and full
+  historical-fill eligibility are absent: require explicit revision choices and
+  retain backend deletion authority; request the missing DTO facts in the PR.
+- Whole-lot/margin numbers are labelled estimates; costs and submission capacity
+  remain backend decisions. Do not fabricate typed-minute research evidence.
+- Preserve lifecycle fixtures' explicit 3–5-day policies and financial assertions;
+  assert accepted new product defaults separately. Unchanged polling must preserve
+  evidence/selection activation blocking. LIVE guards and exact action pin remain.
+- Native LOCAL completed captures but needed a normal Alt+F4 to leave its event
+  loop; record91.760s rather than hiding it. Fake-SIM completed6.429s. Requested
+  1920x1080 has1920x1061 client due existing screen fit; retain the actual geometry.

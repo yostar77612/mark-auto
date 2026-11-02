@@ -131,6 +131,8 @@ def _presentation_options(root: Path) -> dict:
         'save_position_columns': lambda values: save('position_columns', values),
         'order_columns': saved.get('order_columns'),
         'save_order_columns': lambda values: save('order_columns', values),
+        'strategy_columns': saved.get('strategy_columns'),
+        'save_strategy_columns': lambda values: save('strategy_columns', values),
     }
 
 
