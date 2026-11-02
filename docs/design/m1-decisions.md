@@ -266,3 +266,12 @@
 - 2026-11-03 M4a 合入最新 main d77a893：保留 M2/M3/U4 與 installer on-demand 的所有意圖；M4a 字串接在 U4 後，phase69、orders3086–3103，catalog 工具量測 +18／0刪／0改、總3104。合併後45字串測試及90相關回歸全通，native LOCAL/fake SIM與8張圖重驗全通。完整合併圖分析 CRITICAL（641 symbols、31 flows，partial=false、truncated=false），風險保留並交完整 CI；相對最新 main，M4a 不含任何交易source變更。
 
 - M4a Linux coverage 診斷：ea75a35 attempt2 所有實際分片成功，但11個新增 Windows registry cases 的既定 Linux 不適用條件未登記，嚴格 aggregate 拒絕。以原 CI reports 三profile重播可穩定紅；精確加入這11筆後，各5517cases原validate皆綠。Windows3.11/3.12證據中這11筆均started/stopped、0skip/error/failure。中央工具 registry_applicability plan 只接受既有decorator、exact11方法與reason，原34/39筆歷史平台資料與hash完整保留；gate/workflow與skip decorator完全未改。39工具/gate測試通過，全部6plans up-to-date；推新head再跑全輪CI。
+
+## 2026-11-03 — A, strategy market empty state
+
+- Use the accepted strategy_products list only; never manufacture market entries.
+- Make the market page incomplete when empty; show reason/settings using existing
+  roles. LOCAL copy does not claim broker login is required.
+- Reject and clear the modal before navigating, so a later connection can reopen
+  with a fresh snapshot. No connection action, order or automatic retry is added.
+- Append four strings after main M4a3103; repin once in its own commit.
