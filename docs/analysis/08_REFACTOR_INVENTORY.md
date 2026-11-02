@@ -869,6 +869,9 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/ports/stock_history.py` | 36 | application | `quantlab/trading/ports/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
 | `quantlab/trading/runtime/stock_history.py` | 82 | composition | `quantlab/trading/runtime/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
 | `quantlab/trading/runtime/stock_maintenance.py` | 104 | composition | `quantlab/trading/runtime/stock_maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/application/stock_research.py` | 172 | application | `quantlab/trading/application/stock_research.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
+| `quantlab/trading/application/stock_research_service.py` | 105 | application | `quantlab/trading/application/stock_research_service.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
+| `quantlab/trading/runtime/stock_research.py` | 28 | composition | `quantlab/trading/runtime/stock_research.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -1871,3 +1874,13 @@ inventory baseline only updates owned measurements; no test or source cap moves.
   versioned expiry-file integration, fake login expiry refusal.
 - New production modules are registered in the layer table above by the baseline
   tool. No source was moved and no layer exception or G3 allowance was added.
+
+### M2-9 continuation test registration (2026-11-02)
+
+`tests/test_m2_stock_research.py` exercises the actual stock runtime service,
+SQLite daily store and durable evidence with explicitly synthetic exchange
+schemas: complete five-year dense history, point-in-time signals/raw fills,
+explicit stock/day-trade/ETF fees, unknown entitlements, cancellation/deadline,
+source/storage failures and unchanged earlier artifacts. The existing
+`tests/test_m2_stock_maintenance.py` and `tests/test_sinopac_panel_ui.py` gain
+snapshot/minimal-checklist assertions; no existing assertion is removed.
