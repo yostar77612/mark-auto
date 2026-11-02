@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
-from threading import Condition, Lock, Thread
+from threading import Condition, Event, Lock, Thread
 from time import monotonic, sleep
 from typing import Callable
 from zoneinfo import ZoneInfo
@@ -73,12 +73,15 @@ class HistorySync:
         clock: Callable[[], float] = monotonic,
         wait: Callable[[float], None] = sleep,
         autostart: bool = True,
+        rate_limiter: Callable[[], None] | None = None,
     ):
         self.store, self.session = store, session
         self.settings = settings or HistorySettings()
         self.now, self.clock, self.wait = now, clock, wait
         self._condition = Condition()
         self._serial = Lock()
+        self._rate_lock = Lock()
+        self._shared_rate_limiter = rate_limiter
         self._queue: list[HistoryRequest] = []
         self._errors: dict[str, str] = {}
         self._failed: dict[str, HistoryRequest] = {}
@@ -86,7 +89,7 @@ class HistorySync:
         self._paused = False
         self._paused_day: date | None = None
         self._usage: HistoryUsage | None = None
-        self._closed = False
+        self._stopped = Event()
         self._requests: deque[float] = deque()
         self._after_close_day: date | None = None
         self._disconnected_at: datetime | None = None
@@ -103,7 +106,7 @@ class HistorySync:
         if end <= start:
             return
         with self._condition:
-            if self._closed:
+            if self._stopped.is_set():
                 return
             item = HistoryRequest(instrument, start, end, priority, force, self._generations.get(instrument.instrument_id, 0))
             retained = []
@@ -141,11 +144,19 @@ class HistorySync:
         self.browse(instrument, period, is_watchlisted)
         self.resume()
 
-    def watch_removed(self, instrument_id: str) -> None:
-        with self._condition:
+    def watch_removed(self, instrument_id: str, *, timeout: float | None = None) -> bool:
+        if timeout is not None and not 0 <= timeout <= 2:
+            raise DomainError('validation_failed', 'bounded history cancel timeout required')
+        acquired = self._condition.acquire() if timeout is None else self._condition.acquire(timeout=timeout)
+        if not acquired:
+            return False
+        try:
             self._generations[instrument_id] = self._generations.get(instrument_id, 0) + 1
             self._failed.pop(instrument_id, None)
             self._queue = [item for item in self._queue if item.instrument.instrument_id != instrument_id]
+            return True
+        finally:
+            self._condition.release()
 
     def disconnected(self) -> None:
         self._disconnected_at = self.now().astimezone(timezone.utc)
@@ -189,13 +200,31 @@ class HistorySync:
         with self._condition:
             return self._running == instrument_id or any(item.instrument.instrument_id == instrument_id for item in self._queue)
 
+    def progress(self, instrument_id: str) -> tuple[bool, HistorySyncState] | None:
+        """Nonblocking research observation; None means the publication lock is busy."""
+        if not self._condition.acquire(blocking=False):
+            return None
+        try:
+            pending = self._running == instrument_id or any(item.instrument.instrument_id == instrument_id for item in self._queue)
+            return pending, self.state()
+        finally:
+            self._condition.release()
+
     def _work(self) -> None:
         while True:
             with self._condition:
-                self._condition.wait_for(lambda: self._closed or self._queue and not self._paused)
-                if self._closed:
+                self._condition.wait_for(lambda: self._stopped.is_set() or self._queue and not self._paused)
+                if self._stopped.is_set():
                     return
             self.run_next()
+
+    def reserve_query(self) -> None:
+        """Share this authority with other workers using the same SDK session."""
+        if self._shared_rate_limiter is not None:
+            self._shared_rate_limiter()
+            return
+        with self._rate_lock:
+            self._rate_limit()
 
     def _rate_limit(self) -> None:
         now = self.clock()
@@ -223,7 +252,7 @@ class HistorySync:
     def run_next(self) -> bool:
         with self._serial:
             with self._condition:
-                if self._closed or self._paused or not self._queue:
+                if self._stopped.is_set() or self._paused or not self._queue:
                     return False
                 index = min(range(len(self._queue)), key=lambda i: self._queue[i].priority)
                 item = self._queue.pop(index)
@@ -250,7 +279,7 @@ class HistorySync:
         for start, end in ranges:
             while start < end:
                 with self._condition:
-                    if self._closed or item.generation != self._generations.get(item.instrument.instrument_id, 0):
+                    if self._stopped.is_set() or item.generation != self._generations.get(item.instrument.instrument_id, 0):
                         return
                 stop = min(end, start + timedelta(days=self.settings.chunk_days))
                 if not self._available():
@@ -260,17 +289,20 @@ class HistorySync:
                         self._paused_day = self.now().astimezone(_TAIPEI).date()
                     self._errors[item.instrument.instrument_id] = 'history_quota_low'
                     return
-                self._rate_limit()
+                self.reserve_query()
+                with self._condition:
+                    if self._stopped.is_set() or item.generation != self._generations.get(item.instrument.instrument_id, 0):
+                        return
                 bars = self.session.history(item.instrument, start, stop)
                 if any(bar.instrument_id != item.instrument.instrument_id or not start <= bar.start < stop or bar.end > stop for bar in bars):
                     raise DomainError('history_query_failed', 'history range identity')
                 day = self.now().astimezone(_TAIPEI).date()
                 self.store.record_queried_bars(day, len(bars))
                 with self._condition:
-                    if item.generation != self._generations.get(item.instrument.instrument_id, 0):
+                    if self._stopped.is_set() or item.generation != self._generations.get(item.instrument.instrument_id, 0):
                         return
-                self.store.upsert(bars, source='SHIOAJI_KBARS')
-                self.store.mark_coverage(item.instrument.instrument_id, start, stop)
+                    self.store.upsert(bars, source='SHIOAJI_KBARS')
+                    self.store.mark_coverage(item.instrument.instrument_id, start, stop)
                 start = stop
                 # Yield between chunks so a newly selected main chart takes priority.
                 with self._condition:
@@ -282,10 +314,16 @@ class HistorySync:
         self._failed.pop(item.instrument.instrument_id, None)
         self.on_complete(item.instrument.instrument_id)
 
-    def close(self) -> bool:
-        with self._condition:
-            self._closed = True
-            self._condition.notify_all()
+    def close(self, timeout: float = 2) -> bool:
+        if not 0 <= timeout <= 2:
+            raise DomainError('validation_failed', 'bounded history close timeout required')
+        until = monotonic() + timeout
+        self._stopped.set()
+        if self._condition.acquire(timeout=max(0, until - monotonic())):
+            try:
+                self._condition.notify_all()
+            finally:
+                self._condition.release()
         if self._thread is not None:
-            self._thread.join(timeout=2)
-        return self._thread is None or not self._thread.is_alive()
+            self._thread.join(timeout=max(0, until - monotonic()))
+        return not self._running and (self._thread is None or not self._thread.is_alive())

@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from .calendar import TradingCalendar, TradingSession
 from .live_bars import LiveBar
+from .minute_contract import HistoricalContractEvidence
 from .strategy import CompletedBar
 from .validation import DomainError, aware, decimal_value, integer, trading_date
 
@@ -25,8 +26,11 @@ class MinuteResearchSettings:
     cutoff_minute: int = 13 * 60 + 35
     partition: str = 'TRAINING'
     raw_data_digest: str = ''
+    historical_contract: HistoricalContractEvidence | None = None
 
     def __post_init__(self) -> None:
+        if self.historical_contract is not None and not isinstance(self.historical_contract, HistoricalContractEvidence):
+            raise DomainError('validation_failed', 'typed historical contract evidence required')
         trading_date(self.first_day)
         trading_date(self.last_day)
         if (

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.minute_research import TAIPEI
-from quantlab.trading.domain.models import Market
+from quantlab.trading.domain.minute_contract import is_tmf_contract
 from quantlab.trading.domain.validation import DomainError, aware
 from quantlab.trading.ports.history import HistoryTarget, HistoryUsage
 from .market_data import MarketDataContext
@@ -43,7 +43,7 @@ class TMFMinuteHistorySession:
         if usage is None or usage.used_bytes >= min(usage.limit_bytes, 500 * 1024 * 1024) * 9 // 10:
             raise DomainError('history_quota_low', 'known TMF history quota required')
         spec = self.context.resolve(instrument.instrument_id)
-        if spec.market is not Market.INDEX_FUTURE or not spec.instrument_id.startswith('TAIFEX:TMF:'):
+        if not is_tmf_contract(spec):
             raise DomainError('instrument_unresolved', 'actual TMF contract required')
         binding = self.context.bindings[spec.instrument_id]
         try:

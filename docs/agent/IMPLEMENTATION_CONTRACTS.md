@@ -7229,3 +7229,63 @@ and therefore cannot accidentally authorize the existing daily-policy deployment
 engine. Desktop selection, durable strategy admission/activation for minute
 holding, and equities after M2-9 are explicitly not wired in this research-only
 slice; do not present it as complete M2-7 product acceptance.
+
+### M2-7 continuation — owned host, bounded refill and durable receipts (2026-11-02)
+
+The previous low-level retry API remains available, but the real composition
+entry is now `RuntimeBundle.research_minutes(strategy, settings, calendar=...,
+deadline=..., cancel_event=...)`. It uses the host's existing M1 KlineStore and
+its generated-resource gateway (including ManualExecutionGateway's adapter),
+not an independent fabricated instrument or a new login. A dedicated owned
+HistorySync shares `bundle.market_history.reserve_query`; their combined history KBars
+requests use the same serialized40/10-second authority. Both workers use the
+same durable returned-bar counter and authenticated SDK usage, so a new research
+job does not reset daily quota. SDK calls never hold the limiter or publication
+condition lock; cancellation is checked again after a limiter wait.
+
+One non-renewable deadline, capped at15minutes from admission, covers queueing,
+refill, worker computation and receipt admission. Missing data queues one M1
+refill, waits with cancellation/deadline checks, and revalidates every minute
+before computing. Failed/paused/sparse refill, cancellation, timeout, or changed
+host/contract/cost facts produce no receipt. Cancellation also reaches the owned
+spawn worker. Research never activates a strategy or changes daily admission.
+
+HistorySync's generation/closed check and bars/coverage publication now share
+one condition scope. A successful `watch_removed` return means no subsequent
+publication for that generation. Its optional bounded form can returnFalse when
+a cache write is already in progress; callers must not claim that cancellation
+has linearized in that case. `close(timeout=0)` sets a stop Event without an
+unbounded condition-lock wait and reports whether the worker has actually
+retired. Timeout paths retain a retiring worker marker and reject another job
+until it exits. Host shutdown does not close the shared cache underneath such
+a worker and reports cleanup uncertainty. A native call cannot be killed safely
+in a Python thread: caller waiting is bounded, but native cleanup is not falsely
+reported complete. Consumed returned-bar accounting is not refunded.
+
+Generated resources intentionally retain their `TMF:{month}` identity. Minute
+research accepts it and the existing `TAIFEX:TMF:{month}` spelling only with the
+explicit TAIFEX/index-future specification; it does not rename cache identities.
+Generated `effective_at` remains the current metadata observation time. For a
+window before that observation, `HistoricalContractEvidence` must bind the full
+specification, exact SDK delivery code, valid-from/until interval, source and
+artifact SHA-256. Missing or mismatched evidence is "unknown" and fails before
+querying. No listing/validity date is inferred from expiry or from SDK now. The
+existing generated09:00–13:29:59.999999 calendar is an artificial manual common
+window, not TMF day-session evidence; callers provide an explicit verified TMF
+research calendar. Synthetic integration tests exercise real generated resources
+with explicit fixture historical evidence; they do not establish native vendor
+history or historical applicability for a user's real contract.
+
+A successful run atomically appends a `MinuteResearchReceipt` to
+`research/minute-receipts.sqlite3`. It retains the compatible minute result,
+strategy, full specification, full FeeSchedule, calendar, producer profile,
+original one-minute raw bars and their digest, exact settings (including any
+historical applicability evidence), completion time and M1_SQLITE_BARS_1M source.
+The receipt is research-only; raw prices are not adjusted or index-substituted.
+Encoding is bounded to4MiB; oversized receipts fail before insertion. A final
+cancellation/deadline/host guard runs inside the transaction before commit;
+failure rolls back. Existing receipts are never rewritten. Reopening validates
+payload hashes, schema, raw grid and input fingerprints. The recent in-memory
+view is bounded to32; older immutable rows remain readable by sequence. The
+storage adapter knows only bounded text; typed codecs stay in runtime/application
+so no layer exception is added.

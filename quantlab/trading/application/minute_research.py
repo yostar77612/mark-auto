@@ -15,8 +15,9 @@ from .state import StrategyRecord
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.costs import FeeSchedule
+from quantlab.trading.domain.minute_contract import HistoricalContractEvidence, is_tmf_contract
 from quantlab.trading.domain.minute_research import MINUTE, TAIPEI, MinuteResearchSettings
-from quantlab.trading.domain.models import HoldingKind, InstrumentSpec, Market, Side
+from quantlab.trading.domain.models import HoldingKind, InstrumentSpec, Side
 from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.domain.validation import DomainError
 
@@ -29,11 +30,11 @@ class MinuteResearchResult(ResearchResult):
     price_basis: str = 'RAW_CONTRACT'
 
 
-register(MinuteResearchSettings, MinuteResearchResult)
+register(HistoricalContractEvidence, MinuteResearchSettings, MinuteResearchResult)
 
 
 def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
-    if not isinstance(settings, MinuteResearchSettings) or spec.market is not Market.INDEX_FUTURE or spec.instrument_id != f'TAIFEX:TMF:{spec.delivery_month}':
+    if not isinstance(settings, MinuteResearchSettings) or not is_tmf_contract(spec):
         raise DomainError('capability_missing', 'minute training requires an explicit TMF contract')
     if strategy.form.instrument_id != spec.instrument_id or strategy.form.market is not spec.market:
         raise DomainError('validation_failed', 'minute strategy contract mismatch')
@@ -41,7 +42,14 @@ def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
         raise DomainError('validation_failed', 'minute strategy interval mismatch')
     if settings.intraday != (strategy.policy.kind is HoldingKind.INTRADAY) or settings.intraday and settings.cutoff_minute > 13 * 60 + 35:
         raise DomainError('validation_failed', 'minute intraday policy or TMF cutoff mismatch')
-    return settings.sessions(calendar)
+    sessions = settings.sessions(calendar)
+    evidence = settings.historical_contract
+    if (
+        evidence is not None and not evidence.covers(spec, sessions[0].opens_at, sessions[-1].closes_at)
+        or evidence is None and sessions[0].opens_at < spec.effective_at
+    ):
+        raise DomainError('instrument_unresolved', 'historical contract applicability is unknown')
+    return sessions
 
 
 def validate_minute_job(strategy, spec, calendar, bars, settings) -> tuple:
@@ -54,7 +62,6 @@ def validate_minute_job(strategy, spec, calendar, bars, settings) -> tuple:
         if (
             not isinstance(bar, CompletedBar)
             or bar.opened_at != start
-            or start < spec.effective_at
             or bar.ended_at != start + width * MINUTE
             or bar.available_at != bar.ended_at
             or spec.expiry is None

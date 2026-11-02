@@ -240,8 +240,9 @@ class SpawnResearchRunner:
         deadline: datetime,
         source_profile: ProducerProfile | None = None,
         minute_settings: MinuteResearchSettings | None = None,
+        cancel_event: Event | None = None,
     ) -> ResearchResult:
-        if self._closed.is_set():
+        if self._closed.is_set() or cancel_event is not None and cancel_event.is_set():
             raise DomainError('research_worker_failed', 'training runner is closed')
         aware(deadline)
         now = aware(self.clock.now())
@@ -252,13 +253,15 @@ class SpawnResearchRunner:
         if not self._lock.acquire(timeout=seconds):
             raise DomainError('research_timeout', 'training worker queue deadline')
         try:
-            if self._closed.is_set():
+            if self._closed.is_set() or cancel_event is not None and cancel_event.is_set():
                 raise DomainError('research_worker_failed', 'training runner closed while queued')
-            return self._run(strategy, spec, calendar, bars, fees, deadline, source_profile, started + seconds, minute_settings)
+            return self._run(strategy, spec, calendar, bars, fees, deadline, source_profile, started + seconds, minute_settings, cancel_event)
         finally:
             self._lock.release()
 
-    def _run(self, strategy, spec, calendar, bars, fees, deadline, source_profile, monotonic_deadline, minute_settings=None) -> ResearchResult:
+    def _run(
+        self, strategy, spec, calendar, bars, fees, deadline, source_profile, monotonic_deadline, minute_settings=None, cancel_event=None
+    ) -> ResearchResult:
         self.last_child_pid, self.last_cleanup_verified = None, True
         self.last_child_ready = False
         _initialize_types()
@@ -290,7 +293,7 @@ class SpawnResearchRunner:
             sender = Thread(target=_send_payload, args=(channel, payload, send_errors), name='MarkAutoTrainingSender', daemon=True)
             sender.start()
             while True:
-                if self._closed.is_set():
+                if self._closed.is_set() or cancel_event is not None and cancel_event.is_set():
                     raise DomainError('research_worker_failed', 'owned training job canceled by engine shutdown')
                 seconds = min(computation_deadline - monotonic(), (deadline - aware(self.clock.now())).total_seconds() - cleanup_reserve)
                 if seconds <= 0:
@@ -318,7 +321,7 @@ class SpawnResearchRunner:
                     # and the reserved cleanup slice, rather than imposing a
                     # second arbitrary 500ms success deadline.
                     while child.is_alive():
-                        if self._closed.is_set():
+                        if self._closed.is_set() or cancel_event is not None and cancel_event.is_set():
                             raise DomainError('research_worker_failed', 'training completion canceled by engine shutdown')
                         remaining = min(computation_deadline - monotonic(), (deadline - aware(self.clock.now())).total_seconds() - cleanup_reserve)
                         if remaining <= 0:
@@ -328,7 +331,7 @@ class SpawnResearchRunner:
                         raise DomainError('research_worker_failed', 'isolated training completion was not clean')
                     if monotonic() >= monotonic_deadline or aware(self.clock.now()) >= deadline:
                         raise DomainError('research_timeout', 'training completion exceeded deadline')
-                    if self._closed.is_set():
+                    if self._closed.is_set() or cancel_event is not None and cancel_event.is_set():
                         raise DomainError('research_worker_failed', 'training completion canceled by engine shutdown')
                     return self._validate_result(job, reply.result)
                 if not child.is_alive() and not channel.poll(0):
