@@ -117,7 +117,7 @@
         "test_trading_readonly_coordination.log"
       ],
       "raw_directory": ".gitnexus/verification",
-      "new_application_raw": ".gitnexus/verification/selected-tests-summary.json"
+      "new_application_raw": ".gitnexus/verification/test_daily_basis_review_application.log"
     },
     "harness_path_issues": {
       "count": 2,
@@ -2002,7 +2002,135 @@
         "skips": [],
         "success": true
       }
-    ]
+    ],
+    "post_main": {
+      "modules": 12,
+      "tests": 236,
+      "seconds": 32.814,
+      "failed": [],
+      "results": [
+        {
+          "module": "test_docs_layering",
+          "tests": 8,
+          "seconds": 0.794,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_repo_layout",
+          "tests": 29,
+          "seconds": 1.816,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_layer_gate",
+          "tests": 21,
+          "seconds": 4.269,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_import_graph",
+          "tests": 19,
+          "seconds": 17.262,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_download_auto_import_contracts",
+          "tests": 4,
+          "seconds": 0.016,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_r7_characterization",
+          "tests": 16,
+          "seconds": 1.503,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_strategy_market_empty_ui",
+          "tests": 6,
+          "seconds": 0.666,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_live_order_guard",
+          "tests": 8,
+          "seconds": 0.359,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_m2_automatic_engine",
+          "tests": 40,
+          "seconds": 12.155,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_m2_automatic_runtime",
+          "tests": 46,
+          "seconds": 1.726,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_m2_daily_native",
+          "tests": 16,
+          "seconds": 11.837,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_official_daily_admission",
+          "tests": 23,
+          "seconds": 1.328,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        }
+      ]
+    }
   },
   "import_tests": {
     "new": 30,
@@ -2931,15 +3059,21 @@
     "python311_files": 1258,
     "final_source_results": {
       "passed": true,
-      "ruff_files": 1369,
-      "python311_files": 1258,
+      "ruff_files": 1372,
+      "python311_files": 1260,
       "quality_findings": 0,
-      "raw": ".gitnexus/verification/prepush-after-revision-split.log"
+      "layer_findings": 0,
+      "architecture_violations": 0,
+      "raw": ".gitnexus/verification/prepush-after-main.log"
     }
   },
   "baseline": {
     "pre_commit_adjustments": 2,
-    "final_separate_baseline_commit": null
+    "final_separate_baseline_commit": "Planned immediately after this evidence commit; exact SHA in PR.",
+    "regeneration_tool": "python tools/repin_baselines.py --write; default verification enabled",
+    "modules_registered": 3,
+    "observer_added_pins": 70,
+    "observer_removed_pins": 6
   },
   "ci": {
     "status": "PENDING",
@@ -2954,5 +3088,10 @@
     "passed": 148,
     "seconds": 3.1157574,
     "raw": ".gitnexus/verification/daily-basis-owned-tests.json"
+  },
+  "main_integration": {
+    "main": "4867549",
+    "commit": "49d7064",
+    "resolution": "Preserve both appended contract sections; desktop bytes equal main."
   }
 }

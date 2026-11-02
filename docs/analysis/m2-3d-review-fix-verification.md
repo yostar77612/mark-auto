@@ -1,6 +1,7 @@
 # M2-3d review-fix verification
 
 Scope: `codex/m2-3d-daily-basis-fixes`, based on main `6387968`.
+Integrated main `4867549` in `49d7064`, preserving both contract sections and keeping desktop bytes identical to main.
 First contract commit: `e763bdb`. This report records focused local evidence,
 not complete CI or the required independent Claude review. Those gates remain
 pending. Original failures and superseded measurements remain in ignored
@@ -86,7 +87,7 @@ the existing generic fake-gateway engine contract.
 | Importer / existing HTTP tests | 30 + 3 PASS |
 | Native connected assembly / large cache | Final strict-API rerun: 5/5 PASS, 36.976 s |
 | Real LOCAL / fake-SIM startup | Final strict-API Windows Qt visible-window runs PASS, 8.070 s / 4.773 s; owned research/IPC/engine resources cleaned up |
-| Static pre-push | Final run PASS: Ruff (1,369 files), 1,258-file Python 3.11 syntax scan, zero static findings |
+| Static pre-push | Final post-main run PASS: Ruff (1,372 files), 1,260-file Python 3.11 syntax scan, zero static/layer/architecture findings |
 
 The guard total is `40 + 172 + 19 + 25 + 21 + 1 = 278`, all recorded killed: 261 assertion failures and 17 boundary exceptions reached from the requested body.
 These are a lower bound
@@ -111,3 +112,5 @@ baseline commit; this report does not claim a single tool invocation or that
 CI or Claude approval has completed.
 
 Final strict-API native sample: cold pump 0.232492 s, cold lock 0.110958 s, three-hot maximum 0.034083 s, revision lock 0.429524 s, separate query/adoption lock 0.024565 s. The unchanged bound is 0.5 s. Full CI and Claude review remain required.
+
+Post-main integration: 12 related modules / 236 tests PASS in 32.814 s, including unchanged LIVE and native automatic-entry tests plus baseline/layer/graph cases. The JSON lists every final module and result. Baseline generation keeps all original test assertions and applicability lists, registers three product modules and refreshes source-sensitive observer pins in one separate commit.
