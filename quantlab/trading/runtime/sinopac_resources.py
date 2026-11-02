@@ -125,9 +125,7 @@ def generated_resources(owner, account_ref):
     now, facade = owner.clock.now(), owner.shared.facade
     binding, info = _stock_binding(facade, now) if account.market is Market.STOCK else _future_binding(facade, now)
     discount = owner.configuration.fee_discount
-    fees = FeeSchedule(
-        version='sinopac-estimated-v1-discount-' + str(discount), buy_rate=Decimal('0.001425') * discount, sell_rate=Decimal('0.001425') * discount
-    )
+    fees = FeeSchedule.taiwan(discount=discount, minimum_fee=owner.configuration.minimum_fee, futures_fee_per_contract=owner.configuration.tmf_fee_per_contract)
     limits = ()
     lower, upper = getattr(info, 'limit_down', None), getattr(info, 'limit_up', None)
     if lower is not None and upper is not None:

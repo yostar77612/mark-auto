@@ -1,6 +1,7 @@
 """Reference-only three-step connection controls, using immutable fake facts."""
 
 from dataclasses import replace
+from datetime import date
 from decimal import Decimal
 import unittest
 from unittest.mock import patch
@@ -62,6 +63,34 @@ class SinopacPanelUiTests(unittest.TestCase):
             self.assertEqual(settings.key_ref, 'MarkAuto/v2/broker/sinopac')
             self.assertEqual(settings.fee_discount, Decimal('1'))
             self.assertEqual((revision, generation), (0, ''))
+
+    def test_expiry_cost_edits_remain_drafts_and_unknown_until_accepted(self):
+        settings = SinopacConnectionSettings(api_key_expires_on=date(2026, 11, 15))
+        view = replace(connected_view(), settings=settings, api_key_remaining_days=14, api_key_expiry_state='DUE')
+        self.panel.apply(view)
+        self.assertIn('14', self.panel.key_expiry_status.text())
+        self.panel.key_expiry.setFocus()
+        self.panel.key_expiry.selectAll()
+        QTest.keyClicks(self.panel.key_expiry, '2026-12-31')
+        self.assertEqual(self.panel.key_expiry_status.text(), ui_text('m2.maintenance.expiry_unknown'))
+        self.panel.apply(replace(view, revision=2))
+        self.assertEqual(self.panel.settings().api_key_expires_on, date(2026, 12, 31))
+        self.assertEqual(self.panel.key_expiry_status.text(), ui_text('m2.maintenance.expiry_unknown'))
+        self.panel.minimum_fee.setText('10')
+        self.panel.tmf_fee.setText('25')
+        emitted = QSignalSpy(self.panel.save_connect_requested)
+        self.panel.save_connect.click()
+        self.assertEqual(emitted.count(), 1)
+        self.assertEqual((emitted.at(0)[0].minimum_fee, emitted.at(0)[0].tmf_fee_per_contract), (Decimal('10'), Decimal('25')))
+
+    def test_invalid_expiry_emits_no_save_and_blank_remains_unknown(self):
+        emitted = QSignalSpy(self.panel.save_connect_requested)
+        for value in ('2026-02-30', '20261115'):
+            self.panel.key_expiry.setText(value)
+            self.panel.save_connect.click()
+        self.assertEqual(emitted.count(), 0)
+        self.panel.key_expiry.clear()
+        self.assertIsNone(self.panel.settings().api_key_expires_on)
 
     def test_signed_accounts_are_masked_and_keyboard_selection_uses_stable_aliases(self):
         self.panel.apply(connected_view())

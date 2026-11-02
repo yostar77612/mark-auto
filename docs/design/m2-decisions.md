@@ -1944,3 +1944,35 @@ Final metadata observes an external merge of #130 at2026-11-01T20:34:42Z
 and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
+
+## 2026-11-02 — M2-9 isolated data/cost/maintenance slice
+
+Use additive M1 daily/event tables and retain original official response bytes
+with content hashes. Download transport is injectable, bounded and consented;
+no network data acquisition occurs in tests. Repository recorded TWSE/TPEx
+individual-stock/event fixtures were not available for this implementation.
+Native schema support is therefore provisional and fail-closed, not a claim of
+verified exchange compatibility. Do not substitute invented records for the
+requested recorded samples or silently fall back to stale/zero observations.
+
+Research uses official combined ex-right/dividend reference ratios instead of
+guessing a cash-only adjustment. Supply point-in-time adjusted signal histories
+separately from raw fills/PnL, with source/cost/calendar metadata. The chart switch
+is data-only. Wiring these stock inputs to an admitted research/backtest job and
+the chart/download widgets remains pending; legacy daily research is not changed.
+
+Preserve the eight historical FeeSchedule dataclass fields/codec exactly; expose
+Taiwan variants via a factory and persist new version snapshots, never revise old
+evidence. Ordinary/day-trade/ETF treatment must be explicitly selected by a
+verified caller; generated connection resources still support ordinary 2330/TMF.
+Store expiry/cost preferences in separate stock_maintenance.json so account-alias
+hardening can proceed independently without concurrent sinopac_settings edits.
+Date-only expiry means renewal at the start of that local date (no guessed vendor
+23:59 grace period). Unknown expiry is not zero or a healthy status.
+
+Keep automatic entry fail-closed on missing calendar/expiry coverage, but retain
+manual and protective exits. Existing verified TAIFEX format/update tool is read,
+not run online; no future holidays or expiries are synthesized. December reminders
+are exposed by the rules/data interface; calendar reminder UI remains pending.
+AGENTS.md, CLAUDE.md and GitNexus launcher were absent in this checkout. Impact
+analysis uses grep, affected_tests import graph and check_layers instead.

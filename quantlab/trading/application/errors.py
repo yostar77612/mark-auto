@@ -10,6 +10,15 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'official_stock_invalid': ErrorText('官方股票資料未通過驗證，原資料已保留。', '核對上市／上櫃來源格式與日期後重新匯入。'),
+    'official_stock_consent_required': ErrorText('尚未同意下載官方股票資料。', '確認來源及日期後明確執行下載。'),
+    'official_stock_coverage_missing': ErrorText('股票日線尚未完整涵蓋研究區間。', '補齊至少五年的官方日線與除權息資料，不使用不完整資料產生證據。'),
+    'api_key_expiry_unknown': ErrorText('API 金鑰到期日未知。', '核對永豐金鑰有效期限並填寫到期日。'),
+    'api_key_expired': ErrorText('設定的 API 金鑰已到期，不能登入或自動開新倉。', '更新金鑰引用及到期日後重新連線。'),
+    'api_key_renewal_due': ErrorText('API 金鑰將在十四天內到期。', '請提前更新金鑰與到期日。'),
+    'calendar_coverage_missing': ErrorText('交易日曆未涵蓋未來三十個交易日。', '更新已驗證且版本化的日曆；自動新倉保持停止。'),
+    'expiry_coverage_missing': ErrorText('期貨到期資料未涵蓋未來三十個交易日。', '沿用既有期交所到期日更新工具，核對官方資料後匯入。'),
+    'calendar_annual_update_due': ErrorText('十二月起請更新下一年度交易日曆與期貨到期資料。', '核對官方版本與覆蓋範圍，未涵蓋時不自動開新倉。'),
     'manual_allocation_exceeds_settings': ErrorText(
         '人工模擬帳本的已確認額度超過目前配置。', '核對證券及期貨配置後再操作；原帳本與損益紀錄不會重設，合法退出仍可另行核對。'
     ),

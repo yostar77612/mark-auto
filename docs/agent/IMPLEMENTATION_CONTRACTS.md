@@ -7147,3 +7147,37 @@ are unchanged; native dangerous confirmations still include the account.
 Stock total and cumulative fills display exact fractional lots, including0.5 lots
 for500 shares, with canonical share tooltips; futures remain contracts. Choices
 and failed preference writes do not invoke a trading command.
+
+## M2-9 official daily data and maintenance boundaries
+
+Official stock refresh is explicitly consented per call, half-open dated, limited
+and all-or-nothing across every monthly response and the event response. It adds
+`bars_1d`/events/provenance to the M1 SQLite store without rewriting minute bars
+or their schema marker. Invalid/missing data or failed publication retains the
+old interval. Historical response bytes remain addressable by URL and SHA-256
+after corrections. Current coverage plus every expected calendar session is
+required before producing five-year training input metadata; missing dates are
+not invented. Synthetic schema tests are not represented as recorded samples.
+
+The combined exchange reference-price / previous-close ratio defines backward
+adjustment. Point-in-time signal histories exclude subsequent observations and
+actions. Raw bars remain the explicit execution/PnL inputs; metadata freezes
+method, raw/event/source digests, official URLs, calendar and cost versions. This
+is a training input interface, not an automatically admitted BACKTEST result.
+Legacy daily research and its serialized FeeSchedule fields remain unchanged.
+
+`FeeSchedule.taiwan` creates immutable versions for discount, minimum commission,
+stock/day-trade/ETF tax treatment, TMF fee/tax and slippage. Eligibility is an
+explicit input, never inferred from an instrument code. Existing consumers use
+the same FeeSchedule type; saved cost snapshots are append-only. Date preferences
+contain only validated broker secret references, never credential values.
+Unknown key expiry displays unknown; 14 remaining days starts renewal reminders;
+zero days is conservatively expired and refused before secret resolution/login.
+Unaccepted UI date/reference drafts never display the old healthy countdown.
+
+Automatic non-LOCAL new entries require an injected maintenance check, 30 future
+explicit calendar dates and, for futures, verified expiry-month coverage using
+the existing TAIFEX data format. Missing checks fail closed. December produces an
+annual calendar reminder. Protective/reducing exits and manual paths retain
+existing guards and are not blocked by this new automatic-entry check. No LIVE
+execution path is added. All tests use fakes; Windows remains CI/native evidence.
