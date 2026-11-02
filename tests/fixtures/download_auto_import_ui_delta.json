@@ -823,16 +823,6 @@
         },
         {
           "row": {
-            "file": "tests/test_minute_research_host.py",
-            "kind": "assignment",
-            "line": 34,
-            "name": "contract",
-            "receiver": "self"
-          },
-          "count": 1
-        },
-        {
-          "row": {
             "file": "tests/test_m2_automatic.py",
             "kind": "assignment",
             "line": 541,
@@ -868,6 +858,16 @@
             "line": 524,
             "name": "history",
             "receiver": "self.engine"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_minute_research_host.py",
+            "kind": "assignment",
+            "line": 35,
+            "name": "contract",
+            "receiver": "self"
           },
           "count": 1
         }
