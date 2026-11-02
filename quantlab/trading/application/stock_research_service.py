@@ -63,6 +63,7 @@ class StockResearchService:
         checkpoint()
         if self.profile_reader is not None and self.profile_reader() != self.profile:
             raise DomainError('source_invalid_evidence', 'stock source changed before publication')
+        checkpoint()
         self.journal.append(EVENT_KIND, payload, self.clock.now(), expected_sequence=len(prior))
         return artifact
 
