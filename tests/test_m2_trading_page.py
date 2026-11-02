@@ -236,6 +236,8 @@ class M2TradingPageTests(unittest.TestCase):
                 UiAction.CANCEL_MANUAL,
                 UiAction.AMEND_MANUAL,
                 UiAction.TEST_SIM_ORDER,
+                UiAction.ADOPT_MANUAL_ORDER,
+                UiAction.DECLARE_MANUAL_NOT_SENT,
             )
         )
         self.assertEqual(LIVE_ORDER_ACTIONS, expected)
