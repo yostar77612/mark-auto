@@ -114,8 +114,17 @@ class SignalIdentityTests(unittest.TestCase):
         self.assertEqual(len(locked), 30)
         for path in locked:
             with self.subTest(path=path):
-                baseline = subprocess.check_output(['git', 'show', f'0b7606658947c48457d23f3bd25e0f8dde33c3a7:{path}'], cwd=ROOT)
-                self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).digest(), hashlib.sha256(baseline).digest())
+                # The eight historical !eol G3 paths intentionally use platform
+                # checkout conversion. Compare exact bytes under the same Git
+                # filters, then independently verify canonical blob identity.
+                baseline = subprocess.check_output(
+                    ['git', 'cat-file', '--filters', '--path', path, f'0b7606658947c48457d23f3bd25e0f8dde33c3a7:{path}'], cwd=ROOT
+                )
+                current = (ROOT / path).read_bytes()
+                self.assertEqual(hashlib.sha256(current).digest(), hashlib.sha256(baseline).digest())
+                expected_blob = subprocess.check_output(['git', 'rev-parse', f'0b7606658947c48457d23f3bd25e0f8dde33c3a7:{path}'], cwd=ROOT).strip()
+                current_blob = subprocess.check_output(['git', 'hash-object', '--stdin', '--path', path], input=current, cwd=ROOT).strip()
+                self.assertEqual(current_blob, expected_blob)
         self.assertEqual(subprocess.check_output(['git', 'diff', '--stat', '0b7606658947c48457d23f3bd25e0f8dde33c3a7', '--', *locked], cwd=ROOT), b'')
 
 
