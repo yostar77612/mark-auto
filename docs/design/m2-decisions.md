@@ -1945,6 +1945,78 @@ and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
 
+## M2-7 / explicit TMF minute research boundary (2026-11-02)
+
+Use an additive TRAINING-only minute engine and M1 cache/refill service rather
+than alter daily research, its DTO fields, or strict next-day signal guard.
+A closed-bar event may precede the next minute open at the same timestamp;
+point-in-time tests distinguish that event ordering from reading current close.
+Require complete explicit DAY session grids, not M1 coverage records: successful
+empty SDK responses also mark coverage. Retry after asynchronous M1 refill,
+with cache-revision validation around the bounded owned worker. Do not fabricate
+no-trade bars or silently substitute index prices for a TMF contract.
+
+A narrow read-only adapter accepts the existing resolved TMF contract/session;
+no additional login, credential, CA or order path is added. It uses the established
+watch-history Taipei right-label convention, not the generic mapper's different
+numeric timestamp convention. Native SDK correctness is still a Windows/recorded
+capture verification item. Retain explicit dates/expiry and reject unsupported
+night/roll/stock workflows. M2-9 is an independent unmerged PR, not a dependency
+copied into this branch.
+
+Current execution policies encode holding days, not holding minutes. Reusing the
+daily deployment fingerprint for a minute-duration receipt would certify a
+different execution policy. Preserve the shared result envelope but namespace
+minute fingerprints so unchanged activation fails closed. This is a deliberate
+partial-delivery boundary, not a claim that the specification's complete minute
+activation/UI acceptance is fulfilled. A later integration must bind minute
+holding policy and UI admission without weakening the activation checks.
+
+GitNexus and repository AGENTS.md/CLAUDE.md are unavailable in this checkout.
+Use grep/import graph plus tools/affected_tests.py and both layer gates; existing
+worker dispatch and HistorySync target annotations are the only modified old
+source paths. Baseline inventory regeneration is kept in its own commit.
+
+## M2-7 / complete original research host scope without deployment expansion (2026-11-02)
+
+The owner explicitly requested continuation. Close the prior service-only gap
+with a genuine RuntimeBundle entry, not a new minute execution scheduler or UI
+activation bypass. Real generated resources expose three constraints: their ID
+is TMF:{month}, effective_at is observation time, and their calendar is only the
+manual common window. Preserve those facts. Accept the generated identity at
+the research boundary; require independently verified historical specification
+applicability and a full research calendar instead of inventing a listing date
+or converting a manual window into market hours. Unknown applicability remains
+a real-data integration blocker, explicitly represented and tested.
+
+Refill completion is awaited within the original15-minute maximum and supports
+cancel/timeout. The owned history worker shares the existing M1 rate authority
+and durable daily counter. Do not multiply40/10-second allowances per job. A
+post-response generation check alone had a check/write race; retain one short
+publication scope and give cancellation/close bounded lock acquisition. A stuck
+native SDK worker remains marked retiring, with cache lifetime retained; never
+pretend it was forcibly cleaned up. A fake blocked cache write and fake blocked
+SDK call verify these different boundaries.
+
+Persist original raw training bars and all deterministic inputs alongside the
+compatible research-only result. Use an append-only SQLite receipt table with
+4MiB payload limits, bounded recent view, typed decoding and a pre-commit guard;
+keep serialization out of infrastructure. No changes to G3, daily research,
+SDK version, PROJECT_STATE, activation validation, or production orders.
+
+The recycled cloud runtime has Python3.12 and patched SQLite, but no Qt or Ruff.
+Do not retry the previously denied network installation. Run stdlib/core tests
+and structural gates locally; dependency-complete Qt/format checks belong to CI.
+The full repin preview reports stylesheet inspection blocked by absent PySide6;
+inventory regeneration is verified locally. Observer generation is mechanical,
+but its Qt-dependent verification cannot run here; retain the unchanged tests
+for CI and report the no-verify generation explicitly. Do not modify stylesheet
+baselines or assertions to hide that limit.
+### M2-7 明確固定模型，而非偽造完整歷史快照（2026-11-02）
+
+`InstrumentSpec.effective_at` 在 generated resources 是觀測時間，margin 與 source/version 也不是歷史市場條款。新增顯式 `FixedModelMinuteSettings`：以指定 spec/fee 參數研究歷史價，歷史適用性標記 UNKNOWN，不要求 caller 提供無關的完整歷史觀測快照。這不是改寫既有 interval-reference 的判定，也不是自動 fallback。舊 reference 只代表 caller 提供的區間／來源引用，不會因 digest 格式正確而取得可信來源身分。完整 spec 仍保存在 receipt 與 fingerprint；margin feasibility／daily price limits 未模擬，research-only 與完整資料／取消守衛不變。
+
+
 ## M2 second round: engine decisions (2026-11-02)
 
 M2-4 keeps legacy StrategyForm unchanged so historical daily research material
