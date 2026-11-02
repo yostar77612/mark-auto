@@ -294,7 +294,7 @@ class RuntimePreflightTests(unittest.TestCase):
         form = StrategyForm(
             'created', Market.STOCK, HoldingKind.SWING, 2, 10, Side.BUY, second.instrument_id, 'stock', Environment.BROKER_SIMULATION, D('20000'), D('.02')
         )
-        self.engine.state = replace(self.engine.state, strategies=(SimpleNamespace(form=form, state='DRAFT'),))
+        self.engine.state = replace(self.engine.state, strategies=(SimpleNamespace(form=form, state='DRAFT', parameters=None),))
         self.assertFalse(self.facts().realtime)
         self.engine.quotes[second.instrument_id] = self.quote(second)
         self.engine.quotes.pop(self.stock.instrument_id)
@@ -496,6 +496,7 @@ class PreflightDispatchTests(unittest.TestCase):
             version_offset=7,
             sinopac_connection=self.owner,
             manual_runtime=self.manual,
+            automatic_runtime=None,
             closing=False,
             closed=False,
             control_failed=False,
