@@ -1,0 +1,54 @@
+{
+  "platform": "windows",
+  "commands": 0,
+  "captures": [
+    {
+      "code": "broker_login_failed",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "\u672a\u9023\u7dda \u00b7 \u7121\u6cd5\u767b\u5165\uff0c\u8acb\u6aa2\u67e5\u91d1\u9470\u5f15\u7528\u8207\u9023\u7dda\u74b0\u5883\u3002"
+    },
+    {
+      "code": "broker_initialization_failed",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "\u672a\u9023\u7dda \u00b7 \u767b\u5165\u6210\u529f\uff0c\u4f46\u521d\u59cb\u5316\u5931\u6557\u3002\u8acb\u67e5\u770b\u8a3a\u65b7\u5f8c\u91cd\u8a66\u9023\u7dda\u3002"
+    },
+    {
+      "code": "broker_login_failed",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "\u672a\u9023\u7dda \u00b7 \u7121\u6cd5\u767b\u5165\uff0c\u8acb\u6aa2\u67e5\u91d1\u9470\u5f15\u7528\u8207\u9023\u7dda\u74b0\u5883\u3002"
+    },
+    {
+      "code": "broker_initialization_failed",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "\u672a\u9023\u7dda \u00b7 \u767b\u5165\u6210\u529f\uff0c\u4f46\u521d\u59cb\u5316\u5931\u6557\u3002\u8acb\u67e5\u770b\u8a3a\u65b7\u5f8c\u91cd\u8a66\u9023\u7dda\u3002"
+    },
+    {
+      "code": "market_data_subscription_failed",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "\u884c\u60c5\u8a02\u95b1\u5931\u6557\u3002\u9023\u7dda\u6210\u529f\uff0c\u8a72\u5546\u54c1\u50c5\u80fd\u770b\u6b77\u53f2\u8cc7\u6599\uff1b\u8acb\u67e5\u770b\u8a3a\u65b7\u5f8c\u91cd\u8a66\u3002"
+    },
+    {
+      "code": "market_data_subscription_failed",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "\u884c\u60c5\u8a02\u95b1\u5931\u6557\u3002\u9023\u7dda\u6210\u529f\uff0c\u8a72\u5546\u54c1\u50c5\u80fd\u770b\u6b77\u53f2\u8cc7\u6599\uff1b\u8acb\u67e5\u770b\u8a3a\u65b7\u5f8c\u91cd\u8a66\u3002"
+    }
+  ]
+}

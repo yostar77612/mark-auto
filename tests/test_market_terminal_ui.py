@@ -299,6 +299,7 @@ class TerminalTests(unittest.TestCase):
         self.wait_for(lambda: not self.widget._requests)
         self.assertFalse(self.widget._history_only)
         self.assertNotIn(ui_text('terminal.history_only'), self.widget.freshness.text())
+        self.assertNotIn(ui_text('connection.failure.history_only'), self.widget.freshness.text())
 
     def test_presets_named_persistence_and_responsive_layout(self):
         for size in ((1366, 768), (1920, 1080)):

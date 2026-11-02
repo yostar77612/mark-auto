@@ -1,0 +1,851 @@
+{
+  "summary": {
+    "changed_count": 57,
+    "affected_count": 29,
+    "changed_files": 32,
+    "risk_level": "critical"
+  },
+  "changed_symbols": [
+    {
+      "id": "Class:desktop_app/features/trading/market_terminal.py:MarketTerminalWidget",
+      "name": "MarketTerminalWidget",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/market_terminal.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/market_terminal.py:MarketTerminalWidget.render#1",
+      "name": "render",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/market_terminal.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/market_terminal.py:MarketTerminalWidget.select_instrument#2",
+      "name": "select_instrument",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/market_terminal.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/market_terminal.py:MarketTerminalWidget.select_instrument.operation@153:8#0",
+      "name": "operation",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/market_terminal.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/market_terminal.py:MarketTerminalWidget.select_instrument.completed@163:8#2",
+      "name": "completed",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/market_terminal.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/market_terminal_widgets.py:render_chart",
+      "name": "render_chart",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/market_terminal_widgets.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/sinopac_panel_text.py:reason_text",
+      "name": "reason_text",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/sinopac_panel_text.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/connection_failures.py:ENTRIES",
+      "name": "ENTRIES",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/connection_failures.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/translation_parts.py:PARTS",
+      "name": "PARTS",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/translation_parts.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L1:分層式重構盤點報告（R0）",
+      "name": "分層式重構盤點報告（R0）",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L27:2 逐檔分層與目標路徑",
+      "name": "2 逐檔分層與目標路徑",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L582:2.2 PR C slice 2 added responsibilities",
+      "name": "2.2 PR C slice 2 added responsibilities",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/connection-failures/verification.md:L1:B — Connection failure stage copy",
+      "name": "B — Connection failure stage copy",
+      "type": "Section",
+      "filePath": "docs/analysis/connection-failures/verification.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L1:M1 自主決策紀錄",
+      "name": "M1 自主決策紀錄",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L270:2026-11-03 — A, strategy market empty state",
+      "name": "2026-11-03 — A, strategy market empty state",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L279:2026-11-03 — B, connection failure stage copy",
+      "name": "2026-11-03 — B, connection failure stage copy",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:quantlab/trading/adapters/shioaji/market_session.py:MarketSession",
+      "name": "MarketSession",
+      "type": "Class",
+      "filePath": "quantlab/trading/adapters/shioaji/market_session.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:quantlab/trading/adapters/shioaji/market_session.py:MarketSession.connect#0",
+      "name": "connect",
+      "type": "Method",
+      "filePath": "quantlab/trading/adapters/shioaji/market_session.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:quantlab/trading/adapters/shioaji/market_session.py:MarketSession.attach_authenticated#1",
+      "name": "attach_authenticated",
+      "type": "Method",
+      "filePath": "quantlab/trading/adapters/shioaji/market_session.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:quantlab/trading/adapters/shioaji/market_session.py:MarketSession.subscribe#1",
+      "name": "subscribe",
+      "type": "Method",
+      "filePath": "quantlab/trading/adapters/shioaji/market_session.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:quantlab/trading/application/errors.py:V2_ERROR_TEXT",
+      "name": "V2_ERROR_TEXT",
+      "type": "Variable",
+      "filePath": "quantlab/trading/application/errors.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:quantlab/trading/runtime/market_connection.py:MarketConnection",
+      "name": "MarketConnection",
+      "type": "Class",
+      "filePath": "quantlab/trading/runtime/market_connection.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:quantlab/trading/runtime/market_connection.py:MarketConnection._transition#1",
+      "name": "_transition",
+      "type": "Method",
+      "filePath": "quantlab/trading/runtime/market_connection.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:quantlab/trading/runtime/sinopac_transition.py:connect_candidate",
+      "name": "connect_candidate",
+      "type": "Function",
+      "filePath": "quantlab/trading/runtime/sinopac_transition.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:quantlab/trading/runtime/sinopac_transition.py:transition",
+      "name": "transition",
+      "type": "Function",
+      "filePath": "quantlab/trading/runtime/sinopac_transition.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_connection_failure_stages.py:StandaloneConnectionStages",
+      "name": "StandaloneConnectionStages",
+      "type": "Class",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:StandaloneConnectionStages.test_post_connect_initialization_failure_keeps_cleanup_and_stage#0",
+      "name": "test_post_connect_initialization_failure_keeps_cleanup_and_stage",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_connection_failure_stages.py:StandaloneConnectionStages.test_post_connect_initialization_failure_keeps_cleanup_and_stage.connect@28:12#0",
+      "name": "connect",
+      "type": "Function",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_connection_failure_stages.py:StandaloneConnectionStages.test_post_connect_initialization_failure_keeps_cleanup_and_stage.disconnect@32:12#0",
+      "name": "disconnect",
+      "type": "Function",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_connection_failure_stages.py:StandaloneConnectionStages.test_post_connect_initialization_failure_keeps_cleanup_and_stage.initialize@36:12#1",
+      "name": "initialize",
+      "type": "Function",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:StandaloneConnectionStages.test_failed_standalone_connect_retains_login_error#0",
+      "name": "test_failed_standalone_connect_retains_login_error",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_connection_failure_stages.py:StandaloneConnectionStages.test_failed_standalone_connect_retains_login_error.connect@56:12#0",
+      "name": "connect",
+      "type": "Function",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_connection_failure_stages.py:LoginFailureStages",
+      "name": "LoginFailureStages",
+      "type": "Class",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_connection_failure_stages.py:setUp",
+      "name": "setUp",
+      "type": "Variable",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_connection_failure_stages.py:command",
+      "name": "command",
+      "type": "Variable",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:LoginFailureStages.dispatch#0",
+      "name": "dispatch",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:LoginFailureStages.test_login_failure_keeps_key_environment_guidance#0",
+      "name": "test_login_failure_keeps_key_environment_guidance",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:LoginFailureStages.test_after_login_failure_is_initialization_with_same_cleanup#0",
+      "name": "test_after_login_failure_is_initialization_with_same_cleanup",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:LoginFailureStages.test_post_login_specific_permission_classification_is_retained#0",
+      "name": "test_post_login_specific_permission_classification_is_retained",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_connection_failure_stages.py:AuthError",
+      "name": "AuthError",
+      "type": "Class",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_connection_failure_stages.py:MarketFailureStages",
+      "name": "MarketFailureStages",
+      "type": "Class",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:MarketFailureStages.test_standalone_post_login_initialization_is_not_login_failure#0",
+      "name": "test_standalone_post_login_initialization_is_not_login_failure",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:MarketFailureStages.test_connected_subscription_error_does_not_disconnect_or_retry#0",
+      "name": "test_connected_subscription_error_does_not_disconnect_or_retry",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:MarketFailureStages.test_lost_connection_keeps_disconnected_error#0",
+      "name": "test_lost_connection_keeps_disconnected_error",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_connection_failure_stages.py:TerminalFailureStages",
+      "name": "TerminalFailureStages",
+      "type": "Class",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_connection_failure_stages.py:setUpClass",
+      "name": "setUpClass",
+      "type": "Variable",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_connection_failure_stages.py:tearDown",
+      "name": "tearDown",
+      "type": "Variable",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_connection_failure_stages.py:wait_for",
+      "name": "wait_for",
+      "type": "Variable",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:TerminalFailureStages.test_failed_subscription_keeps_history_and_connected_feedback#0",
+      "name": "test_failed_subscription_keeps_history_and_connected_feedback",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_connection_failure_stages.py:TerminalFailureStages.test_disconnected_status_does_not_claim_connection_survived#0",
+      "name": "test_disconnected_status_does_not_claim_connection_survived",
+      "type": "Method",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_connection_failure_stages.py:TerminalFailureStages.test_disconnected_status_does_not_claim_connection_survived.status@166:8#0",
+      "name": "status",
+      "type": "Function",
+      "filePath": "tests/test_connection_failure_stages.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_desktop_catalog_split.py:CatalogSplitTests",
+      "name": "CatalogSplitTests",
+      "type": "Class",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_desktop_catalog_split.py:CatalogSplitTests.test_all_feature_records_are_literal_and_keep_unique_phase_keys#0",
+      "name": "test_all_feature_records_are_literal_and_keep_unique_phase_keys",
+      "type": "Method",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_market_terminal_ui.py:TerminalTests",
+      "name": "TerminalTests",
+      "type": "Class",
+      "filePath": "tests/test_market_terminal_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_market_terminal_ui.py:TerminalTests.test_disconnected_selection_does_not_claim_subscription_full#0",
+      "name": "test_disconnected_selection_does_not_claim_subscription_full",
+      "type": "Method",
+      "filePath": "tests/test_market_terminal_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_sinopac_connection.py:UnifiedConnectionTests",
+      "name": "UnifiedConnectionTests",
+      "type": "Class",
+      "filePath": "tests/test_sinopac_connection.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_sinopac_connection.py:UnifiedConnectionTests.test_failed_adoption_callback_releases_candidate_without_private_error#0",
+      "name": "test_failed_adoption_callback_releases_candidate_without_private_error",
+      "type": "Method",
+      "filePath": "tests/test_sinopac_connection.py",
+      "change_type": "touched"
+    }
+  ],
+  "affected_processes": [
+    {
+      "id": "proc_38_transition",
+      "name": "Transition → Sdk_text",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_39_transition",
+      "name": "Transition → Sdk_value",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_40_transition",
+      "name": "Transition → _callback",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        },
+        {
+          "symbol": "attach_authenticated",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_60_completed",
+      "name": "Completed → _submit",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "completed",
+          "step": 1
+        },
+        {
+          "symbol": "select_instrument",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_68_transition",
+      "name": "Transition → Keyed_account_digest",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_69_transition",
+      "name": "Transition → Start",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        },
+        {
+          "symbol": "attach_authenticated",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_70_transition",
+      "name": "Transition → _callable",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        },
+        {
+          "symbol": "attach_authenticated",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_86_complete",
+      "name": "Complete → Market_connection_guidance",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "reason_text",
+          "step": 4
+        }
+      ]
+    },
+    {
+      "id": "proc_106_completed",
+      "name": "Completed → _view",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "select_instrument",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_113_transition",
+      "name": "Transition → Account_views",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_114_transition",
+      "name": "Transition → Readiness",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_115_transition",
+      "name": "Transition → Select_accounts",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_185_transition",
+      "name": "Transition → Dispose",
+      "process_type": "intra_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "transition",
+          "step": 1
+        },
+        {
+          "symbol": "connect_candidate",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_248_connect",
+      "name": "Connect → Set_active",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "connect",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_249_connect",
+      "name": "Connect → _rows",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "connect",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_294_connect",
+      "name": "Connect → Sdk_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "connect",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_296_connect",
+      "name": "Connect → _callback",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "connect",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_309_capture_window",
+      "name": "Capture_window → _submit",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "select_instrument",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_312_connect",
+      "name": "Connect → Start",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "connect",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_313_connect",
+      "name": "Connect → _callable",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "connect",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_322_unavailable",
+      "name": "Unavailable → Market_connection_guidance",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "reason_text",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_330_completed",
+      "name": "Completed → _view",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "completed",
+          "step": 1
+        },
+        {
+          "symbol": "select_instrument",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_370_completed",
+      "name": "Completed → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 8,
+      "changed_steps": [
+        {
+          "symbol": "completed",
+          "step": 1
+        },
+        {
+          "symbol": "select_instrument",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_398_completed",
+      "name": "Completed → _submit",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "render",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_408_capture_window",
+      "name": "Capture_window → _view",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "select_instrument",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_424_capture_window",
+      "name": "Capture_window → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 8,
+      "changed_steps": [
+        {
+          "symbol": "select_instrument",
+          "step": 2
+        },
+        {
+          "symbol": "render",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_479_connect",
+      "name": "Connect → Sdk_value",
+      "process_type": "cross_community",
+      "step_count": 4,
+      "changed_steps": [
+        {
+          "symbol": "connect",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_513_completed",
+      "name": "Completed → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 7,
+      "changed_steps": [
+        {
+          "symbol": "render",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_592_complete",
+      "name": "Complete → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "reason_text",
+          "step": 4
+        }
+      ]
+    }
+  ]
+}
