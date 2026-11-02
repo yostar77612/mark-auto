@@ -22,7 +22,7 @@ from quantlab.trading.application.stock_research_service import StockResearchSer
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.models import Environment, HoldingKind, HoldingPolicy, Market, Side
-from quantlab.trading.domain.strategy import Rule, StrategyDefinition
+from quantlab.trading.domain.strategy import Rule, StrategyDefinition, StrategyParameters
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.provenance import compute_profile
 from quantlab.trading.runtime.stock_research import run_stock_research
@@ -160,6 +160,12 @@ class OfficialStockResearchTests(StockResearchFixture, unittest.TestCase):
             for call in calls:
                 with self.assertRaises(DomainError):
                     call()
+                self.assertEqual(journal.replay(), ())
+            for interval in ('1m', '1d'):
+                typed = replace(self.strategy(), parameters=StrategyParameters(interval, D('.01'), D('10000')))
+                with self.assertRaises(DomainError) as unsupported:
+                    service.run(typed, self.spec, START, END, fees, StockTaxTreatment('STOCK'))
+                self.assertEqual(unsupported.exception.code, 'validation_failed')
                 self.assertEqual(journal.replay(), ())
             ticks = iter((0, 900))
             with self.assertRaises(DomainError) as timeout:

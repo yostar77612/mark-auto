@@ -7266,3 +7266,131 @@ and prove that research preserves the engine state and has no download calls.
 Sizing is one instrument lot only when the shared FeeSchedule's raw-price entry
 cash estimate fits the strategy allocation; adjusted prices cannot make an
 unaffordable raw lot appear affordable.
+M2-9 integration with upstream M2-3/4/5: typed automatic submissions may bypass
+only the old daily baseline branch, never the maintenance new-risk gate. The
+shared manual/automatic host binds the real persisted key date and current
+calendar/expiry coverage under the owner lock. Missing maintenance blocks new
+risk; explicit manual operations and known protective reductions remain legal.
+The stock daily research entry retains the existing CREATE_STRATEGY UI path.
+Explicit CREATE_TYPED_STRATEGY parameters include execution sizing/stops not
+modeled by this daily runner; those requests fail validation before evidence,
+including typed 1d requests, rather than silently ignoring their parameters.
+
+## M2-4 engine contract (2026-11-02)
+
+- New typed creation: `UiAction.CREATE_TYPED_STRATEGY`, `UiCommand.strategy` and
+  `strategy_parameters: domain.strategy.StrategyParameters`. Existing creation and
+  stored StrategyForm remain compatible. Parameters freeze interval, stop fraction,
+  entry amount, contracts, stock-daytrade opt-in/confirmation and instrument rule.
+- Management: DISABLE_STRATEGY, CLONE_STRATEGY, REVISE_STRATEGY, DELETE_STRATEGY;
+  `target_id` identifies a version. Revision takes strategy + strategy_parameters;
+  clone copies parameters into a fresh, unresearched version of the same strategy.
+- StrategyView appends parameters, recent_signal, margin_source and
+  resolved_instrument_id; existing field positions remain unchanged.
+- New errors: strategy_parameters_invalid, strategy_instrument_restricted,
+  strategy_daytrade_confirmation_required, strategy_allocation_exceeded,
+  strategy_has_fills, strategy_settlement_day, strategy_size_insufficient.
+- No new production order path, desktop source or string changes. M2-7 supplies
+  evidence through the existing ResearchResult contract; FeeSchedule owns costs.
+- First contract commit defines transport only; behavior follows before PR readiness.
+
+M2-4 implementation details:
+- `UiState.strategy_products` lists StrategyProductView(instrument_id, market,
+  holding_kinds, stock_intraday_optional). Default intraday list is TMF only;
+  stock intraday is separately opt-in and requires confirmed eligibility.
+- StrategyView.entry_block_code explains unavailable near-month resolution;
+  resolved_instrument_id is empty while blocked, never a fabricated contract.
+- Missing TMF margin uses a labelled conservative TWD50000 per contract. The
+  same effective specification is used for sizing, commitment and reservations.
+- Stock per-entry amount is an all-in ceiling using FeeSchedule.entry_cash;
+  quantity is rounded down to full1000-share lots including fees/slippage.
+- Disable stops new strategy decisions; existing managed lots keep protective
+  policies. Delete retains a hidden tombstone so version identities never reset.
+- One active strategy per account/instrument remains enforced for M3 ownership.
+  Multiple distinct instruments share the account allocation ceiling; strategy
+  cash/risk commitments remain isolated across all versions of each strategy.
+- New tests: test_m2_strategy_domain.py and test_m2_strategy_management.py. No new
+  product files, no desktop edits and no layer-map changes are required.
+
+M2-4 review clarifications: account allocation limits cover all creation routes
+once an account has any typed version, even a disabled/deleted marker. JSON
+parameter revisions preserve rules but rebuild explicit form/interval metadata
+and invalidate evidence. Margin provenance follows resolved_instrument_id and
+is UNKNOWN when resolution is blocked.
+
+## M2-5 engine contract (2026-11-02)
+
+- CHECK_PREFLIGHT takes account_ref only. Facts/booleans never come from UiCommand;
+  the host collects current-session facts. SAVE_ACCOUNT_RISK takes account_risk:
+  AccountRiskLimits(account_ref,daily_loss_fraction=.03,max_order_notional=1000000,
+  max_positions=5). Existing STOP_NEW remains the all-stop action and cancels
+  entry orders while retaining protective exits.
+- UiState.account_risks: AccountRiskView(account_ref,limits,daily_pnl,
+  daily_loss_limit,position_count,paused,reasons). UiState.preflight contains
+  PreflightView(account_ref,trade_date,checked_at,checks,blocked_today,
+  keep_awake_reminder,block_reasons). Keys: connection/account/permission/ca/
+  market/service/reconciliation. States PASS/FAIL/UNKNOWN/NOT_REQUIRED.
+- LOCAL/SIM CA is NOT_REQUIRED and no activation is called. Failure locks the
+  account's automatic entries for that trading day; passing reruns retain the
+  original block reasons. The keep-awake reminder never changes system power.
+- AppState adds account_risk_limits, account_daily_baselines,
+  account_daily_locks, preflight, preflight_blocks with empty defaults for replay.
+- DailyBaselineEvidence adds optional account_previous_close. Single-account
+  legacy proof can identify its sole closing mark; aggregate multi-account proof
+  cannot invent splits. Same-day attributed closing marks are immutable.
+- New errors: account_daily_loss_limit, account_order_limit,
+  account_position_limit, account_daily_baseline_required, preflight_blocked,
+  preflight_connection, preflight_account, preflight_permission, preflight_ca,
+  preflight_market, preflight_service, preflight_reconciliation.
+- Account limits cover all app-owned positions/pending entries and admission
+  routes once the account adopts M2. Reductions retain their existing guards.
+  Neither resume, restart nor changed limits clears today's loss latch.
+
+## M2-3 engine contract (2026-11-02)
+
+- AUTO_RECONCILE reads the accepted worker cache and resolves durable automatic
+  claims; it never resumes. AUTO_RESUME is a distinct explicit user action after
+  current owner, reconciliation, account baselines, preflight and risk checks.
+  Ordinary manual RESUME never clears the separate automatic pause.
+- UiState.automatic is AutomaticView(state,reasons,evaluations). State is
+  PAUSED_WAITING_RESUME or RUNNING. EvaluationStatus carries its immutable
+  strategy/version/instrument/interval/bar-end cursor, evaluated_at,
+  next_evaluation_at, phase, order_result/order_id and code.
+- AppState.automatic defaults to paused/program_restarted, retaining cursors
+  and forced attempts on replay. Every startup pauses it. CLAIMED evaluation or
+  SUBMITTING/CANCEL_PENDING forced attempt becomes unresolved after restart;
+  trusted reconciliation and a separate user resume are required.
+- AppState.automatic_daily_evidence optionally stores the existing typed
+  DailyBaselineEvidence accepted by confirm_automatic_baseline. This provider
+  boundary requires exact account closes, calendar/fees/source attestation and
+  current cached reconciliation; it never synthesizes a close or resumes.
+- Completed final, non-incomplete DAY bars only. Persist each cursor before the
+  decision; never replay paused-period bars after resume. ForcedAttempt keys
+  belong to one lot/attempt; UNKNOWN retains reserves and cannot be resent.
+  Retry follows observed terminal cancellation, at least30 seconds apart and
+  never later than actual market close minus2 minutes.
+- New errors/reasons: automatic_paused, program_restarted, order_result_unknown,
+  automatic_overdue_position, automatic_bar_overflow, automatic_market_gap,
+  intraday_force_exit, reconciled_waiting_resume. Existing preflight/risk codes
+  identify connection, market, baseline and loss stops. UI text remains another lane.
+- This R5 delivery supports completed 1m/5m broker cycles. Typed BROKER_SIMULATION
+  1d new entries fail with automatic_daily_execution_pending and expose that
+  entry_block_code/PAUSED status. Saving the completed daily signal and submitting
+  it in the next verified session is next-round work. LOCAL daily research/day
+  advancement and independently legal protective reductions remain available.
+- New product modules: domain/auto_cycle.py, domain/automatic_calendar.py,
+  application/automatic_state.py, application/automatic_capacity.py,
+  application/automatic.py, application/automatic_baseline.py, runtime/automatic.py. No broker financial snapshot
+  is synthesized; manual and automatic entries use the same confirmed SIM pool.
+  Costs remain FeeSchedule. LIVE stays hard-disabled, including forced retries.
+- Runtime injects mandatory current-owner observation and new-entry validators.
+  Current-generation key permission cannot be inherited from a prior daily
+  preflight pass. Protective reductions validate their own account/instrument
+  scope independently. AUTO_RECONCILE can consume fresh cached proof after
+  service close; it grants no new exposure and never implies AUTO_RESUME.
+- A later completed-bar cursor cannot erase the durable ownership of an earlier
+  automatic order. Explicit AUTO_RECONCILE may confirm its known correlated
+  report using the local order's automatic namespace and typed strategy scope.
+  Any remaining uncertain order, claim or manual operation keeps recovery
+  blocked. This transition changes neither reservations nor submission count
+  and keeps automatic execution paused until separate AUTO_RESUME.

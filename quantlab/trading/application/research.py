@@ -152,4 +152,6 @@ def research_fingerprint(
     strategy: StrategyRecord, spec: InstrumentSpec, calendar: TradingCalendar, fees: FeeSchedule, dataset: str, source_profile: ProducerProfile | None
 ) -> str:
     material = (strategy.form, strategy.definition, strategy.policy, spec, calendar, fees, dataset, source_profile)
+    if strategy.parameters is not None:
+        material = (*material, strategy.parameters)
     return sha256(dumps(material).encode()).hexdigest()

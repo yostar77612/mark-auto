@@ -2004,3 +2004,146 @@ network package-install denial is respected. Run available core/profile/static
 checks, generate only reviewed additive catalog pins with explicit verification
 limits, and require unchanged CI tests/formatter/Windows jobs before delivery.
 No assertion or skip is changed to compensate for missing local dependencies.
+## M2 second round: engine decisions (2026-11-02)
+
+M2-4 keeps legacy StrategyForm unchanged so historical daily research material
+keeps its identity. New typed creation supplies separate StrategyParameters on
+StrategyRecord. New restrictions apply at that explicit input boundary; a legacy
+strategy is not implicitly converted or enabled. Parameters join the research
+fingerprint only for typed versions. No v1/G3 or cost implementation is changed.
+
+Estimated active engineering time: M2-4 45 min, M2-5 35 min, M2-3 55 min.
+At 1.5x, deliver a tested mergeable slice with remaining scope explicit.
+GitNexus pre-edit: UiAction/UiCommand/StrategyView CRITICAL (49 direct imports),
+StrategyRecord HIGH (15 direct imports); additive defaults preserve old decoding.
+Source confirms facade.snapshot despite graph UNKNOWN. No process membership was
+reported; graph receiver gaps are not a claim of no runtime effect.
+
+M2-4 chooses an all-in stock entry amount (principal plus the existing shared
+FeeSchedule costs/slippage) and a conservative missing-margin fallback of50000
+TWD/TMF contract, labelled BUILTIN_CONSERVATIVE in views/sizing. It is a local
+assumption, not a claimed current broker margin. One active owner per account
+and instrument is retained for future M3 target-position execution. Deletion is
+a hidden tombstone, not erasure of journal/audit identity. Disable does not
+transfer positions or erase their protective policy. UI remains another lane.
+
+M2-4 offline verification: domain22 and management27 new tests pass; domain
+mutants30/30 and management mutants18/18 killed in fresh subprocesses without
+rewriting product source. Existing application29, selected coordinator/LIVE/
+draft/scope/environment/valuation41 tests pass. Broader affected checks and CI
+are still pending; these local results do not claim full acceptance.
+
+M2-4 final local updates: management30 tests pass and20/20 management mutants
+killed, including cumulative losses and a no-profit-expansion allocation ceiling.
+Near-month View DTO tests cover rollover, settlement-day block and missing next
+contract. See m2-4-engine-verification.md/.json for evidence and exact limitations.
+
+M2-4 independent review corrected a mixed legacy/typed allocation bypass, JSON
+rule-preserving parameter revisions, and rollover margin provenance. An account
+adopts the M2 allocation contract persistently when its first typed version is
+created (including later tombstones), so the old creation entry point cannot
+bypass the new account ceiling. Legacy-only ledgers retain their original
+contract. Management36 tests and27/27 mutants pass; existing margin/coordinator
+regression13 pass. JSON interval/holding changes still preserve entry/exit rules
+and clear all research evidence for the new version.
+
+## M2-5 account risk and preflight — 2026-11-02
+
+Use per-account 3% of confirmed allocation, with independent day latches. Choose
+1000000 TWD maximum entry notional and five instrument/side positions as the
+unspecified initial defaults. They are editable typed limits, not broker facts.
+Pending entries, including UNKNOWN/cancellation, occupy slots; reductions do not.
+Explicit limits also adopt manual/legacy accounts, so no entry owner bypasses
+limits merely because it predates typed strategies. Saving limits cannot erase
+history or release retained reservations.
+
+Extend the existing prior-close evidence with an optional exact account split.
+Never divide a multi-account total by allocation or sample the current mark as
+a new baseline. Only a proven empty genesis (including confirmed known canceled
+zero-fill SIM diagnostics) seeds zero. LOCAL explicit day-step carries account
+marks forward and collects that new day's trusted preflight.
+
+Preflight facts are server-owned, cached and immutable at the command boundary.
+SIM permission requires the successful diagnostic in the actual SDK generation,
+not login/signature or an attempted order. CA is NOT_REQUIRED in LOCAL/SIM.
+A failed or unknown check blocks the whole trading day and preserves reasons.
+Connection/lifecycle changes during collection invalidate the result through a
+final owner/version comparison under bundle → engine → owner lock ordering.
+No balance-query fallback, credentials, CA activation or power-setting change.
+
+Keep STOP_NEW's existing cancellation semantics and protective-exit behavior.
+New modules are application/account_risk.py, application/preflight.py and
+runtime/preflight.py; inventory registration is generated once with
+repin_baselines.py and committed separately. M2-4 PR143 completed35 green checks
+on4350f05 and merged as6d50129 before this branch was opened directly from main.
+
+M2-5 independent review reproduced a manual SELL amendment whose lower stop
+risk hid higher notional (TMF25000→25001 across a250000 account cap). Reapply
+account admission to the amended entry plan before recording/calling the SDK;
+protective reductions remain exempt. Three regressions and three independent
+guard mutants pass, plus96 nearby manual/recovery/risk/LIVE tests. No existing
+assertion or price-risk guard was weakened.
+
+## M2-3 minute execution and R5 delivery — 2026-11-02
+
+Use one materialized engine/journal/shared SDK and confirmed virtual capital for
+manual and automatic orders. Do not invent financial snapshots or manual intent.
+Persist completed-bar claims before both entry and normal-exit signals; pumps
+only maintain protection/time rules. Automatic resume is a separate user action.
+Current-entry permission must be actual diagnostic proof in the current owner
+generation, and a final owner lock spans the bounded SDK call and forced cancel.
+This fixes the independently reproduced preview-to-send disconnection race.
+
+Keep the original per-account report validation as the only authority; retain
+independently validated fresh scopes for protection when another account fails.
+All entry risk remains stopped; SDK failure, empty observation or changed owner
+cannot borrow that proof. This fixes the native reproduction where a stock
+external order suppressed an already confirmed futures protective reduction.
+The earlier same-epoch writer-version cache contract is preserved.
+
+Use official per-product DAY hours on the supplied verified date set. The M1
+terminal supports stocks/indices, so consume actual TMF callbacks through its
+separate execution-consumer queue on the same SDK, not a second market engine.
+Do not infer holidays or next-month contracts. Only BROKER_VERIFIED margin source
+attests broker margin; otherwise typed TMF uses labelled50000 TWD. Research,
+deployment and commitment use the same effective spec/calendar/fee fingerprint.
+Typed EXACT as well as NEAR new entries stop on settlement day.
+
+R5 scope: first M2-3 draft09:13:15; at10:36:06 elapsed82m51s exceeds the82m30s
+limit from estimate55min. Deliver completed1m/5m cycles with verified safety;
+defer daily signal persistence/next-session dispatch (another estimated2–3h)
+to the next round. Typed broker1d new entries explicitly fail with
+automatic_daily_execution_pending and View DTO PAUSED/block code. LOCAL1d
+research/day advancement and legal reductions remain available. Minute research
+is M2-7's evidence port, not replaced by this lane's synthetic fixtures.
+
+Final relevant local tests354+398 pass and original LOCAL/fake-SIM windows return0
+with owned cleanup. Mutation evidence and final graph/static/CI status are in
+m2-3-engine-verification.md/.json and the PR checks. No complete acceptance is
+claimed for the deferred daily path, UI, M2-7/9 or real broker automation.
+
+### M2-3 CI review: preserve the unique execution commit
+
+The first full CI found the existing test_paper_lock_b2 AST safety assertion:
+automatic/manual branches had two execution.commit call sites. Keep the
+assertion unchanged. Select the mandatory automatic owner context or the
+ordinary nullcontext, then enter that context around the one existing commit.
+Risk preview, durable intent, reservation and fence ordering remain unchanged;
+the automatic owner lock still spans the actual SDK call. GitNexus reports
+83 upstream dependencies,166 affected processes and20 modules: CRITICAL risk.
+Relevant execution tests, engine mutants and both original window startups are
+revalidated; no baseline changes are needed (repin dry-run all up-to-date).
+
+### M2-3 historical automatic order recovery
+
+An additional native fake SDK reproduction submits bar1, advances the latest
+cursor to bar2 without a new order, then times out cancellation of bar1. After
+the worker adopts its correlated known report, reconciliation still cannot
+clear outcome_unknown because only the latest cursor is searched. Recover
+from the durable local order's automatic namespace and typed strategy ownership,
+independent of the latest display cursor. Every remaining uncertain local order
+still blocks recovery, as do unresolved claims and manual operations. Only an
+explicit trusted reconciliation clears the issue; it never resumes, resends or
+releases a reservation. GitNexus reconcile_automatic impact:294 upstream,
+166 processes,20 modules,CRITICAL. Regression tests use the actual fake SDK;
+independent guard mutations accompany the correction.

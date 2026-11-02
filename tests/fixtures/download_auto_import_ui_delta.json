@@ -790,6 +790,46 @@
             "receiver": "window"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m2_automatic.py",
+            "kind": "assignment",
+            "line": 44,
+            "name": "history",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m2_automatic.py",
+            "kind": "assignment",
+            "line": 540,
+            "name": "history",
+            "receiver": "self.engine"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m2_automatic_engine.py",
+            "kind": "assignment",
+            "line": 58,
+            "name": "history",
+            "receiver": "self.engine"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m2_automatic_engine.py",
+            "kind": "assignment",
+            "line": 494,
+            "name": "history",
+            "receiver": "self.engine"
+          },
+          "count": 1
         }
       ]
     },

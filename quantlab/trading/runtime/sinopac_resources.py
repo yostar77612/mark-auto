@@ -75,7 +75,7 @@ def _stock_binding(facade, now):
     return InstrumentBinding(spec, '2330', evidence), info
 
 
-def _future_binding(facade, now):
+def _future_binding(facade, now, offset=0):
     candidates = []
     for base in facade.execution_contracts('FUT'):
         code = sdk_text(sdk_value(base, 'code'))
@@ -84,9 +84,9 @@ def _future_binding(facade, now):
         info = facade.contracts.info(base)
         if sdk_text(sdk_value(info, 'root')) == 'TMF' and sdk_value(info, 'delivery_date') >= now.astimezone(ZoneInfo('Asia/Taipei')).date():
             candidates.append((sdk_value(info, 'delivery_date'), code, info))
-    if not candidates:
+    if len(candidates) <= offset:
         raise DomainError('instrument_unresolved', 'actual unexpired TMF contract unavailable')
-    _, code, info = min(candidates, key=lambda item: (item[0], item[1]))
+    _, code, info = sorted(candidates, key=lambda item: (item[0], item[1]))[offset]
     if sdk_text(sdk_value(info, 'exchange')) != 'TAIFEX' or sdk_decimal(sdk_value(info, 'multiplier'), 'TMF multiplier') != 10:
         raise DomainError('instrument_unresolved', 'TMF identity or multiplier mismatch')
     basis = sdk_text(sdk_value(info, 'tick_basis'))
@@ -118,20 +118,24 @@ def _future_binding(facade, now):
     return InstrumentBinding(spec, code), info
 
 
-def generated_resources(owner, account_ref):
+def generated_resources(owner, account_ref, *, include_next=False):
     account = next((item for item in owner.accounts if item.alias == account_ref), None)
     if account is None:
         raise DomainError('capability_missing', 'discovered account required')
     now, facade = owner.clock.now(), owner.shared.facade
     binding, info = _stock_binding(facade, now) if account.market is Market.STOCK else _future_binding(facade, now)
+    pairs = ((binding, info),)
+    if include_next and account.market is Market.INDEX_FUTURE:
+        pairs = (*pairs, _future_binding(facade, now, 1))
     discount = owner.configuration.fee_discount
     fees = FeeSchedule.taiwan(discount=discount, minimum_fee=owner.configuration.minimum_fee, futures_fee_per_contract=owner.configuration.tmf_fee_per_contract)
     limits = ()
-    lower, upper = getattr(info, 'limit_down', None), getattr(info, 'limit_up', None)
-    if lower is not None and upper is not None:
-        low, high = sdk_decimal(lower, 'daily lower limit'), sdk_decimal(upper, 'daily upper limit')
-        if 0 < low < high:
-            limits = (ContractPriceLimits(binding.spec.instrument_id, low, high, now),)
+    for current, current_info in pairs:
+        lower, upper = getattr(current_info, 'limit_down', None), getattr(current_info, 'limit_up', None)
+        if lower is not None and upper is not None:
+            low, high = sdk_decimal(lower, 'daily lower limit'), sdk_decimal(upper, 'daily upper limit')
+            if 0 < low < high:
+                limits = (*limits, ContractPriceLimits(current.spec.instrument_id, low, high, now))
     capability = CapabilitySnapshot(
         account.alias,
         owner.configuration.environment,
@@ -146,4 +150,5 @@ def generated_resources(owner, account_ref):
         now + timedelta(minutes=5),
         'sinopac-generated-v1',
     )
-    return SinopacResources(Catalog((binding.spec,)), (binding,), built_in_calendar(), fees, (account,), (capability,), limits)
+    bindings = tuple(current for current, _ in pairs)
+    return SinopacResources(Catalog(tuple(current.spec for current in bindings)), bindings, built_in_calendar(), fees, (account,), (capability,), limits)

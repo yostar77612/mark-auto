@@ -80,6 +80,8 @@ def validate_request(strategy: StrategyRecord, spec: InstrumentSpec, treatment: 
         raise DomainError('validation_failed', 'strategy holding policy mismatch')
     if strategy.definition is not None and (strategy.definition.bar_interval != '1d' or strategy.definition.cost_version != fees.version):
         raise DomainError('validation_failed', 'daily strategy/cost version mismatch')
+    if strategy.parameters is not None:
+        raise DomainError('validation_failed', 'typed strategy execution semantics are not supported by the legacy daily stock runner')
     treatment.validate(strategy, fees)
 
 

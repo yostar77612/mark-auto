@@ -225,3 +225,31 @@ class ExpiryConnectionTests(unittest.TestCase):
         self.assertIn('calendar_coverage_missing', view.pre_open.issues)
         self.assertFalse(view.pre_open.can_open_new)
         self.assertEqual(loads(dumps(view)), view)
+
+
+class AutomaticMaintenanceCompositionTests(unittest.TestCase):
+    def test_manual_host_composes_actual_persisted_maintenance_for_automatic_entries(self):
+        from unittest.mock import patch
+        import test_manual_runtime_integration as native
+
+        case = native.ManualRuntimeIntegrationTests()
+        case.setUp()
+        self.addCleanup(case.doCleanups)
+        case.ready()  # unknown expiry does not block explicit manual book operations
+        owner, engine = case.bundle.sinopac_connection, case.bundle.engine
+        self.assertTrue(callable(engine.automatic_entry_check))
+        months = {day.strftime('%Y%m'): day for day in engine.calendar.days}
+        recorded = {
+            'data_version': 'synthetic-maintenance-only',
+            'expiries': [{'contract_month': month, 'expiry_date': day.isoformat()} for month, day in sorted(months.items())],
+        }
+        with patch('quantlab.trading.runtime.stock_maintenance.load_expiries', return_value=recorded):
+            with self.assertRaises(DomainError) as unknown:
+                engine.automatic_entry_check()
+            self.assertEqual(unknown.exception.code, 'api_key_expiry_unknown')
+            owner.maintenance.set_key_expiry(owner.configuration.key_ref, engine.calendar.days[-1])
+            engine.automatic_entry_check()
+            owner.maintenance.set_key_expiry(owner.configuration.key_ref, case.clock.now().date())
+            with self.assertRaises(DomainError) as expired:
+                engine.automatic_entry_check()
+            self.assertEqual(expired.exception.code, 'api_key_expired')
