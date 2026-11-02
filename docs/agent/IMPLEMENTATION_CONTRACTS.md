@@ -7539,6 +7539,57 @@ is UNKNOWN when resolution is blocked.
   blocked. This transition changes neither reservations nor submission count
   and keeps automatic execution paused until separate AUTO_RESUME.
 
+## M2-3 daily close and next-session execution contract (2026-11-02)
+
+- `AutomaticView` appends `daily_intents: tuple[DailyIntentView, ...] = ()`
+  and `next_session_at: datetime | None = None`. Each intent shows strategy ID,
+  version, actual instrument, ENTRY/EXIT, owned lot ID, bar end, evaluation time,
+  target trading date, not-before/deadline, phase, order ID and error code.
+  The normal scheduled-wait view state is `WAITING_SESSION`; a fault remains
+  `PAUSED_WAITING_RESUME`. Existing fields and positional constructors remain.
+- Reuse `AUTO_RECONCILE`, `AUTO_RESUME` and `STOP_NEW`. Reconciliation resolves
+  observed facts and never authorizes dispatch. Explicit resume authorizes
+  eligible saved signals after current server proofs. Stop, restart, changed
+  owner or a runtime/risk fault revokes that run; normal calendar waiting
+  preserves it. No new financial-evidence command or confirmation is introduced.
+- Persist one existing evaluation claim before daily rule evaluation, then save
+  all ENTRY/owned-lot EXIT intents with the completed cursor atomically. Save
+  identities and researched/calendar fingerprints, not price, quantity or cash.
+  Dispatch owns a second durable claim before the existing execution boundary.
+  An interrupted/UNKNOWN dispatch is never automatically repeated.
+- Each signal can execute at the first fully admitted opportunity in the next
+  supplied verified DAY, before that session closes. It expires at that close;
+  there is no holiday inference, later-day catch-up or new grace-period setting.
+  Actual quotes, size, fees, ownership, preflight, reconciliation and risk are
+  rechecked then. This is a current-price fill protocol, not an opening-price
+  simulation. M3 retains its separate signal/execution protocol.
+- `AutomaticState.daily` defaults to empty `DailyState`; AppState appends empty
+  `daily_closing_quotes`/`daily_account_closes`. Closing facts preserve actual
+  bid/ask quotes and application-ledger fingerprints under the existing net-mark
+  basis; they do not represent broker funds. Previous-day evidence requires a
+  complete trusted closing observation, exact accounts/calendar/fees and no
+  unexplained old-order economic changes. Provider code never resumes trading.
+- New codes: `daily_waiting_session`, `daily_signal_expired`,
+  `daily_signal_invalidated`, `daily_signal_unresolved`,
+  `daily_close_unverified`, `daily_signal_not_authorized`.
+- LIVE remains hard-disabled. LOCAL day stepping and independently legal
+  protective exits retain their existing paths. UI rendering/strings belong to
+  the separate desktop lane. This PR remains open for Claude review after CI.
+- Mixed stock/TMF calendar waiting does not suppress completed-bar owned exits
+  in a product still open. It grants no new entry; full current account proofs
+  remain mandatory for new risk. Closed-account stale marks may be deferred in
+  background monitoring only during normal preserved waiting, using explicit
+  verified product sessions. No closing price becomes a synthetic live quote.
+- A shared manual book keeps its original capital/opening day. Current-day
+  shared PnL subtracts the exact committed account close; normal day rollover
+  cannot reset lifetime PnL, user stops or loss locks. Accepted scoped quantity
+  observations survive an unavailable aggregate mark, preserving independently
+  provable protective reductions.
+- Explicit reconciliation may discard a pure interrupted daily evaluation only
+  after replay proves the dedicated close-evaluation claim, current trusted
+  account observations and no saved intent or matching order. It preserves the
+  consumed cursor and paused state. Dispatch UNKNOWN, minute claims, reservations
+  and unrelated issues are never erased by this operation.
 ## Desktop graceful exit (2026-11-02)
 
 The v2 desktop's normal exit or startup exception requests authenticated engine

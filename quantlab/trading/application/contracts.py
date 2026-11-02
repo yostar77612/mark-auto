@@ -365,10 +365,29 @@ class StrategyProductView:
 
 
 @dataclass(frozen=True)
+class DailyIntentView:
+    strategy_id: str
+    version: int
+    instrument_id: str
+    action: str
+    lot_id: str
+    bar_end: datetime
+    evaluated_at: datetime
+    target_trade_date: str
+    not_before: datetime
+    deadline: datetime
+    phase: str
+    order_id: str = ''
+    code: str = ''
+
+
+@dataclass(frozen=True)
 class AutomaticView:
     state: str = 'PAUSED_WAITING_RESUME'
     reasons: tuple[str, ...] = ('program_restarted',)
     evaluations: tuple[EvaluationStatus, ...] = ()
+    daily_intents: tuple[DailyIntentView, ...] = ()
+    next_session_at: datetime | None = None
 
 
 @dataclass(frozen=True)

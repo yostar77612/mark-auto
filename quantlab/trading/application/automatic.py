@@ -12,7 +12,15 @@ from .execution import ExecutionService
 from .preflight import assert_preflight
 from .sessions import resolve_session
 from .state import ACTIVE
-from quantlab.trading.domain.auto_cycle import EvaluationCursor, complete_buckets, force_exit_due, force_exit_window, position_overdue
+from quantlab.trading.domain.auto_cycle import (
+    EvaluationCursor,
+    complete_buckets,
+    evaluation_key,
+    evaluation_key_matches,
+    force_exit_due,
+    force_exit_window,
+    position_overdue,
+)
 from quantlab.trading.domain.automatic_calendar import automatic_day_calendar, calendar_for_instrument
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, OrderStatus
@@ -103,21 +111,27 @@ def resume_automatic(engine: 'TradingEngine') -> None:
     """Explicit user action after current reconciliation, preflight and loss checks."""
     with engine.lock:
         _assert_simulation(engine)
+        from .daily_execution import prepare_daily_baseline, records
+
+        if records(engine):
+            prepare_daily_baseline(engine)
         _entry_proofs(engine)
         automatic = claims.resume(engine.state.automatic, engine.clock.now(), user_confirmed=True, reconciled=True, preflight_passed=True)
         if automatic is None:
             raise DomainError('reconciliation_required', 'an automatic claim still has an unresolved outcome')
+        from .daily_execution import authorize_run
+
+        automatic = authorize_run(engine, automatic)
         engine.fence()
         engine._persist('automatic_resumed_explicitly', replace(engine.state, stopped=False, automatic=automatic))
 
 
 def _decision_key(cursor: EvaluationCursor) -> str:
-    return f'auto:{cursor.strategy_id}:{cursor.version}:{cursor.instrument_id}:{cursor.interval}:{cursor.bar_end.isoformat()}'
+    return evaluation_key(cursor)
 
 
 def _cursor_orders(engine, cursor):
-    key = _decision_key(cursor)
-    return tuple(order for order in engine.state.orders if order.key == key or order.key.startswith(key + ':exit:'))
+    return tuple(order for order in engine.state.orders if evaluation_key_matches(order.key, cursor))
 
 
 def _evaluation_result(engine, cursor, previous_order_id=''):
@@ -206,6 +220,11 @@ def reconcile_automatic(engine: 'TradingEngine') -> None:
             assert_automatic_observation(engine, reference)
         if any(not row.outcome_known for row in engine.state.manual_requests):
             raise DomainError('reconciliation_required', 'a manual operation still has an unresolved outcome')
+        from .daily_execution import prepare_daily_baseline, reconcile_daily, records
+
+        if records(engine):
+            prepare_daily_baseline(engine)
+        reconcile_daily(engine)
         force_keys = {row.key for row in engine.state.automatic.forced_attempts}
         owned_result = any(_owned_automatic_order(engine, row, force_keys) for row in engine.state.orders)
         _sync_results(engine, observed=True)
@@ -231,30 +250,38 @@ def _history(engine, instrument_id, interval, buckets=()) -> dict[str, tuple[Com
     return {instrument_id: tuple(by_end[end] for end in sorted(by_end))}
 
 
+def remember_bars(engine: 'TradingEngine', bars: tuple[LiveBar, ...]) -> dict[str, tuple[LiveBar, ...]]:
+    """One same-day cache; conflicting final deliveries remain unavailable."""
+    cache = getattr(engine, 'automatic_minute_bars', {})
+    for instrument_id in {bar.instrument_id for bar in bars}:
+        current = tuple(bar for bar in cache.get(instrument_id, ()) if bar.trade_date == engine.state.trading_day)
+        incoming = tuple(
+            bar for bar in bars if bar.instrument_id == instrument_id and bar.trade_date == engine.state.trading_day and bar.final and not bar.incomplete
+        )
+        cache[instrument_id] = tuple(dict.fromkeys((*current, *incoming)))
+    engine.automatic_minute_bars = cache
+    return cache
+
+
 def on_completed_bars(engine: 'TradingEngine', bars: tuple[LiveBar, ...]) -> None:
     """Claim once before evaluating each finalized bucket after explicit resume."""
     with engine.lock:
         _assert_simulation(engine)
-        cache = getattr(engine, 'automatic_minute_bars', {})
-        for instrument_id in {bar.instrument_id for bar in bars}:
-            # Retain conflicting final deliveries: complete_buckets excludes
-            # that minute, rather than silently accepting the last correction.
-            current = tuple(bar for bar in cache.get(instrument_id, ()) if bar.trade_date == engine.state.trading_day)
-            incoming = tuple(
-                bar for bar in bars if bar.instrument_id == instrument_id and bar.trade_date == engine.state.trading_day and bar.final and not bar.incomplete
-            )
-            cache[instrument_id] = tuple(dict.fromkeys((*current, *incoming)))
-        engine.automatic_minute_bars = cache
+        cache = remember_bars(engine, bars)
         if engine.state.automatic.auto_paused:
             return
-        try:
-            _entry_proofs(engine)
-            _assert_entry_window(engine)
-            if engine.state.stopped:
-                raise DomainError('automatic_paused')
-        except DomainError as error:
-            pause_automatic(engine, error.code)
-            return
+        from .daily_execution import scheduled_waiting
+
+        exits_only = scheduled_waiting(engine)
+        if not exits_only:
+            try:
+                _entry_proofs(engine)
+                _assert_entry_window(engine)
+                if engine.state.stopped:
+                    raise DomainError('automatic_paused')
+            except DomainError as error:
+                pause_automatic(engine, error.code)
+                return
         for record in tuple(engine.state.strategies):
             owned = tuple(
                 lot
@@ -263,6 +290,8 @@ def on_completed_bars(engine: 'TradingEngine', bars: tuple[LiveBar, ...]) -> Non
             )
             if record.parameters is None or (record.state != 'ACTIVE' and not owned):
                 continue
+            if record.parameters.bar_interval == '1d':
+                continue  # Daily decisions are saved at close, never dispatched there.
             entry_id = record.form.instrument_id
             if record.state == 'ACTIVE' and record.parameters.instrument_rule == 'TMF_NEAR':
                 entry_id = resolve_tmf_near(engine.catalog.instruments, engine.calendar, engine.state.trading_day).instrument_id
@@ -286,7 +315,7 @@ def on_completed_bars(engine: 'TradingEngine', bars: tuple[LiveBar, ...]) -> Non
                                 _exit_decision(
                                     engine, lot, history, intraday_timer=False, evaluate_signal=True, as_of=bar.end, decision_key=key + ':exit:' + lot.lot_id
                                 )
-                        if record.state == 'ACTIVE' and instrument_id == entry_id:
+                        if not exits_only and record.state == 'ACTIVE' and instrument_id == entry_id:
                             _entry_decision(engine, record, history, decision_key=key, as_of=bar.end)
                     except DomainError as error:
                         if engine.storage_failed:
@@ -380,8 +409,11 @@ def pump_automatic(engine: 'TradingEngine') -> None:
         if engine.storage_failed or engine.state.engine_closed:
             raise DomainError('capability_missing')
         _sync_results(engine)
+        from .daily_execution import scheduled_waiting
+
         observe_account_limits(engine)
-        if engine.state.stopped and not engine.state.automatic.auto_paused:
+        waiting = scheduled_waiting(engine)
+        if engine.state.stopped and not engine.state.automatic.auto_paused and not waiting:
             pause_automatic(engine, next((code for code in engine.state.issues if code != 'daily_baseline_required'), 'automatic_paused'))
         for lot in tuple(engine.state.positions):
             if not lot.quantity or lot.origin != 'MANAGED':

@@ -6,6 +6,8 @@ from datetime import datetime
 from quantlab.trading.domain.auto_cycle import EvaluationCursor, ForceExitWindow, force_exit_due, should_evaluate
 from quantlab.trading.application.codec import register
 from quantlab.trading.domain.models import OrderStatus
+from .daily_state import DailyIntent, DailyState
+from . import daily_state as daily_claims
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,7 @@ class AutomaticState:
     resumed_at: datetime | None = None
     evaluations: tuple[EvaluationStatus, ...] = ()
     forced_attempts: tuple[ForcedAttempt, ...] = ()
+    daily: DailyState = DailyState()
 
     @property
     def cursors(self) -> tuple[EvaluationCursor, ...]:
@@ -46,7 +49,7 @@ class AutomaticState:
 
 
 def pause(state: AutomaticState, reason: str) -> AutomaticState:
-    return replace(state, auto_paused=True, reasons=tuple(sorted(set((*state.reasons, reason)))))
+    return replace(state, auto_paused=True, reasons=tuple(sorted(set((*state.reasons, reason)))), daily=daily_claims.revoke(state.daily))
 
 
 def restart(state: AutomaticState) -> AutomaticState:
@@ -55,7 +58,7 @@ def restart(state: AutomaticState) -> AutomaticState:
     attempts = tuple(
         replace(row, status=OrderStatus.UNKNOWN) if row.status in (OrderStatus.SUBMITTING, OrderStatus.CANCEL_PENDING) else row for row in state.forced_attempts
     )
-    return pause(replace(state, evaluations=evaluations, forced_attempts=attempts), 'program_restarted')
+    return pause(replace(state, evaluations=evaluations, forced_attempts=attempts, daily=daily_claims.restart(state.daily)), 'program_restarted')
 
 
 def resume(state: AutomaticState, now: datetime, *, user_confirmed: bool, reconciled: bool, preflight_passed: bool) -> AutomaticState | None:
@@ -146,4 +149,4 @@ def transition_force_attempt(
     return pause(updated, 'order_result_unknown') if status is OrderStatus.UNKNOWN else updated
 
 
-register(OrderStatus, EvaluationCursor, EvaluationStatus, ForcedAttempt, AutomaticState)
+register(OrderStatus, EvaluationCursor, DailyIntent, DailyState, EvaluationStatus, ForcedAttempt, AutomaticState)

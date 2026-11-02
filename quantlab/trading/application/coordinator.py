@@ -17,6 +17,7 @@ from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.validation import DomainError
 
 if TYPE_CHECKING:
+    from .daily_state import DailyIntent
     from .engine import TradingEngine
     from .state import StrategyRecord
     from quantlab.trading.domain.models import PositionLot
@@ -89,6 +90,7 @@ def _entry_decision(
     *,
     decision_key: str = '',
     as_of: datetime | None = None,
+    daily_signal: 'DailyIntent | None' = None,
 ) -> None:
     if record.state != 'ACTIVE' or any(p.quantity and p.strategy_id == record.strategy_id for p in engine.state.positions):
         return
@@ -108,7 +110,7 @@ def _entry_decision(
         if as_of is not None
         else tuple(b for b in history.get(spec.instrument_id, ()) if b.available_at < decision_at)
     )
-    if not bars or not entry_signal(record, bars, decision_at):
+    if daily_signal is None and (not bars or not entry_signal(record, bars, decision_at)):
         return
     quote = engine.quotes.get(spec.instrument_id)
     if quote is None:
@@ -121,6 +123,8 @@ def _entry_decision(
 
         spec = engine._strategy_spec(spec, record)
         quantity = strategy_quantity(spec, record.parameters, price, record.form.allocation, engine.fees, record.form.direction).quantity
+        if not quantity:
+            raise DomainError('strategy_size_insufficient')
         stop = spec.round_price(price * (1 - record.parameters.stop_fraction * sign), up=sign < 0)
         engine.update_strategy(replace(record, recent_signal='ENTRY'), 'strategy_signal_evaluated')
     now = engine.clock.now()

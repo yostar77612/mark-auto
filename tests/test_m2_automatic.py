@@ -71,6 +71,7 @@ class MemoryEngine:
         self.refresh_facts()
         self.automatic_observation_validator = Mock()
         self.automatic_entry_validator = Mock()
+        self.automatic_owner_stamp = lambda: 'verified-fake-owner'
         self.automatic_submission_guard = Mock(side_effect=lambda *args, **kwargs: nullcontext())
         self.exit_status = S.ACCEPTED
         self.exit_calls = []

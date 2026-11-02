@@ -18,6 +18,7 @@ from .lifecycle_models import CorporateActionJob, RollJob
 from .performance import VersionEquityTrack
 from .manual_book import ManualAcquisition, ManualBook, ManualReceivable, ManualRequest
 from .automatic_state import AutomaticState
+from .daily_closes import ClosingQuote, DailyAccountClose
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,8 @@ class AppState:
     preflight_blocks: tuple[tuple[str, date], ...] = ()
     automatic: AutomaticState = AutomaticState()
     automatic_daily_evidence: 'DailyBaselineEvidence | None' = None
+    daily_closing_quotes: tuple[ClosingQuote, ...] = ()
+    daily_account_closes: tuple[DailyAccountClose, ...] = ()
 
 
 def replace_order(state: AppState, order: LocalOrder) -> AppState:

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from .contracts import (
     AutomaticView,
+    DailyIntentView,
     AccountRiskView,
     AccountView,
     MarketView,
@@ -81,8 +82,6 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 resolved[reference] = resolve_tmf_near(engine.catalog.instruments, engine.calendar, state.trading_day).instrument_id
             except DomainError as error:
                 resolved[reference], blocked[reference] = '', error.code
-        if record.parameters is not None and record.parameters.bar_interval == '1d' and state.environment is Environment.BROKER_SIMULATION:
-            blocked.setdefault(reference, 'automatic_daily_execution_pending')
     order_days = {order.order_id: _order_trading_day(engine, order) for order in state.orders}
     strategies = tuple(
         StrategyView(
@@ -381,9 +380,30 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         account_risks=tuple(account_risks),
         preflight=state.preflight,
         automatic=AutomaticView(
-            'PAUSED_WAITING_RESUME' if state.automatic.auto_paused else 'RUNNING',
-            state.automatic.reasons,
+            'PAUSED_WAITING_RESUME' if state.automatic.auto_paused else 'WAITING_SESSION' if state.automatic.daily.waiting_session else 'RUNNING',
+            (*state.automatic.reasons, 'daily_waiting_session')
+            if state.automatic.daily.waiting_session and not state.automatic.auto_paused
+            else state.automatic.reasons,
             state.automatic.evaluations,
+            tuple(
+                DailyIntentView(
+                    row.cursor.strategy_id,
+                    row.cursor.version,
+                    row.instrument_id,
+                    row.action,
+                    row.lot_id,
+                    row.cursor.bar_end,
+                    row.created_at,
+                    row.target_trade_date.isoformat(),
+                    row.not_before,
+                    row.deadline,
+                    row.phase,
+                    row.order_id,
+                    row.code,
+                )
+                for row in state.automatic.daily.intents
+            ),
+            min((row.not_before for row in state.automatic.daily.intents if row.phase == 'READY' and engine.clock.now() < row.deadline), default=None),
         ),
         strategy_products=tuple(
             StrategyProductView(
