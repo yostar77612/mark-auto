@@ -17,6 +17,7 @@ def fixture():
         'test_future.Core.test_a',
         'test_desktop_fixture.Core.test_a',
         'test_trading_fixture.Core.test_a',
+        'test_paper.Core.test_a',
     ]
     research = ['test_research.Research.test_a']
     parts = {'core': core, 'research': research}
@@ -40,7 +41,7 @@ def fixture():
         'executable': '/fixture/python',
         'tempfile_gettempdir': '/fixture/tmp',
     }
-    selections = {'paper-remaining': core[:6], 'desktop-trading': core[6:], 'research': research}
+    selections = {'paper-remaining': core[:6], 'desktop-trading': core[6:7], 'trading': core[7:8], 'paper': core[8:], 'research': research}
     reports = []
     for key, ids in selections.items():
         report = {
@@ -64,7 +65,7 @@ def fixture():
             report.update(
                 core_slice=key,
                 core_slice_plan=run_test_group.LINUX_CORE_PLAN,
-                core_slice_assignments={name: selections[name][:] for name in ('desktop-trading', 'paper-remaining')},
+                core_slice_assignments={name: selections[name][:] for name in ('desktop-trading', 'paper-remaining', 'trading', 'paper')},
                 core_slice_context={
                     'head_sha': context['head_sha'],
                     'run_id': context['run_id'],
@@ -117,12 +118,12 @@ class UiTestGateTests(unittest.TestCase):
         values = fixture()
         result = self.verify(*values)
         self.assertTrue(result['successful'])
-        self.assertEqual(result['tests_run'], 9)
+        self.assertEqual(result['tests_run'], 10)
         self.assertEqual(len(result['streamlit_cases']), 5)
-        self.assertEqual(result['producers'], ['desktop-trading', 'paper-remaining', 'research'])
+        self.assertEqual(result['producers'], ['desktop-trading', 'paper-remaining', 'trading', 'paper', 'research'])
 
     def test_each_slice_and_research_must_have_its_own_current_proof(self):
-        for role in ('desktop-trading', 'paper-remaining', 'research'):
+        for role in ('desktop-trading', 'paper-remaining', 'trading', 'paper', 'research'):
             for mode in ('missing', 'duplicate', 'incomplete', 'wrong-attempt', 'wrong-source', 'native-source', 'assignment', 'old-plan', 'new-skip'):
                 values = fixture()
                 reports = values[0]
@@ -160,7 +161,7 @@ class UiTestGateTests(unittest.TestCase):
                     continue
                 assignments = row['core_slice_assignments']
                 if mode != 'duplicate':
-                    assignments['desktop-trading'].remove(target)
+                    assignments['trading'].remove(target)
                 if mode != 'omit':
                     assignments['paper-remaining'].append(target)
                 ids = assignments[row['core_slice']]
@@ -324,8 +325,8 @@ class UiTestGateTests(unittest.TestCase):
         aggregate = source.split('  ui:\n', 1)[1].split('  quality:\n', 1)[0]
         self.assertIn('timeout-minutes: 15', producers)
         rows = re.findall(r'^          - \{group: ([^,}]+)(?:, core_slice: ([^}]+))?\}$', producers, re.MULTILINE)
-        self.assertCountEqual(rows, [('core', 'desktop-trading'), ('core', 'paper-remaining'), ('research', '')])
-        self.assertEqual(len(rows), 3)
+        self.assertCountEqual(rows, [('core', 'desktop-trading'), ('core', 'paper-remaining'), ('core', 'trading'), ('core', 'paper'), ('research', '')])
+        self.assertEqual(len(rows), 5)
         self.assertIn(
             "name: desktop-auth-ui-linux312-${{ matrix.group }}${{ matrix.core_slice && format('-{0}', matrix.core_slice) || '' }}-attempt-${{ github.run_attempt }}",
             producers,
