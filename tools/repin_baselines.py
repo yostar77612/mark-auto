@@ -321,6 +321,61 @@ def observer_plan(root: Path) -> Plan:
     return plan
 
 
+SETTINGS_PRESENTATION = 'tests/fixtures/ui_redesign_empty_presentation.json'
+SETTINGS_TOOLTIP_POLICY = 'tests/fixtures/ui_redesign_tooltip_coverage.json'
+SETTINGS_INPUT_CODE = """
+import json
+from desktop_app.strings.catalog import ui_text
+from tests.snapshot_cache import default_metrics
+pages = default_metrics()['pages']
+name = ui_text('ui.settings_page.title')
+sys.stdout.buffer.write(json.dumps({
+    'name': name,
+    'settings': pages[name],
+    'counts': [page['visible_input_count'] for page in pages.values()],
+}, ensure_ascii=False).encode('utf-8'))
+"""
+
+
+def settings_inputs_plan(root: Path) -> Plan:
+    """Record M4a's one new settings checkbox without widening UI budgets."""
+    plan = Plan('settings_inputs', verify=('test_b4_appearance', 'test_t16_tooltips'))
+    measured = json.loads(run_python(root, SETTINGS_INPUT_CODE))
+    presentation_text = read(root, SETTINGS_PRESENTATION)
+    presentation = json.loads(presentation_text)
+    policy_text = read(root, SETTINGS_TOOLTIP_POLICY)
+    policy = json.loads(policy_text)
+    actual = measured['settings']
+    expected_counts = [3, 0, 0, 0, 3, 4, 5]
+    if measured['counts'] != expected_counts:
+        plan.blockers.append('M4a permits exactly one new settings input; another page/input changed')
+    if actual['unlabeled_inputs']:
+        plan.blockers.append('settings contains an unlabeled input; a baseline cannot fix accessibility')
+    if actual['page_height'] > policy['max_default_page_height']:
+        plan.blockers.append('settings exceeds the existing page-height budget')
+    if actual['primary_button_count'] > policy['max_default_primary_buttons']:
+        plan.blockers.append('settings exceeds the existing primary-button budget')
+    if plan.blockers:
+        return plan
+    before = presentation['pages'][measured['name']]
+    after = {key: actual[key] for key in before}
+    presentation['pages'][measured['name']] = after
+    updated = like(presentation_text, render_json(presentation))
+    if updated != presentation_text:
+        plan.edits[SETTINGS_PRESENTATION] = updated
+    updated_policy = replace_literal(
+        policy_text,
+        r'"default_input_counts":\s*(\[[^\]]*\])',
+        json.dumps(expected_counts),
+        'default input counts',
+    )
+    if updated_policy != policy_text:
+        plan.edits[SETTINGS_TOOLTIP_POLICY] = updated_policy
+    plan.summary.append('settings inputs: exactly 5; all other page counts and UI budgets retained')
+    plan.summary.append('settings presentation fields: ' + ', '.join(key for key in before if before[key] != after[key]))
+    return plan
+
+
 # --- runner ---
 
 BASELINES = {
@@ -328,6 +383,7 @@ BASELINES = {
     'inventory': lambda root, args: inventory_plan(root, args.inventory_note),
     'stylesheet': lambda root, args: stylesheet_plan(root),
     'observers': lambda root, args: observer_plan(root),
+    'settings_inputs': lambda root, args: settings_inputs_plan(root),
 }
 
 
