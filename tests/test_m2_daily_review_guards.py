@@ -11,6 +11,7 @@ import test_live_order_guard as live_fixtures
 import test_m2_automatic as memory
 import test_trading_adapters as market
 import test_trading_sdk_facade as sdk
+from official_daily_fixtures import fake_official_history, official_intent_fixture, official_research_fixture, publish_fake_daily_close
 from quantlab.trading.adapters.shioaji.sdk_facade import ShioajiSDKFacade
 from quantlab.trading.application import daily_execution
 from quantlab.trading.application.automatic_state import AutomaticState
@@ -28,6 +29,7 @@ from quantlab.trading.domain.automatic_calendar import automatic_day_calendar, c
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment, HoldingPolicy, OrderStatus, PositionLot, Reservation
 from quantlab.trading.domain.risk import AccountDailyBaseline
+from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import BrokerOrder
 
@@ -56,6 +58,14 @@ class DailyReviewGuardTests(unittest.TestCase):
         calendar = calendar_for_instrument(engine.calendar, engine.catalog.instruments[0])
         session = calendar.day_session(engine.state.trading_day)
         engine.clock.value = session.closes_at
+        # Explicit trusted synthetic official-input port; never a market fetch
+        # or an implicit conversion of the minute tape into published daily data.
+        history_sessions = tuple(row for row in calendar.sessions if row.kind == 'DAY' and row.trade_date < session.trade_date)[-25:]
+        bars = tuple(CompletedBar(row.opens_at, row.closes_at, row.closes_at, D('10'), D('10'), 1000) for row in history_sessions)
+        history = fake_official_history(engine.record.form.instrument_id, bars, history_sessions[-1].closes_at)
+        engine.record, _ = official_research_fixture(engine, engine.record, history)
+        engine.state = replace(engine.state, strategies=(engine.record,))
+        publish_fake_daily_close(engine, engine.record.form.instrument_id, session.trade_date, D('10'))
         engine.refresh_facts()
         engine.quotes = {key: replace(value, source='SHIOAJI') for key, value in engine.quotes.items()}
         daily = DailyState(authorized_run='explicit-run', owner_stamp=engine.automatic_owner_stamp())
@@ -180,6 +190,7 @@ class DailyReviewGuardTests(unittest.TestCase):
                 calendar,
                 session.closes_at,
             )
+            intent = official_intent_fixture(engine, record, intent)
             engine.clock.value = intent.not_before + timedelta(minutes=1)
             engine.state = replace(
                 engine.state,
@@ -218,6 +229,7 @@ class DailyReviewGuardTests(unittest.TestCase):
             1000,
         )
         intent = create_intent(cursor, record.form.account_ref, 'EXIT', lot.instrument_id, lot.lot_id, record.evidence_hash, calendar, session.closes_at)
+        intent = official_intent_fixture(engine, record, intent)
         engine.clock.value = intent.not_before + timedelta(minutes=1)
         engine.state = replace(
             engine.state,

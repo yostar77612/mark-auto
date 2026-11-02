@@ -7675,6 +7675,41 @@ unchanged; the original under-one-second return, retiring worker, absent receipt
 empty cache and complete missing-range assertions remain. No production behavior,
 SDK access, execution policy or acceptance score changes.
 
+## M2 engine gaps: daily signal source contract (2026-11-02)
+
+- Append `AutomaticView.daily_signal_data=()` containing `DailySignalDataView`:
+  strategy/version/instrument, status, source, price_mode, adjustment_method,
+  completed trade_date, actual available_at, source_digest and reason. Empty
+  defaults preserve old payloads; UNVERIFIED is never a claim of readiness.
+- No new UiAction or client-supplied price/source authority. Existing RESEARCH
+  and server-driven daily evaluation consume one explicit data policy. Research
+  and execution use the same official source, session/volume scope, adjustment
+  method and point-in-time construction; rebuild the whole signal window for
+  every as-of date. Never append a raw close to an adjusted historical window.
+- Sparse trading does not invalidate a complete official daily observation.
+  Minute completeness and the13:30 auction cannot substitute for this source.
+  Execution prices, sizing and account valuation still use current raw quotes
+  and FeeSchedule; adjusted signal prices confer no execution authority.
+- New codes: daily_signal_source_unverified, daily_signal_basis_mismatch,
+  daily_signal_not_available. Missing/late/unattested data do not authorize a
+  new entry or a next-day catch-up. Existing protective exits remain separate.
+- Engine lane only; desktop_app/, LIVE hard guard, G3, SDK pin, PROJECT_STATE,
+  costs and workflow/layer rules are unchanged. Order-path PRs require green
+  complete CI and Claude review; this agent does not merge them.
+
+Daily source implementation detail: typed STOCK1d BROKER_SIMULATION RESEARCH
+requires a server-owned OfficialDailySignalSource and immutable OfficialDailyHistory;
+generic engine history cannot substitute. ResearchResult.daily_basis is a new
+keyword-only field. Its absent value is omitted only for the two exact research
+wire types, preserving legacy minute receipt/result bytes; populated provenance
+is always encoded. Historical fees/fills use RAW bars, decisions rebuild the
+whole at-most20-row adjusted window through each completed day. Runtime cache
+reads require a prior Taipei civil date and complete verified raw/action ranges.
+No download or client-supplied source is introduced. DailyIntent appends
+data_fingerprint/data_policy_fingerprint defaults; old unattested rows load but
+cannot dispatch. Saved-window semantic corrections refuse at the final boundary.
+OFFICIAL_DAILY_TRAINING labels this research; legacy LOCAL retains its old label.
+
 ## M3-3 application contract (2026-11-02)
 
 - Candidate intake accepts only an engine-resolved candidate reference, an E1

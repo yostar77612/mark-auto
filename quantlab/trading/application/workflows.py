@@ -2,18 +2,20 @@
 
 from dataclasses import replace
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from .codec import dumps
+from hashlib import sha256
 from .events import poll_events, reconcile
 from .execution import ExecutionService
-from .research import research
+from .research import _official_daily_inputs, research
 from .state import ACTIVE
 from .performance import advance_tracks, unrealized_liquidation
 from .account_risk import account_net_mark, assert_account_resume, m2_account_refs, observe_account_limits
 from .preflight import assert_preflight, engine_preflight_facts, record_preflight
-from quantlab.trading.domain.models import Environment, HoldingKind
+from quantlab.trading.domain.models import Environment, HoldingKind, Market
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import transfer_position
 from quantlab.trading.domain.validation import DomainError
@@ -31,21 +33,66 @@ def run_research(engine: 'TradingEngine', reference: str, bars: tuple['Completed
     if record.state not in ('RULE_VALID', 'RESEARCHED'):
         raise DomainError('risk_rejected', 'validate rules before research')
     spec = engine._strategy_spec(engine.catalog.resolve(record.form.instrument_id), record)
-    training = tuple(bar for bar in bars if spec.effective_at <= bar.opened_at and bar.available_at < engine.clock.now())
+    now = engine.clock.now()
+    training = tuple(bar for bar in bars if spec.effective_at <= bar.opened_at and bar.available_at < now)
     if engine.profile is None:
         raise DomainError('source_invalid_evidence', 'v2 producer profile required')
     calendar, fees, profile = engine._strategy_calendar(record, spec.instrument_id), engine.fees, engine.profile
+    official = (
+        record.form.environment is Environment.BROKER_SIMULATION
+        and spec.market is Market.STOCK
+        and record.parameters is not None
+        and record.parameters.bar_interval == '1d'
+    )
+    source = getattr(engine, 'daily_signal_source', None) if official else None
+    if official and source is None:
+        raise DomainError('daily_signal_source_unverified', 'official daily source required; generic history is not a fallback')
+    owner_provider = getattr(engine, 'automatic_owner_stamp', None) if official else None
+    owner = owner_provider() if callable(owner_provider) else None
+    deadline = engine.ownership_clock() + timedelta(minutes=15)
+    daily_history = None
     with engine.lock.suspended():
-        if engine.research_runner is None:
-            result = research(record, spec, calendar, training, fees, source_profile=profile)
-        else:
-            result = engine.research_runner.run(
-                record, spec, calendar, training, fees, deadline=engine.ownership_clock() + timedelta(minutes=15), source_profile=profile
+        if official:
+            from quantlab.trading.domain.daily_signal_data import OfficialDailyHistory
+
+            days = tuple(
+                session.trade_date
+                for session in calendar.sessions
+                if session.kind == 'DAY'
+                and spec.effective_at <= session.opens_at
+                and session.closes_at < now
+                and session.trade_date < now.astimezone(ZoneInfo('Asia/Taipei')).date()
             )
+            if not days:
+                raise DomainError('daily_signal_not_available', 'no prior completed applicable official DAY')
+            daily_history = source.history(spec.instrument_id, calendar, through=days[-1], start=days[0])
+            if not isinstance(daily_history, OfficialDailyHistory) or daily_history.observed_at > engine.clock.now():
+                raise DomainError('daily_signal_source_unverified', 'trusted observed official history required')
+            daily_history = daily_history.trim(days[0], days[-1])
+            training = daily_history.raw_completed(calendar)
+        arguments = {'source_profile': profile}
+        if daily_history is not None:
+            arguments['daily_history'] = daily_history
+        if engine.research_runner is None:
+            result = research(record, spec, calendar, training, fees, **arguments)
+        else:
+            result = engine.research_runner.run(record, spec, calendar, training, fees, deadline=deadline, **arguments)
+        if daily_history is not None:
+            basis = _official_daily_inputs(record, spec, calendar, training, daily_history)
+            if result.daily_basis != basis or result.dataset_id != sha256(dumps((training, basis)).encode()).hexdigest():
+                raise DomainError('daily_signal_basis_mismatch', 'research result does not bind the official input snapshot')
+            latest = source.history(spec.instrument_id, calendar, through=days[-1], start=days[0])
+            if (
+                not isinstance(latest, OfficialDailyHistory)
+                or latest.observed_at > engine.clock.now()
+                or not basis.compatible(latest.research_basis(days[0], days[-1]))
+            ):
+                raise DomainError('daily_signal_basis_mismatch', 'official history changed while research was computing')
     current = engine.strategy(reference)
     if (
         current.form != record.form
         or current.definition != record.definition
+        or current.parameters != record.parameters
         or current.state != record.state
         or current.evidence_hash != record.evidence_hash
         or engine._strategy_calendar(current, spec.instrument_id) != calendar
@@ -54,10 +101,23 @@ def run_research(engine: 'TradingEngine', reference: str, bars: tuple['Completed
         or engine.profile != profile
         or engine.state.engine_closed
         or engine.storage_failed
+        or official
+        and (
+            getattr(engine, 'daily_signal_source', None) is not source
+            or getattr(engine, 'automatic_owner_stamp', None) != owner_provider
+            or callable(owner_provider)
+            and owner_provider() != owner
+        )
     ):
         raise DomainError('state_conflict', 'research inputs or lifecycle changed while computing')
     engine.update_strategy(
-        replace(record, state='RESEARCHED', evidence='LOCAL_SYNTHETIC_TRAINING', evidence_hash=result.fingerprint, research_blob=dumps(result)),
+        replace(
+            record,
+            state='RESEARCHED',
+            evidence='OFFICIAL_DAILY_TRAINING' if official else 'LOCAL_SYNTHETIC_TRAINING',
+            evidence_hash=result.fingerprint,
+            research_blob=dumps(result),
+        ),
         'training_research_completed',
     )
 
