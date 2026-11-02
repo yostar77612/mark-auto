@@ -225,8 +225,11 @@ ZH_TW.update(_ZH_TW_CHUNKS[63])
 # Lane U1: read-only account readiness next steps.
 ZH_TW.update(_ZH_TW_CHUNKS[64])
 
-# Lane U2: manual recovery and exact exit preview.
+# Lane M2-9: date-only key expiry guidance.
 ZH_TW.update(_ZH_TW_CHUNKS[65])
+
+# Lane U2: manual recovery and exact exit preview.
+ZH_TW.update(_ZH_TW_CHUNKS[66])
 
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 

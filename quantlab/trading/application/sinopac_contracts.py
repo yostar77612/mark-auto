@@ -1,9 +1,11 @@
 """Reference-only Sinopac settings and redacted connection read models."""
 
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 import ntpath
 
+from quantlab.trading.domain.maintenance import PreOpenMaintenance
 from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError, decimal_value, identity, integer
 from .broker_settings import _secret_reference
@@ -16,6 +18,9 @@ class SinopacConnectionSettings:
     certificate_path: str = ''
     certificate_secret_ref: str = 'MarkAuto/v2/certificate/sinopac'
     fee_discount: Decimal = Decimal('1')
+    api_key_expires_on: date | None = None
+    minimum_fee: Decimal = Decimal('20')
+    tmf_fee_per_contract: Decimal = Decimal('30')
 
     def __post_init__(self) -> None:
         if not isinstance(self.environment, Environment) or self.environment not in (Environment.BROKER_SIMULATION, Environment.LIVE):
@@ -28,7 +33,11 @@ class SinopacConnectionSettings:
             raise DomainError('validation_failed', 'certificate file reference')
         if self.certificate_path and (not ntpath.isabs(self.certificate_path) or self.certificate_path.startswith(('\\\\', '//'))):
             raise DomainError('validation_failed', 'local absolute certificate reference required')
+        if self.api_key_expires_on is not None and type(self.api_key_expires_on) is not date:
+            raise DomainError('validation_failed', 'API key expiry date')
         decimal_value(self.fee_discount, 'fee discount', positive=True)
+        decimal_value(self.minimum_fee, 'minimum fee', nonnegative=True)
+        decimal_value(self.tmf_fee_per_contract, 'TMF fee', nonnegative=True)
         if self.fee_discount > 1:
             raise DomainError('validation_failed', 'fee discount')
 
@@ -88,6 +97,9 @@ class SinopacConnectionView:
     )
     certificate_status: str = 'NOT_REQUIRED'
     error_code: str = ''
+    api_key_remaining_days: int | None = None
+    api_key_expiry_state: str = 'UNKNOWN'
+    pre_open: PreOpenMaintenance | None = None
 
     def __post_init__(self) -> None:
         integer(self.revision, 'connection revision')
@@ -109,5 +121,15 @@ class SinopacConnectionView:
             raise DomainError('validation_failed', 'unique readiness facts required')
         if self.certificate_status not in ('NOT_REQUIRED', 'NOT_CONFIGURED', 'ACTIVATING', 'READY', 'FAILED', 'UNKNOWN'):
             raise DomainError('validation_failed', 'certificate state')
+        if self.api_key_remaining_days is not None and type(self.api_key_remaining_days) is not int:
+            raise DomainError('validation_failed', 'API key remaining days')
+        if self.api_key_expiry_state not in ('UNKNOWN', 'VALID', 'DUE', 'EXPIRED'):
+            raise DomainError('validation_failed', 'API key expiry state')
+        if self.pre_open is not None and not isinstance(self.pre_open, PreOpenMaintenance):
+            raise DomainError('validation_failed', 'typed pre-open maintenance required')
+        days = self.api_key_remaining_days
+        expected_state = 'UNKNOWN' if days is None else 'EXPIRED' if days <= 0 else 'DUE' if days <= 14 else 'VALID'
+        if self.api_key_expiry_state != expected_state:
+            raise DomainError('validation_failed', 'inconsistent API key expiry facts')
         if self.error_code:
             identity(self.error_code, 'connection error')

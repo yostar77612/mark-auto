@@ -112,6 +112,7 @@ class ExecutionEnvironmentTests(unittest.TestCase):
                         {'test-stock': port},
                         configuration=config,
                         ownership_clock=clock.now,
+                        automatic_entry_check=lambda: _test_maintenance(calendar, clock),
                         source_profile=compute_profile(),
                         fees=FeeSchedule(),
                         historical_bars=synthetic_history(catalog, calendar),
@@ -255,3 +256,11 @@ class ExecutionEnvironmentTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def _test_maintenance(calendar, clock):
+    from quantlab.trading.domain.maintenance import ExpiryCoverage, maintenance_check
+
+    months = {day.strftime('%Y%m'): day for day in calendar.days}
+    expiries = ExpiryCoverage('synthetic-only', tuple(sorted(months.items())))
+    maintenance_check(calendar, clock.now().date(), expires_on=calendar.days[-1], expiries=expiries).require_automatic_entry()

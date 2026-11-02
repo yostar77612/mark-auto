@@ -76,11 +76,15 @@ ranges, cancellation and business deadlines are not retried or reset. Durable
 promotion retains `MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH`.
 
 WinError 1314 from creating a synthetic symlink is a different prerequisite
-failure. The investigated unelevated token cannot create these links. Do not add
-skips, replace native links with mocks, change ACLs, enable Developer Mode, disable
-protection or grant permanent privileges to manufacture a pass. Record the failed
-cases and use an explicitly authorized Windows test process with the required
-privilege, or report them as blocked. Microsoft's [CreateSymbolicLinkW reference](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw)
+failure. The investigated unelevated token cannot create these links. Under the
+owner's R9 instruction, only cases requiring real symlinks use the cached native
+probe in `tests/native_capabilities.py` with `unittest.skipUnless`. Only error
+1314 means a missing capability; other filesystem errors still fail. Mixed cases
+keep their hardlink, corruption, size and junction-attribute checks in separate
+unconditional tests. Hosted Windows CI explicitly requires the native capability,
+so these security cases still execute there. Never replace product link checks
+with mocks, change ACLs, enable Developer Mode, disable protection or grant
+permanent privileges to manufacture a pass. Microsoft's [CreateSymbolicLinkW reference](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw)
 documents the Developer Mode prerequisite for unprivileged link creation.
 
 An AppContainer invocation is also distinct from a normal Windows process.

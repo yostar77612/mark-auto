@@ -6,6 +6,8 @@ Deployment outside local simulation must use independently verified schedules.
 
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, Decimal
+from hashlib import sha256
+import json
 
 from .arithmetic import decimal_operation
 from .models import InstrumentSpec, Market, Side
@@ -31,6 +33,33 @@ class FeeSchedule:
         for name in ('buy_rate', 'sell_rate', 'sell_tax_rate', 'minimum_fee', 'futures_fee_per_contract', 'futures_tax_rate'):
             decimal_value(getattr(self, name), name, nonnegative=True)
         integer(self.slippage_ticks, 'slippage_ticks')
+
+    @classmethod
+    @decimal_operation
+    def taiwan(
+        cls,
+        *,
+        discount: Decimal = Decimal('1'),
+        minimum_fee: Decimal = Decimal('20'),
+        futures_fee_per_contract: Decimal = Decimal('30'),
+        slippage_ticks: int = 1,
+        stock_kind: str = 'STOCK',
+        day_trade: bool = False,
+    ) -> 'FeeSchedule':
+        """An explicit instrument/tax treatment, shared by every consumer.
+
+        The caller must attest day-trade eligibility; this never guesses ETF
+        status from a ticker. Old instances and their serialized fields retain
+        their exact meaning. A changed setting creates a new immutable version.
+        """
+        decimal_value(discount, 'fee discount', positive=True)
+        if discount > 1 or stock_kind not in ('STOCK', 'ETF') or type(day_trade) is not bool:
+            raise DomainError('validation_failed', 'Taiwan cost treatment')
+        tax = Decimal('0.001') if stock_kind == 'ETF' else Decimal('0.0015') if day_trade else Decimal('0.003')
+        rate = Decimal('0.001425') * discount
+        material = (str(rate), str(tax), str(minimum_fee), str(futures_fee_per_contract), '0.00002', slippage_ticks, stock_kind, day_trade)
+        version = 'tw-cost-v2-' + sha256(json.dumps(material, separators=(',', ':')).encode()).hexdigest()
+        return cls(version, rate, rate, tax, minimum_fee, futures_fee_per_contract, Decimal('0.00002'), slippage_ticks)
 
     @decimal_operation
     def transaction(self, spec: InstrumentSpec, side: Side, price: Decimal, quantity: int) -> Decimal:

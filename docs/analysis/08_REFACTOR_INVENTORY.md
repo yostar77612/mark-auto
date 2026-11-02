@@ -860,6 +860,22 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
+| `desktop_app/strings/m2_maintenance.py` | 12 | shared | `desktop_app/strings/m2_maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/adapters/official/stock_data.py` | 175 | infrastructure | `quantlab/trading/adapters/official/stock_data.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/adapters/storage/daily_stock_store.py` | 157 | infrastructure | `quantlab/trading/adapters/storage/daily_stock_store.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/application/stock_history.py` | 122 | application | `quantlab/trading/application/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/domain/maintenance.py` | 97 | domain | `quantlab/trading/domain/maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/domain/stock_history.py` | 112 | domain | `quantlab/trading/domain/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/ports/stock_history.py` | 36 | application | `quantlab/trading/ports/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/runtime/stock_history.py` | 82 | composition | `quantlab/trading/runtime/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/runtime/stock_maintenance.py` | 104 | composition | `quantlab/trading/runtime/stock_maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/application/stock_research.py` | 172 | application | `quantlab/trading/application/stock_research.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
+| `quantlab/trading/application/stock_research_service.py` | 105 | application | `quantlab/trading/application/stock_research_service.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
+| `quantlab/trading/runtime/stock_research.py` | 28 | composition | `quantlab/trading/runtime/stock_research.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
+| `quantlab/trading/domain/promotion.py` | 317 | domain | `quantlab/trading/domain/promotion.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
+| `quantlab/trading/domain/signal_strategy.py` | 287 | domain | `quantlab/trading/domain/signal_strategy.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
+| `quantlab/trading/ports/candidates.py` | 13 | application | `quantlab/trading/ports/candidates.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
+| `quantlab/trading/ports/signals.py` | 9 | application | `quantlab/trading/ports/signals.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
 | `quantlab/trading/adapters/shioaji/minute_history.py` | 79 | infrastructure | `quantlab/trading/adapters/shioaji/minute_history.py` | M2-7: read-only resolved TMF history binding; fake SDK time/identity/quota tests; no login or order API. |
 | `quantlab/trading/application/minute_research.py` | 159 | application | `quantlab/trading/application/minute_research.py` | M2-7: deterministic completed-signal/next-open minute engine and research-only evidence; daily activation unchanged. |
 | `quantlab/trading/domain/minute_research.py` | 149 | domain | `quantlab/trading/domain/minute_research.py` | M2-7: TRAINING settings, explicit complete session grid and 1m/5m aggregation; no missing-bar fabrication. |
@@ -1882,6 +1898,27 @@ suite/startup check before removing old bodies. This later behavior-preserving
 extraction is outside the final first-round safety correction. The independent
 inventory baseline only updates owned measurements; no test or source cap moves.
 
+## M2-9 offline test inventory (2026-11-02)
+
+- `tests/test_m2_stock_history.py`: synthetic native-schema parsers, all-or-nothing
+  SQLite import, retained source revisions, point-in-time adjustment, five-year
+  exact-session admission and fake HTTP boundary failures. No recorded exchange
+  sample or live endpoint validation is claimed.
+- `tests/test_m2_stock_maintenance.py`: immutable legacy cost wire, Taiwan fee/tax
+  variants, cost-history preservation, expiry dates and fail-closed calendar/
+  versioned expiry-file integration, fake login expiry refusal.
+- New production modules are registered in the layer table above by the baseline
+  tool. No source was moved and no layer exception or G3 allowance was added.
+
+### M2-9 continuation test registration (2026-11-02)
+
+`tests/test_m2_stock_research.py` exercises the actual stock runtime service,
+SQLite daily store and durable evidence with explicitly synthetic exchange
+schemas: complete five-year dense history, point-in-time signals/raw fills,
+explicit stock/day-trade/ETF fees, unknown entitlements, cancellation/deadline,
+source/storage failures and unchanged earlier artifacts. The existing
+`tests/test_m2_stock_maintenance.py` and `tests/test_sinopac_panel_ui.py` gain
+snapshot/minimal-checklist assertions; no existing assertion is removed.
 ### M2-7 continuation owned lifecycle measurements (2026-11-02)
 
 The existing bootstrap remains over600 lines; this narrow addition wires an
