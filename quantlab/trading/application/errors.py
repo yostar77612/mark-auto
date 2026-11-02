@@ -10,6 +10,36 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'automatic_paused': ErrorText('自動交易已暫停，等待恢復。', '先核對暫停原因、完成對帳，再由使用者恢復。'),
+    'automatic_daily_execution_pending': ErrorText(
+        '日 K 自動送單尚待下一交易時段執行支援。', '目前可使用已完成驗證的分鐘策略；日 K 研究與本機交易日推進仍可使用。'
+    ),
+    'program_restarted': ErrorText('程式重新啟動，自動新倉保持停止。', '先完成對帳及檢查，再由使用者恢復。'),
+    'order_result_unknown': ErrorText('自動委託結果未知。', '保留資金與委託紀錄；對帳確認前不會重送。'),
+    'automatic_overdue_position': ErrorText('收盤後仍有當沖部位待處理。', '核對券商回報與剩餘部位，保持停止新倉。'),
+    'automatic_bar_overflow': ErrorText('自動交易的完成 K 棒佇列已超出容量。', '核對行情與執行狀態，完成對帳後再恢復。'),
+    'automatic_market_gap': ErrorText('自動交易行情序列或連線世代已改變。', '完成對帳與行情檢查後，再由使用者恢復。'),
+    'intraday_force_exit': ErrorText('已到當沖強制平倉時間，自動新倉已停止。', '核對平倉委託及剩餘部位；只有已確認取消的委託才可重送。'),
+    'reconciled_waiting_resume': ErrorText('自動交易已完成對帳，等待恢復。', '確認檢查結果後，由使用者恢復新倉。'),
+    'account_daily_loss_limit': ErrorText('帳戶已達單日虧損上限，新倉停止。', '今日不能解除；核對部位並保留保護性出場。'),
+    'account_order_limit': ErrorText('委託金額超過帳戶單筆上限。', '調整策略新版本的數量或帳戶上限，再明確恢復。'),
+    'account_position_limit': ErrorText('帳戶已達最大同時持倉數。', '未成交進場單也占用名額；核對後明確恢復。'),
+    'account_daily_baseline_required': ErrorText('缺少帳戶前一交易日的可靠結算紀錄。', '新倉保持暫停；取得對應日期的結算證據後再恢復。'),
+    'preflight_blocked': ErrorText('今日開盤檢查尚未通過。', '查看檢查清單；當日失敗紀錄會保留，保護性出場不受影響。'),
+    'preflight_connection': ErrorText('開盤檢查：連線未就緒。', '確認永豐連線；今日自動新倉保持停止。'),
+    'preflight_account': ErrorText('開盤檢查：帳戶未就緒。', '確認已選帳戶及簽署狀態。'),
+    'preflight_permission': ErrorText('開盤檢查：交易權限尚未證實。', '完成目前連線的模擬下單測試；登入不代表有交易權限。'),
+    'preflight_ca': ErrorText('開盤檢查：憑證狀態未就緒。', '模擬環境不需要 CA；正式環境仍不能送單。'),
+    'preflight_market': ErrorText('開盤檢查：行情不是即時資料。', '確認目前連線的行情時間與資料完整性。'),
+    'preflight_service': ErrorText('開盤檢查：目前不在可驗證的模擬服務時段。', '核對交易日曆與券商回應。'),
+    'preflight_reconciliation': ErrorText('開盤檢查：對帳未通過。', '核對委託、成交與部位；未知結果不會自動重送。'),
+    'strategy_parameters_invalid': ErrorText('策略參數不符合型態規則。', '依型態的週期、停損及口數範圍調整。'),
+    'strategy_instrument_restricted': ErrorText('此型態不支援選取的商品。', '當沖選微台；短波與長波選股票或 ETF。'),
+    'strategy_daytrade_confirmation_required': ErrorText('現股當沖尚未勾選並確認資格。', '確認具備現股當沖資格與額度後再建立。'),
+    'strategy_allocation_exceeded': ErrorText('啟用策略的資金總和超過帳戶配置。', '降低配置或先停用其他策略。'),
+    'strategy_has_fills': ErrorText('已有成交紀錄的策略不能刪除。', '停用策略並保留成交紀錄。'),
+    'strategy_settlement_day': ErrorText('微台結算日停止自動開新倉。', '保留保護性出場，下一交易日再確認。'),
+    'strategy_size_insufficient': ErrorText('可用資金不足以建立指定部位。', '股票至少一整張；微台須涵蓋保證金與成本。'),
     'manual_allocation_exceeds_settings': ErrorText(
         '人工模擬帳本的已確認額度超過目前配置。', '核對證券及期貨配置後再操作；原帳本與損益紀錄不會重設，合法退出仍可另行核對。'
     ),

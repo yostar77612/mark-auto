@@ -47,6 +47,11 @@ def apply_event(engine: 'TradingEngine', event: OrderEvent, *, reconciled: bool 
     state = engine.state
     positions = list(state.positions)
     spec = engine.catalog.resolve(order.plan.instrument_id)
+    record = next((s for s in engine.state.strategies if (s.strategy_id, s.version) == (order.plan.strategy_id, order.plan.strategy_version)), None)
+    if record is not None and record.parameters is not None:
+        from quantlab.trading.domain.strategy import effective_strategy_spec
+
+        spec = effective_strategy_spec(spec)
     cumulative_average = (order.average_price * order.filled + event.last_fill_price * delta) / event.cumulative_quantity if event.cumulative_quantity else ZERO
     fee = engine.fees.incremental_transaction(spec, order.plan.side, cumulative_average, event.cumulative_quantity, order.costs) if delta else ZERO
     realized = ZERO
@@ -136,7 +141,7 @@ def apply_event(engine: 'TradingEngine', event: OrderEvent, *, reconciled: bool 
         event_hashes=(*state.event_hashes, (event_key, sha256(dumps(event).encode()).hexdigest())),
     )
     state = with_cursor(state, account, max(previous, event.sequence))
-    if delta and spec.market is Market.STOCK and any(book.book_id == order.plan.strategy_id for book in state.manual_books):
+    if delta and spec.market is Market.STOCK and any(book.account_ref == order.plan.account_ref for book in state.manual_books):
         from .manual_book import ManualAcquisition, ManualReceivable
         from .sessions import resolve_session
 

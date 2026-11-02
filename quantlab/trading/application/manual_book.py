@@ -189,13 +189,19 @@ def manual_capacity(engine: 'TradingEngine', book: ManualBook) -> ManualRiskCapa
 def manual_stock_availability(engine: 'TradingEngine'):
     positions = []
     books = {book.book_id for book in engine.state.manual_books}
+    shared_accounts = {book.account_ref for book in engine.state.manual_books}
     for lot in engine.state.positions:
-        if lot.strategy_id not in books or engine.catalog.resolve(lot.instrument_id).market is not Market.STOCK:
+        if (lot.strategy_id not in books and lot.account_ref not in shared_accounts) or engine.catalog.resolve(lot.instrument_id).market is not Market.STOCK:
             positions.append(lot)
             continue
         entry = next((order for order in engine.state.orders if order.order_id == lot.lot_id), None)
         matured = sum(row.quantity for row in engine.state.manual_acquisitions if row.lot_id == lot.lot_id and row.available_on <= engine.state.trading_day)
         eligible = min(lot.quantity, max(0, matured - entry.released_quantity)) if entry and lot.direction is Side.BUY else 0
+        record = next((row for row in engine.state.strategies if (row.strategy_id, row.version) == (lot.strategy_id, lot.strategy_version)), None)
+        if record is not None and record.parameters is not None and record.policy.kind is HoldingKind.INTRADAY:
+            capability = engine._strategy_capability(record)
+            if record.parameters.stock_intraday_enabled and record.parameters.stock_intraday_confirmed and capability.day_trade:
+                eligible = lot.quantity
         # Pending owned exits are subtracted once by the existing ExitCoordinator.
         # This is a conservative app-owned availability, not a broker free-share
         # field or permission to sell external/pledged/same-day inventory.
@@ -230,12 +236,18 @@ def assert_manual_plan(engine: 'TradingEngine', request: ManualRequest, plan: Or
 
 def manual_risk_context(engine: 'TradingEngine', request: ManualRequest, plan: OrderPlan):
     assert_manual_plan(engine, request, plan)
-    accounts = tuple(manual_capacity(engine, current) for current in engine.state.manual_books)
+    shared = any(row.parameters is not None for row in engine.state.strategies)
+    if shared:
+        from .automatic_capacity import automatic_daily_pnl, shared_sim_allocations
+
+        accounts = shared_sim_allocations(engine)
+    else:
+        accounts = tuple(manual_capacity(engine, current) for current in engine.state.manual_books)
     account = next(row for row in accounts if row.account_ref == plan.account_ref)
     capability = engine.gateways[plan.account_ref].inspect(plan.account_ref)
     # This is the app's explicitly authorized SIM attempt policy. It is not a
     # claim that a signed account or login proves trading-key permission.
     if capability.environment is not Environment.BROKER_SIMULATION or not capability.can_trade:
         raise DomainError('capability_missing')
-    pnl = sum((manual_net_pnl(engine, current) for current in engine.state.manual_books), ZERO)
+    pnl = automatic_daily_pnl(engine) if shared else sum((manual_net_pnl(engine, current) for current in engine.state.manual_books), ZERO)
     return account, accounts, capability, pnl

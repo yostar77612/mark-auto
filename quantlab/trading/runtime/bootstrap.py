@@ -103,10 +103,13 @@ class RuntimeBundle:
             self.market_connection = MarketConnection(self.launch.root)
         self.sinopac_connection = self.market_connection if self.launch.sinopac else None
         self.manual_runtime = None
+        self.automatic_runtime = None
         if self.sinopac_connection is not None:
             from .manual_trading import ManualRuntime
+            from .automatic import AutomaticRuntime
 
             self.manual_runtime = ManualRuntime(self)
+            self.automatic_runtime = AutomaticRuntime(self)
         if self.engine is not None:
             self.watch_settings.restore(self.engine)
         self.lock = RLock()
@@ -279,10 +282,49 @@ class RuntimeBundle:
             if self.manual_runtime is None or not self.manual_runtime.handles(command) or self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
             return self.manual_runtime.execute(command)
+        if self.automatic_runtime is not None and self.automatic_runtime.handles(command):
+            if self.closing or self.closed or self.control_failed:
+                return UiReceipt(False, 'state_conflict', '')
+            return self.automatic_runtime.execute(command)
         if isinstance(command, UiCommand) and self.manual_runtime is not None and self.manual_runtime.handles(command):
             if self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
             return self.manual_runtime.execute(command)
+        if isinstance(command, UiCommand) and command.action is UiAction.CHECK_PREFLIGHT and self.sinopac_connection is not None:
+            from quantlab.trading.application.preflight import record_preflight
+            from quantlab.trading.application.errors import ERROR_TABLE
+            from .preflight import sinopac_preflight_facts
+
+            if type(command.expected_version) is not int or type(command.account_ref) is not str:
+                return UiReceipt(False, 'validation_failed', '')
+            with self.lock:
+                engine, offset, owner = self.engine, self.version_offset, self.sinopac_connection
+                if self.closing or self.closed or self.control_failed or engine is None or owner is None:
+                    return UiReceipt(False, 'capability_missing', '')
+            try:
+                reference = command.account_ref or engine.state.account_ref
+                with owner.lock:
+                    view = owner.snapshot()
+                    owner_stamp = view.environment, view.generation, view.revision, tuple(sorted(owner.selected)), owner.shared
+                facts = sinopac_preflight_facts(self, reference)
+                with self.lock, engine.lock, owner.lock:
+                    view = owner.snapshot()
+                    if (
+                        self.closing
+                        or self.closed
+                        or self.control_failed
+                        or self.engine is not engine
+                        or self.sinopac_connection is not owner
+                        or owner_stamp != (view.environment, view.generation, view.revision, tuple(sorted(owner.selected)), owner.shared)
+                        or command.expected_version != engine.state.version + offset
+                        or self.version_offset != offset
+                    ):
+                        raise DomainError('state_conflict')
+                    record_preflight(engine, reference, facts)
+                return UiReceipt(True, 'completed', '')
+            except DomainError as error:
+                entry = ERROR_TABLE.get(error.code, ERROR_TABLE['operation_failed'])
+                return UiReceipt(False, error.code, entry.explanation + ' ' + entry.action)
         if isinstance(command, UiCommand) and command.action in SINOPAC_ACTIONS:
             with self.lock:
                 if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
@@ -517,6 +559,12 @@ class RuntimeBundle:
 
             with engine.lock:
                 synchronize_session(engine)
+                from quantlab.trading.application.account_risk import observe_account_limits
+
+                observe_account_limits(engine)
+            if self.manual_runtime.adapter is not None:
+                self.automatic_runtime.pump_futures(self.manual_runtime.adapter)
+            self.automatic_runtime.pump()
             return
         if engine.configuration.environment is not Environment.LOCAL:
             from quantlab.trading.application.coordinator import run_cycle, run_readonly_cycle
@@ -675,6 +723,8 @@ def build_runtime(
         from .market_terminal import attach_terminal
 
         attach_terminal(bundle)
+        if bundle.automatic_runtime is not None:
+            bundle.automatic_runtime.attach_terminal()
         return bundle
     resources = None
     settings = None
@@ -711,6 +761,8 @@ def build_runtime(
         from .market_terminal import attach_terminal
 
         attach_terminal(bundle)
+        if bundle.automatic_runtime is not None:
+            bundle.automatic_runtime.attach_terminal()
         return bundle
     except BaseException:
         journal.close()
