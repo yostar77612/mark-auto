@@ -221,3 +221,10 @@
 - Native LOCAL completed captures but needed a normal Alt+F4 to leave its event
   loop; record91.760s rather than hiding it. Fake-SIM completed6.429s. Requested
   1920x1080 has1920x1061 client due existing screen fit; retain the actual geometry.
+
+- U3 first CI: keep the independent trading architecture gate unchanged; inject
+  error copy and table styling at the existing desktop composition boundary.
+  Keep50000 as a labelled display-only reference, not an execution decision.
+  Fix the old context test's ordinal4 selection to HoldingKind.CUSTOM and explicitly
+  provide its stop while retaining every original financial/isolation assertion.
+  No new strings/modules or changed style hashes; do not rerun baseline generation.

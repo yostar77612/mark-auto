@@ -13,6 +13,8 @@ import shiboken6
 from desktop_app.features.trading.wizard import StrategyWizard
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import StrategyParameters, UiAction, UiReceipt
+from quantlab.trading.application.errors import ERROR_TABLE
+from desktop_app.shell.theme import style_strategy_table, SIGN_ROLE
 from quantlab.trading.domain.models import Environment, HoldingKind, Market
 from tests import test_trading_ui as support
 
@@ -144,6 +146,17 @@ class StrategyManagementUiTests(unittest.TestCase):
         self.window.strategies.clearSelection()
         self.window.apply_state(self.window.state)
         self.assertFalse(self.window.deploy_button.isEnabled())
+
+    def test_composition_supplies_error_copy_stale_proof_and_financial_styling(self):
+        self.window.strategy_error_texts = {code: (text.explanation, text.action) for code, text in ERROR_TABLE.items()}
+        self.window.style_strategy_table = style_strategy_table
+        self.select(entry_block_code='automatic_daily_execution_pending')
+        self.assertIn(ERROR_TABLE['automatic_daily_execution_pending'].explanation, self.window.strategy_controls.details.text())
+        self.assertFalse(self.window.deploy_button.isEnabled())
+        self.select(entry_block_code='', evidence=ERROR_TABLE['strategy_evidence_stale'].explanation)
+        self.assertFalse(self.window.deploy_button.isEnabled())
+        self.select(evidence='fixture-only', today_pnl=Decimal('-1234.50'))
+        self.assertEqual(self.window.strategies.item(0, 9).data(SIGN_ROLE), -1)
 
     def test_disable_and_delete_cancel_default_and_cancel_sends_nothing(self):
         self.select()

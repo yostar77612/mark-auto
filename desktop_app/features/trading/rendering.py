@@ -1,7 +1,6 @@
 """Read-model projection into tables; each market uses the same typed widgets."""
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiState
@@ -10,7 +9,6 @@ from desktop_app.features.trading.widgets import rows
 from desktop_app.features.trading.reconciliation_rows import reconciliation_cells
 from desktop_app.features.trading.trading_page import refresh_position_details, position_quantity, position_time
 from desktop_app.features.trading.strategy_controls import recent_signal_text
-from desktop_app.shell.theme import align_table_item, set_financial_item, theme_colors
 
 
 def render_tables(window, state: UiState, *, state_changed: bool) -> None:
@@ -52,10 +50,9 @@ def _render_strategies(self, state: UiState) -> None:
             item = self.strategies.item(row_index, column)
             item.setToolTip(item.text())
         pnl = self.strategies.item(row_index, 9)
-        align_table_item(pnl, numeric=True)
-        set_financial_item(self.strategies, pnl, strategy.today_pnl)
-        if strategy.today_pnl is None:
-            pnl.setForeground(QColor(theme_colors(self.strategies)['disabled_text']))
+        pnl.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    if self.style_strategy_table is not None:
+        self.style_strategy_table(self)
     self.strategies_empty.setVisible(not state.strategies)
 
 

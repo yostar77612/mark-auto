@@ -9,7 +9,6 @@ from desktop_app.features.trading.labels import state_label
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import StrategyParameters, strategy_defaults
 from quantlab.trading.domain.models import HoldingKind, Market
-from quantlab.trading.domain.strategy import TMF_CONSERVATIVE_MARGIN
 
 
 class StrategyOptions:
@@ -165,7 +164,8 @@ class StrategyOptions:
             instrument = next((item for item in self.state.manual.instruments if item.instrument_id == identity), None)
             margin = instrument.margin_per_contract if instrument is not None else None
             source = ui_text('u3.margin_reference') if margin is not None else ui_text('u3.conservative_margin')
-            required = (margin if margin is not None else TMF_CONSERVATIVE_MARGIN) * self.contracts.value()
+            # Display-only M2 reference; authoritative admission stays in the backend.
+            required = (margin if margin is not None else Decimal('50000')) * self.contracts.value()
             self.size_hint.setText(
                 ui_text('u3.futures_size').format(
                     self.contracts.value(),

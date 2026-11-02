@@ -105,3 +105,37 @@ PR150 was already merged at2026-11-02 17:48 Asia/Taipei when work resumed. No
 GitHub-visible Claude review/comment was present. Its final head's CI initially
 failed minute-host timing and coverage aggregation checks; the whole workflow
 41423569896 was rerun, without changing or weakening those checks.
+
+## First CI corrections
+
+The first U3 CI found the independent trading architecture gate (not the general
+layer checker): presentation imported theme helpers, an application error table
+and a domain margin constant. The gate and assertions stay unchanged. The desktop
+composition now passes immutable error-copy pairs and the existing theme's table
+styler into TradingWindow. Trading widgets only consume those presentation inputs;
+the accepted50000 fallback remains an explicitly labelled display reference, with
+backend margin and admission still authoritative. No new IPC/application contract
+or string is introduced and no baseline repin is needed.
+
+The existing real-IPC context fixture still selected old wizard index4, beyond
+the new four-kind list. It now selects HoldingKind.CUSTOM by data and explicitly
+supplies its required stop value, retaining its original one-day policy. All
+environment/account isolation, no implicit connection and no submit/cancel trace
+assertions remain. A new regression checks injected block explanations, stale
+evidence refusal and financial colour metadata.
+
+After the correction:35 strategy/architecture/LIVE product tests passed (a separate
+loader error in the initial invocation was corrected using discovery),12 real-IPC
+context tests passed25.050s, and53 core/integration/appearance tests passed67.022s.
+Both check_layers.py and check_trading_architecture.py report zero findings; Ruff
+passes. Existing appearance hashes pass. The changed common theme file has
+CRITICAL upstream impact74; the rendering, blocker and runtime-entry functions
+have LOW impact. No file-level result waives shared-module warnings.
+
+Because composition changed, both latest-source native startups were repeated:
+LOCAL7.779s and fakeSIM11.050s, bothreturn0/normal owned exit0/research release/
+endpoints removed/no realSDK; fake login/logout1/1. The probe stops polling and
+drains its existing operation within the existing3s test allowance before closing.
+Original JSON is retained; latest evidence is LOCAL-after-ci.json and
+BROKER_SIMULATION-after-ci.json. Adjacent screenshots show latest source. The
+original LOCAL91.760s/manual normal-close observation above remains historical.

@@ -107,6 +107,8 @@ class TradingWindow(QMainWindow):
         save_order_columns=None,
         strategy_columns=None,
         save_strategy_columns=None,
+        strategy_error_texts=None,
+        style_strategy_table=None,
     ):
         super().__init__(parent)
         self.facade = facade
@@ -115,6 +117,8 @@ class TradingWindow(QMainWindow):
         self._position_columns, self._save_position_columns = position_columns, save_position_columns
         self._order_columns, self._save_order_columns = order_columns, save_order_columns
         self._strategy_columns, self._save_strategy_columns = strategy_columns, save_strategy_columns
+        self.strategy_error_texts = strategy_error_texts or {}
+        self.style_strategy_table = style_strategy_table
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None

@@ -7,7 +7,6 @@ from desktop_app.features.trading.labels import policy_label
 from desktop_app.features.trading.widgets import selected_id
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction
-from quantlab.trading.application.errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment
 
 
@@ -15,15 +14,14 @@ def recent_signal_text(code):
     return ui_text('u3.entry_signal') if code == 'ENTRY' else ui_text('u3.no_signal') if not code else ui_text('watch.unknown')
 
 
-def strategy_block_reason(strategy):
+def strategy_block_reason(strategy, error_texts):
     if strategy.entry_block_code:
-        text = ERROR_TABLE.get(strategy.entry_block_code, ERROR_TABLE['operation_failed'])
-        return text.explanation + ' ' + text.action
+        return ' '.join(error_texts[strategy.entry_block_code]) if strategy.entry_block_code in error_texts else ui_text('u3.research_needed')
     if strategy.state not in ('RESEARCHED', 'DISABLED', 'ACTIVE') or strategy.evidence in (
         '',
         'NONE',
         'UNRESEARCHED',
-        ERROR_TABLE['strategy_evidence_stale'].explanation,
+        error_texts.get('strategy_evidence_stale', ('', ''))[0],
     ):
         return ui_text('u3.research_needed')
     return ''
@@ -65,7 +63,7 @@ class StrategyControls:
             self.details.setText(ui_text('v2.select_strategy'))
             self.research_details.setText(ui_text('v2.select_strategy'))
         else:
-            reason = strategy_block_reason(strategy)
+            reason = strategy_block_reason(strategy, self.window.strategy_error_texts)
             self.details.setText(
                 ui_text('u3.selection_details').format(
                     strategy.name, strategy.version, self.window._environment_label(strategy.environment), recent_signal_text(strategy.recent_signal)
@@ -81,11 +79,13 @@ class StrategyControls:
         )
         self.window.delete_strategy_button.setEnabled(strategy is not None and not has_fills)
         self.window.delete_strategy_button.setToolTip(ui_text('u3.delete_warning'))
-        self.window.deploy_button.setEnabled(strategy is not None and state.environment is not Environment.LIVE and not strategy_block_reason(strategy))
+        self.window.deploy_button.setEnabled(
+            strategy is not None and state.environment is not Environment.LIVE and not strategy_block_reason(strategy, self.window.strategy_error_texts)
+        )
         self.window.deploy_button.setToolTip(
             ui_text('m2t.orders_disabled')
             if state.environment is Environment.LIVE
-            else strategy_block_reason(strategy)
+            else strategy_block_reason(strategy, self.window.strategy_error_texts)
             if strategy
             else ui_text('v2.select_strategy')
         )
@@ -126,7 +126,7 @@ class StrategyControls:
         if strategy.allocation <= 0:
             self.window._feedback(ui_text('v2.strategy_config_missing'))
             return
-        reason = strategy_block_reason(strategy)
+        reason = strategy_block_reason(strategy, self.window.strategy_error_texts)
         if reason:
             self.window._feedback(reason)
             return

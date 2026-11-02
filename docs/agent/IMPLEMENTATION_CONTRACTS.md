@@ -7568,3 +7568,8 @@ Absent original-form/direction/rule and complete-fill/can_delete DTO facts are
 explicit limitations; revision asks for missing choices and backend deletion
 refusals are retained. No new engine or IPC contract is introduced. Verification:
 docs/analysis/u3-strategies/verification.md. Strings phase67, orders2990–3031.
+
+U3 presentation dependency correction: the desktop composition supplies error-copy
+pairs and a theme table-styling callback to TradingWindow. Trading presentation
+does not import the application's error implementation, domain strategy internals
+or shell theme. Public commands/DTOs and the architecture gate remain unchanged.
