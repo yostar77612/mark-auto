@@ -861,11 +861,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
 | `quantlab/trading/adapters/shioaji/minute_history.py` | 79 | infrastructure | `quantlab/trading/adapters/shioaji/minute_history.py` | M2-7: read-only resolved TMF history binding; fake SDK time/identity/quota tests; no login or order API. |
-| `quantlab/trading/application/minute_research.py` | 154 | application | `quantlab/trading/application/minute_research.py` | M2-7: deterministic completed-signal/next-open minute engine and research-only evidence; daily activation unchanged. |
+| `quantlab/trading/application/minute_research.py` | 156 | application | `quantlab/trading/application/minute_research.py` | M2-7: deterministic completed-signal/next-open minute engine and research-only evidence; daily activation unchanged. |
 | `quantlab/trading/domain/minute_research.py` | 122 | domain | `quantlab/trading/domain/minute_research.py` | M2-7: TRAINING settings, explicit complete session grid and 1m/5m aggregation; no missing-bar fabrication. |
 | `quantlab/trading/runtime/minute_research.py` | 91 | composition | `quantlab/trading/runtime/minute_research.py` | M2-7: M1 cache/refill plus bounded worker composition and selected snapshot admission. |
 
-| `tests/test_minute_research.py` | 286 | tooling | `tests/test_minute_research.py` | M2-7: synthetic next-open/holding/cost/cutoff/grid/evidence tests and real bounded spawn. |
+| `tests/test_minute_research.py` | 311 | tooling | `tests/test_minute_research.py` | M2-7: synthetic next-open/holding/cost/cutoff/grid/evidence tests and real bounded spawn. |
 | `tests/test_minute_research_history.py` | 208 | tooling | `tests/test_minute_research_history.py` | M2-7: real SQLite/HistorySync with fake SDK; completeness, exact contract identity, timestamp, quota and revision tests. |
 | `quantlab/trading/adapters/storage/minute_receipts.py` | 63 | infrastructure | `quantlab/trading/adapters/storage/minute_receipts.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/minute_receipt.py` | 69 | application | `quantlab/trading/application/minute_receipt.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
