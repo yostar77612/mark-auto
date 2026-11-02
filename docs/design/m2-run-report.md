@@ -327,3 +327,9 @@ replay+provenance23.199秒；追蹤記憶體下完整recovery峰值628.907MB，�
 券商自動交易由各車道／擁有者另驗。LIVE硬關閉，未改desktop_app/、G3、SDK版本、
 PROJECT_STATE、成本、workflow或分層規則。
 詳見[M2-3c驗證](m2-3c-review-fixes-verification.md)及相鄰JSON、追加決策與契約。
+
+同期main f0e974f（M3橋接、U3畫面及timeout fixture）以普通merge保留雙方契約／登記；
+相對main沒有desktop_app/或trading_runtime.py差異。合併後353項直接相關與47項新增
+交界整合全過；原始視窗最終LOCAL8.614秒／fake-SIM4.735秒，資源清理／無真SDK通過。
+前段324項及7.591／4.863秒是合併前證據。合併後靜態檢查與基準dry-run均通過，
+圖分析all/compare完整且保留原CRITICAL風險警告；最終完整CI仍以PR155最新head為準。

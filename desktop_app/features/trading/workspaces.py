@@ -8,12 +8,14 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QListWidget,
     QLayout,
     QScrollArea,
     QStackedWidget,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -31,6 +33,7 @@ from desktop_app.features.trading.trading_page import (
     confirm_trading_action,
 )
 from desktop_app.features.trading.page_help import HelpText
+from desktop_app.features.trading.strategy_controls import StrategyControls
 from desktop_app.features.trading.trading_page_widgets import EmptyTableState, PositionColumns
 
 
@@ -193,23 +196,75 @@ def _overview_page(self) -> None:
 
 def _strategy_page(self) -> None:
     layout = _page(self, 'strategy')
+    self.strategy_tabs = QTabWidget()
+    self.strategy_tabs.setObjectName('strategy_tabs')
+    self.strategy_tabs.setAccessibleName(ui_text('v2.strategies'))
+    listing, research = QWidget(), QWidget()
+    listing_layout, research_layout = QVBoxLayout(listing), QVBoxLayout(research)
     _buttons(
         self,
-        layout,
+        listing_layout,
         (
             ('v2.new_strategy', 'new_strategy_button', self.new_strategy),
             ('v2.new_version', 'version_button', self.new_version),
+            ('v2.deploy', 'deploy_button', self.deploy_selected),
+            ('u3.clone', 'clone_strategy_button', lambda: self.strategy_controls.manage(UiAction.CLONE_STRATEGY)),
+            ('u3.disable', 'disable_strategy_button', lambda: self.strategy_controls.manage(UiAction.DISABLE_STRATEGY)),
+            ('u3.delete', 'delete_strategy_button', lambda: self.strategy_controls.manage(UiAction.DELETE_STRATEGY)),
+            ('u3.go_research', 'go_strategy_research', lambda: self.strategy_controls.research()),
+        ),
+    )
+    for name in ('disable_strategy_button', 'delete_strategy_button'):
+        getattr(self, name).setProperty('role', 'danger')
+    listing_layout.addWidget(label('v2.version_hint'))
+    self.strategies = table(
+        (
+            'v2.name',
+            'v2.version',
+            'v2.market',
+            'v2.instrument',
+            'v2.policy',
+            'v2.state',
+            'v2.account',
+            'v2.evidence',
+            'v2.environment',
+            'dashboard.today.net_pnl',
+            'u3.recent_signal',
+        ),
+        'strategies',
+    )
+    self.strategies.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+    self.strategies.setWordWrap(False)
+    self.strategies.setTextElideMode(Qt.TextElideMode.ElideRight)
+    self.strategy_columns = PositionColumns(
+        self.strategies,
+        self.page_headers['strategy'],
+        self._strategy_columns,
+        self._save_strategy_columns,
+        self._feedback,
+        defaults=(0, 3, 4, 5, 8, 9),
+        name='strategy_columns',
+    )
+    listing_layout.addWidget(self.strategies)
+    self.strategies_empty = EmptyTableState(self.strategies, ui_text('m2t.empty_strategy_reason'), self.new_strategy)
+    self.strategies_empty.next.setText(ui_text('v2.new_strategy'))
+    self.strategies_empty.next.setAccessibleName(ui_text('v2.new_strategy'))
+    _buttons(
+        self,
+        research_layout,
+        (
             ('v2.validate', 'validate_button', lambda: self._strategy_action(UiAction.VALIDATE)),
             ('v2.research', 'research_button', lambda: self._strategy_action(UiAction.RESEARCH)),
-            ('v2.deploy', 'deploy_button', self.deploy_selected),
             ('v2.legacy_research', 'legacy_research_button', lambda: self.legacy_requested.emit('strategy')),
             ('unified.page.assistant', 'ai_assistant_button', lambda: self.legacy_requested.emit('assistant')),
         ),
     )
-    layout.addWidget(label('v2.version_hint'))
-    self.strategies = table(('v2.name', 'v2.version', 'v2.market', 'v2.instrument', 'v2.policy', 'v2.state', 'v2.account', 'v2.evidence'), 'strategies')
-    layout.addWidget(self.strategies)
-    layout.addStretch()
+    self.strategy_controls = StrategyControls(self, listing_layout, research_layout)
+    listing_layout.addStretch()
+    research_layout.addStretch()
+    self.strategy_tabs.addTab(listing, ui_text('v2.strategies'))
+    self.strategy_tabs.addTab(research, ui_text('v2.research'))
+    layout.addWidget(self.strategy_tabs)
 
 
 def _market_page(self) -> None:

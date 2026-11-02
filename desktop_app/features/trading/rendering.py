@@ -8,6 +8,7 @@ from desktop_app.features.trading.labels import policy_label, state_label
 from desktop_app.features.trading.widgets import rows
 from desktop_app.features.trading.reconciliation_rows import reconciliation_cells
 from desktop_app.features.trading.trading_page import refresh_position_details, position_quantity, position_time
+from desktop_app.features.trading.strategy_controls import recent_signal_text
 
 
 def render_tables(window, state: UiState, *, state_changed: bool) -> None:
@@ -36,11 +37,23 @@ def _render_strategies(self, state: UiState) -> None:
                     state_label(item.state),
                     item.account_ref,
                     state_label(item.evidence),
+                    self._environment_label(item.environment),
+                    f'{item.today_pnl:,.2f}' if item.today_pnl is not None else ui_text('watch.unknown'),
+                    recent_signal_text(item.recent_signal),
                 ),
             )
             for item in state.strategies
         ),
     )
+    for row_index, strategy in enumerate(state.strategies):
+        for column in range(self.strategies.columnCount()):
+            item = self.strategies.item(row_index, column)
+            item.setToolTip(item.text())
+        pnl = self.strategies.item(row_index, 9)
+        pnl.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    if self.style_strategy_table is not None:
+        self.style_strategy_table(self)
+    self.strategies_empty.setVisible(not state.strategies)
 
 
 def _render_positions(self, state: UiState) -> None:

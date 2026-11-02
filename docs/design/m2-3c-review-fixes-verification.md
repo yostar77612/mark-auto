@@ -163,3 +163,11 @@ GitNexus針對此工作樹更新索引。原共用契約CRITICAL110 upstream、e
 `tools/repin_baselines.py` 在最後功能收斂後集中產生兩個產品模組登記，放獨立baseline commit。既有close測試改為同等或更嚴格的quote引用及物件身分檢查，沒有降低金融斷言。未改desktop_app/、G3、SDK版本、PROJECT_STATE、成本實作、workflow、打包或分層規則。LIVE持續硬關閉。
 
 未完成／外部驗收：官方股票日K與同基準source bridge、長日誌分階段證明與新鮮觀察接續仍為後續工作；畫面接線與真實券商自動交易由相應車道／擁有者驗收。F4普通EXIT維持原政策。完整CI全綠後仍留PR開啟等待Claude，不啟用自動合併。
+
+### 同期主線合併後的最終驗證
+
+初次推送後main已到 `f0e974f`，包含M3-2橋接、U3策略畫面與timeout fixture同步。普通merge只在契約及inventory追加區段衝突，保留雙方內容；相對最新main，desktop_app/、trading_runtime.py及兩個M3新模組沒有差異，沒有越過車道邊界。M3橋接尚未接入Engine，因此不新增本輪授權或送單路徑。
+
+合併樹直接相關 **353/353 PASS（92.100秒）**，另六組incoming整合 **47/47 PASS（35.970秒）**，涵蓋M3目錄／信號、U3策略畫面、runtime及兩個精確回歸單項。最終原始視窗 **LOCAL8.614秒／fake BROKER_SIMULATION4.735秒**，均可見、返回0、自有資源清理完成、無真SDK匯入。前述324項及7.591／4.863秒屬合併前已凍結版本的證據，沒有冒充合併後結果。
+
+合併後Ruff／format、Python3.11全部1202個tracked檔案語法、品質均通過；repin工具dry-run全部一致，沒有重寫基準。完整圖分析all170 symbols／18 affected／CRITICAL，compare-main215 symbols／14 affected／HIGH，皆無partial或truncated；原始共用CRITICAL警告仍保留。完整CI最終head與連結由PR155 checks／說明記錄，不自行合併。

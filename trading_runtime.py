@@ -131,6 +131,8 @@ def _presentation_options(root: Path) -> dict:
         'save_position_columns': lambda values: save('position_columns', values),
         'order_columns': saved.get('order_columns'),
         'save_order_columns': lambda values: save('order_columns', values),
+        'strategy_columns': saved.get('strategy_columns'),
+        'save_strategy_columns': lambda values: save('strategy_columns', values),
     }
 
 
@@ -154,7 +156,7 @@ def _run_window(
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
     from desktop_app.features.market.workspace import WorkspacePanel
-    from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme, _apply_trading_page_theme
+    from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme, _apply_trading_page_theme, style_strategy_table
 
     # Share the installed product icon without starting its legacy runtime.
     from desktop_app.components.icon import application_icon
@@ -218,6 +220,8 @@ def _run_window(
         facade,
         initial,
         market_watch=terminal,
+        strategy_error_texts={code: (text.explanation, text.action) for code, text in ERROR_TABLE.items()},
+        style_strategy_table=style_strategy_table,
         **_presentation_options(root or default_root()),
     )
     _apply_trading_page_theme(window)

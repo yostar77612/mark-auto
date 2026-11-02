@@ -7630,3 +7630,47 @@ mutex disappearance, research QLockFile reacquisition and journal lease reopenin
   history remains the audit authority; old payloads gain empty-default fields.
 - LIVE remains hard-disabled. No desktop_app/ edits or new send/resend path.
   This PR must remain open for Claude review after complete green final-head CI.
+
+## U3 desktop typed strategy presentation (2026-11-02)
+
+The wizard selects the holding kind before market/product and consumes the merged
+strategy_defaults and strategy_products contracts. Stock intraday requires an
+explicit Cancel-default qualification confirmation; swing/position products are
+the accepted stock/ETF catalogue. CREATE_TYPED_STRATEGY and REVISE_STRATEGY send
+one frozen form/parameter pair. Only metadata receives the existing one-retry CAS
+handling for a known refusal; unknown results and order commands never replay.
+Management targets exact versions; disable/delete/activation confirmations default
+to Cancel. LIVE activation stays disabled and the command boundary refuses it.
+Missing evidence remains disabled after unchanged polling and links to research.
+Sizing is labelled informational; backend costs/margin/admission remain authority.
+Absent original-form/direction/rule and complete-fill/can_delete DTO facts are
+explicit limitations; revision asks for missing choices and backend deletion
+refusals are retained. No new engine or IPC contract is introduced. Verification:
+docs/analysis/u3-strategies/verification.md. Strings phase67, orders2990–3031.
+
+U3 presentation dependency correction: the desktop composition supplies error-copy
+pairs and a theme table-styling callback to TradingWindow. Trading presentation
+does not import the application's error implementation, domain strategy internals
+or shell theme. Public commands/DTOs and the architecture gate remain unchanged.
+## M3-2 v1 信號橋接與候選摘要邊界（2026-11-02）
+
+- `V1SignalSource` 使用原 `research.validate_dsl` AST 准入、`candidate_fingerprint` 與
+  **同一函式物件** `strategies.generate_signals`，只對映 UTC K 棒／信號；不翻譯規則、不改規格。
+  非明確 TMF 月契約、非整數價格、排序重疊錯誤回 `validation_failed`；無效 JSON／AST 回
+  `candidate_spec_unsupported`，錯誤不回顯輸入內容。所有金融數值保持 Decimal。
+- M3-1 的 domain/port 與凍結版本契約不變；任何參數變更仍由 `AutoStrategy.revised` 建立新版本，橋接不提供修改路徑。
+- 候選目錄只接受已由主機 reader 驗證來源綁定的固定 E1 值型別，檢查指紋、標準化規格、唯一參照與本機鎖；
+  缺失、鎖定、不符、讀取失敗一律 `candidate_unavailable`。不讀 OOS／最終保留內容、不取得單寫入者鎖、不寫資料。
+- **現行研究持久層尚無權威的單一候選 E1 摘要，因此預設 reader 一律拒絕；現行工作區的可建成候選目錄未完成。**
+  keyword-only 主機 reader 注入只測試摘要邊界，不把合成 fixture 或顯示用統計 verdict 當成產品資格證據。
+  詳見 `docs/design/m3-decisions.md`；後續 producer 契約／必要授權不可省略。
+- 本項不新增 AI 工具、提示、UI 字串、引擎／日誌接線、網路行情、憑證或任何委託路徑；LIVE 硬關閉與 G3 bytes 保持不變。
+## Minute host timeout regression synchronization (2026-11-02)
+
+The late-refill timeout regression waits at most one second for the fake SDK's
+query-started event before joining its query thread. Test-only budget clocks
+advance to the original 0.1-second deadline after dispatch, with a real-time
+failure bound if dispatch never occurs. The real deadline check and cleanup run
+unchanged; the original under-one-second return, retiring worker, absent receipt,
+empty cache and complete missing-range assertions remain. No production behavior,
+SDK access, execution policy or acceptance score changes.

@@ -2372,3 +2372,15 @@ not permission to extend freshness or infer no send from current rows. F3's
 23.199-second measurement concerns the evaluation-recovery helper, not a direct
 benchmark of F1. A staged proof/fresh-observation continuation needs a separately
 reviewed design; no such implicit authorization is introduced in this fix.
+
+### M2-3c: integrate concurrent main without crossing lanes
+
+After the first push, main advanced to f0e974f with merged M3-2 signal/catalog
+adapters, U3 strategy presentation and the minute-timeout fixture synchronization.
+Merge main with an ordinary merge commit; do not rebase or stack another PR.
+Only append sections in IMPLEMENTATION_CONTRACTS and inventory rows conflicted.
+Keep both M2-3c and main's U3/M3/minute contracts and all seven new inventory rows.
+No engine behavior conflicts or desktop edits are introduced by resolution;
+desktop/trading_runtime bytes remain exactly incoming main. Repeat relevant
+integration checks and real LOCAL/fake-SIM starts on this combined final tree,
+then require the final-head complete CI before leaving the PR for Claude.

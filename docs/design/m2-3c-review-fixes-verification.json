@@ -1603,7 +1603,7 @@
   },
   "startup": {
     "local": {
-      "elapsed_seconds": 7.591,
+      "elapsed_seconds": 8.614,
       "engine_state": "WAITING_RECONCILIATION",
       "environment": "LOCAL",
       "errors": [],
@@ -1621,13 +1621,13 @@
       "research_attached": true,
       "research_released": true,
       "return_code": 0,
-      "widget_count": 2820,
+      "widget_count": 2838,
       "window_type": "TradingWindow",
       "window_visible": true
     },
     "sim": {
       "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
-      "elapsed_seconds": 4.863,
+      "elapsed_seconds": 4.735,
       "engine_state": "DISCONNECTED",
       "environment": "BROKER_SIMULATION",
       "errors": [],
@@ -1644,7 +1644,7 @@
       "research_attached": true,
       "research_released": true,
       "return_code": 0,
-      "widget_count": 2820,
+      "widget_count": 2838,
       "window_type": "TradingWindow",
       "window_visible": true
     }
@@ -1953,6 +1953,58 @@
   },
   "local_final_directly_affected": {
     "modules": [
+      "test_m2_daily_retention",
+      "test_m2_daily_not_sent",
+      "test_m2_daily_review_guards",
+      "test_m2_daily_price_basis",
+      "test_m2_daily_closes",
+      "test_m2_daily_native",
+      "test_m2_daily_runtime",
+      "test_m2_daily_commit",
+      "test_m2_daily_recovery",
+      "test_live_order_guard",
+      "test_m2_automatic_runtime",
+      "test_m2_automatic_daily_boundary",
+      "test_layer_gate",
+      "test_repo_layout",
+      "test_import_graph",
+      "test_docs_layering",
+      "test_page_services_r1",
+      "test_download_auto_import_contracts"
+    ],
+    "tests": 353,
+    "failures": [],
+    "errors": [],
+    "skipped": 0,
+    "seconds": 93.49510670005111
+  },
+  "graph": {
+    "all": {
+      "summary": {
+        "changed_count": 21,
+        "affected_count": 653,
+        "changed_files": 25,
+        "risk_level": "critical"
+      },
+      "partial": null,
+      "truncated": null,
+      "error": null
+    },
+    "compare": {
+      "summary": {
+        "changed_count": 27,
+        "affected_count": 653,
+        "changed_files": 35,
+        "risk_level": "critical"
+      },
+      "partial": null,
+      "truncated": null,
+      "error": null
+    }
+  },
+  "integrated_main": "f0e974fd5237c539bdb7f97cc78366adffbf2f3d",
+  "local_before_main": {
+    "modules": [
       "test_m2_daily_not_sent",
       "test_m2_daily_review_guards",
       "test_m2_daily_price_basis",
@@ -1977,12 +2029,98 @@
     "skipped": 0,
     "seconds": 69.57852249999996
   },
-  "graph": {
+  "incoming_integration": [
+    {
+      "target": "test_m3_candidate_catalog",
+      "exit_code": 0,
+      "elapsed_seconds": 0.3168489999952726,
+      "log": "<worktree>\\.gitnexus\\verification\\incoming-integration-1.log",
+      "report": "<worktree>\\.gitnexus\\verification\\incoming-integration-1.json",
+      "interpreter": "C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\python.exe",
+      "tests": 12,
+      "failures": [],
+      "errors": [],
+      "skipped": [],
+      "seconds": 0.1961513999849558,
+      "successful": true
+    },
+    {
+      "target": "test_m3_signal_identity",
+      "exit_code": 0,
+      "elapsed_seconds": 9.151906799990684,
+      "log": "<worktree>\\.gitnexus\\verification\\incoming-integration-2.log",
+      "report": "<worktree>\\.gitnexus\\verification\\incoming-integration-2.json",
+      "interpreter": "C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\python.exe",
+      "tests": 5,
+      "failures": [],
+      "errors": [],
+      "skipped": [],
+      "seconds": 9.028765499999281,
+      "successful": true
+    },
+    {
+      "target": "test_u3_strategy_ui",
+      "exit_code": 0,
+      "elapsed_seconds": 3.320236500003375,
+      "log": "<worktree>\\.gitnexus\\verification\\incoming-integration-3.log",
+      "report": "<worktree>\\.gitnexus\\verification\\incoming-integration-3.json",
+      "interpreter": "C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\python.exe",
+      "tests": 16,
+      "failures": [],
+      "errors": [],
+      "skipped": [],
+      "seconds": 3.1477867999929003,
+      "successful": true
+    },
+    {
+      "target": "test_trading_runtime",
+      "exit_code": 0,
+      "elapsed_seconds": 10.243799999996554,
+      "log": "<worktree>\\.gitnexus\\verification\\incoming-integration-4.log",
+      "report": "<worktree>\\.gitnexus\\verification\\incoming-integration-4.json",
+      "interpreter": "C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\python.exe",
+      "tests": 12,
+      "failures": [],
+      "errors": [],
+      "skipped": [],
+      "seconds": 10.106704699981492,
+      "successful": true
+    },
+    {
+      "target": "test_minute_research_host.MinuteHostTests.test_timeout_invalidates_late_refill_and_never_publishes",
+      "exit_code": 0,
+      "elapsed_seconds": 2.5898703999700956,
+      "log": "<worktree>\\.gitnexus\\verification\\incoming-integration-5.log",
+      "report": "<worktree>\\.gitnexus\\verification\\incoming-integration-5.json",
+      "interpreter": "C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\python.exe",
+      "tests": 1,
+      "failures": [],
+      "errors": [],
+      "skipped": [],
+      "seconds": 2.443682099983562,
+      "successful": true
+    },
+    {
+      "target": "test_runtime_context_client_v2.RuntimeContextClientTests.test_three_environments_use_real_ipc_and_never_mix_books_or_implicitly_connect",
+      "exit_code": 0,
+      "elapsed_seconds": 10.347260999958962,
+      "log": "<worktree>\\.gitnexus\\verification\\incoming-integration-6.log",
+      "report": "<worktree>\\.gitnexus\\verification\\incoming-integration-6.json",
+      "interpreter": "C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\python.exe",
+      "tests": 1,
+      "failures": [],
+      "errors": [],
+      "skipped": [],
+      "seconds": 10.180613000004087,
+      "successful": true
+    }
+  ],
+  "graph_after_main": {
     "all": {
       "summary": {
-        "changed_count": 21,
-        "affected_count": 653,
-        "changed_files": 25,
+        "changed_count": 170,
+        "affected_count": 18,
+        "changed_files": 47,
         "risk_level": "critical"
       },
       "partial": null,
@@ -1991,10 +2129,10 @@
     },
     "compare": {
       "summary": {
-        "changed_count": 27,
-        "affected_count": 653,
-        "changed_files": 35,
-        "risk_level": "critical"
+        "changed_count": 215,
+        "affected_count": 14,
+        "changed_files": 27,
+        "risk_level": "high"
       },
       "partial": null,
       "truncated": null,
