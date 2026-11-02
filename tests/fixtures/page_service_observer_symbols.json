@@ -1,0 +1,2337 @@
+{
+  "source_commit": "63879689a290aab800f0d3681f4a36ff73ca6018",
+  "locations": [
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 243,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "window.paper_page"
+      },
+      "symbol": "window_capture",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 261,
+        "name": "_refresh_analysis_saved",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "symbol": "window_capture",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 261,
+        "name": "_refresh_recovery_controls",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "symbol": "window_capture",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 261,
+        "name": "_refresh_walk_forward_references",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "symbol": "window_capture",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 261,
+        "name": "inspect_candidate",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "symbol": "window_capture",
+      "occurrence": 5
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 261,
+        "name": "load_market_cache",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "symbol": "window_capture",
+      "occurrence": 6
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 261,
+        "name": "show_result",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "symbol": "window_capture",
+      "occurrence": 7
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 277,
+        "name": "_refresh_analysis_saved",
+        "kind": "patch.object",
+        "receiver": "coordinator"
+      },
+      "symbol": "window_capture",
+      "occurrence": 8
+    },
+    {
+      "original": {
+        "file": "tests/r7_characterization.py",
+        "line": 282,
+        "name": "load_dataset",
+        "kind": "patch.dict",
+        "receiver": "window.page_host.callbacks"
+      },
+      "symbol": "window_capture",
+      "occurrence": 9
+    },
+    {
+      "original": {
+        "file": "tests/test_analysis_recovery_ui.py",
+        "line": 144,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "AnalysisRecoveryUITests.test_refresh_completion_and_freeze_keep_conflicts_before_backup_claim",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_b11_privacy.py",
+        "line": 140,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PrivacyWindowTests.test_all_page_tables_immediate_roundtrip_roles_and_storage",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_backup_inspection_f5.py",
+        "line": 223,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "PanelTests.test_restore_job_payload_consent_reset_and_no_preview_dispatch",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_chart_popout_c10.py",
+        "line": 94,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "d"
+      },
+      "symbol": "PopoutTests.test_exact_trace_binding_and_stale_error_status",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_chart_popout_c10.py",
+        "line": 157,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "d"
+      },
+      "symbol": "PopoutTests.test_shared_source_all_updates_and_local_view",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 47,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "symbol": "PaletteTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 51,
+        "name": "cancel_job",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "symbol": "PaletteTests.setUp",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 53,
+        "name": "_safe",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "symbol": "PaletteTests.setUp",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 167,
+        "name": "read_logs",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "PaletteTests.test_focus_actions_preserve_existing_confirm_and_start_nothing",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 167,
+        "name": "refresh_market",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "PaletteTests.test_focus_actions_preserve_existing_confirm_and_start_nothing",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 167,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "PaletteTests.test_focus_actions_preserve_existing_confirm_and_start_nothing",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 254,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "PaletteTests.test_real_controls_consent_providers_and_settings_stay_confined",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_command_palette_c7.py",
+        "line": 255,
+        "name": "_confirm_button",
+        "kind": "patch.object",
+        "receiver": "window.widgets_page"
+      },
+      "symbol": "PaletteTests.test_real_controls_consent_providers_and_settings_stay_confined",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_compare_equity_f2.py",
+        "line": 121,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "symbol": "OverlayTests.test_lazy_selection_and_refresh_are_display_only",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_compare_equity_f2.py",
+        "line": 129,
+        "name": "load_result",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "OverlayTests.test_lazy_selection_and_refresh_are_display_only",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_compare_table.py",
+        "line": 111,
+        "name": "load_result",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "CompareHostTests.test_saved_reports_refresh_checkboxes_dispatch_original_payload",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_compare_table.py",
+        "line": 111,
+        "name": "show_result",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "CompareHostTests.test_saved_reports_refresh_checkboxes_dispatch_original_payload",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_compare_table.py",
+        "line": 116,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "CompareHostTests.test_saved_reports_refresh_checkboxes_dispatch_original_payload",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_daily_signal_data.py",
+        "line": 28,
+        "name": "days",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "DailySignalDataTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_daily_signal_data.py",
+        "line": 30,
+        "name": "bars",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "DailySignalDataTests.setUp",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_daily_signal_data.py",
+        "line": 34,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "DailySignalDataTests.setUp",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 100,
+        "name": "read_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "GapProjectionTests.test_import_rejected_before_store_accepted_write_preserved",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 103,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "GapProjectionTests.test_import_rejected_before_store_accepted_write_preserved",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 111,
+        "name": "read_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "GapProjectionTests.test_import_rejected_before_store_accepted_write_preserved",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_data_gaps_f1.py",
+        "line": 114,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "GapProjectionTests.test_import_rejected_before_store_accepted_write_preserved",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 431,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_one_call_and_existing_account_usage_consent_both_required",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 474,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_completed_or_unknown_receipt_never_enables_resubmit",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 485,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_cached_read_clears_prior_send_consent_and_does_not_require_account",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 501,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_close_joins_before_local_reconcile_without_new_auth_or_inference",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 502,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_close_joins_before_local_reconcile_without_new_auth_or_inference",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 521,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_primary_login_list_collision_clears_pending_flow_without_auth_dispatch",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 522,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_primary_login_list_collision_clears_pending_flow_without_auth_dispatch",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 524,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_primary_login_list_collision_clears_pending_flow_without_auth_dispatch",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 558,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_auth_waiting_on_analysis_reconcile_fails_explicitly_without_later_dispatch",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 559,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_auth_waiting_on_analysis_reconcile_fails_explicitly_without_later_dispatch",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 561,
+        "name": "_chatgpt_dispatch",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_auth_waiting_on_analysis_reconcile_fails_explicitly_without_later_dispatch",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis.py",
+        "line": 587,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "AnalysisWidgetTests.test_cancel_terminal_queues_only_local_reconcile_and_marks_usage_unknown",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 188,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_checkpoint_selection_clears_stale_findings_and_only_explains",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 219,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_return_to_ordinary_entry_uses_only_strict_saved_read",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 232,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_refresh_reclassifies_projection_without_reading_it",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 251,
+        "name": "saved_analysis_entries",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_discovery_error_is_visible_without_startup_or_worker_failure",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 252,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_discovery_error_is_visible_without_startup_or_worker_failure",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 274,
+        "name": "analysis_record_text",
+        "kind": "patch",
+        "receiver": "desktop_app.features.analysis.presenter"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_async_result_selects_its_own_projection_after_checkpoint_selection",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 275,
+        "name": "record_event",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_async_result_selects_its_own_projection_after_checkpoint_selection",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 293,
+        "name": "analysis_record_text",
+        "kind": "patch",
+        "receiver": "desktop_app.features.analysis.presenter"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_async_result_does_not_paint_completed_findings_over_checkpoint",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_analysis_discovery.py",
+        "line": 294,
+        "name": "record_event",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "SavedAnalysisCheckpointWidgetTests.test_async_result_does_not_paint_completed_findings_over_checkpoint",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_automatic_backup.py",
+        "line": 34,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "w"
+      },
+      "symbol": "AutomaticBackupPanelTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_automatic_backup.py",
+        "line": 93,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "self.window"
+      },
+      "symbol": "AutomaticBackupPanelTests.test_launch_failure_is_visible_and_not_retried",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 137,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_switch_requires_actual_stop_join_before_dispatch",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 138,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_switch_requires_actual_stop_join_before_dispatch",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 139,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_switch_requires_actual_stop_join_before_dispatch",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 147,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_failed_join_never_dispatches_switch",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 147,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_failed_join_never_dispatches_switch",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 178,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_unauthorized_plan_never_reaches_campaign_worker",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 310,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_sleep_freeze_clears_transient_authorization_and_consent",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 325,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_shutdown_clears_transient_authorization",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 432,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_close_runs_local_reconciliation_from_immutable_launch",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_chatgpt_integration.py",
+        "line": 443,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ChatGPTHostTests.test_repeated_campaign_click_cannot_relabel_running_subscription",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_expiries.py",
+        "line": 213,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "DesktopExpiryTests.test_normal_window_sends_same_expiries_to_backtest_and_campaign",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 40,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "MarketHostTests.test_explicit_refresh_consent_and_busy_guard",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 43,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "MarketHostTests.test_explicit_refresh_consent_and_busy_guard",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_market_integration.py",
+        "line": 99,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "MarketHostTests.test_normal_backtest_uses_typed_inputs_without_json",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 160,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PageInteractionTests.test_page_buttons_dispatch_through_host_and_preserve_consent",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 172,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "PageInteractionTests.test_page_buttons_dispatch_through_host_and_preserve_consent",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 202,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PageInteractionTests.test_strategy_and_backtest_dispatch_and_shared_state",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 227,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "PageInteractionTests.test_compare_and_backup_buttons_use_host_and_keep_restore_consent",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 242,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "PageInteractionTests.test_paper_consent_and_policy_payload_stay_fail_closed",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 265,
+        "name": "_quiesce_and_recover",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PageInteractionTests.test_settings_signals_and_analysis_state_cross_page_boundaries",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 266,
+        "name": "poll_jobs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PageInteractionTests.test_settings_signals_and_analysis_state_cross_page_boundaries",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 280,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PageInteractionTests.test_result_dispatch_and_public_renderer_patch_remain_live",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 281,
+        "name": "notify_local",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PageInteractionTests.test_result_dispatch_and_public_renderer_patch_remain_live",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 288,
+        "name": "saved_analysis_entries",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "PageInteractionTests.test_result_dispatch_and_public_renderer_patch_remain_live",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 300,
+        "name": "_analysis_request",
+        "kind": "patch.object",
+        "receiver": "w.compare_page"
+      },
+      "symbol": "PageInteractionTests.test_analysis_preview_event_and_connection_error_share_shell_state",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 302,
+        "name": "analysis_preview_text",
+        "kind": "patch",
+        "receiver": "desktop_app.features.analysis.presenter"
+      },
+      "symbol": "PageInteractionTests.test_analysis_preview_event_and_connection_error_share_shell_state",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_pages.py",
+        "line": 308,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "PageInteractionTests.test_analysis_preview_event_and_connection_error_share_shell_state",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_paper_exports.py",
+        "line": 118,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "PaperReplayExportTests._export_failure",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_paper_exports.py",
+        "line": 168,
+        "name": "write_json",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "PaperReplayExportTests._replay_failure",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui.py",
+        "line": 306,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "NativeDesktopTests.test_removed_provider_selection_fails_before_worker_or_network",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 147,
+        "name": "load_result",
+        "kind": "patch",
+        "receiver": "quantlab.reporting"
+      },
+      "symbol": "PresentationTests.test_result_selector_names_collision_ids_and_tooltips",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 148,
+        "name": "show_result",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "PresentationTests.test_result_selector_names_collision_ids_and_tooltips",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_ui_polish_b.py",
+        "line": 149,
+        "name": "result_name",
+        "kind": "patch",
+        "receiver": "desktop_app.components.formatting"
+      },
+      "symbol": "PresentationTests.test_result_selector_names_collision_ids_and_tooltips",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 346,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "WalkForwardHostTests.test_stale_preview_response_and_source_replace_cannot_enable_start",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_desktop_walk_forward.py",
+        "line": 364,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "WalkForwardHostTests.test_no_start_without_explicit_once_only_consent",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import.py",
+        "line": 29,
+        "name": "contract",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "DownloadAutoImportTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import.py",
+        "line": 131,
+        "name": "write_json",
+        "kind": "patch.object",
+        "receiver": "workflow"
+      },
+      "symbol": "DownloadAutoImportTests.test_failed_pair_publication_restores_exact_previous_bytes_and_keeps_backup",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import_ui.py",
+        "line": 60,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "DownloadAutoImportUiTests.test_default_requires_explicit_settings_and_one_call_consent",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_download_auto_import_ui.py",
+        "line": 92,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "DownloadAutoImportUiTests.test_mode_change_invalidates_consent_and_download_only_still_works",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_header_c1.py",
+        "line": 100,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "HeaderTests.test_existing_quote_state_boundary_cache_future_and_dataset",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_history_sync.py",
+        "line": 243,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self.session"
+      },
+      "symbol": "HistorySyncTests.test_remove_watch_during_inflight_query_cancels_remaining_chunks_and_publication",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m1_market_runtime.py",
+        "line": 48,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self.bundle.market_terminal"
+      },
+      "symbol": "MarketRuntimeTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m2_automatic.py",
+        "line": 44,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "MemoryEngine.__init__",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m2_automatic.py",
+        "line": 541,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self.engine"
+      },
+      "symbol": "AutomaticApplicationTests.test_history_does_not_mix_daily_or_forming_bars_into_five_minute_signals",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m2_automatic_engine.py",
+        "line": 60,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self.engine"
+      },
+      "symbol": "AutomaticEngineTests.configure",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m2_automatic_engine.py",
+        "line": 524,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self.engine"
+      },
+      "symbol": "AutomaticEngineTests.test_stock_last_minute_uses_stock_calendar_beyond_narrow_manual_calendar",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m2_daily_recovery.py",
+        "line": 60,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self.engine"
+      },
+      "symbol": "DailyRecoveryTests.test_pure_daily_discard_is_journaled_once_retains_cursor_pause_and_all_financial_facts",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m2_daily_runtime.py",
+        "line": 647,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "engine"
+      },
+      "symbol": "BuiltDailyRuntimeTests.test_build_runtime_shared_native_fop_callback_reaches_daily_save_without_marketwatch_tmf",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m3_candidate_intake.py",
+        "line": 65,
+        "name": "bars",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "IntakeTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_m3_prefix_consistency.py",
+        "line": 108,
+        "name": "bars",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "ExecutorTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_alerts_runtime.py",
+        "line": 75,
+        "name": "bars",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "FakeMarket.__init__",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_alerts_runtime.py",
+        "line": 77,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "FakeMarket.__init__",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_market_alerts_runtime.py",
+        "line": 113,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "MarketAlertsRuntimeTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_alerts_runtime.py",
+        "line": 203,
+        "name": "bars",
+        "kind": "assignment",
+        "receiver": "self.market"
+      },
+      "symbol": "MarketAlertsRuntimeTests.test_prior_day_range_comes_from_official_cached_bars",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_alerts_runtime.py",
+        "line": 265,
+        "name": "bars",
+        "kind": "assignment",
+        "receiver": "self.market"
+      },
+      "symbol": "MarketAlertsRuntimeTests.test_backfill_completion_without_any_ticks_invalidates_and_reseeds_history",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_empty_ui.py",
+        "line": 34,
+        "name": "bind_result_layers",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "MarketEmptyTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 175,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "HistoryHostTests.test_dialog_cancel_does_not_start_worker_and_busy_guard",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 201,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "HistoryHostTests.test_accepted_typed_dialog_schedules_exact_worker",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_history_ui.py",
+        "line": 211,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "HistoryHostTests.test_dialog_accept_during_close_never_starts_work",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_market_terminal_service.py",
+        "line": 66,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "TerminalServiceTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_minute_research_history.py",
+        "line": 55,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "MinuteCacheTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_minute_research_host.py",
+        "line": 35,
+        "name": "contract",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "GeneratedSDK.__init__",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_c8.py",
+        "line": 133,
+        "name": "_notification_link",
+        "kind": "assignment",
+        "receiver": "center.host"
+      },
+      "symbol": "NotificationTests.test_keyboard_center_badge_navigation_dismiss_clear",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 186,
+        "name": "_analysis_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "NotificationAuditTests.poll_host",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 186,
+        "name": "_chatgpt_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "NotificationAuditTests.poll_host",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 186,
+        "name": "_walk_forward_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "NotificationAuditTests.poll_host",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 188,
+        "name": "record_event",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "NotificationAuditTests.poll_host",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 191,
+        "name": "notify_local",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "NotificationAuditTests.poll_host",
+      "occurrence": 5
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 192,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "NotificationAuditTests.poll_host",
+      "occurrence": 6
+    },
+    {
+      "original": {
+        "file": "tests/test_notifications_f4.py",
+        "line": 230,
+        "name": "_notification_link",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "NotificationAuditTests.test_other_current_page_navigation_is_read_only",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_admission.py",
+        "line": 46,
+        "name": "days",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "OfficialDailyAdmissionTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_admission.py",
+        "line": 59,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "OfficialDailyAdmissionTests.setUp",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_admission.py",
+        "line": 249,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self.source"
+      },
+      "symbol": "OfficialDailyAdmissionTests.test_snapshot_view_reads_cache_only_and_loses_verified_on_source_or_evidence_swap",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_research.py",
+        "line": 33,
+        "name": "days",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "OfficialDailyResearchTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_research.py",
+        "line": 42,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "self"
+      },
+      "symbol": "OfficialDailyResearchTests.setUp",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 147,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_requested_through_bar_is_required_and_empty_range_is_not_invented",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 152,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_requested_through_bar_is_required_and_empty_range_is_not_invented",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 210,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_empty_events_need_actual_complete_event_response_not_just_daily_coverage",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 216,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_empty_event_response_for_only_half_range_is_insufficient",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 222,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_empty_event_response_cannot_skip_beginning_of_history",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 240,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_empty_event_response_ranges_can_cover_by_union",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 245,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_payload_hash_and_immutable_payload_lookup_are_both_required",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 269,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_supported_rwd_daily_alias_preserves_exact_public_payload_identity",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_official_daily_source.py",
+        "line": 308,
+        "name": "batch",
+        "kind": "assignment",
+        "receiver": "self.store"
+      },
+      "symbol": "OfficialDailySourceTests.test_recorded_public_action_for_another_date_cannot_prove_empty_events_for_requested_range",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_onboarding_c2.py",
+        "line": 120,
+        "name": "result_choice",
+        "kind": "assignment",
+        "receiver": "self.shell"
+      },
+      "symbol": "CompactOnboardingTests.test_completed_tuple_from_existing_filesystem_and_controls",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 96,
+        "name": "_safe",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "PageIdentityTests.test_real_window_default_and_reordered_dispatch",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 97,
+        "name": "read_logs",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "PageIdentityTests.test_real_window_default_and_reordered_dispatch",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 98,
+        "name": "refresh_market",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "PageIdentityTests.test_real_window_default_and_reordered_dispatch",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_page_identity_r4.py",
+        "line": 99,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "PageIdentityTests.test_real_window_default_and_reordered_dispatch",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 114,
+        "name": "_safe",
+        "kind": "assignment",
+        "receiver": "typed"
+      },
+      "symbol": "MockEquivalenceTests.test_every_service_has_identical_late_target_arguments_and_result",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 262,
+        "name": "_safe",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "RealWindowTests.test_five_post_mount_patch_paths_from_page_code",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 265,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "RealWindowTests.test_five_post_mount_patch_paths_from_page_code",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 268,
+        "name": "freeze_paper",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "RealWindowTests.test_five_post_mount_patch_paths_from_page_code",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 271,
+        "name": "_button",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "RealWindowTests.test_five_post_mount_patch_paths_from_page_code",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/test_page_services_r1.py",
+        "line": 274,
+        "name": "_busy",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "RealWindowTests.test_five_post_mount_patch_paths_from_page_code",
+      "occurrence": 5
+    },
+    {
+      "original": {
+        "file": "tests/test_panel_card_c3.py",
+        "line": 107,
+        "name": "_advanced",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "PanelCardTests.test_pages_build_without_show_using_namespace_hosts_and_keep_existing_names",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_panel_card_c3.py",
+        "line": 107,
+        "name": "_button",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "PanelCardTests.test_pages_build_without_show_using_namespace_hosts_and_keep_existing_names",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_panel_card_c3.py",
+        "line": 107,
+        "name": "_remember",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "PanelCardTests.test_pages_build_without_show_using_namespace_hosts_and_keep_existing_names",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_panel_card_c3.py",
+        "line": 107,
+        "name": "_text",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "PanelCardTests.test_pages_build_without_show_using_namespace_hosts_and_keep_existing_names",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 116,
+        "name": "_show_account",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "symbol": "CancelAllTests.test_stop_confirmation_keeps_real_orders_and_never_requests_cancellation",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 117,
+        "name": "_remember_stop",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "symbol": "CancelAllTests.test_stop_confirmation_keeps_real_orders_and_never_requests_cancellation",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_cancel_all_a2.py",
+        "line": 239,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "symbol": "CancelAllUiTests.test_real_button_has_danger_role_and_click_uses_confirmation",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_a1.py",
+        "line": 230,
+        "name": "_dataset",
+        "kind": "patch",
+        "receiver": "quantlab.research_core.adapters.ui_repository.WorkerRepository"
+      },
+      "symbol": "StopResumeTests.test_replay_handler_rejects_locked_batch_before_cursor_or_fills_change",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 31,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "StopTests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 67,
+        "name": "freeze_paper",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "StopTests.test_real_freeze_then_confirm_locks_and_preserves_quantities",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 68,
+        "name": "_show_account",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "StopTests.test_real_freeze_then_confirm_locks_and_preserves_quantities",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 69,
+        "name": "_remember_stop",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "StopTests.test_real_freeze_then_confirm_locks_and_preserves_quantities",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_stop_u6.py",
+        "line": 171,
+        "name": "freeze_paper",
+        "kind": "patch.object",
+        "receiver": "window.paper_page"
+      },
+      "symbol": "StopTests.test_host_callback_routes_to_same_confirmation_without_consent",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_paper_tabs_c6.py",
+        "line": 213,
+        "name": "paper_job",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "PaperTabWidgetTests.test_events_plain_text_read_only_and_new_elements_have_no_actions",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_preferences_u8.py",
+        "line": 109,
+        "name": "strategy_form",
+        "kind": "assignment",
+        "receiver": "window.page_state"
+      },
+      "symbol": "WidgetTests.shell",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_preferences_u8.py",
+        "line": 153,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "page.host.state"
+      },
+      "symbol": "WidgetTests.test_sidebar_width_and_market_splitter_round_trip",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_preferences_u8.py",
+        "line": 207,
+        "name": "read_logs",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "symbol": "WidgetTests.test_existing_settings_round_trip_and_corrupt_defaults",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_preferences_u8.py",
+        "line": 208,
+        "name": "market",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "symbol": "WidgetTests.test_existing_settings_round_trip_and_corrupt_defaults",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_primary_sign_in_host.py",
+        "line": 71,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "PrimarySignInHostTests.test_deferred_close_blocks_new_signin_and_browser_until_reconciliation",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_product_ai_boundary.py",
+        "line": 98,
+        "name": "run_campaign",
+        "kind": "patch.object",
+        "receiver": "validate_real_ai"
+      },
+      "symbol": "ProductAIBoundaryTests.test_historical_validator_command_is_inert_even_with_arguments",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_quick_start_u3.py",
+        "line": 134,
+        "name": "result_choice",
+        "kind": "assignment",
+        "receiver": "self.host"
+      },
+      "symbol": "WidgetTests.test_real_hooks_sequence_results_and_privacy_safe_notice",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_quick_start_u3.py",
+        "line": 205,
+        "name": "result_choice",
+        "kind": "assignment",
+        "receiver": "self.host"
+      },
+      "symbol": "WidgetTests.test_failed_result_presentation_stops_before_navigation",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_r7_characterization.py",
+        "line": 75,
+        "name": "_busy",
+        "kind": "setattr",
+        "receiver": "shell"
+      },
+      "symbol": "CharacterizationTests.test_mount_callbacks_dispatch_to_patched_shell",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_r7_characterization.py",
+        "line": 75,
+        "name": "_safe",
+        "kind": "setattr",
+        "receiver": "shell"
+      },
+      "symbol": "CharacterizationTests.test_mount_callbacks_dispatch_to_patched_shell",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 206,
+        "name": "_dataset",
+        "kind": "patch",
+        "receiver": "quantlab.research_core.adapters.ui_repository.WorkerRepository"
+      },
+      "symbol": "ReplayB13Tests.test_worker_adapter_preserves_original_smoke_and_short_controls",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 237,
+        "name": "start_job",
+        "kind": "assignment",
+        "receiver": "self.page"
+      },
+      "symbol": "ReplayUITests.setUp",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 331,
+        "name": "paper_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "symbol": "ReplayUITests.test_real_page_defaults_to_original_worker_and_shows_session_speed",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_replay_b13.py",
+        "line": 339,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "symbol": "ReplayUITests.test_real_page_defaults_to_original_worker_and_shows_session_speed",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_report_promotion.py",
+        "line": 46,
+        "name": "run_backtest",
+        "kind": "patch.object",
+        "receiver": "backtest"
+      },
+      "symbol": "ReportPromotionTests.test_transient_and_persistent_directory_denial_preserve_computation_and_activation",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_ruff_config.py",
+        "line": 16,
+        "name": "config",
+        "kind": "assignment",
+        "receiver": "cls"
+      },
+      "symbol": "RuffConfigTests.setUpClass",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_shortcuts.py",
+        "line": 24,
+        "name": "read_logs",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ShortcutTests.test_refresh_dispatch_and_idle_cancel",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_shortcuts.py",
+        "line": 24,
+        "name": "refresh_market",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ShortcutTests.test_refresh_dispatch_and_idle_cancel",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_shortcuts.py",
+        "line": 24,
+        "name": "refresh_views",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ShortcutTests.test_refresh_dispatch_and_idle_cancel",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_shortcuts.py",
+        "line": 27,
+        "name": "cancel_job",
+        "kind": "patch.object",
+        "receiver": "w"
+      },
+      "symbol": "ShortcutTests.test_refresh_dispatch_and_idle_cancel",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_expiry_inputs.py",
+        "line": 399,
+        "name": "history",
+        "kind": "assignment",
+        "receiver": "host"
+      },
+      "symbol": "ExpiryInputTests.test_market_page_demo_visible_without_calendar_and_clears_for_real_or_missing",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 189,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "OnboardingTests.test_import_display_names_preserve_old_requests_and_hashes",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 209,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "OnboardingTests.test_import_blank_contract_never_infers_a_default",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_onboarding.py",
+        "line": 219,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "w.page_host"
+      },
+      "symbol": "OnboardingTests.test_import_blank_contract_never_infers_a_default",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 184,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "symbol": "TaipeiInputTests.test_history_day_night_payload_strings_unchanged",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_t9_timeinput.py",
+        "line": 223,
+        "name": "end_date",
+        "kind": "setattr",
+        "receiver": "old"
+      },
+      "symbol": "TaipeiInputTests.test_history_required_midnight_and_previous_utc_day",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_table_readability_c9.py",
+        "line": 168,
+        "name": "_advanced",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "TableReadabilityTests.test_paper_existing_tabs_count_rows_with_bare_host",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_table_readability_c9.py",
+        "line": 168,
+        "name": "_button",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "TableReadabilityTests.test_paper_existing_tabs_count_rows_with_bare_host",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_table_readability_c9.py",
+        "line": 168,
+        "name": "_remember",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "TableReadabilityTests.test_paper_existing_tabs_count_rows_with_bare_host",
+      "occurrence": 3
+    },
+    {
+      "original": {
+        "file": "tests/test_table_readability_c9.py",
+        "line": 168,
+        "name": "_text",
+        "kind": "setattr",
+        "receiver": "host"
+      },
+      "symbol": "TableReadabilityTests.test_paper_existing_tabs_count_rows_with_bare_host",
+      "occurrence": 4
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 127,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "DataResultWorkflowTests.test_import_keeps_required_calendar_and_download_one_call_consent",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 153,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "DataResultWorkflowTests.test_normalized_import_does_not_apply_an_unseen_contract_filter",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 187,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "self.window"
+      },
+      "symbol": "DataResultWorkflowTests.test_common_cost_controls_remain_authoritative_and_summary_tracks_inputs",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_data_results.py",
+        "line": 284,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "window"
+      },
+      "symbol": "DataResultWorkflowTests.test_offline_import_research_adopt_backtest_compare_replay_stop_and_reopen",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_paper_settings.py",
+        "line": 137,
+        "name": "backup",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "symbol": "PaperSettingsRedesignTests.test_backup_destination_cancel_never_schedules_a_job",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_ui_redesign_paper_settings.py",
+        "line": 141,
+        "name": "backup",
+        "kind": "patch.object",
+        "receiver": "page"
+      },
+      "symbol": "PaperSettingsRedesignTests.test_backup_destination_cancel_never_schedules_a_job",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_wf_guidance_f3.py",
+        "line": 83,
+        "name": "walk_forward_results",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "symbol": "GuidanceTests.test_failed_result_without_code_uses_generic_hint",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_wf_guidance_f3.py",
+        "line": 85,
+        "name": "_refresh_walk_forward_references",
+        "kind": "assignment",
+        "receiver": "page"
+      },
+      "symbol": "GuidanceTests.test_failed_result_without_code_uses_generic_hint",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_wf_wizard.py",
+        "line": 37,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "page.host"
+      },
+      "symbol": "WizardTests.preview",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_wf_wizard.py",
+        "line": 57,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "wizard.page.host"
+      },
+      "symbol": "WizardTests.test_default_preview_takes_three_control_operations",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_wf_wizard.py",
+        "line": 173,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "wizard.page.host"
+      },
+      "symbol": "WizardTests.test_saved_read_remains_available_without_new_preview",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_wf_wizard.py",
+        "line": 194,
+        "name": "start_job",
+        "kind": "patch.object",
+        "receiver": "wizard.page.host"
+      },
+      "symbol": "WizardTests.test_reopening_consumed_plan_never_retries_oos",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 201,
+        "name": "_paper",
+        "kind": "patch.object",
+        "receiver": "paper_operations"
+      },
+      "symbol": "WorkspaceWALGuardTests.test_real_ui_adapter_guards_before_replay_constructor",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 492,
+        "name": "_dataset",
+        "kind": "assignment",
+        "receiver": "fake_ui"
+      },
+      "symbol": "WalkForwardWorkspaceGuardTests.test_direct_adapter_guards_only_new_journal_before_core_call",
+      "occurrence": 1
+    },
+    {
+      "original": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 501,
+        "name": "preview_walk_forward",
+        "kind": "patch.object",
+        "receiver": "adapter"
+      },
+      "symbol": "WalkForwardWorkspaceGuardTests.test_direct_adapter_guards_only_new_journal_before_core_call",
+      "occurrence": 2
+    },
+    {
+      "original": {
+        "file": "tests/test_workspace_wal_guard.py",
+        "line": 502,
+        "name": "run_walk_forward",
+        "kind": "patch.object",
+        "receiver": "adapter"
+      },
+      "symbol": "WalkForwardWorkspaceGuardTests.test_direct_adapter_guards_only_new_journal_before_core_call",
+      "occurrence": 3
+    }
+  ]
+}

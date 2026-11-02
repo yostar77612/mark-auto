@@ -1,6 +1,7 @@
 """AST-only R1 inventory; run as a module to regenerate the reviewed fixture."""
 
 import ast
+from collections import Counter
 import json
 from pathlib import Path
 from tests.layered_source_fixtures import page_sources, project_page_service_lines
@@ -247,4 +248,58 @@ def project_e6_service_refs(result):
     assert alias['patch_sensitive'] is False
     alias['patch_sensitive'] = True
     result['patch_points'].sort(key=lambda p: (p['file'], p['line'], p['name'], p['kind']))
+    return result
+
+
+def symbolic_patch_points(points):
+    """Replace AST positions with qualified owners and observer order within each owner."""
+    scopes, occurrences, result = {}, Counter(), []
+    for point in points:
+        path = point['file']
+        if path not in scopes:
+            parsed = tree(path)
+            parents = {child: parent for parent in ast.walk(parsed) for child in ast.iter_child_nodes(parent)}
+            scopes[path] = []
+            for node in ast.walk(parsed):
+                if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+                    current, names = node, []
+                    while current is not None:
+                        if isinstance(current, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+                            names.append(current.name)
+                        current = parents.get(current)
+                    start = min([node.lineno, *(item.lineno for item in node.decorator_list)])
+                    scopes[path].append((start, node.end_lineno, len(names), '.'.join(reversed(names))))
+        _, symbol = max([(depth, name) for start, stop, depth, name in scopes[path] if start <= point['line'] <= stop] + [(0, '<module>')])
+        key = (path, symbol)
+        occurrences[key] += 1
+        result.append({**{key: value for key, value in point.items() if key != 'line'}, 'symbol': symbol, 'occurrence': occurrences[key]})
+    return sorted(result, key=lambda point: (point['file'], point['symbol'], point['occurrence'], point['name'], point['kind'], point['receiver']))
+
+
+def symbolic_inventory():
+    """Current inventory with stable locators; historical refactor APIs stay unchanged."""
+    result = inventory()
+    result['patch_points'] = symbolic_patch_points(result['patch_points'])
+    return result
+
+
+def reviewed_symbolic_inventory(base, delta):
+    """Replay the frozen history, then apply reviewed symbol-based observer changes."""
+    result = reviewed_inventory(base, delta)
+    locations = json.loads((ROOT / 'tests/fixtures/page_service_observer_symbols.json').read_text(encoding='utf-8'))['locations']
+    assert result['patch_points'] == [item['original'] for item in locations]
+    result['patch_points'] = [
+        {**{key: value for key, value in item['original'].items() if key != 'line'}, 'symbol': item['symbol'], 'occurrence': item['occurrence']}
+        for item in locations
+    ]
+    for change in delta['symbol_aliases']:
+        old, new = change['original'], change['current']
+        assert {key: value for key, value in old.items() if key != 'patch_sensitive'} == {key: value for key, value in new.items() if key != 'patch_sensitive'}
+        result['aliases'][result['aliases'].index(old)] = new
+    for item in delta['symbol_patch_points']['removed']:
+        for _ in range(item['count']):
+            result['patch_points'].remove(item['row'])
+    for item in delta['symbol_patch_points']['added']:
+        result['patch_points'].extend([item['row']] * item['count'])
+    result['patch_points'].sort(key=lambda point: (point['file'], point['symbol'], point['occurrence'], point['name'], point['kind'], point['receiver']))
     return result

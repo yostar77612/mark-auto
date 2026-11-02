@@ -30,7 +30,14 @@ from quantlab.core import ValidationError
 from quantlab.research_core.adapters.workspace_store import AppPaths
 from desktop_app.research_bootstrap import create_job_manager
 from quantlab.research_core.adapters.settings_store import SettingsStore
-from tests.page_services_inventory import ROOT, FIXTURE, callback_reads, inventory, reviewed_inventory, tree
+from tests.page_services_inventory import (
+    ROOT,
+    FIXTURE,
+    callback_reads,
+    symbolic_inventory as inventory,
+    reviewed_symbolic_inventory as reviewed_inventory,
+    tree,
+)
 from tests.test_t9_onboarding import sandbox_ui
 from tests.layered_source_fixtures import page_sources
 
@@ -42,6 +49,7 @@ NAMES = [entry['name'] for entry in SERVICES]
 class InventoryTests(unittest.TestCase):
     def test_complete_inventory_regenerates_exactly(self):
         delta = json.loads((ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))
+        delta['inventory'].update(json.loads((ROOT / 'tests/fixtures/page_service_observer_delta.json').read_text(encoding='utf-8'))['inventory'])
         self.assertEqual(inventory(), reviewed_inventory(BASE, delta['inventory']))
         self.assertEqual(len(NAMES), len(set(NAMES)))
         self.assertEqual(sum(s['origin'] == 'mount' for s in SERVICES), 66)
