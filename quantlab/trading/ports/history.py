@@ -21,8 +21,13 @@ class HistoryUsage:
         integer(self.limit_bytes, 'limit bytes', 1)
 
 
+class HistoryTarget(Protocol):
+    @property
+    def instrument_id(self) -> str: ...
+
+
 class HistorySessionPort(Protocol):
-    def history(self, instrument: WatchInstrument, start: datetime, end: datetime) -> tuple[LiveBar, ...]: ...
+    def history(self, instrument: HistoryTarget, start: datetime, end: datetime) -> tuple[LiveBar, ...]: ...
     def usage(self) -> HistoryUsage | None: ...
 
 

@@ -1944,3 +1944,35 @@ Final metadata observes an external merge of #130 at2026-11-01T20:34:42Z
 and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
+
+## M2-7 / explicit TMF minute research boundary (2026-11-02)
+
+Use an additive TRAINING-only minute engine and M1 cache/refill service rather
+than alter daily research, its DTO fields, or strict next-day signal guard.
+A closed-bar event may precede the next minute open at the same timestamp;
+point-in-time tests distinguish that event ordering from reading current close.
+Require complete explicit DAY session grids, not M1 coverage records: successful
+empty SDK responses also mark coverage. Retry after asynchronous M1 refill,
+with cache-revision validation around the bounded owned worker. Do not fabricate
+no-trade bars or silently substitute index prices for a TMF contract.
+
+A narrow read-only adapter accepts the existing resolved TMF contract/session;
+no additional login, credential, CA or order path is added. It uses the established
+watch-history Taipei right-label convention, not the generic mapper's different
+numeric timestamp convention. Native SDK correctness is still a Windows/recorded
+capture verification item. Retain explicit dates/expiry and reject unsupported
+night/roll/stock workflows. M2-9 is an independent unmerged PR, not a dependency
+copied into this branch.
+
+Current execution policies encode holding days, not holding minutes. Reusing the
+daily deployment fingerprint for a minute-duration receipt would certify a
+different execution policy. Preserve the shared result envelope but namespace
+minute fingerprints so unchanged activation fails closed. This is a deliberate
+partial-delivery boundary, not a claim that the specification's complete minute
+activation/UI acceptance is fulfilled. A later integration must bind minute
+holding policy and UI admission without weakening the activation checks.
+
+GitNexus and repository AGENTS.md/CLAUDE.md are unavailable in this checkout.
+Use grep/import graph plus tools/affected_tests.py and both layer gates; existing
+worker dispatch and HistorySync target annotations are the only modified old
+source paths. Baseline inventory regeneration is kept in its own commit.

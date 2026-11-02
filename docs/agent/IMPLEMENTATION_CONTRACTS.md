@@ -7181,3 +7181,51 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `MANUAL_MAX_PRICE_DEVIATION` (1%) beyond the opposite quote is refused with
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
+
+## M2-7 — bounded TMF minute training (2026-11-02)
+
+`MinuteResearchService` reads only the selected explicit TMF delivery contract
+from the M1 SQLite `bars_1m` cache. A TRAINING-only request names first/last
+trading dates and a versioned calendar. Every DAY session minute must be present,
+ordered, final, positive Decimal OHLCV, correctly identified, and closed as of
+admission. Coverage records are not completeness evidence. Missing/sparse data
+queues M1 `HistorySync.request(force=True)` and returns a retry-required error;
+no worker or receipt is produced until a later call revalidates the full grid.
+The existing M1 intraday force restriction may defer repair until after hours.
+No synthetic missing minute or index-price/TMF substitution is permitted.
+
+The read-only `TMFMinuteHistorySession` uses an already-owned authenticated
+context and its authoritative `resolve`/real-month InstrumentBinding. It never
+logs in, activates a CA, submits orders, or chooses a rolling contract. It maps
+SDK right-labelled numeric Taipei wall time to UTC minute starts, rejects
+repeated minutes and post-query disconnects, and excludes non-DAY sessions.
+Unknown quota or >=90% of min(reported limit,500MiB) refuses queries; M1 retains
+its existing <=29-day chunks and <=40 calls/10s. Fake SDK tests exercise this
+binding; native SDK/Windows operation remains unverified.
+
+1m/5m bars are session-aligned; 5m requires all five original minutes and no
+partial closing bucket. A prior completed bar event precedes the equal-clock
+next-open event; signals never receive the current close/high/low/volume. The
+unchanged daily helper retains its strict timestamp ordering. Positions execute
+at the next open with the shared FeeSchedule TMF per-contract fees, tax and
+configurable adverse slippage (default one tick per leg). MINUTES means elapsed
+wall-clock minutes, rounded up to an available next-open event; TRADING_DAYS
+counts explicit calendar days, not weekends. Forced exits override minimum
+holding. Intraday positions close at the configured grid-aligned cutoff (TMF
+default13:35 Asia/Taipei), never open at/after cutoff or cross a session date.
+No same-event close/re-entry; terminal liquidation uses the last known opening,
+not a future close. Expiry day/continuous contracts, night sessions, equities,
+and automatic contract rolling are outside this slice and fail closed.
+
+A job is bounded to10000 original minutes and reuses the owned spawn worker's
+4MiB wire/15-minute wall-clock deadline, cancellation and cleanup. A changed cache revision
+triggers a re-read; changes to the selected training snapshot reject its receipt.
+Unrelated live-instrument writes do not invalidate identical selected data. `MinuteResearchResult` preserves
+the daily ResearchResult envelope and adds the exact settings, raw cache digest,
+calendar/cost versions and RAW_CONTRACT basis. Settings and complete derived
+bars enter the dataset fingerprint. Daily research implementation/results and
+fingerprints are unchanged. Minute receipts use a separate fingerprint namespace
+and therefore cannot accidentally authorize the existing daily-policy deployment
+engine. Desktop selection, durable strategy admission/activation for minute
+holding, and equities after M2-9 are explicitly not wired in this research-only
+slice; do not present it as complete M2-7 product acceptance.

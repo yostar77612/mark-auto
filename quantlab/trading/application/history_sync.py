@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.validation import DomainError, aware, decimal_value, integer
 from quantlab.trading.domain.watch import WatchInstrument
-from quantlab.trading.ports.history import HistorySessionPort, HistoryUsage, KlineStorePort
+from quantlab.trading.ports.history import HistorySessionPort, HistoryTarget, HistoryUsage, KlineStorePort
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 
@@ -37,7 +37,7 @@ class HistorySettings:
 
 @dataclass(frozen=True)
 class HistoryRequest:
-    instrument: WatchInstrument
+    instrument: HistoryTarget
     start: datetime
     end: datetime
     priority: int = 0
@@ -96,7 +96,7 @@ class HistorySync:
         if self._thread is not None:
             self._thread.start()
 
-    def request(self, instrument: WatchInstrument, start: datetime, end: datetime, priority: int = 0, *, force: bool = False) -> None:
+    def request(self, instrument: HistoryTarget, start: datetime, end: datetime, priority: int = 0, *, force: bool = False) -> None:
         start, end = aware(start).astimezone(timezone.utc), aware(end).astimezone(timezone.utc)
         earliest = datetime.combine(self.settings.earliest, time(), _TAIPEI).astimezone(timezone.utc)
         start = max(start, earliest)

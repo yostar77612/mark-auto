@@ -22,6 +22,8 @@ from quantlab.trading.application.contracts import StrategyForm
 from quantlab.trading.application.provenance import ProducerProfile
 from quantlab.trading.application.registry import initialize
 from quantlab.trading.application.research import ResearchResult, research
+from quantlab.trading.application.minute_research import MinuteResearchResult, research_minutes
+from quantlab.trading.domain.minute_research import MinuteResearchSettings
 from quantlab.trading.application.state import StrategyRecord
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.costs import FeeSchedule
@@ -55,6 +57,7 @@ class ResearchJob:
     fees: FeeSchedule
     source_profile: ProducerProfile | None = None
     partition: str = 'TRAINING'
+    minute_settings: MinuteResearchSettings | None = None
 
     def __post_init__(self) -> None:
         if type(self.request_id) is not str or len(self.request_id) != 32 or any(c not in '0123456789abcdef' for c in self.request_id):
@@ -75,6 +78,8 @@ class ResearchJob:
             raise DomainError('validation_failed', 'bounded training bars only')
         if self.source_profile is not None and not isinstance(self.source_profile, ProducerProfile):
             raise DomainError('validation_failed', 'typed producer profile required')
+        if self.minute_settings is not None and not isinstance(self.minute_settings, MinuteResearchSettings):
+            raise DomainError('validation_failed', 'typed minute settings required')
         record = self.strategy
         if not isinstance(record.form, StrategyForm) or not isinstance(record.policy, HoldingPolicy):
             raise DomainError('validation_failed', 'typed strategy form/policy required')
@@ -169,7 +174,10 @@ def _research_child(channel: Connection, diagnostic_fault: str, absolute_deadlin
             os._exit(91)
         if fault is WorkerFault.STALL_AFTER_DECODE:
             sleep(MAX_SECONDS + 1)  # owned diagnostic child is terminated by its parent deadline
-        result = research(job.strategy, job.spec, job.calendar, job.bars, job.fees, source_profile=job.source_profile)
+        if job.minute_settings is None:
+            result = research(job.strategy, job.spec, job.calendar, job.bars, job.fees, source_profile=job.source_profile)
+        else:
+            result = research_minutes(job.strategy, job.spec, job.calendar, job.bars, job.fees, settings=job.minute_settings, source_profile=job.source_profile)
         reply = ResearchReply(request_id, os.getpid(), result)
     except DomainError as exc:
         reply = ResearchReply(request_id, os.getpid(), error_code=exc.code if exc.code in ERROR_CODES else 'research_worker_failed')
@@ -231,6 +239,7 @@ class SpawnResearchRunner:
         *,
         deadline: datetime,
         source_profile: ProducerProfile | None = None,
+        minute_settings: MinuteResearchSettings | None = None,
     ) -> ResearchResult:
         if self._closed.is_set():
             raise DomainError('research_worker_failed', 'training runner is closed')
@@ -245,15 +254,15 @@ class SpawnResearchRunner:
         try:
             if self._closed.is_set():
                 raise DomainError('research_worker_failed', 'training runner closed while queued')
-            return self._run(strategy, spec, calendar, bars, fees, deadline, source_profile, started + seconds)
+            return self._run(strategy, spec, calendar, bars, fees, deadline, source_profile, started + seconds, minute_settings)
         finally:
             self._lock.release()
 
-    def _run(self, strategy, spec, calendar, bars, fees, deadline, source_profile, monotonic_deadline) -> ResearchResult:
+    def _run(self, strategy, spec, calendar, bars, fees, deadline, source_profile, monotonic_deadline, minute_settings=None) -> ResearchResult:
         self.last_child_pid, self.last_cleanup_verified = None, True
         self.last_child_ready = False
         _initialize_types()
-        job = ResearchJob(uuid4().hex, strategy, spec, calendar, bars, fees, source_profile)
+        job = ResearchJob(uuid4().hex, strategy, spec, calendar, bars, fees, source_profile, minute_settings=minute_settings)
         payload = dumps(job).encode('utf-8')
         if monotonic() >= monotonic_deadline or aware(self.clock.now()) >= deadline:
             raise DomainError('research_timeout', 'training deadline expired during admission')
@@ -364,6 +373,15 @@ class SpawnResearchRunner:
             'TRAINING',
         ):
             raise DomainError('research_worker_failed', 'training result scope mismatch')
+        if job.minute_settings is not None and (
+            not isinstance(result, MinuteResearchResult)
+            or result.minute_settings != job.minute_settings
+            or result.calendar_version != job.calendar.version
+            or result.cost_version != job.fees.version
+            or result.price_basis != 'RAW_CONTRACT'
+            or result.producer != 'markauto-minute-training-1'
+        ):
+            raise DomainError('research_worker_failed', 'minute result metadata mismatch')
         if result.observations != len(job.bars) or any(
             not isinstance(value, Decimal) or not value.is_finite() for value in (result.net_pnl, result.costs, result.drawdown)
         ):
