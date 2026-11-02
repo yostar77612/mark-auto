@@ -907,6 +907,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/manual_exit_preview.py` | 113 | presentation | `desktop_app/features/trading/manual_exit_preview.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/features/trading/manual_recovery.py` | 117 | presentation | `desktop_app/features/trading/manual_recovery.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/strings/manual_review.py` | 34 | shared | `desktop_app/strings/manual_review.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
+| `quantlab/trading/application/auto_strategy_views.py` | 57 | application | `quantlab/trading/application/auto_strategy_views.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/candidate_intake.py` | 151 | application | `quantlab/trading/application/candidate_intake.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/promotion_service.py` | 308 | application | `quantlab/trading/application/promotion_service.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/signal_executor.py` | 40 | application | `quantlab/trading/application/signal_executor.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/signal_research.py` | 259 | application | `quantlab/trading/application/signal_research.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
