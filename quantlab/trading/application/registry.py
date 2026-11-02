@@ -7,6 +7,8 @@ from . import (
     automatic_state,
     broker_settings,
     contracts,
+    daily_closes,
+    daily_state,
     lifecycle_models,
     manual_book,
     manual_contracts,
@@ -28,6 +30,8 @@ def initialize() -> None:
     for module in (
         auto_cycle,
         automatic_state,
+        daily_state,
+        daily_closes,
         models,
         calendar,
         costs,

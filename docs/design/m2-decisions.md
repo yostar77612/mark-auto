@@ -2160,3 +2160,30 @@ explicit trusted reconciliation clears the issue; it never resumes, resends or
 releases a reservation. GitNexus reconcile_automatic impact:294 upstream,
 166 processes,20 modules,CRITICAL. Regression tests use the actual fake SDK;
 independent guard mutations accompany the correction.
+
+### M2-3 next round: daily signal contract and execution window
+
+2026-11-02 14:23 Taipei start; estimate150 minutes before R5 reassessment at225.
+Base main e5a5941 includes M2-7. Branch codex/m2-3-daily-next-session; this PR
+must remain open after green CI for Claude review, with no autonomous merge.
+
+Separate close-only observation, durable signal saving and current-price
+execution. Retain the existing evaluation claim and add a dispatch claim per
+action/owned lot. Use the next supplied DAY open inclusive/close exclusive as
+the execution window. A new five-minute rule would expire futures signals
+before mixed stock/futures account proofs can become current at09:00; no such
+new default is introduced. Missing verified dates, changed identities or expired
+signals stop rather than retargeting. No opening-price fill is claimed.
+
+Normal calendar waiting retains the current server-owned run authorization;
+restart, disconnect, user stop and risk faults revoke it. Current-day baseline
+and preflight must be established from actual trusted facts before continuation.
+Closing valuation uses actual bid/ask and FeeSchedule on the existing APP virtual
+ledger basis. Synthetic bars or current PnL never impersonate prior close.
+
+GitNexus full local refresh resolved an initial branch/incremental-index gap.
+AutomaticView is CRITICAL (101 upstream), AppState HIGH (86), AutomaticState
+MEDIUM (98), registry initialize MEDIUM (22). Callers include snapshot/IPC,
+serialization, startup and existing observers. No FTS download/repair is used;
+missing flows are not evidence of safety. Contract/codec smoke passes before
+the first small commit. Generated baselines remain one separate final batch.

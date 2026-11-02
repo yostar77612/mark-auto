@@ -6,6 +6,7 @@ from datetime import datetime
 from quantlab.trading.domain.auto_cycle import EvaluationCursor, ForceExitWindow, force_exit_due, should_evaluate
 from quantlab.trading.application.codec import register
 from quantlab.trading.domain.models import OrderStatus
+from .daily_state import DailyState
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ class AutomaticState:
     resumed_at: datetime | None = None
     evaluations: tuple[EvaluationStatus, ...] = ()
     forced_attempts: tuple[ForcedAttempt, ...] = ()
+    daily: DailyState = DailyState()
 
     @property
     def cursors(self) -> tuple[EvaluationCursor, ...]:
