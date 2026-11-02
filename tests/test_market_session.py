@@ -138,7 +138,9 @@ class MarketSessionTests(unittest.TestCase):
         self.assertIn(('unsubscribe', '2330', 'tick'), self.api.calls)
 
     def test_stock_subscription_never_asks_the_options_only_tick_band_route(self):
-        self.api.contracts.info = lambda base: SimpleNamespace(name='Name ' + base.code, reference=100, code=base.code, security_type='STK', exchange='TSE', region='TW')
+        self.api.contracts.info = lambda base: SimpleNamespace(
+            name='Name ' + base.code, reference=100, code=base.code, security_type='STK', exchange='TSE', region='TW'
+        )
 
         def options_only(info):
             raise AttributeError('StockInfo has no attribute tick_rule')
