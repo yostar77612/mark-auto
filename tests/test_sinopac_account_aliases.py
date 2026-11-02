@@ -95,6 +95,7 @@ class AccountAliasTests(unittest.TestCase):
         self.assertEqual(journal.replay(), ())
 
     def test_write_locked_valid_empty_ledger_is_not_an_emptiness_exemption(self):
+        from contextlib import closing
         from datetime import datetime, timezone
         import sqlite3
         from quantlab.trading.adapters.storage.ledger import Ledger
@@ -104,7 +105,7 @@ class AccountAliasTests(unittest.TestCase):
         journal = Ledger(path, 'manual-sim-trading-v2', datetime.now(timezone.utc))
         journal.close()
         (self.root / KEY_FILE).unlink()
-        with sqlite3.connect(path, isolation_level=None) as writer:
+        with closing(sqlite3.connect(path, isolation_level=None)) as writer:
             writer.execute('BEGIN IMMEDIATE')
             self.assertEqual(writer.execute('SELECT COUNT(*) FROM events').fetchone(), (0,))
             self.assertEqual(writer.execute('SELECT COUNT(*) FROM owner').fetchone(), (0,))
@@ -113,6 +114,8 @@ class AccountAliasTests(unittest.TestCase):
                 self.store.check_selection((accounts[0].alias,))
             self.assertEqual(error.exception.code, 'reconciliation_required')
             writer.rollback()
+        with self.assertRaises(sqlite3.ProgrammingError):
+            writer.execute('SELECT 1')
         with self.assertRaises(DomainError):
             self.store.check_selection((accounts[0].alias,))
 
