@@ -7181,3 +7181,45 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `MANUAL_MAX_PRICE_DEVIATION` (1%) beyond the opposite quote is refused with
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
+
+## M2-4 engine contract (2026-11-02)
+
+- New typed creation: `UiAction.CREATE_TYPED_STRATEGY`, `UiCommand.strategy` and
+  `strategy_parameters: domain.strategy.StrategyParameters`. Existing creation and
+  stored StrategyForm remain compatible. Parameters freeze interval, stop fraction,
+  entry amount, contracts, stock-daytrade opt-in/confirmation and instrument rule.
+- Management: DISABLE_STRATEGY, CLONE_STRATEGY, REVISE_STRATEGY, DELETE_STRATEGY;
+  `target_id` identifies a version. Revision takes strategy + strategy_parameters;
+  clone copies parameters into a fresh, unresearched version of the same strategy.
+- StrategyView appends parameters, recent_signal, margin_source and
+  resolved_instrument_id; existing field positions remain unchanged.
+- New errors: strategy_parameters_invalid, strategy_instrument_restricted,
+  strategy_daytrade_confirmation_required, strategy_allocation_exceeded,
+  strategy_has_fills, strategy_settlement_day, strategy_size_insufficient.
+- No new production order path, desktop source or string changes. M2-7 supplies
+  evidence through the existing ResearchResult contract; FeeSchedule owns costs.
+- First contract commit defines transport only; behavior follows before PR readiness.
+
+M2-4 implementation details:
+- `UiState.strategy_products` lists StrategyProductView(instrument_id, market,
+  holding_kinds, stock_intraday_optional). Default intraday list is TMF only;
+  stock intraday is separately opt-in and requires confirmed eligibility.
+- StrategyView.entry_block_code explains unavailable near-month resolution;
+  resolved_instrument_id is empty while blocked, never a fabricated contract.
+- Missing TMF margin uses a labelled conservative TWD50000 per contract. The
+  same effective specification is used for sizing, commitment and reservations.
+- Stock per-entry amount is an all-in ceiling using FeeSchedule.entry_cash;
+  quantity is rounded down to full1000-share lots including fees/slippage.
+- Disable stops new strategy decisions; existing managed lots keep protective
+  policies. Delete retains a hidden tombstone so version identities never reset.
+- One active strategy per account/instrument remains enforced for M3 ownership.
+  Multiple distinct instruments share the account allocation ceiling; strategy
+  cash/risk commitments remain isolated across all versions of each strategy.
+- New tests: test_m2_strategy_domain.py and test_m2_strategy_management.py. No new
+  product files, no desktop edits and no layer-map changes are required.
+
+M2-4 review clarifications: account allocation limits cover all creation routes
+once an account has any typed version, even a disabled/deleted marker. JSON
+parameter revisions preserve rules but rebuild explicit form/interval metadata
+and invalidate evidence. Margin provenance follows resolved_instrument_id and
+is UNKNOWN when resolution is blocked.

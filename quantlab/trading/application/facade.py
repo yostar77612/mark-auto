@@ -58,6 +58,22 @@ class LocalFacade:
 
     def _execute(self, command: UiCommand) -> str:
         engine, action = self.engine, command.action
+        if action is UiAction.CREATE_TYPED_STRATEGY:
+            if command.strategy is None or command.strategy_parameters is None:
+                raise DomainError('strategy_parameters_invalid')
+            return engine.create_strategy(command.strategy, command.strategy_parameters)
+        if action is UiAction.DISABLE_STRATEGY:
+            engine.disable_strategy(command.target_id)
+            return ''
+        if action is UiAction.CLONE_STRATEGY:
+            return engine.clone_strategy(command.target_id)
+        if action is UiAction.REVISE_STRATEGY:
+            if command.strategy is None or command.strategy_parameters is None:
+                raise DomainError('strategy_parameters_invalid')
+            return engine.clone_strategy(command.target_id, command.strategy, command.strategy_parameters)
+        if action is UiAction.DELETE_STRATEGY:
+            engine.delete_strategy(command.target_id)
+            return ''
         if action is UiAction.CREATE_STRATEGY:
             if command.strategy is None:
                 raise DomainError('validation_failed')

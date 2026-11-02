@@ -72,6 +72,10 @@ def _entry_decision(engine: 'TradingEngine', record: 'StrategyRecord', history: 
     if any(o.key == key or (o.status in ACTIVE and not o.plan.reduce_only and o.plan.strategy_id == record.strategy_id) for o in engine.state.orders):
         return
     spec = engine.catalog.resolve(record.form.instrument_id)
+    if record.parameters is not None and record.parameters.instrument_rule == 'TMF_NEAR':
+        from quantlab.trading.domain.strategy import resolve_tmf_near
+
+        spec = resolve_tmf_near(engine.catalog.instruments, engine.calendar, engine.state.trading_day)
     bars = tuple(b for b in history.get(spec.instrument_id, ()) if b.available_at < engine.clock.now())
     if not bars or not entry_signal(record, bars, engine.clock.now()):
         return
@@ -80,6 +84,13 @@ def _entry_decision(engine: 'TradingEngine', record: 'StrategyRecord', history: 
         raise DomainError('stale_quote', 'no verified decision quote')
     price = quote.ask if record.form.direction is Side.BUY else quote.bid
     sign = 1 if record.form.direction is Side.BUY else -1
+    quantity, stop = spec.lot_size, spec.shift_ticks(price, -10 * sign)
+    if record.parameters is not None:
+        from quantlab.trading.domain.strategy import strategy_quantity
+
+        quantity = strategy_quantity(spec, record.parameters, price, record.form.allocation, engine.fees, record.form.direction).quantity
+        stop = spec.round_price(price * (1 - record.parameters.stop_fraction * sign), up=sign < 0)
+        engine.update_strategy(replace(record, recent_signal='ENTRY'), 'strategy_signal_evaluated')
     now = engine.clock.now()
     plan = OrderPlan(
         f'decision:{record.strategy_id}:{engine.state.trading_day}',
@@ -89,10 +100,10 @@ def _entry_decision(engine: 'TradingEngine', record: 'StrategyRecord', history: 
         record.strategy_id,
         record.version,
         record.form.direction,
-        spec.lot_size,
+        quantity,
         spec.unit,
         price,
-        spec.shift_ticks(price, -10 * sign),
+        stop,
         False,
         now,
         now + timedelta(seconds=30),

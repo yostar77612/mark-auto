@@ -1944,3 +1944,46 @@ Final metadata observes an external merge of #130 at2026-11-01T20:34:42Z
 and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
+
+## M2 second round: engine decisions (2026-11-02)
+
+M2-4 keeps legacy StrategyForm unchanged so historical daily research material
+keeps its identity. New typed creation supplies separate StrategyParameters on
+StrategyRecord. New restrictions apply at that explicit input boundary; a legacy
+strategy is not implicitly converted or enabled. Parameters join the research
+fingerprint only for typed versions. No v1/G3 or cost implementation is changed.
+
+Estimated active engineering time: M2-4 45 min, M2-5 35 min, M2-3 55 min.
+At 1.5x, deliver a tested mergeable slice with remaining scope explicit.
+GitNexus pre-edit: UiAction/UiCommand/StrategyView CRITICAL (49 direct imports),
+StrategyRecord HIGH (15 direct imports); additive defaults preserve old decoding.
+Source confirms facade.snapshot despite graph UNKNOWN. No process membership was
+reported; graph receiver gaps are not a claim of no runtime effect.
+
+M2-4 chooses an all-in stock entry amount (principal plus the existing shared
+FeeSchedule costs/slippage) and a conservative missing-margin fallback of50000
+TWD/TMF contract, labelled BUILTIN_CONSERVATIVE in views/sizing. It is a local
+assumption, not a claimed current broker margin. One active owner per account
+and instrument is retained for future M3 target-position execution. Deletion is
+a hidden tombstone, not erasure of journal/audit identity. Disable does not
+transfer positions or erase their protective policy. UI remains another lane.
+
+M2-4 offline verification: domain22 and management27 new tests pass; domain
+mutants30/30 and management mutants18/18 killed in fresh subprocesses without
+rewriting product source. Existing application29, selected coordinator/LIVE/
+draft/scope/environment/valuation41 tests pass. Broader affected checks and CI
+are still pending; these local results do not claim full acceptance.
+
+M2-4 final local updates: management30 tests pass and20/20 management mutants
+killed, including cumulative losses and a no-profit-expansion allocation ceiling.
+Near-month View DTO tests cover rollover, settlement-day block and missing next
+contract. See m2-4-engine-verification.md/.json for evidence and exact limitations.
+
+M2-4 independent review corrected a mixed legacy/typed allocation bypass, JSON
+rule-preserving parameter revisions, and rollover margin provenance. An account
+adopts the M2 allocation contract persistently when its first typed version is
+created (including later tombstones), so the old creation entry point cannot
+bypass the new account ceiling. Legacy-only ledgers retain their original
+contract. Management36 tests and27/27 mutants pass; existing margin/coordinator
+regression13 pass. JSON interval/holding changes still preserve entry/exit rules
+and clear all research evidence for the new version.
