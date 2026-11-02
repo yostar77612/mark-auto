@@ -30,7 +30,7 @@ class GeneratedResourcesTests(unittest.TestCase):
     def test_actual_tmf_month_limits_and_exchange_margin_not_broker_funds(self):
         now = datetime(2026, 11, 1, tzinfo=timezone.utc)
         raw_account = SimpleNamespace(account_type='F', broker_id='F002000', account_id='1234567', signed=True)
-        accounts = discover_accounts([raw_account], Environment.BROKER_SIMULATION)
+        accounts = discover_accounts([raw_account], Environment.BROKER_SIMULATION, alias_key=b'fake-account-alias-key-for-tests!')
         actual = SimpleNamespace(code='TMFK6', security_type='FUT', exchange='TAIFEX', region='TW', target_code=None)
         info = SimpleNamespace(
             **vars(actual),

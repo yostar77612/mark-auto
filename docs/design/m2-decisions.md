@@ -1944,3 +1944,23 @@ Final metadata observes an external merge of #130 at2026-11-01T20:34:42Z
 and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
+
+## 2026-11-02 — Account alias hardening (independent work B)
+
+- Decision: HMAC a domain-separated legacy identity digest with a random local
+  32-byte key. This permits exact migration without recovering account numbers;
+  both displayed aliases and persisted identity values change together.
+- Key loss/replacement: clear remembered selection and require reselection.
+  Do not match masked labels or account tails. Corrupt/inaccessible key files
+  preserve settings and fail closed. The key never belongs in git or settings.
+- Historical manual ledger: retain every byte and block nonempty selection with
+  the existing reconciliation-required error. Automatically renaming financial
+  journal identities or treating a new alias as an empty account is outside this
+  narrow security fix. This conservative gate needs separate controlled
+  reconciliation for such existing workspaces; no automatic reset is offered.
+- No new UI strings; reuse the existing reconciliation error. Linux fake tests
+  cover migration, key continuity/loss, native alias privacy and retained pending
+  obligations. Windows ACLs, installed-client upgrade and native SDK behavior
+  remain explicitly unverified. GitNexus/root AGENTS.md/CLAUDE.md are absent in
+  this checkout; grep callers and `tools/affected_tests.py` import graph replace
+  impact/detect-changes for this work.

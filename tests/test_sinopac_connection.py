@@ -87,6 +87,30 @@ class UnifiedConnectionTests(unittest.TestCase):
         finally:
             reloaded.close()
 
+    def test_reloaded_alias_key_loss_keeps_market_connected_but_blocks_account_selection(self):
+        from unittest.mock import Mock
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+
+        self.connect()
+        old_alias = self.owner.snapshot().accounts[0].alias
+        self.owner.close()
+        (Path(self.temp.name) / 'manual-trading-v2.sqlite').write_bytes(b'fake-retained-obligations')
+        (Path(self.temp.name) / KEY_FILE).unlink()
+        self.owner = SinopacConnection(Path(self.temp.name), factory=self.factory, secrets=self.secrets, clock=self.clock)
+        self.addCleanup(self.owner.close)
+        self.api.list_positions = Mock(return_value=[])
+        self.connect()
+        alias = self.owner.snapshot().accounts[0].alias
+        self.assertNotEqual(alias, old_alias)
+        self.assertEqual(self.owner.selected, ())
+        receipt = self.owner.execute(self.command(UiAction.SELECT_SINOPAC_ACCOUNTS, sinopac_accounts=(alias,)))
+        self.assertTrue(receipt.accepted)
+        self.owner.worker.join(2)
+        self.assertEqual(self.owner.snapshot().phase, 'CONNECTED')
+        self.assertEqual(self.owner.snapshot().error_code, 'reconciliation_required')
+        self.assertEqual(self.owner.selected, ())
+        self.api.list_positions.assert_not_called()
+
     def test_missing_sdk_is_reported_as_missing_not_as_login_failure(self):
         def missing(environment):
             raise SdkUnavailable('capability_missing', 'optional pinned broker SDK is unavailable')

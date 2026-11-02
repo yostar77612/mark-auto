@@ -7147,3 +7147,35 @@ are unchanged; native dangerous confirmations still include the account.
 Stock total and cumulative fills display exact fractional lots, including0.5 lots
 for500 shares, with canonical share tooltips; futures remain contracts. Choices
 and failed preference writes do not invoke a trading command.
+
+## Account alias hardening (2026-11-02)
+
+The unified connection uses a random 256-bit workspace-only key in
+`.sinopac-account-alias.key` for domain-separated HMAC-SHA256 account identities.
+Both the persisted digest and public alias are keyed; the legacy unkeyed identity
+is only an intermediate, never newly persisted. Alias keys are excluded by
+`.gitignore`, never serialized into settings/logs, and created exclusively with
+POSIX mode 0600. A complete key is flushed before settings migration; malformed
+or inaccessible key files fail closed without replacing prior preferences.
+Windows inherited ACL and native filesystem behavior require Windows verification.
+
+Reading legacy `sinopac_accounts_v1` validates the original preferences and rows,
+keys the old identity digest, maps selected aliases exactly, removes the old
+hashes/aliases, and atomically saves `sinopac_accounts_v2` and a key fingerprint.
+Authenticated discovery uses the same derivation, so valid selections remain
+stable without recovering or writing raw account IDs. A missing/replaced key
+invalidates remembered identities/selections; users must explicitly reselect,
+never match by displayed suffix. Invalid legacy schemas preserve original bytes.
+
+If alias migration/key replacement encounters a manual-trading ledger, it keeps
+that ledger unchanged and persists a reconciliation-required gate. Market viewing
+can continue, but nonempty account selection is blocked; reopening preferences or
+saving connection settings does not clear that gate. This deliberately prefers
+blocking over reassigning historic obligations to a fresh namespace. Controlled
+historical-ledger reconciliation is separate work, not performed automatically.
+Already-written journal aliases/backups are not retroactively scrubbed.
+
+The protection is against offline account guessing from settings alone. It does
+not protect an attacker who also possesses the workspace key, process memory, or
+historical unkeyed backups. No API credentials, real accounts, LIVE execution,
+SDK version, G3 source, existing research evidence or assertion is changed.

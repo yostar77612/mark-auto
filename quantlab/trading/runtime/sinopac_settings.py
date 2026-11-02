@@ -8,15 +8,69 @@ from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.trading.application.sinopac_contracts import SinopacConnectionSettings
 from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError, identity
+from quantlab.trading.adapters.shioaji.account_discovery import account_digest, keyed_account_digest
+from .sinopac_aliases import workspace_alias_key
 
 
 class SinopacSettingsStore:
     def __init__(self, root):
+        self.root = root
         self.store = SettingsStore(root / 'settings.json')
         self.lock = RLock()
 
-    def load(self):
+    @property
+    def alias_key(self):
+        with self.lock:
+            _, key = self._body()
+            return key
+
+    def _body(self):
         body = self.store.load()
+        key = workspace_alias_key(self.root)
+        key_id = sha256(b'MarkAuto/account-alias-key/v2\0' + key).hexdigest()
+        self._parse_settings(body)  # Validate before a migration can rewrite preferences.
+        previous = body.get('sinopac_alias_key_v2')
+        legacy = body.get('sinopac_accounts_v1')
+        if previous == key_id and legacy is None:
+            return body, key
+        if previous is None and 'sinopac_accounts_v2' not in body:
+            rows = self._validate_accounts([] if legacy is None else legacy, 'identity_sha256')
+            aliases, migrated = {}, []
+            for row in rows:
+                digest = keyed_account_digest(row['identity_sha256'], key)
+                alias = 'sinopac-' + digest[:24]
+                aliases[row['alias']] = alias
+                migrated.append(
+                    {
+                        'alias': alias,
+                        'label': row['label'].split('-***', 1)[0] + '-***' if '-***' in row['label'] else '***',
+                        'market': row['market'],
+                        'identity_hmac': digest,
+                    }
+                )
+        else:
+            # Lost/replaced key cannot identify prior accounts: never guess from
+            # display labels, suffixes or a new key. Require explicit reselection.
+            aliases, migrated = {}, []
+        if (self.root / 'manual-trading-v2.sqlite').exists():
+            body['sinopac_alias_reconciliation_v2'] = True
+            aliases = {}
+        raw = body.get('sinopac_connection_v1')
+        if isinstance(raw, dict) and isinstance(raw.get('selected'), list):
+            raw['selected'] = [aliases[value] for value in raw['selected'] if isinstance(value, str) and value in aliases]
+        body.pop('sinopac_accounts_v1', None)
+        body['sinopac_accounts_v2'] = migrated
+        body['sinopac_alias_key_v2'] = key_id
+        self.store.save(body)
+        return body, key
+
+    def load(self):
+        with self.lock:
+            body, _ = self._body()
+            return self._parse_settings(body)
+
+    @staticmethod
+    def _parse_settings(body):
         raw = body.get('sinopac_connection_v1')
         if raw is None:
             # Legacy market preferences are optional hints, never credentials
@@ -44,7 +98,9 @@ class SinopacSettingsStore:
 
     def save(self, settings, selected):
         with self.lock:
-            body = self.store.load()
+            body, _ = self._body()
+            if selected and body.get('sinopac_alias_reconciliation_v2', False):
+                raise DomainError('reconciliation_required', 'account alias migration requires journal reconciliation')
             body['sinopac_connection_v1'] = {
                 'environment': settings.environment.value,
                 'key_ref': settings.key_ref,
@@ -55,9 +111,15 @@ class SinopacSettingsStore:
             }
             self.store.save(body)
 
+    def check_selection(self, selected):
+        with self.lock:
+            body, _ = self._body()
+            if selected and body.get('sinopac_alias_reconciliation_v2', False):
+                raise DomainError('reconciliation_required', 'account alias migration requires journal reconciliation')
+
     def advance_revision(self):
         with self.lock:
-            body = self.store.load()
+            body, _ = self._body()
             previous = body.get('sinopac_revision_v1', 0)
             if type(previous) is not int or previous < 0:
                 raise DomainError('validation_failed', 'connection revision checkpoint')
@@ -66,31 +128,34 @@ class SinopacSettingsStore:
             return previous + 1
 
     def save_accounts(self, accounts, environment):
-        from quantlab.trading.adapters.shioaji.account_discovery import account_identity
-
         with self.lock:
-            body = self.store.load()
-            known = {item['alias']: item for item in self.known_accounts()}
-            rows = [
-                {
+            body, key = self._body()
+            known = {item['alias']: item for item in self._validate_accounts(body.get('sinopac_accounts_v2', []), 'identity_hmac')}
+            for account in accounts:
+                digest = account_digest(account.native, environment, key)
+                if account.alias != 'sinopac-' + digest[:24]:
+                    raise DomainError('state_conflict', 'account alias key changed; reselect accounts')
+                known[account.alias] = {
                     'alias': account.alias,
                     'label': account.label,
                     'market': account.market.value,
-                    'identity_sha256': sha256('\0'.join((environment.value, *account_identity(account.native))).encode('utf-8')).hexdigest(),
+                    'identity_hmac': digest,
                 }
-                for account in accounts
-            ]
-            known.update({item['alias']: item for item in rows})
-            body['sinopac_accounts_v1'] = list(known.values())
+            body['sinopac_accounts_v2'] = list(known.values())
             self.store.save(body)
 
     def known_accounts(self):
-        rows = self.store.load().get('sinopac_accounts_v1', [])
+        with self.lock:
+            body, _ = self._body()
+            return self._validate_accounts(body.get('sinopac_accounts_v2', []), 'identity_hmac')
+
+    @staticmethod
+    def _validate_accounts(rows, digest_field):
         if type(rows) is not list or len(rows) > 500:
             raise DomainError('validation_failed', 'generated account metadata size')
         aliases = set()
         for row in rows:
-            if type(row) is not dict or set(row) != {'alias', 'label', 'market', 'identity_sha256'}:
+            if type(row) is not dict or set(row) != {'alias', 'label', 'market', digest_field}:
                 raise DomainError('validation_failed', 'generated account metadata schema')
             identity(row['alias'])
             if (
@@ -100,11 +165,9 @@ class SinopacSettingsStore:
                 or row['market'] not in (Market.STOCK.value, Market.INDEX_FUTURE.value)
             ):
                 raise DomainError('validation_failed', 'generated account metadata identity')
-            if (
-                not isinstance(row['identity_sha256'], str)
-                or len(row['identity_sha256']) != 64
-                or any(char not in '0123456789abcdef' for char in row['identity_sha256'])
-            ):
-                raise DomainError('validation_failed', 'generated account identity hash')
+            if not isinstance(row[digest_field], str) or len(row[digest_field]) != 64 or any(char not in '0123456789abcdef' for char in row[digest_field]):
+                raise DomainError('validation_failed', 'generated account identity digest')
+            if row['alias'] != 'sinopac-' + row[digest_field][:24]:
+                raise DomainError('validation_failed', 'generated account alias mismatch')
             aliases.add(row['alias'])
         return tuple(rows)
