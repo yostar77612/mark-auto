@@ -872,6 +872,10 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/application/stock_research.py` | 172 | application | `quantlab/trading/application/stock_research.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
 | `quantlab/trading/application/stock_research_service.py` | 105 | application | `quantlab/trading/application/stock_research_service.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
 | `quantlab/trading/runtime/stock_research.py` | 28 | composition | `quantlab/trading/runtime/stock_research.py` | M2-9 stock training service and immutable durable evidence; additive, no legacy daily changes. |
+| `quantlab/trading/domain/promotion.py` | 317 | domain | `quantlab/trading/domain/promotion.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
+| `quantlab/trading/domain/signal_strategy.py` | 287 | domain | `quantlab/trading/domain/signal_strategy.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
+| `quantlab/trading/ports/candidates.py` | 13 | application | `quantlab/trading/ports/candidates.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
+| `quantlab/trading/ports/signals.py` | 9 | application | `quantlab/trading/ports/signals.py` | M3-1: pure domain/port types for AI-strategy to simulation auto trading (frozen signal strategy, named thresholds, stage state machine); no I/O, no SDK, no v1 import. |
 | `quantlab/trading/adapters/shioaji/minute_history.py` | 79 | infrastructure | `quantlab/trading/adapters/shioaji/minute_history.py` | M2-7: read-only resolved TMF history binding; fake SDK time/identity/quota tests; no login or order API. |
 | `quantlab/trading/application/minute_research.py` | 159 | application | `quantlab/trading/application/minute_research.py` | M2-7: deterministic completed-signal/next-open minute engine and research-only evidence; daily activation unchanged. |
 | `quantlab/trading/domain/minute_research.py` | 149 | domain | `quantlab/trading/domain/minute_research.py` | M2-7: TRAINING settings, explicit complete session grid and 1m/5m aggregation; no missing-bar fabrication. |
@@ -898,6 +902,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/runtime/automatic.py` | 348 | composition | `quantlab/trading/runtime/automatic.py` | M2-3 completed-bar execution, durable claims, shared SIM capacity, trusted close evidence and runtime owner binding; engine-only delivery |
 
 | `tests/test_minute_research_basis.py` | 136 | tooling | `tests/test_minute_research_basis.py` | M2-7: explicit fixed-model assumption/UNKNOWN basis, generated SDK host, unchanged legacy wire hashes and preserved contract/grid/cancellation guards. |
+| `desktop_app/features/trading/readiness_guidance.py` | 64 | presentation | `desktop_app/features/trading/readiness_guidance.py` | U1 read-only account readiness disclosure and copy; no engine contract changes. |
+| `desktop_app/strings/account_readiness.py` | 47 | shared | `desktop_app/strings/account_readiness.py` | U1 read-only account readiness disclosure and copy; no engine contract changes. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -6907,6 +6907,17 @@ connection state unchanged. The executor checks the same boundary independently;
 the LIVE UI disables CA controls using the existing formal-readonly reason.
 This restriction does not modify the separately retained legacy CA connector.
 
+## U1 account readiness presentation (2026-11-02)
+
+Account signature facts retain their accepted true/false/unknown meanings. A
+read-only, keyboard-toggleable next-step disclosure explains official signing,
+vendor simulation testing and disconnect/reconnect, without a URL or external
+navigation. Simulation does not need CA. Per-fact CA, quote freshness, account
+reconciliation, simulation and LIVE guidance does not grant readiness or issue
+commands. Expanded account help survives polling and is removed with its account.
+No application/domain/IPC contract or LIVE action set changes. Focused tests and
+native fake-SDK startup evidence are in `docs/analysis/u1-readiness/verification.md`.
+
 ## M2-1 unified connection presentation contract (2026-11-01)
 
 Settings exposes one reference-only three-step Sinopac connection panel. Draft
