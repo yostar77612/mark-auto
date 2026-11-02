@@ -2553,3 +2553,35 @@ whether control revision changed. Expiry date/state, versions, coverage count,
 issues and reminders still advance it, as do every existing control publication.
 Do not change owner_stamp, its revision comparison, fresh-health, preflight,
 maintenance, writer fence, run latch or restart behavior to make a fixture pass.
+
+### M2-3d CI performance correction
+
+PR166's first full CI run (41538250305) measured revision-pump lock maxima of
+0.621882, 0.567875 and 0.501100 seconds on three producers, exceeding the unchanged
+0.5-second requirement. Treat this as a product failure, not a flaky timeout.
+The payload reads, SHA checks and parsing were already outside the three locks;
+repeated pure research/window encoding and construction of the immutable bundled
+maintenance calendar remained inside them. Profiling identified these CPU costs;
+it does not establish the garbage collector's state on the CI runners.
+
+Prepare a bounded 128-entry immutable daily projection cache outside the locks,
+keyed by actual history values, the complete calendar, original research basis
+and through-day. Preserve the original dataset/hash wire identities. Prewarm both
+the research-end and current signal-day histories; native cache misses refuse
+without cold computation. This cache contains calculations, never admission,
+source revision, owner health, research PASS, permission or order decisions.
+Every current source and evidence check still runs before using its values.
+Ordinary semantic-preparation failures become source-unverified at that boundary
+and do not poison the financial journal. Do not catch BaseException.
+
+Memoize only the immutable static bundled maintenance calendar, with a one-entry
+cache keyed by the actual factory. Current date, expiry, versions, overrides,
+connection health and every pre-open check are still evaluated on every snapshot.
+The bundled calendar does not acquire future sessions or imply coverage in 2027.
+
+Retain the full large fixture and the 0.5-second assertion. Two fresh independent
+samples recorded revision lock maxima of 0.258667 and 0.274877 seconds; all pure
+projection work was outside bundle/engine/owner locks and duplicate pumps added
+no such work. Bypassing the math cache is independently killed by the held-lock
+work assertion. These finite samples are evidence, not a universal latency bound.
+No LIVE path, automatic retry/resume, desktop, SDK, costs or workflow changes.

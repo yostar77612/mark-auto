@@ -114,3 +114,51 @@ CI or Claude approval has completed.
 Final strict-API native sample: cold pump 0.232492 s, cold lock 0.110958 s, three-hot maximum 0.034083 s, revision lock 0.429524 s, separate query/adoption lock 0.024565 s. The unchanged bound is 0.5 s. Full CI and Claude review remain required.
 
 Post-main integration: 12 related modules / 236 tests PASS in 32.814 s, including unchanged LIVE and native automatic-entry tests plus baseline/layer/graph cases. The JSON lists every final module and result. Baseline generation keeps all original test assertions and applicability lists, registers three product modules and refreshes source-sensitive observer pins in one separate commit.
+
+## First CI failure and corrective verification
+
+Full CI run `41538250305`, attempt 1, failed: 25 success, 9 failed and one skipped
+job. Three producer failures were the unchanged revision-pump 0.5-second budget:
+Windows 3.11 0.621882 s, Linux 3.11 0.567875 s and UI Linux 3.12 0.501100 s;
+the remaining failed aggregates followed those producers. Source SHA/parsing and
+payload reads were already outside all three locks. The earlier local green
+samples above did not establish sufficient headroom and do not override CI.
+
+Profiling located repeated pure research/window encoding, adjustment and hashing,
+plus repeated construction of the immutable bundled calendar in owner snapshots.
+It did not establish the CI runners' garbage-collection state. The correction
+prepares a separate bounded 128-entry pure projection cache outside the locks and
+requires warmed values for native admission. Both training-end and signal-day
+keys are prepared. Source revision, bytes, arrival, evidence and current authority
+are still independently verified; cached math is never cached permission.
+The original committed dataset and signal hashes are checked against fixed
+goldens. An ordinary preparation exception is a typed source refusal and leaves
+the financial journal healthy. No BaseException catch or automatic retry exists.
+
+Only immutable static maintenance calendar construction is memoized (bound 1,
+actual factory identity). Every snapshot still runs current-date preflight,
+expiry, coverage, version and connection-health checks. Its 57-snapshot regression
+records one construction and 57 checks; 9/9 tests and 3/3 independent assertion
+mutations pass.
+
+Two fresh independent native samples retain all 1,553 bars, 72 months, 250
+refreshes, 573→574 archived payloads, 73 active sources and one active manifest:
+
+| Sample | Cold lock | Three-hot maximum | Query/adoption | Revision lock |
+| --- | --- | --- | --- | --- |
+| Connected E2E + large fixture, 5/5 PASS | 0.058899 s | 0.020867 s | 0.024535 s | 0.258667 s |
+| Independent single large fixture, 1/1 PASS | 0.051494 s | 0.023209 s | 0.023837 s | 0.274877 s |
+
+Each cold/revision phase derives two projections outside bundle/engine/owner
+locks; three duplicate pumps derive none and add zero SHA/parse/payload reads.
+The old quadratic hash mutant is historical evidence for the previous code,
+not a claim about this native path. A fresh cache-bypass mutant instead fails
+the same test body with seven held-lock derivation violations; its unchanged
+single-case baseline passes. The 0.5-second threshold and fixture size are
+unchanged. Raw metrics/source SHAs are in
+`.gitnexus/verification/ci-performance-repair-final-evidence.json`.
+
+The final corrective R8 batch, actual windows, statics, graph analysis and new
+head complete CI are recorded separately in the JSON/PR as they finish. The first
+run is a genuine failure, not an occasional timeout eligible for a blind rerun.
+Claude review is still required; this PR must not be merged automatically.

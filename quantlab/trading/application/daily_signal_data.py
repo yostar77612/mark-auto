@@ -2,11 +2,11 @@
 
 from dataclasses import replace
 from datetime import date, timedelta
-from hashlib import sha256
 
-from .codec import dumps, loads
+from .codec import loads
 from .contracts import DailySignalDataView
 from .research import ResearchResult
+from .daily_signal_projection import daily_projection, signal_window_fingerprint
 from quantlab.trading.domain.daily_signal_data import DailyResearchBasis, DailySignalPolicy
 from quantlab.trading.domain.auto_cycle import EvaluationCursor
 from quantlab.trading.domain.live_bars import LiveBar
@@ -52,23 +52,18 @@ def official_daily_result(engine, record, result, *, history=None):
     completed_at = calendar.day_session(history.bars[-1].trade_date).closes_at
     if not completed_at <= history.observed_at <= engine.clock.now():
         raise DomainError('daily_signal_not_available', 'official facts must already be observed after their completed DAY')
-    current = history.research_basis(basis.start, basis.end)
+    projected = daily_projection(history, calendar, basis, history.bars[-1].trade_date, cached_only=getattr(engine, 'daily_signal_cached_only', False))
+    current = projected.research_basis
     if basis.policy_fingerprint != DailySignalPolicy().fingerprint or not basis.compatible(current):
         raise DomainError('daily_signal_basis_mismatch', 'research source policy or historical observations changed')
-    raw = history.trim(basis.start, basis.end).raw_completed(calendar)
-    expected = sha256(dumps((raw, basis)).encode()).hexdigest()
+    expected = projected.dataset_id
     if result.dataset_id != expected or record.evidence_hash != result.fingerprint:
         raise DomainError('daily_signal_basis_mismatch', 'research dataset or committed evidence identity mismatch')
     return history
 
 
 def _signal_window_hash(history, calendar, through: date, signals):
-    day_opens = {row.trade_date: row.opens_at for row in calendar.sessions if row.kind == 'DAY'}
-    start = next(row.trade_date for row in history.bars if day_opens[row.trade_date] == signals[0].opened_at)
-    basis = history.research_basis(start, through)
-    return sha256(
-        dumps((basis.policy_fingerprint, basis.raw_digest, basis.events_digest, calendar.calendar_id, calendar.version, signals)).encode()
-    ).hexdigest()
+    return signal_window_fingerprint(history, calendar, through, signals)
 
 
 def _eligible_signal_close(calendar, now):
@@ -136,12 +131,13 @@ def stock_daily_window(engine, record, instrument_id, calendar):
             raise DomainError('daily_signal_source_unverified')
         history = _source_history(engine, source, instrument_id, calendar, through=session.trade_date, start=result.daily_basis.start)
         official_daily_result(engine, record, result, history=history)
-        signals = history.signal_history(calendar, session.trade_date)
+        projected = daily_projection(history, calendar, result.daily_basis, session.trade_date, cached_only=getattr(engine, 'daily_signal_cached_only', False))
+        signals = projected.signals
         raw = next(row for row in history.bars if row.trade_date == session.trade_date)
         bar = LiveBar(
             instrument_id, session.opens_at, session.closes_at, session.trade_date, 'DAY', raw.open, raw.high, raw.low, raw.close, raw.volume, final=True
         )
-        fingerprint = _signal_window_hash(history, calendar, session.trade_date, signals)
+        fingerprint = projected.signal_fingerprint
         _set_daily_data_view(engine, record, instrument_id, history=history, day=session.trade_date)
         return bar, signals, fingerprint, history.policy.fingerprint
     except DomainError as error:
@@ -178,8 +174,8 @@ def _assert_daily_intent_source(engine, record, intent):
         raise DomainError('daily_signal_source_unverified')
     history = _source_history(engine, source, intent.instrument_id, calendar, through=session.trade_date, start=result.daily_basis.start)
     official_daily_result(engine, record, result, history=history)
-    signals = history.signal_history(calendar, session.trade_date)
-    if intent.data_fingerprint != _signal_window_hash(history, calendar, session.trade_date, signals):
+    projected = daily_projection(history, calendar, result.daily_basis, session.trade_date, cached_only=getattr(engine, 'daily_signal_cached_only', False))
+    if intent.data_fingerprint != projected.signal_fingerprint:
         raise DomainError('daily_signal_basis_mismatch', 'saved signal prices or corporate actions changed')
     _set_daily_data_view(engine, record, intent.instrument_id, history=history, day=session.trade_date)
 

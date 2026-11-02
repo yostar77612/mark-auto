@@ -7920,3 +7920,16 @@ the modal, clears its cached snapshot and navigates without a command; reopening
 uses the current snapshot. Existing form admission, creation and LIVE gates remain.
 No engine/IPC change. Strings phase70/orders3104–3107; evidence:
 docs/analysis/strategy-market-empty/verification.md.
+## M2-3d CI performance correction: calculated values are not admission
+
+Native official-daily deployment and pump preparation compute immutable daily
+research/window projections outside bundle, engine and owner locks. The bounded
+128-entry cache uses actual history, complete calendar, original committed basis
+and through-day; the original dataset and signal hash wire formats are unchanged.
+Locked native admission requires an existing projection and refuses on eviction
+or a miss. Source revision/bytes/arrival and current owner/evidence/permission
+guards remain authoritative; a calculation-cache hit never grants permission.
+Ordinary preparation exceptions return `daily_signal_source_unverified` without
+marking the financial journal failed. No new UiAction, IPC operation or error code.
+Only construction of the immutable bundled maintenance calendar is memoized;
+date-sensitive preflight and connection checks still run on every snapshot.

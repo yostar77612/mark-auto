@@ -93,7 +93,8 @@
     "pending": 0,
     "coverage_claim": "Lower bound of exercised counterexamples; not exhaustive safety proof.",
     "assertion_kills": 261,
-    "body_boundary_exception_kills": 17
+    "body_boundary_exception_kills": 17,
+    "source_epoch": "Historical initial source epoch; performance1 obsolete for new native projection path; see ci_repair for fresh cases and unchanged-target carry-forward."
   },
   "selected_regression": {
     "initial": {
@@ -3076,8 +3077,21 @@
     "observer_removed_pins": 6
   },
   "ci": {
-    "status": "PENDING",
-    "run": null
+    "status": "FIRST_HEAD_FAILED_CORRECTION_PENDING_NEW_HEAD",
+    "run": 41538250305,
+    "attempt": 1,
+    "completed_jobs": {
+      "success": 25,
+      "failure": 9,
+      "skipped": 1
+    },
+    "original_producer_failures": {
+      "Windows3.11": 0.6218819,
+      "Linux3.11": 0.567874834,
+      "UI_Linux3.12": 0.50110002
+    },
+    "budget_seconds": 0.5,
+    "classification": "Real product latency failure, not flaky timeout"
   },
   "claude_review": "PENDING",
   "read_only_review": {
@@ -3093,5 +3107,189 @@
     "main": "4867549",
     "commit": "49d7064",
     "resolution": "Preserve both appended contract sections; desktop bytes equal main."
+  },
+  "ci_repair": {
+    "projection_cache": {
+      "bound": 128,
+      "keys": [
+        "actual immutable history",
+        "complete calendar",
+        "original committed DailyResearchBasis",
+        "through-day"
+      ],
+      "authority_cached": false,
+      "native_cold_miss": "typed refusal, no in-lock computation",
+      "wire_hash_compatibility": "fixed original committed goldens",
+      "ordinary_preparation_failure": "daily_signal_source_unverified; no storage_failed"
+    },
+    "maintenance_calendar_cache": {
+      "bound": 1,
+      "factory_identity_key": true,
+      "snapshot_count": 57,
+      "build_count": 1,
+      "preflight_count": 57,
+      "tests_passed": 9,
+      "mutations": {
+        "cases": 3,
+        "assertion_kills": 3
+      },
+      "date_or_authority_cached": false
+    },
+    "pure_tests": {
+      "passed": 88,
+      "old_admission": 23,
+      "new_projection": 18,
+      "total": 88,
+      "old_review": 15,
+      "raw": "daily-projection-pure-related-final.log",
+      "unittest_seconds": 6.794,
+      "old_deployment": 32
+    },
+    "fresh_changed_path_mutations": {
+      "killed": 99,
+      "setup_loader_cleanup_kills": 0,
+      "old_admission": {
+        "seconds": 10.471,
+        "killed": 25,
+        "cases": 25
+      },
+      "new_projection": {
+        "seconds": 15.017,
+        "killed": 22,
+        "cases": 22,
+        "classifications": [
+          {
+            "Name": "KILLED_ASSERTION",
+            "Count": 15
+          },
+          {
+            "Name": "KILLED_BODY_EXCEPTION",
+            "Count": 7
+          }
+        ]
+      },
+      "new_test_sha256": [
+        "a2f2df075d2a0c5d03300683716d926578c4842808cec9bea5025cb1a0d0499d"
+      ],
+      "total": 99,
+      "old_review": {
+        "counts": {
+          "KILLED_ASSERTION": 17,
+          "KILLED_BODY_EXCEPTION": 2
+        },
+        "seconds": 8.113,
+        "cases": 19
+      },
+      "old_deployment": {
+        "killed": 33,
+        "cases": 33
+      }
+    },
+    "fresh_performance_mutation": {
+      "cases": 1,
+      "assertion_kills": 1,
+      "baseline_pass": true,
+      "seven_held_lock_derivations_detected": true,
+      "raw": "ci-large-cache-bypass-run.json"
+    },
+    "fresh_total": {
+      "cases": 103,
+      "killed": 103,
+      "assertion_kills": 93,
+      "body_exception_kills": 10,
+      "harness_kills": 0
+    },
+    "unchanged_target_historical_guards": 200,
+    "old_quadratic_performance_mutant": "obsolete target, excluded from current fresh total",
+    "native_samples": {
+      "native_first": {
+        "tests": 5,
+        "passed": true,
+        "lock_phase_maxima": {
+          "revision_pump": 0.258667099988088,
+          "hot_pump": 0.020866599981673062,
+          "query_adopt": 0.0245351999765262,
+          "cold_pump": 0.058898999996017665
+        },
+        "bars": 1553,
+        "months": 72,
+        "refreshes": 250,
+        "lock_violations": [],
+        "three_hot_pumps": {
+          "daily_parses": 0,
+          "event_parses": 0,
+          "sha_calls": 0,
+          "payload_reads": 0,
+          "full_reads": 0,
+          "semantic_derivations": 0
+        }
+      },
+      "native_second": {
+        "tests": 1,
+        "passed": true,
+        "lock_phase_maxima": {
+          "revision_pump": 0.27487700001802295,
+          "query_adopt": 0.023837000015191734,
+          "hot_pump": 0.023208900005556643,
+          "cold_pump": 0.051493900013156235
+        },
+        "bars": 1553,
+        "months": 72,
+        "refreshes": 250,
+        "lock_violations": [],
+        "three_hot_pumps": {
+          "daily_parses": 0,
+          "event_parses": 0,
+          "sha_calls": 0,
+          "payload_reads": 0,
+          "full_reads": 0,
+          "semantic_derivations": 0
+        }
+      }
+    },
+    "source_sha256": {
+      "quantlab/trading/application/daily_signal_data.py": "bad4fa7f13579badb43f3d03cfbad167db4fa72cb4d0885348a3cc968e484c04",
+      "quantlab/trading/application/daily_signal_projection.py": "cd23b29c2b6dcc8d01cd58187b6550ce98aba41a5bb43f7bc0be0017bdb4a35c",
+      "quantlab/trading/runtime/daily_deployment.py": "e7fca4fe0b0e150c380df7ed9ab7582d2eec373042b2532174ecd12da9f7ee4c",
+      "quantlab/trading/runtime/daily_source_cache.py": "3bc3b4b0fbc4e5272ec46d4d673ba26b1549f678a16f009bc73f87de63b704bb",
+      "quantlab/trading/runtime/sinopac_connection.py": "a0d910de6fee9f2c03908452d7854f73214760c3d905b02e4dc5f71584306c52"
+    },
+    "all_source_unchanged": true,
+    "raw": [
+      "daily-projection-final.json",
+      "owner-calendar-cache-mutations.json",
+      "ci-performance-repair-final-evidence.json"
+    ],
+    "precommit_graph": {
+      "changed_count": 71,
+      "affected_count": 6,
+      "changed_files": 14,
+      "risk_level": "high"
+    },
+    "final_related": {
+      "source_epoch": "before latest main5652457 integration",
+      "modules": 214,
+      "tests": 2747,
+      "seconds": 580.658,
+      "failures": 2,
+      "errors": 0,
+      "skips": 9,
+      "passed": 2736,
+      "failed_modules": [
+        "test_trading_installer_guard"
+      ],
+      "raw": "ci-repair-related/selected-tests-summary.json",
+      "disposition": "Only installer global-mutex preconditions failed; final merged-tree isolated original module will rerun after concurrent modules exit."
+    },
+    "final_startups": "FIRST_ROUND_WINDOWS_QT_ACCESS_VIOLATION; owned orphan normally shut down; complete two-mode round pending after main integration",
+    "final_statics": {
+      "ruff_files": 1374,
+      "python311_tracked_files": 1262,
+      "syntax_failures": 0,
+      "quality_findings": 0,
+      "layer_findings": 0,
+      "architecture_violations": 0,
+      "raw": "ci-repair-prepush.log"
+    }
   }
 }

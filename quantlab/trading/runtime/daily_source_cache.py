@@ -3,6 +3,7 @@
 from quantlab.trading.application.codec import loads
 from quantlab.trading.application.daily_execution import records
 from quantlab.trading.application.daily_signal_data import official_daily_cursor, uses_official_daily
+from quantlab.trading.application.daily_signal_projection import prepare_daily_projection
 from quantlab.trading.application.research import ResearchResult
 from quantlab.trading.domain.automatic_calendar import calendar_for_instrument
 from quantlab.trading.domain.models import Environment
@@ -30,13 +31,14 @@ def _requests(engine):
         owned = any(lot.quantity and (lot.strategy_id, lot.strategy_version) == (record.strategy_id, record.version) for lot in engine.state.positions)
         if cursor is not None and (record.state == 'ACTIVE' or owned):
             day = next(row.trade_date for row in calendar.sessions if row.kind == 'DAY' and row.closes_at == cursor.bar_end)
-            requests.add((record.form.instrument_id, calendar, day, basis.start))
+            requests.add((record.form.instrument_id, calendar, day, basis.start, basis))
+            requests.add((record.form.instrument_id, calendar, basis.end, basis.start, basis))
         for intent in pending:
             day = next((row.trade_date for row in calendar.sessions if row.kind == 'DAY' and row.closes_at == intent.cursor.bar_end), None)
             if day is not None:
-                requests.add((intent.instrument_id, calendar, day, basis.start))
+                requests.add((intent.instrument_id, calendar, day, basis.start, basis))
         if pending:
-            requests.add((record.form.instrument_id, calendar, basis.end, basis.start))
+            requests.add((record.form.instrument_id, calendar, basis.end, basis.start, basis))
     return requests
 
 
@@ -55,8 +57,9 @@ def prepare_daily_sources(bundle, engine):
             return
     # Reacquisition and final owner checks happen in AutomaticRuntime.pump. Any
     # intervening store revision makes the locked cached-only read fail closed.
-    for instrument_id, calendar, through, start in requests:
+    for instrument_id, calendar, through, start, basis in requests:
         try:
-            source.history(instrument_id, calendar, through=through, start=start)
+            history = source.history(instrument_id, calendar, through=through, start=start)
+            prepare_daily_projection(history, calendar, basis, through)
         except DomainError:
             continue

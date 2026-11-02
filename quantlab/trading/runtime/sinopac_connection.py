@@ -1,6 +1,7 @@
 """Explicit, generation-bound unified broker connection; startup is inert."""
 
 from dataclasses import replace
+from functools import lru_cache
 from threading import Event, RLock, Thread
 from time import monotonic
 from uuid import uuid4
@@ -17,6 +18,12 @@ from .sinopac_calendar import built_in_calendar
 from .sinopac_transition import transition
 
 SINOPAC_ACTIONS = frozenset((UiAction.SAVE_AND_CONNECT_SINOPAC, UiAction.SELECT_SINOPAC_ACCOUNTS, UiAction.ACTIVATE_SINOPAC_CA, UiAction.DISCONNECT_SINOPAC))
+
+
+@lru_cache(maxsize=1)
+def _maintenance_fallback_calendar(factory):
+    """Memoize only immutable bundled sessions; replacement factories reverify."""
+    return factory()
 
 
 def default_factory(environment):
@@ -105,7 +112,9 @@ class SinopacConnection:
         with self.lock:
             today = self.clock.now().astimezone(ZoneInfo('Asia/Taipei')).date()
             futures_required = not self.selected or any(account.market is not Market.STOCK for account in self.accounts if account.alias in self.selected)
-            maintenance = self.maintenance.pre_open(built_in_calendar(), today, self.configuration.key_ref, futures_required=futures_required)
+            maintenance = self.maintenance.pre_open(
+                _maintenance_fallback_calendar(built_in_calendar), today, self.configuration.key_ref, futures_required=futures_required
+            )
             self._publish_maintenance(maintenance)
             if not self.closed and self.worker is not None and self.worker.is_alive() and monotonic() >= self.deadline:
                 from .sinopac_transition import readiness

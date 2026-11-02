@@ -24,7 +24,7 @@ from quantlab.trading.adapters.shioaji.stock_grid import COMMON_STOCK_BANDS, COM
 from quantlab.trading.application.account_risk import seed_account_baseline
 from quantlab.trading.application.codec import loads
 from quantlab.trading.application.context import Catalog
-from quantlab.trading.application.contracts import StrategyForm, UiAction
+from quantlab.trading.application.contracts import StrategyForm, UiAction, UiCommand
 from quantlab.trading.application.manual_contracts import ManualBookForm, ManualOrderForm
 from quantlab.trading.application.preflight import record_preflight
 from quantlab.trading.application.workflows import run_research
@@ -219,7 +219,17 @@ class ConnectedOfficialFixture:
         with self.engine.lock:
             self.engine.validate_strategy(reference)
             run_research(self.engine, reference, ())
-            self.engine.deploy(reference)
+        receipt = self.bundle.execute(
+            UiCommand(
+                UiAction.DEPLOY,
+                self.engine.state.version + self.bundle.version_offset,
+                target_id=reference,
+                environment=SIM,
+                account_ref=self.stock_ref,
+            )
+        )
+        self.owner_test.assertTrue(receipt.accepted, receipt)
+        with self.engine.lock:
             # Initial genesis only: the actual adopted accounts/books are empty.
             # Subsequent day rollover must use the real completed-close provider.
             for account_ref in self.engine.gateways:

@@ -17,6 +17,7 @@ from unittest.mock import patch
 import test_official_daily_runtime_e2e as native
 from test_daily_stock_store_bounds import make_official_batch, populate_six_year_refreshes
 from quantlab.trading.adapters.storage.kline_store import KlineStore
+from quantlab.trading.application import daily_signal_projection
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.runtime import official_daily_source
 
@@ -151,6 +152,9 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
             patch.object(official_daily_source, 'parse_daily', side_effect=parsed(official_daily_source.parse_daily)) as daily_parser,
             patch.object(official_daily_source, 'parse_events', side_effect=parsed(official_daily_source.parse_events)) as events_parser,
             patch.object(official_daily_source, 'sha256', side_effect=parsed(official_daily_source.sha256)) as digest,
+            patch.object(
+                daily_signal_projection, '_derive_daily_projection', side_effect=parsed(daily_signal_projection._derive_daily_projection)
+            ) as projection,
         ):
             started = perf_counter()
             measured.phase = 'cold_pump'
@@ -162,10 +166,12 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
                 'sha_calls': digest.call_count,
                 'payload_reads': len(payload_reads),
                 'full_reads': len(full_reads),
+                'semantic_derivations': projection.call_count,
             }
             self.assertGreaterEqual(cold['daily_parses'], 72)
             self.assertGreater(cold['sha_calls'], 0)
             self.assertGreater(cold['payload_reads'], 0)
+            self.assertGreater(cold['semantic_derivations'], 0)
             self.assertEqual(fixture.engine.state.automatic.daily.intents[0].phase, 'READY')
             full_before = len(full_reads)
             measured.phase = 'hot_pump'
@@ -177,6 +183,7 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
                 'sha_calls': digest.call_count - cold['sha_calls'],
                 'payload_reads': len(payload_reads) - cold['payload_reads'],
                 'full_reads': len(full_reads) - full_before,
+                'semantic_derivations': projection.call_count - cold['semantic_derivations'],
             }
             self.assertEqual(hot, dict.fromkeys(hot, 0))
             with closing(KlineStore(fixture.bundle.kline_store.path, arrival_clock=fixture.clock.now)) as store:
@@ -189,9 +196,11 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
                 'daily_parses': daily_parser.call_count - cold['daily_parses'],
                 'sha_calls': digest.call_count - cold['sha_calls'],
                 'full_reads': len(full_reads) - full_before,
+                'semantic_derivations': projection.call_count - cold['semantic_derivations'],
             }
             self.assertGreater(revision['daily_parses'], 0)
             self.assertGreater(revision['sha_calls'], 0)
+            self.assertGreater(revision['semantic_derivations'], 0)
         self.assertEqual(lock_violations, [])
         self.assertEqual(fixture.placed(), fixture.initial_orders + 1)
         maxima = {phase: max(row['seconds'] for row in measured.records if row['phase'] == phase) for phase in {row['phase'] for row in measured.records}}
@@ -211,6 +220,7 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
             'max_pump_bundle_lock_seconds': pump_max,
             'lock_phase_maxima': maxima,
             'gc_collections': collections,
+            'gc_phase_seconds': {phase: sum(row['seconds'] for row in collections if row['phase'] == phase) for phase in maxima},
             'lock_violations': lock_violations,
             'cold': cold,
             'three_hot_pumps': hot,

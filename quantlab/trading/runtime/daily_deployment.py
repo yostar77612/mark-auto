@@ -5,6 +5,7 @@ from dataclasses import replace
 from quantlab.trading.application.codec import loads
 from quantlab.trading.application.contracts import UiReceipt
 from quantlab.trading.application.daily_signal_data import uses_official_daily
+from quantlab.trading.application.daily_signal_projection import prepare_daily_projection
 from quantlab.trading.application.research import ResearchResult
 from quantlab.trading.domain.daily_signal_data import DailyResearchBasis
 from quantlab.trading.domain.models import Environment
@@ -57,7 +58,8 @@ def prepare_daily_deployment(bundle, command):
             with owner.lock:
                 stamp, shared = runtime.owner_stamp(), owner.shared
         try:
-            source.history(record.form.instrument_id, calendar, through=result.daily_basis.end, start=result.daily_basis.start)
+            history = source.history(record.form.instrument_id, calendar, through=result.daily_basis.end, start=result.daily_basis.start)
+            prepare_daily_projection(history, calendar, result.daily_basis, result.daily_basis.end)
         except DomainError:
             raise
         except Exception:
