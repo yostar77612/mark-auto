@@ -96,11 +96,12 @@ class MarketTerminalService:
             self.active = True
             self.subscriptions.clear()
             self.temporary_id = ''
+            # One instrument the broker cannot subscribe must not fail the whole connection.
             for key in (*[item.instrument_id for item in FIXED_INDICES], *self.watchlist):
-                self._subscribe(self.resolve(key))
+                self._try(self._subscribe, self.resolve(key))
             main = self.resolve(self.selected)
             if main.instrument_id not in self.subscriptions:
-                self._temporary(main)
+                self._try(self._temporary, main)
             if self._has_connected:
                 self.history.reconnected(tuple(self.subscriptions.values()))
             else:
@@ -117,6 +118,13 @@ class MarketTerminalService:
             self.subscriptions.clear()
             self.temporary_id = ''
             self._revision += 1
+
+    @staticmethod
+    def _try(subscribe: Callable[[WatchInstrument], bool], item: WatchInstrument) -> None:
+        try:
+            subscribe(item)
+        except DomainError:
+            pass
 
     def _subscribe(self, item: WatchInstrument) -> bool:
         if item.instrument_id in self.subscriptions:

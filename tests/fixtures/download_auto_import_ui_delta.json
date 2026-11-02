@@ -843,11 +843,201 @@
         },
         {
           "row": {
+            "file": "tests/test_daily_signal_data.py",
+            "kind": "assignment",
+            "line": 28,
+            "name": "days",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_signal_data.py",
+            "kind": "assignment",
+            "line": 30,
+            "name": "bars",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_signal_data.py",
+            "kind": "assignment",
+            "line": 34,
+            "name": "history",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
             "file": "tests/test_m2_daily_runtime.py",
             "kind": "assignment",
-            "line": 641,
+            "line": 647,
             "name": "history",
             "receiver": "engine"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_admission.py",
+            "kind": "assignment",
+            "line": 46,
+            "name": "days",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_admission.py",
+            "kind": "assignment",
+            "line": 59,
+            "name": "history",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_admission.py",
+            "kind": "assignment",
+            "line": 249,
+            "name": "history",
+            "receiver": "self.source"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_research.py",
+            "kind": "assignment",
+            "line": 33,
+            "name": "days",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_research.py",
+            "kind": "assignment",
+            "line": 42,
+            "name": "history",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 147,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 152,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 210,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 216,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 222,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 240,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 245,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 269,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_source.py",
+            "kind": "assignment",
+            "line": 308,
+            "name": "batch",
+            "receiver": "self.store"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_candidate_intake.py",
+            "kind": "assignment",
+            "line": 65,
+            "name": "bars",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_prefix_consistency.py",
+            "kind": "assignment",
+            "line": 108,
+            "name": "bars",
+            "receiver": "self"
           },
           "count": 1
         },
@@ -885,6 +1075,34 @@
           "attribute": "bars",
           "name": "bars",
           "page": "data_page",
+          "patch_sensitive": true
+        }
+      },
+      {
+        "original": {
+          "attribute": "days",
+          "name": "days",
+          "page": "data_page",
+          "patch_sensitive": false
+        },
+        "current": {
+          "attribute": "days",
+          "name": "days",
+          "page": "data_page",
+          "patch_sensitive": true
+        }
+      },
+      {
+        "original": {
+          "attribute": "batch",
+          "name": "batch",
+          "page": "backtest_page",
+          "patch_sensitive": false
+        },
+        "current": {
+          "attribute": "batch",
+          "name": "batch",
+          "page": "backtest_page",
           "patch_sensitive": true
         }
       }

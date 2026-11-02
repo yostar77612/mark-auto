@@ -19,6 +19,7 @@ from .contracts import (
     UiState,
 )
 from .errors import ERROR_TABLE
+from .daily_signal_data import daily_signal_views
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import holding_window
@@ -400,10 +401,12 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                     row.phase,
                     row.order_id,
                     row.code,
+                    row.key,
                 )
                 for row in state.automatic.daily.intents
             ),
             min((row.not_before for row in state.automatic.daily.intents if row.phase == 'READY' and engine.clock.now() < row.deadline), default=None),
+            daily_signal_data=daily_signal_views(engine),
         ),
         strategy_products=tuple(
             StrategyProductView(

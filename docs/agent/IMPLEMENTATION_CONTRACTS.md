@@ -7669,6 +7669,34 @@ Existing engine stop/reconciliation semantics and LIVE prohibition are unchanged
 Real-process regressions cover active subscriptions, in-flight history, native
 mutex disappearance, research QLockFile reacquisition and journal lease reopening.
 
+## M2-3c review-fix owner operation and retention contract (2026-11-02)
+
+- `UiAction.DECLARE_DAILY_NOT_SENT` is an explicit owner operation. Append
+  `UiCommand.daily_not_sent: DailyNotSentForm | None = None`; the form contains
+  `intent_key` and `confirmed=False`. Append empty-default
+  `DailyIntentView.intent_key` for exact selection across IPC/UTC round trips.
+  No client-supplied reconciliation result, price or no-send proof is accepted.
+- Confirmation, fresh healthy same-owner complete reconciliation, and verified
+  journal proof that the dispatch key never persisted `order_submitting` are all
+  required. A matching broker tag or semantic order prohibits declaration.
+  Only a no-order CLAIMED/UNKNOWN daily intent can become KNOWN_NO_ORDER. Keep
+  the journal, reservations and all financial rows; stay stopped and paused,
+  revoke authorization, never dispatch/retry/resume. AUTO_RECONCILE retains its
+  existing behavior and never implicitly declares an unknown dispatch unsent.
+- New codes: `daily_not_sent_confirmation_required`, `daily_not_sent_unproven`,
+  `daily_not_sent_order_found`, `daily_declared_not_sent`. Existing freshness,
+  state-conflict, reconciliation and LIVE rejection codes remain authoritative.
+- Daily data retention uses a named conservative default of20 verified trading
+  days. Consumed old closes may move to compact account audit anchors, never
+  hiding old-order economic changes. New closes reference frozen quotes instead
+  of embedding copies; terminal expired signals leave the current projection
+  only when no unresolved/active canonical order still needs them. Retained
+  evaluation cursors, canonical orders and full journal keep their identity;
+  current state keeps one latest account audit anchor. Full journal
+  history remains the audit authority; old payloads gain empty-default fields.
+- LIVE remains hard-disabled. No desktop_app/ edits or new send/resend path.
+  This PR must remain open for Claude review after complete green final-head CI.
+
 ## U3 desktop typed strategy presentation (2026-11-02)
 
 The wizard selects the holding kind before market/product and consumes the merged
@@ -7712,3 +7740,82 @@ failure bound if dispatch never occurs. The real deadline check and cleanup run
 unchanged; the original under-one-second return, retiring worker, absent receipt,
 empty cache and complete missing-range assertions remain. No production behavior,
 SDK access, execution policy or acceptance score changes.
+
+## M2 engine gaps: daily signal source contract (2026-11-02)
+
+- Append `AutomaticView.daily_signal_data=()` containing `DailySignalDataView`:
+  strategy/version/instrument, status, source, price_mode, adjustment_method,
+  completed trade_date, actual available_at, source_digest and reason. Empty
+  defaults preserve old payloads; UNVERIFIED is never a claim of readiness.
+- No new UiAction or client-supplied price/source authority. Existing RESEARCH
+  and server-driven daily evaluation consume one explicit data policy. Research
+  and execution use the same official source, session/volume scope, adjustment
+  method and point-in-time construction; rebuild the whole signal window for
+  every as-of date. Never append a raw close to an adjusted historical window.
+- Sparse trading does not invalidate a complete official daily observation.
+  Minute completeness and the13:30 auction cannot substitute for this source.
+  Execution prices, sizing and account valuation still use current raw quotes
+  and FeeSchedule; adjusted signal prices confer no execution authority.
+- New codes: daily_signal_source_unverified, daily_signal_basis_mismatch,
+  daily_signal_not_available. Missing/late/unattested data do not authorize a
+  new entry or a next-day catch-up. Existing protective exits remain separate.
+- Engine lane only; desktop_app/, LIVE hard guard, G3, SDK pin, PROJECT_STATE,
+  costs and workflow/layer rules are unchanged. Order-path PRs require green
+  complete CI and Claude review; this agent does not merge them.
+
+Daily source implementation detail: typed STOCK1d BROKER_SIMULATION RESEARCH
+requires a server-owned OfficialDailySignalSource and immutable OfficialDailyHistory;
+generic engine history cannot substitute. ResearchResult.daily_basis is a new
+keyword-only field. Its absent value is omitted only for the two exact research
+wire types, preserving legacy minute receipt/result bytes; populated provenance
+is always encoded. Historical fees/fills use RAW bars, decisions rebuild the
+whole at-most20-row adjusted window through each completed day. Runtime cache
+reads require a prior Taipei civil date and complete verified raw/action ranges.
+No download or client-supplied source is introduced. DailyIntent appends
+data_fingerprint/data_policy_fingerprint defaults; old unattested rows load but
+cannot dispatch. Saved-window semantic corrections refuse at the final boundary.
+OFFICIAL_DAILY_TRAINING labels this research; legacy LOCAL retains its old label.
+
+## M3-3 application contract (2026-11-02)
+
+- Candidate intake accepts only an engine-resolved candidate reference, an E1
+  qualification supplied by CandidateCatalog, and explicit complete TRAINING E2
+  data. Statistical-edge verdict, consumed qualification, sample presence, TMF
+  daily qualification, quantity=1, no stop_ticks/target_ticks, D6 intraday TMF,
+  supported interval/sizing, window cap, ten E2 trades and account/instrument
+  uniqueness all precede the first journal write. The current production-safe
+  E1 producer is not available; no fixture asserts otherwise.
+- SignalExecutor is pure and shares M3-1 window/direction/target helpers with E2.
+  It emits absolute targets and durable per-leg keys, never submits orders.
+  Future M2 integration must gate run state/environment and close before opening
+  a reversal, preserving existing risk and unknown-outcome behavior.
+- E2 uses next-open fills, M2 fee/tick/calendar authorities, adverse stops,
+  trading-day time stops and fixed 13:35 intraday flattening. Allocation and
+  marked-equity valuation are part of behavioral evidence; source-only changes
+  alter result identity but not behavior identity. Complete E2 audit evidence
+  is retained in lifecycle events. Supplied historical interval references are
+  not source authentication. Existing worker deadlines and data refill must be
+  connected by M3-4/7 before production use.
+- Lifecycle events use the existing Journal sequence fence, with append before
+  in-memory projection. Replay restores evaluations and pauses running records.
+  Evaluation is idempotent per strategy/version/trading day; resume clears
+  eligibility and starts a new observation epoch, without reusing old eligibility.
+  Drift uses the pinned m3-thresholds-v1 exact 1.5x/floor domain rule. A changed
+  behavior pauses; source-only refresh retains the same behavior evidence.
+- No M3-3 service has broker or AI dependencies, an approval API, LIVE opt-in,
+  UI strings or engine hooks. LIVE_APPROVED does not permit new entries here.
+  Pause/retire preserve M2's protective-exit responsibility. Pure offline LOCAL
+  decisions do not produce promotion evidence. Read-only DTOs have an immutable
+  false live-availability flag and no arbitrary evidence payload for AI.
+## U4 desktop risk and automatic execution presentation (2026-11-02)
+
+The desktop consumes merged account risk/preflight/automatic/daily View contracts.
+Persistent Cancel-default STOP_NEW retains protective exits. Explicit accepted
+AUTO_RECONCILE for the active scope precedes separate user-confirmed AUTO_RESUME;
+no reconciliation automatically resumes. AUTO_RESUME is pinned among LIVE order
+actions and refused by controls, handler and command boundary. Settings send typed
+AccountRiskLimits through existing SAVE_ACCOUNT_RISK; edited account drafts survive
+polling. WAITING_SESSION is neutral scheduling, not a resume request. Daily signal
+target dates/windows/phases remain backend facts; UNKNOWN never resends and
+DISPATCHED never claims a fill. No new engine or IPC contract is introduced.
+Strings phase68 orders3032–3085. Evidence: docs/analysis/u4-automatic/verification.md.

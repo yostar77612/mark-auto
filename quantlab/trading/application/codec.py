@@ -44,7 +44,19 @@ def _encode(value: object, depth: int = 0) -> object:
         key = type(value).__module__ + '.' + type(value).__qualname__
         if key not in _TYPES:
             raise DomainError('validation_failed', 'unregistered DTO')
-        return {'@': key, 'fields': {f.name: _encode(getattr(value, f.name), depth + 1) for f in fields(value)}}
+        # Preserve legacy research/receipt bytes when the new daily basis is absent.
+        legacy_research = key in (
+            'quantlab.trading.application.research.ResearchResult',
+            'quantlab.trading.application.minute_research.MinuteResearchResult',
+        )
+        return {
+            '@': key,
+            'fields': {
+                f.name: _encode(getattr(value, f.name), depth + 1)
+                for f in fields(value)
+                if not (legacy_research and f.name == 'daily_basis' and getattr(value, f.name) is None)
+            },
+        }
     raise DomainError('validation_failed', 'unsupported wire value')
 
 

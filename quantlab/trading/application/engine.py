@@ -32,6 +32,7 @@ from quantlab.trading.domain.strategy import CompletedBar, StrategyParameters
 from quantlab.trading.ports.interfaces import Clock
 from quantlab.trading.ports.contracts import RemoteSnapshot
 from quantlab.trading.ports.storage import Journal
+from quantlab.trading.ports.daily_signals import OfficialDailySignalSource
 
 ZERO = Decimal('0')
 
@@ -55,6 +56,7 @@ class TradingEngine:
         historical_bars: dict[str, tuple[CompletedBar, ...]] | None = None,
         live_market: LiveMarketService | None = None,
         automatic_entry_check: Callable[[], None] | None = None,
+        daily_signal_source: OfficialDailySignalSource | None = None,
     ):
         initialize()
         self.journal, self.clock, self.calendar, self.catalog = journal, clock, calendar, catalog
@@ -62,6 +64,7 @@ class TradingEngine:
         self.configuration = configuration or ExecutionConfiguration()
         self.live_market = live_market
         self.automatic_entry_check = automatic_entry_check
+        self.daily_signal_source = daily_signal_source
         if historical_bars is not None and (type(historical_bars) is not dict or len(historical_bars) > len(catalog.instruments)):
             raise DomainError('validation_failed', 'bounded typed market history mapping required')
         self.history: dict[str, tuple[CompletedBar, ...]] = {}
@@ -112,18 +115,18 @@ class TradingEngine:
             if stale and record.state in ('ACTIVE', 'RESEARCHED'):
                 record = replace(record, state='RULE_VALID', evidence='SOURCE_PROFILE_CHANGED')
             strategies.append(record)
-        self._persist(
-            'startup_reconciliation_required',
-            replace(
-                self.state,
-                orders=pending,
-                strategies=tuple(strategies),
-                stopped=True,
-                reconciled=False,
-                engine_closed=False,
-                automatic=restart_automatic_state(self.state.automatic),
-            ),
+        from .daily_retention import compact_daily_projection
+
+        restarted = replace(
+            self.state,
+            orders=pending,
+            strategies=tuple(strategies),
+            stopped=True,
+            reconciled=False,
+            engine_closed=False,
+            automatic=restart_automatic_state(self.state.automatic),
         )
+        self._persist('startup_reconciliation_required', compact_daily_projection(self, restarted))
         from .sessions import synchronize_session
 
         synchronize_session(self)
@@ -403,6 +406,9 @@ class TradingEngine:
             or evidence.source_digest != self.profile.source_digest
         ):
             raise DomainError('strategy_evidence_stale', 'current rules, costs, instrument, calendar or producer do not match research')
+        from .daily_signal_data import official_daily_result
+
+        official_daily_result(self, strategy, evidence)
 
     def deploy(self, reference: str) -> None:
         strategy = self.strategy(reference)

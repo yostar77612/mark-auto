@@ -26,6 +26,8 @@ class DailyIntent:
     phase: str = 'READY'
     order_id: str = ''
     code: str = ''
+    data_fingerprint: str = ''
+    data_policy_fingerprint: str = ''
 
     @property
     def key(self) -> str:

@@ -1,0 +1,59 @@
+{
+  "retrieved_at": "2026-11-02T12:06:08.810722+00:00",
+  "recording_policy": "Exchange response files are byte-for-byte public HTTP responses. SDK example is a labelled transcription, not a real exchange intraday tape. No minute trades are inferred from daily records.",
+  "documents": [
+    {
+      "file": "twse_6225_202506.json",
+      "url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=6225&response=json",
+      "response_url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=6225&response=json",
+      "content_type": "application/json;charset=UTF-8",
+      "sha256": "8f3bbac0d2a7f95ff48da767569bbd5dc5350af48ec8177388eb48a85f298166",
+      "rows": 21
+    },
+    {
+      "file": "twse_2330_202506.json",
+      "url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=2330&response=json",
+      "response_url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=2330&response=json",
+      "content_type": "application/json;charset=UTF-8",
+      "sha256": "206e5de8ea69b81651ffacedff4226f13ecb241692ac9f79d54665870ddbc2b1",
+      "rows": 21
+    },
+    {
+      "file": "twse_ex_right_20250612.json",
+      "url": "https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate=20250612&endDate=20250612&response=json",
+      "response_url": "https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate=20250612&endDate=20250612&response=json",
+      "content_type": "application/json;charset=UTF-8",
+      "sha256": "f8b40c60ee13035ed3beaf239c116e2b21957fbc6a1f335d67a5e1160c19a1a0",
+      "rows": 12
+    },
+    {
+      "file": "twse_actions_20250611_20250612.json",
+      "url": "https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate=20250611&endDate=20250612&response=json",
+      "retrieved_at": "2026-11-02T15:10:56.909071+00:00",
+      "sha256": "c7a5cc4527f7d94bd7ea6b2a94a5a361a841a980e56d92fc069aed3a7c25ce2c",
+      "rows": 22,
+      "recording_policy": "byte-for-byte public response; no broker access; existing legacy fixture raw bytes unchanged"
+    }
+  ],
+  "thin_stock_case": {
+    "instrument_id": "TWSE:6225",
+    "trade_date": "2025-06-27",
+    "source_file": "twse_6225_202506.json",
+    "recorded_total_trade_count": 7
+  },
+  "ex_dividend_case": {
+    "instrument_id": "TWSE:2330",
+    "trade_date": "2025-06-12",
+    "daily_file": "twse_2330_202506.json",
+    "action_file": "twse_ex_right_20250612.json"
+  },
+  "official_session_rules": {
+    "ordinary_continuous_trading_end": "13:25:00",
+    "ordinary_closing_auction": "13:30:00",
+    "postponed_closing_auction": "13:33:00",
+    "sources": [
+      "https://shl.twse.com.tw/page/library/trade/2.html",
+      "https://www.twse.com.tw/zh/products/system/trading.html"
+    ]
+  }
+}

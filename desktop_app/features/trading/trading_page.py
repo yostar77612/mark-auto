@@ -13,7 +13,9 @@ from quantlab.trading.application.contracts import UiAction, UiState
 from quantlab.trading.domain.models import Environment
 
 
-LIVE_ORDER_ACTIONS = frozenset((UiAction.DEPLOY, UiAction.STEP, UiAction.RESUME, UiAction.CANCEL_ENTRIES, UiAction.FLATTEN)) | MANUAL_ACTIONS
+LIVE_ORDER_ACTIONS = (
+    frozenset((UiAction.AUTO_RESUME, UiAction.DEPLOY, UiAction.STEP, UiAction.RESUME, UiAction.CANCEL_ENTRIES, UiAction.FLATTEN)) | MANUAL_ACTIONS
+)
 _ORDER_BUTTONS = ('deploy_button', 'resume_button', 'cancel_entries_button', 'flatten_button', 'overview_cancel_entries')
 
 
