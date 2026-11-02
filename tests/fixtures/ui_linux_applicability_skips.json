@@ -20,6 +20,50 @@
     "reason": "Native Windows sharing modes"
   },
   {
+    "id": "test_autostart.RunAutostartTests.test_correct_registration_has_no_write",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_create_error_is_specific",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_default_off_does_not_create_key",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_delete_error_preserves_registration",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_disable_missing_key_is_idempotent",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_disable_removes_only_owned_value",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_enable_quotes_only_executable_under_hkcu",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_query_error_is_not_treated_as_disabled",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_read_access_error_is_specific",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_repair_follows_updated_or_moved_executable",
+    "reason": "Windows registry required"
+  },
+  {
+    "id": "test_autostart.RunAutostartTests.test_write_error_is_specific",
+    "reason": "Windows registry required"
+  },
+  {
     "id": "test_chatgpt_windows.WindowsAuthAcceptanceTests.test_actual_junction_ancestor_is_rejected",
     "reason": "requires actual Windows DPAPI, DACL and msvcrt"
   },

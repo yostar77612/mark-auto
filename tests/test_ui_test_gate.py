@@ -227,8 +227,28 @@ class UiTestGateTests(unittest.TestCase):
         root = gate.ROOT / 'tests/fixtures'
         ui = json.loads((root / 'ui_linux_applicability_skips.json').read_text(encoding='utf-8'))
         offline = json.loads((root / 'linux_offline_applicability_skips.json').read_text(encoding='utf-8'))
+        # M4a adds only these Windows-registry cases to both Linux profiles.
+        # Pin every new id/reason, then keep the original applicability digest.
+        registry_methods = (
+            'test_default_off_does_not_create_key',
+            'test_enable_quotes_only_executable_under_hkcu',
+            'test_disable_removes_only_owned_value',
+            'test_disable_missing_key_is_idempotent',
+            'test_repair_follows_updated_or_moved_executable',
+            'test_correct_registration_has_no_write',
+            'test_read_access_error_is_specific',
+            'test_query_error_is_not_treated_as_disabled',
+            'test_create_error_is_specific',
+            'test_write_error_is_specific',
+            'test_delete_error_preserves_registration',
+        )
+        registry = [{'id': 'test_autostart.RunAutostartTests.' + name, 'reason': 'Windows registry required'} for name in sorted(registry_methods)]
+        for rows in (ui, offline):
+            self.assertEqual([row for row in rows if row['id'].startswith('test_autostart.RunAutostartTests.')], registry)
+        registry_ids = {row['id'] for row in registry}
+        historical_ui = [row for row in ui if row['id'] not in registry_ids]
         self.assertEqual(
-            hashlib.sha256(json.dumps(ui, sort_keys=True, separators=(',', ':')).encode()).hexdigest(),
+            hashlib.sha256(json.dumps(historical_ui, sort_keys=True, separators=(',', ':')).encode()).hexdigest(),
             '6433af69149278c4252c412d55664aa2082dcc15e7a6193ca43d5f0b9cb745a9',
         )
         self.assertEqual([row for row in offline if not row['id'].startswith('test_ui.UITests.')], ui)
