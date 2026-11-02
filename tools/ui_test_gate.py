@@ -19,7 +19,7 @@ if str(ROOT) not in sys.path:
 PLAN = 'ui-original-partitions-v2'
 OFFLINE_PLAN = 'linux-offline-original-partitions-v2'
 GROUPS = ('core', 'research')
-CORE_SLICES = ('desktop-trading', 'paper-remaining', 'trading', 'paper')
+CORE_SLICES = ('desktop-trading', 'paper-remaining')
 PRODUCERS = (*CORE_SLICES, 'research')
 
 
@@ -107,7 +107,7 @@ def validate(reports, expected, expected_context, expected_identity, skips, pyth
     ):
         raise ValueError('Invalid UI source/run/dependency context')
     if type(reports) is not list or len(reports) != len(PRODUCERS):
-        raise ValueError('Exactly five Linux producer reports required')
+        raise ValueError('Exactly three Linux producer reports required')
     discovered, parts = expected['discovered_ids'], expected['partitions']
     if (
         not discovered

@@ -71,9 +71,8 @@ LEGACY_DESKTOP_MODULES = frozenset(
         'test_ui_redesign_data_results',
     }
 )
-# Keep the two existing check names while separating their whole-module partners.
-LINUX_CORE_SLICES = ('desktop-trading', 'paper-remaining', 'trading', 'paper')
-LINUX_CORE_PLAN = 'linux-core-whole-modules-v2'
+LINUX_CORE_SLICES = ('desktop-trading', 'paper-remaining')
+LINUX_CORE_PLAN = 'linux-core-whole-modules-v1'
 
 
 def core_shard_for_module(module):
@@ -89,8 +88,7 @@ def core_shard_for_module(module):
 
 
 def linux_core_slice_for_module(module):
-    shard = core_shard_for_module(module)
-    return {'desktop': 'desktop-trading', 'remaining': 'paper-remaining'}.get(shard, shard)
+    return 'desktop-trading' if core_shard_for_module(module) in ('desktop', 'trading') else 'paper-remaining'
 
 
 def linux_core_assignments(suite):
