@@ -228,3 +228,17 @@
   Fix the old context test's ordinal4 selection to HoldingKind.CUSTOM and explicitly
   provide its stop while retaining every original financial/isolation assertion.
   No new strings/modules or changed style hashes; do not rerun baseline generation.
+
+## 2026-11-02 — U4 risk and automatic execution desktop
+
+- Start independent U4 from latest merged U3 main f0e974f; append phase68 orders
+  3032–3085. Use public AccountRiskLimits/DTOs/actions only; never change quantlab.
+- Keep accepted reconciliation proof scoped to context/epoch/environment/account/
+  trading day, require separate Cancel-default resume and retain backend admission.
+  Add AUTO_RESUME to exact LIVE action pin; no new automatic order policy.
+- PR147 is merged: render its daily intent phases/date/window now. Normal next-
+  session waiting is neutral and needs no resume; unknown outcomes never replay.
+- Preserve true unknown financial/position facts and actual geometry. Baselines
+  generated once at feature completion in a separate commit; full tests stay CI.
+- Native LOCAL7.816s/fake SIM6.891s pass, normal owned cleanup/no real SDK. CI green
+  and Claude review required before merge; Codex does not merge this order path.

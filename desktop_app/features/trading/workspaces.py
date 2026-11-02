@@ -1,5 +1,8 @@
 """Workspace composition; all actions delegate to the window command boundary."""
 
+from desktop_app.features.trading.automatic_status import AutomaticControls
+from desktop_app.features.trading.account_risk_controls import AccountRiskControls
+
 from decimal import Decimal
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -102,6 +105,8 @@ def build(self) -> None:
     _trading_page(self)
     _performance_page(self)
     _settings_page(self)
+    self.automatic_controls = AutomaticControls(self, header)
+    self.account_risk_controls = AccountRiskControls(self)
     self.navigation.currentRowChanged.connect(self.pages.setCurrentIndex)
     self.navigation.itemClicked.connect(lambda item: self.pages.setCurrentIndex(self.navigation.row(item)))
     self.navigation.itemActivated.connect(lambda item: self.pages.setCurrentIndex(self.navigation.row(item)))

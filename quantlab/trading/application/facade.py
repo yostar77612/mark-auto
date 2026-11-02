@@ -58,7 +58,7 @@ class LocalFacade:
 
     def _execute(self, command: UiCommand) -> str:
         engine, action = self.engine, command.action
-        if action in (UiAction.AUTO_RESUME, UiAction.AUTO_RECONCILE):
+        if action in (UiAction.AUTO_RESUME, UiAction.AUTO_RECONCILE, UiAction.DECLARE_DAILY_NOT_SENT):
             if engine.configuration.environment is Environment.LIVE:
                 raise DomainError('production_orders_disabled')
             raise DomainError('capability_missing', 'automatic actions require the accepted broker runtime')

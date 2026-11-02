@@ -113,6 +113,12 @@ class DailyClosesTests(unittest.TestCase):
     def target(self):
         return self.engine.calendar.advance(self.day, 1)
 
+    def close_marks(self, close):
+        marks = tuple(row for row in self.engine.state.daily_closing_quotes if (row.account_ref, row.trade_date) == (close.account_ref, close.trade_date))
+        self.assertEqual(tuple(row.quote.instrument_id for row in marks), close.closing_quote_refs)
+        self.assertEqual(close.closing_quotes, ())
+        return marks
+
     def test_actual_quote_ledger_and_costs_match_current_net_mark_without_timestamp_changes(self):
         self.engine.fees = FeeSchedule()
         entry = self.engine.state.orders[-1]
@@ -125,7 +131,7 @@ class DailyClosesTests(unittest.TestCase):
         observe_daily_closes(self.engine, (self.bar(),))
         close = self.engine.state.daily_account_closes[0]
         self.assertEqual(close.net_pnl, expected)
-        self.assertIs(close.closing_quotes[0].quote, quote)
+        self.assertIs(self.close_marks(close)[0].quote, quote)
         self.assertEqual(loads(dumps(close)), close)
         self.assertEqual(close.source_id, SOURCE_ID)
 
@@ -162,7 +168,7 @@ class DailyClosesTests(unittest.TestCase):
         observe_daily_closes(self.engine, ())
         close = self.engine.state.daily_account_closes[0]
         self.assertEqual(close.as_of, session.closes_at)
-        self.assertIs(close.closing_quotes[0].quote, original)
+        self.assertIs(self.close_marks(close)[0].quote, original)
         self.assertEqual(close.net_pnl, D('-1000'))
 
     def test_mixed_stock_and_future_close_independently_then_exact_account_split(self):
@@ -179,12 +185,12 @@ class DailyClosesTests(unittest.TestCase):
         evidence = daily_close_evidence(self.engine, self.target())
         self.assertEqual(evidence.as_of, self.session(self.future).closes_at)
         self.assertEqual(dict(evidence.account_previous_close), {'test-stock': D('-1000'), 'future': D('-10')})
-        marks = tuple(mark for row in self.engine.state.daily_account_closes for mark in row.closing_quotes)
+        marks = tuple(mark for row in self.engine.state.daily_account_closes for mark in self.close_marks(row))
         self.assertIn(stock_quote, tuple(mark.quote for mark in marks))
         self.assertIn(future_quote, tuple(mark.quote for mark in marks))
         for close in self.engine.state.daily_account_closes:
             expected = self.stock.instrument_id if close.account_ref == 'test-stock' else self.future.instrument_id
-            self.assertEqual(tuple(mark.quote.instrument_id for mark in close.closing_quotes), (expected,))
+            self.assertEqual(tuple(mark.quote.instrument_id for mark in self.close_marks(close)), (expected,))
 
     def test_repeated_observation_does_not_append_duplicate_quotes_or_closes(self):
         self.seal()
@@ -207,7 +213,7 @@ class DailyClosesTests(unittest.TestCase):
         close = self.engine.state.daily_account_closes[0]
         self.assertEqual(close.trade_date, self.day)
         self.assertEqual(close.net_pnl, D('-1000'))
-        self.assertIs(close.closing_quotes[0].quote, quote)
+        self.assertIs(self.close_marks(close)[0].quote, quote)
 
     def test_expiry_product_quote_freezes_before_later_contract_in_the_same_account(self):
         self.day = self.future.expiry
@@ -233,8 +239,8 @@ class DailyClosesTests(unittest.TestCase):
         self.assertEqual(close.as_of.hour, 13)
         self.assertEqual(close.as_of.minute, 45)
         self.assertEqual(close.net_pnl, D('-20'))
-        self.assertIs(close.closing_quotes[0].quote, expiring_quote)
-        self.assertEqual(close.closing_quotes[0].session_close_at.minute, 30)
+        self.assertIs(self.close_marks(close)[0].quote, expiring_quote)
+        self.assertEqual(self.close_marks(close)[0].session_close_at.minute, 30)
 
     def test_realized_only_account_needs_no_synthetic_quote_or_balance(self):
         self.engine.state = replace(self.engine.state, positions=(replace(self.lot, quantity=0, sellable_quantity=0, realized_pnl=D('-37')),))
