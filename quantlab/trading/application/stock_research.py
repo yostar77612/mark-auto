@@ -19,11 +19,13 @@ from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.models import HoldingKind, InstrumentSpec, Market, Side
-from quantlab.trading.domain.stock_history import CorporateAction, DailyStockBar, price_series
+from quantlab.trading.domain.stock_history import CashDividendAction, CorporateAction, DailyStockBar, price_series
 from quantlab.trading.domain.strategy import CompletedBar, ResearchEvidence
 from quantlab.trading.domain.validation import DomainError
 
 PRODUCER = 'markauto-official-stock-training-1'
+CASH_PRODUCER = 'markauto-official-stock-cash-training-1'
+CASH_METHOD = 'gross-issuer-cash-accrual-v1'
 MAX_BARS = 6000
 
 
@@ -56,8 +58,57 @@ class StockResearchArtifact:
     profile: ProducerProfile
 
 
-def artifact_material(result, metadata, events, fees, treatment, strategy, instrument, calendar, profile):
-    return result, metadata, events, fees, treatment, strategy, instrument, calendar, profile
+@dataclass(frozen=True)
+class CashEntitlement:
+    event_index: int
+    trade_index: int
+    quantity: int
+    gross_amount: Decimal
+
+
+@dataclass(frozen=True)
+class CashEntitlementSummary:
+    """Separate gross accrual; payable is scheduled, never verified bank cash."""
+
+    as_of: date
+    entitlements: tuple[CashEntitlement, ...]
+    gross_entitlement: Decimal
+    gross_payable: Decimal
+    gross_receivable: Decimal
+    raw_net_plus_entitlement: Decimal
+
+
+@dataclass(frozen=True)
+class CashStockResearchArtifact(StockResearchArtifact):
+    cash_accounting: CashEntitlementSummary
+
+
+def artifact_material(result, metadata, events, fees, treatment, strategy, instrument, calendar, profile, *, cash_accounting=None):
+    original = result, metadata, events, fees, treatment, strategy, instrument, calendar, profile
+    return original if cash_accounting is None else (*original, cash_accounting)
+
+
+@decimal_operation
+def cash_entitlements(result: ResearchResult, inputs: StockResearchInputs, checkpoint: Callable[[], None]) -> CashEntitlementSummary:
+    """Attribute issuer gross cash without changing raw trades or sizing cash."""
+    bars, events = inputs.batch.bars, inputs.batch.events
+    as_of = bars[-1].trade_date
+    rows = []
+    payable = receivable = Decimal('0')
+    for event_index, event in enumerate(events):
+        checkpoint()
+        if type(event) is not CashDividendAction:
+            continue
+        for trade_index, trade in enumerate(result.trades):
+            if bars[trade.entry_index].trade_date < event.ex_date <= bars[trade.exit_index].trade_date:
+                amount = event.cash_per_share * trade.quantity
+                rows.append(CashEntitlement(event_index, trade_index, trade.quantity, amount))
+                if event.payment_date <= as_of:
+                    payable += amount
+                else:
+                    receivable += amount
+    gross = payable + receivable
+    return CashEntitlementSummary(as_of, tuple(rows), gross, payable, receivable, result.net_pnl + gross)
 
 
 def validate_request(strategy: StrategyRecord, spec: InstrumentSpec, treatment: StockTaxTreatment, fees: FeeSchedule, partition: str) -> None:
@@ -103,6 +154,8 @@ def backtest_stock(
     bars, events, fees = inputs.batch.bars, inputs.batch.events, inputs.fees
     if not strategy.policy.max_days + 6 <= len(bars) <= MAX_BARS or len(events) > MAX_BARS:
         raise DomainError('official_stock_coverage_missing', 'bounded complete stock observations required')
+    if len({event.ex_date for event in events}) != len(events):
+        raise DomainError('validation_failed', 'one combined official event per date')
     sessions = {session.trade_date: session for session in calendar.sessions if session.kind == 'DAY'}
     if any(day not in sessions for day in (bar.trade_date for bar in bars)):
         raise DomainError('calendar_missing', 'stock day session required')
@@ -110,7 +163,7 @@ def backtest_stock(
     equity = peak = drawdown = Decimal('0')
     sign = 1 if strategy.form.direction is Side.BUY else -1
     quantity = spec.lot_size
-    event_days = {event.ex_date for event in events}
+    event_days = {event.ex_date for event in events if type(event) is not CashDividendAction or sign != 1}
     for index in range(1, len(bars)):
         checkpoint()
         bar = bars[index]
@@ -126,8 +179,8 @@ def backtest_stock(
         exit_price = None
         if position is not None:
             entry_index, entry_price = position
-            # Reference-price ratios do NOT identify cash/share entitlements.
-            # Refuse the whole evidence rather than report a fictitious 100->90 loss.
+            # Only explicit long cash-only facts have a separate accrual model.
+            # Price ratios, share/mixed events and short obligations remain unknown.
             if any(bars[entry_index].trade_date < day <= bar.trade_date for day in event_days):
                 raise DomainError('stock_entitlement_unknown', 'held stock crosses an action without economic entitlement facts')
             age = index - entry_index  # coverage admission proves one bar per explicit session
@@ -158,7 +211,7 @@ def backtest_stock(
         strategy.strategy_id,
         strategy.version,
         dataset,
-        PRODUCER,
+        CASH_PRODUCER if any(type(event) is CashDividendAction for event in events) else PRODUCER,
         'TRAINING',
         equity,
         sum((trade.costs for trade in trades), Decimal('0')),
@@ -172,3 +225,4 @@ def backtest_stock(
 
 
 register(StockTaxTreatment, StockResearchArtifact, CorporateAction, DailyStockBar)
+register(CashDividendAction, CashEntitlement, CashEntitlementSummary, CashStockResearchArtifact)

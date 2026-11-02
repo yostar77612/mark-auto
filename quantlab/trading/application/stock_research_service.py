@@ -5,7 +5,17 @@ from hashlib import sha256
 from time import monotonic
 
 from .codec import dumps, loads
-from .stock_research import PRODUCER, StockResearchArtifact, artifact_material, backtest_stock, validate_request
+from .stock_research import (
+    CASH_METHOD,
+    CASH_PRODUCER,
+    PRODUCER,
+    CashStockResearchArtifact,
+    StockResearchArtifact,
+    artifact_material,
+    backtest_stock,
+    cash_entitlements,
+    validate_request,
+)
 from .research import research_fingerprint
 from quantlab.trading.domain.strategy import ResearchEvidence
 from quantlab.trading.domain.validation import DomainError
@@ -53,12 +63,30 @@ class StockResearchService:
             ('sizing', 'one instrument lot within raw-price entry cash allocation'),
             ('calendar_digest', sha256(dumps(self.calendar).encode()).hexdigest()),
         )
+        cash_accounting = None
+        if result.producer == CASH_PRODUCER:
+            cash_accounting = cash_entitlements(result, inputs, checkpoint)
+            metadata = tuple((key, 'raw-price-only; cash accrual reported separately' if key == 'pnl_basis' else value) for key, value in metadata) + (
+                ('cash_method', CASH_METHOD),
+                (
+                    'cash_basis',
+                    'gross issuer distribution; excludes personal withholding and remittance fees; '
+                    'unrounded per-share arithmetic; issuer-specific rounding not modeled',
+                ),
+                ('cash_payable_basis', 'supplied payment schedule; not verified bank settlement'),
+                ('cash_horizon', cash_accounting.as_of.isoformat()),
+                ('cash_sizing', 'neither payable nor receivable funds entries; static allocation unchanged'),
+                ('cash_performance', 'separate accrual total only; standard result and drawdown remain raw-price-only'),
+            )
         clean_strategy = replace(strategy, evidence='', evidence_hash='', research_blob='')
-        material = artifact_material(result, metadata, inputs.batch.events, fees, treatment, clean_strategy, spec, self.calendar, self.profile)
+        material = artifact_material(
+            result, metadata, inputs.batch.events, fees, treatment, clean_strategy, spec, self.calendar, self.profile, cash_accounting=cash_accounting
+        )
         result_hash = sha256(dumps(material).encode()).hexdigest()
         strategy_hash = strategy.definition.fingerprint if strategy.definition else sha256(dumps((strategy.form, strategy.policy)).encode()).hexdigest()
         evidence = ResearchEvidence('BACKTEST', strategy_hash, result.dataset_id, result.producer, self.clock.now(), 'TRAINING', result_hash)
-        artifact = StockResearchArtifact(evidence, result, fees, treatment, metadata, inputs.batch.events, clean_strategy, spec, self.calendar, self.profile)
+        values = evidence, result, fees, treatment, metadata, inputs.batch.events, clean_strategy, spec, self.calendar, self.profile
+        artifact = StockResearchArtifact(*values) if cash_accounting is None else CashStockResearchArtifact(*values, cash_accounting)
         payload = dumps(artifact)
         checkpoint()
         if self.profile_reader is not None and self.profile_reader() != self.profile:
@@ -73,8 +101,9 @@ class StockResearchService:
             if event.kind != EVENT_KIND:
                 raise DomainError('source_invalid_evidence', 'unexpected stock evidence journal event')
             artifact = loads(event.payload)
-            if not isinstance(artifact, StockResearchArtifact):
+            if type(artifact) not in (StockResearchArtifact, CashStockResearchArtifact):
                 raise DomainError('source_invalid_evidence', 'stock artifact required')
+            cash_accounting = artifact.cash_accounting if isinstance(artifact, CashStockResearchArtifact) else None
             material = artifact_material(
                 artifact.result,
                 artifact.metadata,
@@ -85,6 +114,7 @@ class StockResearchService:
                 artifact.instrument,
                 artifact.calendar,
                 artifact.profile,
+                cash_accounting=cash_accounting,
             )
             expected = sha256(dumps(material).encode()).hexdigest()
             strategy = artifact.strategy
@@ -96,8 +126,8 @@ class StockResearchService:
                 or artifact.evidence.partition != 'TRAINING'
                 or artifact.evidence.stage != 'BACKTEST'
                 or artifact.evidence.dataset_id != artifact.result.dataset_id
-                or artifact.evidence.producer != PRODUCER
-                or artifact.result.producer != PRODUCER
+                or artifact.evidence.producer != (CASH_PRODUCER if cash_accounting is not None else PRODUCER)
+                or artifact.result.producer != artifact.evidence.producer
                 or artifact.evidence.strategy_fingerprint != strategy_hash
                 or artifact.result.fingerprint != fingerprint
             ):

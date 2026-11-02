@@ -6,7 +6,7 @@ from hashlib import sha256
 import sqlite3
 import json
 
-from quantlab.trading.domain.stock_history import CorporateAction, DailyStockBar
+from quantlab.trading.domain.stock_history import CashDividendAction, CorporateAction, DailyStockBar
 from quantlab.trading.domain.validation import DomainError, identity, trading_date
 from quantlab.trading.ports.stock_history import OfficialPayload, OfficialStockBatch
 
@@ -23,6 +23,11 @@ class DailyStockStorage:
             CREATE TABLE IF NOT EXISTS corporate_actions (
                 instrument_id TEXT NOT NULL, ex_date TEXT NOT NULL, previous_close TEXT NOT NULL,
                 reference_price TEXT NOT NULL, source_digest TEXT NOT NULL, source_url TEXT NOT NULL,
+                PRIMARY KEY(instrument_id,ex_date));
+            CREATE TABLE IF NOT EXISTS stock_cash_entitlements (
+                instrument_id TEXT NOT NULL, ex_date TEXT NOT NULL,
+                cash_per_share TEXT NOT NULL, payment_date TEXT NOT NULL,
+                source_digest TEXT NOT NULL, facts_digest TEXT NOT NULL,
                 PRIMARY KEY(instrument_id,ex_date));
             CREATE TABLE IF NOT EXISTS official_stock_payloads (
                 source_url TEXT NOT NULL, digest TEXT NOT NULL, raw BLOB NOT NULL,
@@ -59,6 +64,8 @@ class DailyStockStorage:
                 raise DomainError('official_stock_invalid', 'observation source mismatch')
         if any((e.source_url, e.source_digest) not in payloads for e in batch.events):
             raise DomainError('official_stock_invalid', 'event source mismatch')
+        if any(type(e) not in (CorporateAction, CashDividendAction) for e in batch.events):
+            raise DomainError('official_stock_invalid', 'unsupported economic event facts')
         try:
             self._publish(batch, payloads)
         except sqlite3.DatabaseError:
@@ -69,7 +76,7 @@ class DailyStockStorage:
             self.db.executemany('INSERT OR IGNORE INTO official_stock_payloads VALUES(?,?,?)', [(p.source_url, p.digest, p.raw) for p in batch.payloads])
             # A fully validated refresh replaces only its own half-open interval.
             # DELETE/INSERT share one transaction; any failure rolls everything back.
-            for table, column in (('bars_1d', 'trade_date'), ('corporate_actions', 'ex_date')):
+            for table, column in (('bars_1d', 'trade_date'), ('corporate_actions', 'ex_date'), ('stock_cash_entitlements', 'ex_date')):
                 self.db.execute(
                     f'DELETE FROM {table} WHERE instrument_id=? AND {column}>=? AND {column}<?',
                     (batch.instrument_id, batch.start.isoformat(), batch.end.isoformat()),
@@ -84,6 +91,14 @@ class DailyStockStorage:
             self.db.executemany(
                 'INSERT INTO corporate_actions VALUES(?,?,?,?,?,?)',
                 [(e.instrument_id, e.ex_date.isoformat(), str(e.previous_close), str(e.reference_price), e.source_digest, e.source_url) for e in batch.events],
+            )
+            self.db.executemany(
+                'INSERT INTO stock_cash_entitlements VALUES(?,?,?,?,?,?)',
+                [
+                    (e.instrument_id, e.ex_date.isoformat(), str(e.cash_per_share), e.payment_date.isoformat(), e.source_digest, _cash_binding(e))
+                    for e in batch.events
+                    if isinstance(e, CashDividendAction)
+                ],
             )
             self.db.execute(
                 'INSERT OR REPLACE INTO official_stock_batches VALUES(?,?,?,?)',
@@ -134,7 +149,12 @@ class DailyStockStorage:
                     'SELECT * FROM corporate_actions WHERE instrument_id=? AND ex_date>=? AND ex_date<? ORDER BY ex_date', args
                 ).fetchall()
                 bars = tuple(DailyStockBar(row[0], date.fromisoformat(row[1]), *(Decimal(v) for v in row[2:6]), row[6], row[7], row[8]) for row in rows)
-                events = tuple(CorporateAction(row[0], date.fromisoformat(row[1]), Decimal(row[2]), Decimal(row[3]), row[4], row[5]) for row in event_rows)
+                cash_rows = self.db.execute(
+                    'SELECT ex_date,cash_per_share,payment_date,source_digest,facts_digest FROM stock_cash_entitlements '
+                    'WHERE instrument_id=? AND ex_date>=? AND ex_date<?',
+                    args,
+                ).fetchall()
+                events = _events(event_rows, cash_rows)
                 manifests = self.db.execute(
                     'SELECT sources FROM official_stock_batches WHERE instrument_id=? AND start_date<? AND end_date>?',
                     (instrument_id, end.isoformat(), start.isoformat()),
@@ -155,3 +175,39 @@ class DailyStockStorage:
             return OfficialStockBatch(instrument_id, start, end, bars, events, payloads)
         except (ValueError, TypeError, ArithmeticError, sqlite3.DatabaseError):
             raise DomainError('official_stock_invalid', 'cached daily data/provenance invalid') from None
+
+
+def _events(event_rows, cash_rows):
+    """Rejoin additive facts without upgrading historical unknown actions."""
+    cash = {row[0]: row[1:] for row in cash_rows}
+    if not cash.keys() <= {row[1] for row in event_rows}:
+        raise ValueError('orphan cash facts')
+    result = []
+    for row in event_rows:
+        values = row[0], date.fromisoformat(row[1]), Decimal(row[2]), Decimal(row[3]), row[4], row[5]
+        if row[1] in cash:
+            amount, payment, digest, binding = cash[row[1]]
+            if digest != row[4]:
+                raise ValueError('cash source binding mismatch')
+            event = CashDividendAction(*values, Decimal(amount), date.fromisoformat(payment))
+            if binding != _cash_binding(event):
+                raise ValueError('cash facts binding mismatch')
+            result.append(event)
+        else:
+            result.append(CorporateAction(*values))
+    return tuple(result)
+
+
+def _cash_binding(event):
+    """Disk integrity of trusted source-adapter facts, not a source attestation."""
+    values = (
+        event.instrument_id,
+        event.ex_date.isoformat(),
+        str(event.previous_close),
+        str(event.reference_price),
+        event.source_url,
+        event.source_digest,
+        str(event.cash_per_share),
+        event.payment_date.isoformat(),
+    )
+    return sha256(json.dumps(values, separators=(',', ':')).encode()).hexdigest()

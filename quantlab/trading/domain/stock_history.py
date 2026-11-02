@@ -59,6 +59,26 @@ class CorporateAction:
 
 
 @dataclass(frozen=True)
+class CashDividendAction(CorporateAction):
+    """Explicit cash-only issuer distribution, not inferred from a price ratio.
+
+    The source adapter must establish that no share/rights component exists.
+    Payment date is a supplied schedule, not proof of net bank settlement.
+    Original CorporateAction wire fields remain unchanged for old evidence.
+    """
+
+    cash_per_share: Decimal
+    payment_date: date
+
+    def __post_init__(self):
+        super().__post_init__()
+        decimal_value(self.cash_per_share, 'gross cash per share', positive=True)
+        trading_date(self.payment_date)
+        if self.payment_date < self.ex_date:
+            raise DomainError('validation_failed', 'cash payment precedes entitlement')
+
+
+@dataclass(frozen=True)
 class StockPriceSeries:
     bars: tuple[DailyStockBar, ...]
     mode: str
@@ -103,7 +123,11 @@ def price_series(bars: tuple[DailyStockBar, ...], events: tuple[CorporateAction,
         [(b.instrument_id, b.trade_date.isoformat(), *(str(v) for v in (b.open, b.high, b.low, b.close)), b.volume, b.source_digest) for b in bars]
     )
     events_digest = _digest(
-        [(e.instrument_id, e.ex_date.isoformat(), str(e.previous_close), str(e.reference_price), e.source_digest, e.source_url) for e in events]
+        [
+            (e.instrument_id, e.ex_date.isoformat(), str(e.previous_close), str(e.reference_price), e.source_digest, e.source_url)
+            + (('cash-only-v1', str(e.cash_per_share), e.payment_date.isoformat()) if isinstance(e, CashDividendAction) else ())
+            for e in events
+        ]
     )
     result = []
     for bar in bars:
