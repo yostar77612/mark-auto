@@ -1987,3 +1987,40 @@ bypass the new account ceiling. Legacy-only ledgers retain their original
 contract. Management36 tests and27/27 mutants pass; existing margin/coordinator
 regression13 pass. JSON interval/holding changes still preserve entry/exit rules
 and clear all research evidence for the new version.
+
+## M2-5 account risk and preflight — 2026-11-02
+
+Use per-account 3% of confirmed allocation, with independent day latches. Choose
+1000000 TWD maximum entry notional and five instrument/side positions as the
+unspecified initial defaults. They are editable typed limits, not broker facts.
+Pending entries, including UNKNOWN/cancellation, occupy slots; reductions do not.
+Explicit limits also adopt manual/legacy accounts, so no entry owner bypasses
+limits merely because it predates typed strategies. Saving limits cannot erase
+history or release retained reservations.
+
+Extend the existing prior-close evidence with an optional exact account split.
+Never divide a multi-account total by allocation or sample the current mark as
+a new baseline. Only a proven empty genesis (including confirmed known canceled
+zero-fill SIM diagnostics) seeds zero. LOCAL explicit day-step carries account
+marks forward and collects that new day's trusted preflight.
+
+Preflight facts are server-owned, cached and immutable at the command boundary.
+SIM permission requires the successful diagnostic in the actual SDK generation,
+not login/signature or an attempted order. CA is NOT_REQUIRED in LOCAL/SIM.
+A failed or unknown check blocks the whole trading day and preserves reasons.
+Connection/lifecycle changes during collection invalidate the result through a
+final owner/version comparison under bundle → engine → owner lock ordering.
+No balance-query fallback, credentials, CA activation or power-setting change.
+
+Keep STOP_NEW's existing cancellation semantics and protective-exit behavior.
+New modules are application/account_risk.py, application/preflight.py and
+runtime/preflight.py; inventory registration is generated once with
+repin_baselines.py and committed separately. M2-4 PR143 completed35 green checks
+on4350f05 and merged as6d50129 before this branch was opened directly from main.
+
+M2-5 independent review reproduced a manual SELL amendment whose lower stop
+risk hid higher notional (TMF25000→25001 across a250000 account cap). Reapply
+account admission to the amended entry plan before recording/calling the SDK;
+protective reductions remain exempt. Three regressions and three independent
+guard mutants pass, plus96 nearby manual/recovery/risk/LIVE tests. No existing
+assertion or price-risk guard was weakened.

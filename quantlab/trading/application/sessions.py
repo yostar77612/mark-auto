@@ -16,6 +16,7 @@ from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.risk import AccountDailyBaseline
 from quantlab.trading.domain.validation import DomainError, aware, decimal_value, identity, trading_date
 
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ class DailyBaselineEvidence:
     as_of: datetime
     source_id: str
     pnl_basis: str = PNL_BASIS
+    account_previous_close: tuple[tuple[str, Decimal], ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.environment, Environment) or type(self.account_refs) is not tuple or not 1 <= len(self.account_refs) <= 64:
@@ -68,6 +70,24 @@ class DailyBaselineEvidence:
             raise DomainError('validation_failed', 'baseline cost fingerprint')
         decimal_value(self.previous_close_total_pnl, 'previous close net mark')
         aware(self.as_of)
+        _validate_account_close(self.account_previous_close, self.account_refs, self.previous_close_total_pnl)
+
+
+@decimal_operation
+def _validate_account_close(values: tuple[tuple[str, Decimal], ...], accounts: tuple[str, ...], total: Decimal) -> None:
+    """The optional split is one exact, sorted attestation at the wire boundary."""
+    if type(values) is not tuple or len(values) > 64:
+        raise DomainError('validation_failed', 'account closing marks must be a bounded tuple')
+    if not values:
+        return  # Legacy aggregate evidence does not invent account splits.
+    for row in values:
+        if type(row) is not tuple or len(row) != 2:
+            raise DomainError('validation_failed', 'account closing mark pair')
+        decimal_value(row[1], 'account closing mark')
+    if tuple(account for account, _ in values) != accounts:
+        raise DomainError('validation_failed', 'closing marks must cover the exact sorted accounts')
+    if sum((mark for _, mark in values), Decimal('0')) != total:
+        raise DomainError('validation_failed', 'account closing marks do not sum to total')
 
 
 def fee_fingerprint(fees: FeeSchedule) -> str:
@@ -196,6 +216,7 @@ def confirm_daily_baseline(engine: 'TradingEngine', evidence: DailyBaselineEvide
 def _confirm_daily_baseline(engine: 'TradingEngine', evidence: DailyBaselineEvidence, *, trusted_sources: frozenset[str]) -> None:
     from .events import reconcile
     from .workflows import total_mark
+    from .account_risk import m2_account_refs
 
     synchronize_session(engine)
     context = resolve_session(engine.calendar, engine.clock.now(), night_enabled=engine.state.settings.night_enabled)
@@ -211,6 +232,20 @@ def _confirm_daily_baseline(engine: 'TradingEngine', evidence: DailyBaselineEvid
         trade_date=context.trade_date,
         trusted_sources=trusted_sources,
     )
+    splits = evidence.account_previous_close
+    if not splits and len(evidence.account_refs) == 1:
+        splits = ((evidence.account_refs[0], evidence.previous_close_total_pnl),)
+    account_baselines = engine.state.account_daily_baselines
+    for account, previous_close in splits:
+        previous = next((row for row in account_baselines if row.account_ref == account and row.trade_date == context.trade_date), None)
+        if previous is not None:
+            if previous.previous_close_pnl != previous_close:
+                raise DomainError('state_conflict', 'an account closing baseline is immutable within its trading day')
+            continue
+        account_baselines = (
+            *tuple(row for row in account_baselines if row.account_ref != account),
+            AccountDailyBaseline(account, context.trade_date, previous_close, evidence.source_id),
+        )
     # Reconcile only account facts; a required baseline remains a separate issue.
     reconcile(engine)
     if not engine.state.reconciled:
@@ -221,6 +256,11 @@ def _confirm_daily_baseline(engine: 'TradingEngine', evidence: DailyBaselineEvid
     if -pnl >= Decimal('100000') * engine.state.settings.daily_loss_fraction and context.trade_date not in locks:
         locks = (*locks, context.trade_date)
     issues = tuple(code for code in engine.state.issues if code != BASELINE_ISSUE)
+    proven = {row.account_ref for row in account_baselines if row.trade_date == context.trade_date}
+    if m2_account_refs(engine) <= proven:
+        issues = tuple(code for code in issues if code != 'account_daily_baseline_required')
+    else:
+        issues = tuple(sorted(set((*issues, 'account_daily_baseline_required'))))
     engine._persist(
         'daily_baseline_attested',
         replace(
@@ -232,5 +272,6 @@ def _confirm_daily_baseline(engine: 'TradingEngine', evidence: DailyBaselineEvid
             daily_locks=locks,
             stopped=True,
             issues=issues,
+            account_daily_baselines=account_baselines,
         ),
     )

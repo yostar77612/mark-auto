@@ -289,9 +289,19 @@ class TradingEngine:
             form = replace(form, draft_json='')
         record = StrategyRecord(strategy_id, version, form, policy, definition=definition, draft_hash=draft_hash, parameters=parameters)
         initial_track = seed_track(strategy_id, version, self.clock.now(), self.state.trading_day)
+        baselines = self.state.account_daily_baselines
+        if parameters is not None:
+            from .account_risk import seed_account_baseline
+
+            baselines = seed_account_baseline(self, form.account_ref)
         self._persist(
             'strategy_version_created',
-            replace(self.state, strategies=(*self.state.strategies, record), performance_tracks=(*self.state.performance_tracks, initial_track)),
+            replace(
+                self.state,
+                strategies=(*self.state.strategies, record),
+                performance_tracks=(*self.state.performance_tracks, initial_track),
+                account_daily_baselines=baselines,
+            ),
         )
         return f'{strategy_id}:{version}'
 
@@ -503,6 +513,21 @@ class TradingEngine:
                 capability = gateway.inspect(plan.account_ref)
             else:
                 account, manual_allocations, capability, manual_pnl = manual_risk_context(self, manual_request, plan)
+            if not plan.reduce_only:
+                from .account_risk import account_entry_rejection, halt_account_risk, m2_account_refs, observe_account_limits
+                from .preflight import assert_preflight
+
+                observe_account_limits(self)
+                code = account_entry_rejection(self, plan, allocated_cash=account.allocated_cash)
+                if code:
+                    halt_account_risk(self, plan, code)
+                    raise DomainError(code)
+                if manual_request is None and plan.account_ref in m2_account_refs(self):
+                    try:
+                        assert_preflight(self, plan.account_ref)
+                    except DomainError:
+                        halt_account_risk(self, plan, 'preflight_blocked')
+                        raise
             risk = self.risk()
             strategy_cash_limit = None
             if strategy is not None:

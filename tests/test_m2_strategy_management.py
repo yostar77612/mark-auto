@@ -68,6 +68,7 @@ class StrategyManagementTests(unittest.TestCase):
             self.engine.quote(Quote(spec.instrument_id, price - spec.tick_size, price, price, self.clock.now(), self.clock.now(), self.clock.now().date()))
         reconcile(self.engine)
         resume(self.engine)
+        self.command(UiAction.CHECK_PREFLIGHT, account_ref='test-stock')
 
     def command(self, action, *, accepted=True, **values):
         result = self.facade.execute(UiCommand(action, self.engine.state.version, **values))

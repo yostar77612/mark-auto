@@ -7223,3 +7223,31 @@ once an account has any typed version, even a disabled/deleted marker. JSON
 parameter revisions preserve rules but rebuild explicit form/interval metadata
 and invalidate evidence. Margin provenance follows resolved_instrument_id and
 is UNKNOWN when resolution is blocked.
+
+## M2-5 engine contract (2026-11-02)
+
+- CHECK_PREFLIGHT takes account_ref only. Facts/booleans never come from UiCommand;
+  the host collects current-session facts. SAVE_ACCOUNT_RISK takes account_risk:
+  AccountRiskLimits(account_ref,daily_loss_fraction=.03,max_order_notional=1000000,
+  max_positions=5). Existing STOP_NEW remains the all-stop action and cancels
+  entry orders while retaining protective exits.
+- UiState.account_risks: AccountRiskView(account_ref,limits,daily_pnl,
+  daily_loss_limit,position_count,paused,reasons). UiState.preflight contains
+  PreflightView(account_ref,trade_date,checked_at,checks,blocked_today,
+  keep_awake_reminder,block_reasons). Keys: connection/account/permission/ca/
+  market/service/reconciliation. States PASS/FAIL/UNKNOWN/NOT_REQUIRED.
+- LOCAL/SIM CA is NOT_REQUIRED and no activation is called. Failure locks the
+  account's automatic entries for that trading day; passing reruns retain the
+  original block reasons. The keep-awake reminder never changes system power.
+- AppState adds account_risk_limits, account_daily_baselines,
+  account_daily_locks, preflight, preflight_blocks with empty defaults for replay.
+- DailyBaselineEvidence adds optional account_previous_close. Single-account
+  legacy proof can identify its sole closing mark; aggregate multi-account proof
+  cannot invent splits. Same-day attributed closing marks are immutable.
+- New errors: account_daily_loss_limit, account_order_limit,
+  account_position_limit, account_daily_baseline_required, preflight_blocked,
+  preflight_connection, preflight_account, preflight_permission, preflight_ca,
+  preflight_market, preflight_service, preflight_reconciliation.
+- Account limits cover all app-owned positions/pending entries and admission
+  routes once the account adopts M2. Reductions retain their existing guards.
+  Neither resume, restart nor changed limits clears today's loss latch.

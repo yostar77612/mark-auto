@@ -281,6 +281,41 @@ class RuntimeBundle:
             if self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
             return self.manual_runtime.execute(command)
+        if isinstance(command, UiCommand) and command.action is UiAction.CHECK_PREFLIGHT and self.sinopac_connection is not None:
+            from quantlab.trading.application.preflight import record_preflight
+            from quantlab.trading.application.errors import ERROR_TABLE
+            from .preflight import sinopac_preflight_facts
+
+            if type(command.expected_version) is not int or type(command.account_ref) is not str:
+                return UiReceipt(False, 'validation_failed', '')
+            with self.lock:
+                engine, offset, owner = self.engine, self.version_offset, self.sinopac_connection
+                if self.closing or self.closed or self.control_failed or engine is None or owner is None:
+                    return UiReceipt(False, 'capability_missing', '')
+            try:
+                reference = command.account_ref or engine.state.account_ref
+                with owner.lock:
+                    view = owner.snapshot()
+                    owner_stamp = view.environment, view.generation, view.revision, tuple(sorted(owner.selected)), owner.shared
+                facts = sinopac_preflight_facts(self, reference)
+                with self.lock, engine.lock, owner.lock:
+                    view = owner.snapshot()
+                    if (
+                        self.closing
+                        or self.closed
+                        or self.control_failed
+                        or self.engine is not engine
+                        or self.sinopac_connection is not owner
+                        or owner_stamp != (view.environment, view.generation, view.revision, tuple(sorted(owner.selected)), owner.shared)
+                        or command.expected_version != engine.state.version + offset
+                        or self.version_offset != offset
+                    ):
+                        raise DomainError('state_conflict')
+                    record_preflight(engine, reference, facts)
+                return UiReceipt(True, 'completed', '')
+            except DomainError as error:
+                entry = ERROR_TABLE.get(error.code, ERROR_TABLE['operation_failed'])
+                return UiReceipt(False, error.code, entry.explanation + ' ' + entry.action)
         if isinstance(command, UiCommand) and command.action in SINOPAC_ACTIONS:
             with self.lock:
                 if self.closing or self.closed or command.expected_version != self.facade.snapshot().version + self.version_offset:
@@ -515,6 +550,9 @@ class RuntimeBundle:
 
             with engine.lock:
                 synchronize_session(engine)
+                from quantlab.trading.application.account_risk import observe_account_limits
+
+                observe_account_limits(engine)
             return
         if engine.configuration.environment is not Environment.LOCAL:
             from quantlab.trading.application.coordinator import run_cycle, run_readonly_cycle

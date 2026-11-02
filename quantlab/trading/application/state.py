@@ -9,10 +9,11 @@ if TYPE_CHECKING:
     from .sessions import DailyBaselineEvidence
 
 from .codec import register
-from .contracts import ReconciliationView, SettingsForm, StrategyForm
+from .contracts import ReconciliationView, SettingsForm, StrategyForm, PreflightView
 from .broker_settings import BrokerReadiness, BrokerSettings
 from quantlab.trading.domain.models import Environment, HoldingPolicy, InstrumentSpec, OrderPlan, OrderStatus, PositionLot, Reservation
 from quantlab.trading.domain.strategy import StrategyDefinition, StrategyParameters
+from quantlab.trading.domain.risk import AccountDailyBaseline, AccountRiskLimits
 from .lifecycle_models import CorporateActionJob, RollJob
 from .performance import VersionEquityTrack
 from .manual_book import ManualAcquisition, ManualBook, ManualReceivable, ManualRequest
@@ -98,6 +99,11 @@ class AppState:
     manual_stopped: bool = False
     manual_receivables: tuple[ManualReceivable, ...] = ()
     manual_acquisitions: tuple[ManualAcquisition, ...] = ()
+    account_risk_limits: tuple[AccountRiskLimits, ...] = ()
+    account_daily_baselines: tuple[AccountDailyBaseline, ...] = ()
+    account_daily_locks: tuple[tuple[str, date], ...] = ()
+    preflight: tuple[PreflightView, ...] = ()
+    preflight_blocks: tuple[tuple[str, date], ...] = ()
 
 
 def replace_order(state: AppState, order: LocalOrder) -> AppState:

@@ -58,6 +58,28 @@ class LocalFacade:
 
     def _execute(self, command: UiCommand) -> str:
         engine, action = self.engine, command.action
+        if action is UiAction.CHECK_PREFLIGHT:
+            from .preflight import engine_preflight_facts, record_preflight
+
+            if type(command.account_ref) is not str:
+                raise DomainError('validation_failed', 'account reference required')
+            reference = command.account_ref or engine.state.account_ref
+            record_preflight(engine, reference, engine_preflight_facts(engine, reference))
+            return ''
+        if action is UiAction.SAVE_ACCOUNT_RISK:
+            from quantlab.trading.domain.risk import AccountRiskLimits
+            from .account_risk import observe_account_limits, seed_account_baseline
+
+            limits = command.account_risk
+            if type(command.account_ref) is not str or not isinstance(limits, AccountRiskLimits) or limits.account_ref not in engine.gateways:
+                raise DomainError('validation_failed', 'typed known-account limits required')
+            if command.account_ref and command.account_ref != limits.account_ref:
+                raise DomainError('state_conflict', 'risk settings account mismatch')
+            rows = tuple(row for row in engine.state.account_risk_limits if row.account_ref != limits.account_ref)
+            baselines = seed_account_baseline(engine, limits.account_ref)
+            engine._persist('account_risk_limits_changed', replace(engine.state, account_risk_limits=(*rows, limits), account_daily_baselines=baselines))
+            observe_account_limits(engine)
+            return ''
         if action is UiAction.CREATE_TYPED_STRATEGY:
             if command.strategy is None or command.strategy_parameters is None:
                 raise DomainError('strategy_parameters_invalid')
