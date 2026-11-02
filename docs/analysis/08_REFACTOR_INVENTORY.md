@@ -917,6 +917,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/strings/strategy_management.py` | 46 | shared | `desktop_app/strings/strategy_management.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/candidate_catalog.py` | 78 | composition | `quantlab/trading/runtime/candidate_catalog.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
 | `quantlab/trading/runtime/v1_signal_source.py` | 62 | composition | `quantlab/trading/runtime/v1_signal_source.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
+| `quantlab/trading/adapters/official/daily_signal_events.py` | 66 | infrastructure | `quantlab/trading/adapters/official/daily_signal_events.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/daily_signal_data.py` | 152 | application | `quantlab/trading/application/daily_signal_data.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/daily_signal_data.py` | 147 | domain | `quantlab/trading/domain/daily_signal_data.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/ports/daily_signals.py` | 11 | application | `quantlab/trading/ports/daily_signals.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/official_daily_source.py` | 149 | composition | `quantlab/trading/runtime/official_daily_source.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
