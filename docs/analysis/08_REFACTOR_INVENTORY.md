@@ -912,6 +912,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/manual_exit_preview.py` | 113 | presentation | `desktop_app/features/trading/manual_exit_preview.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/features/trading/manual_recovery.py` | 117 | presentation | `desktop_app/features/trading/manual_recovery.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/strings/manual_review.py` | 34 | shared | `desktop_app/strings/manual_review.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
+| `quantlab/trading/application/daily_resolution.py` | 126 | application | `quantlab/trading/application/daily_resolution.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/daily_retention.py` | 155 | application | `quantlab/trading/application/daily_retention.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
