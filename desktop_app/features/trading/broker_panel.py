@@ -11,6 +11,7 @@ from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from desktop_app.features.trading import sinopac_panel_text as text
 from desktop_app.features.trading.page_help import HelpText
+from desktop_app.features.trading.readiness_guidance import ReadinessGuidance, account_guidance, readiness_steps
 from desktop_app.features.trading.widgets import button
 
 
@@ -47,6 +48,7 @@ class BrokerPanel(QWidget):
         self._connection_dirty, self._certificate_dirty, self._failure = False, False, ''
         self._available = True
         self.account_boxes = {}
+        self.account_guidance = {}
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.addWidget(self._label(ui_text('m2.connection.title')))
@@ -58,10 +60,14 @@ class BrokerPanel(QWidget):
         self._fee_fields()
         ready = QGroupBox(ui_text('m2.connection.readiness'), self)
         form = QVBoxLayout(ready)
-        self.readiness_labels = {code: self._label('') for code in ('market', 'accounts', 'simulation_orders', 'production_orders')}
-        for code, widget in self.readiness_labels.items():
-            widget.setObjectName('sinopac_readiness_' + code)
-            form.addWidget(widget)
+        self.readiness_labels = {}
+        self.readiness_guidance = {}
+        for code in ('market', 'accounts', 'simulation_orders', 'production_orders'):
+            guidance = ReadinessGuidance('', readiness_steps(code), 'sinopac_readiness_' + code, ready)
+            guidance.summary.setObjectName('sinopac_readiness_' + code)
+            self.readiness_labels[code] = guidance.summary
+            self.readiness_guidance[code] = guidance
+            form.addWidget(guidance)
         self._layout.addWidget(ready)
         self.apply(self.view)
 
@@ -122,8 +128,9 @@ class BrokerPanel(QWidget):
         self.certificate_group.setCheckable(True)
         self.certificate_group.setChecked(False)
         layout = QVBoxLayout(self.certificate_group)
-        self.certificate_status = self._label('')
-        layout.addWidget(self.certificate_status)
+        self.certificate_guidance = ReadinessGuidance('', ui_text('u1.readiness.ca_steps'), 'sinopac_ca', self)
+        self.certificate_status = self.certificate_guidance.summary
+        self._layout.addWidget(self.certificate_guidance)
         self._certificate_container = QWidget(self.certificate_group)
         form = QFormLayout(self._certificate_container)
         self.certificate_path = QLineEdit(self._certificate_container)
@@ -264,6 +271,7 @@ class BrokerPanel(QWidget):
         aliases = {item.alias for item in self.view.accounts}
         for alias in self.account_boxes.keys() - aliases:
             self.account_boxes.pop(alias).deleteLater()
+            self.account_guidance.pop(alias).deleteLater()
         for item in self.view.accounts:
             widget = self.account_boxes.get(item.alias)
             if widget is None:
@@ -271,6 +279,7 @@ class BrokerPanel(QWidget):
                 widget.setObjectName('sinopac_account_' + item.alias)
                 widget.toggled.connect(self._select_accounts)
                 self.account_boxes[item.alias] = widget
+                self.account_guidance[item.alias] = ReadinessGuidance('', '', 'sinopac_account_' + item.alias, self.account_container)
             with QSignalBlocker(widget):
                 widget.setChecked(item.selected)
             widget.setText(text.account_text(item))
@@ -278,6 +287,10 @@ class BrokerPanel(QWidget):
             widget.setToolTip(text.reason_text(item.reason))
             self._accounts_layout.removeWidget(widget)
             self._accounts_layout.addWidget(widget)
+            guidance = self.account_guidance[item.alias]
+            guidance.set_content(*account_guidance(item.signed))
+            self._accounts_layout.removeWidget(guidance)
+            self._accounts_layout.addWidget(guidance)
         self.account_empty.setVisible(not self.view.accounts)
         self.account_next.setVisible(not self.view.accounts)
 

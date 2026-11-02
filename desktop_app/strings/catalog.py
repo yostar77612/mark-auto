@@ -222,6 +222,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[62])
 # Lane M2-2: explicitly confirmed manual simulation intents.
 ZH_TW.update(_ZH_TW_CHUNKS[63])
 
+# Lane U1: read-only account readiness next steps.
+ZH_TW.update(_ZH_TW_CHUNKS[64])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.
