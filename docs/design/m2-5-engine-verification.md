@@ -81,3 +81,11 @@ recovery and forced exits after this PR merges. M2-7/9 evidence/cost extensions
 and all UI remain other lanes. Broker account close evidence still requires the
 existing trusted provider; no financial fact is synthesized from an aggregate.
 CI status is read from the final PR checks, not inferred from local tests.
+
+Independent review additionally reproduced a SELL amendment bypass: one TMF
+entry at25000 fits a250000 notional cap, but changing its price to25001 used
+to pass the older stop-risk-only check. Amendments now apply the same account
+admission before journal/native amendment. Exact-cap entry and protective-exit
+amendments retain their legal behavior. New regression module3/3, nearby
+manual/recovery/risk/LIVE96 and three isolated amendment guard mutants pass.
+Ruff check/format pass. This raises actual-source killed mutants to227/227.

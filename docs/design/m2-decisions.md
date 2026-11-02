@@ -2017,3 +2017,10 @@ New modules are application/account_risk.py, application/preflight.py and
 runtime/preflight.py; inventory registration is generated once with
 repin_baselines.py and committed separately. M2-4 PR143 completed35 green checks
 on4350f05 and merged as6d50129 before this branch was opened directly from main.
+
+M2-5 independent review reproduced a manual SELL amendment whose lower stop
+risk hid higher notional (TMF25000→25001 across a250000 account cap). Reapply
+account admission to the amended entry plan before recording/calling the SDK;
+protective reductions remain exempt. Three regressions and three independent
+guard mutants pass, plus96 nearby manual/recovery/risk/LIVE tests. No existing
+assertion or price-risk guard was weakened.

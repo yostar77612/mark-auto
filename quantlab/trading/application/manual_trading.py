@@ -508,6 +508,13 @@ class ManualTradingService:
                 or (order.plan.side is Side.SELL and not order.plan.limit_price <= form.price < order.plan.stop_price)
             ):
                 raise DomainError('risk_rejected', 'amendment would increase risk')
+            from .account_risk import account_entry_rejection, halt_account_risk
+
+            amended_plan = replace(order.plan, limit_price=form.price)
+            code = account_entry_rejection(engine, amended_plan, allocated_cash=book.capital)
+            if code:
+                halt_account_risk(engine, amended_plan, code)
+                raise DomainError(code)
         request = ManualRequest(form.scope, form.request_id, operation, sha256(dumps(form).encode()).hexdigest(), order_id=order.order_id, price=form.price)
         self._record_request(request)
         engine.fence()
