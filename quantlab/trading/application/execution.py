@@ -56,13 +56,19 @@ class ExecutionService:
         self.fence()
         try:
             receipt = self.broker.submit(plan, order_id)
+        except DomainError as error:
+            if error.code != 'outcome_unknown':
+                # The port contract: a DomainError means the SDK was never invoked, so nothing was sent.
+                refused = replace(
+                    order,
+                    status=OrderStatus.REJECTED,
+                    reservation=replace(order.reservation, cash=Decimal('0'), risk=Decimal('0'), quantity=0, status=OrderStatus.REJECTED),
+                )
+                self.persist('order_not_sent', replace_order(proposed, refused))
+                raise
+            self._unknown_submission(proposed, order)
         except Exception:
-            try:
-                self.after_remote()
-            finally:
-                unknown = replace_order(proposed, replace(order, status=OrderStatus.UNKNOWN))
-                self.persist('order_unknown', replace(unknown, stopped=True, reconciled=False, issues=tuple(sorted(set((*unknown.issues, 'outcome_unknown'))))))
-            raise DomainError('outcome_unknown', 'submission needs remote reconciliation') from None
+            self._unknown_submission(proposed, order)
         try:
             self.after_remote()
         except Exception:
@@ -81,6 +87,14 @@ class ExecutionService:
         self.persist('submission_receipt', acknowledged)
         return order_id
 
+    def _unknown_submission(self, proposed: AppState, order: LocalOrder) -> None:
+        try:
+            self.after_remote()
+        finally:
+            unknown = replace_order(proposed, replace(order, status=OrderStatus.UNKNOWN))
+            self.persist('order_unknown', replace(unknown, stopped=True, reconciled=False, issues=tuple(sorted(set((*unknown.issues, 'outcome_unknown'))))))
+        raise DomainError('outcome_unknown', 'submission needs remote reconciliation') from None
+
     def cancel(self, state: AppState, order_id: str) -> None:
         if not orders_enabled(state.environment):
             raise DomainError('production_orders_disabled')
@@ -97,12 +111,21 @@ class ExecutionService:
         self.fence()
         try:
             receipt = self.broker.cancel(order_id)
-            if receipt.status is OrderStatus.UNKNOWN:
-                raise DomainError('outcome_unknown')
+        except DomainError as error:
+            if error.code != 'outcome_unknown':
+                # Nothing was sent: restore the working order and leave the engine running.
+                self.persist('cancel_not_sent', replace_order(state, order))
+                raise
+            self._unknown_cancel(state, order)
         except Exception:
-            unknown = replace_order(state, replace(order, status=OrderStatus.UNKNOWN))
-            self.persist('cancel_unknown', replace(unknown, stopped=True, reconciled=False, issues=tuple(sorted(set((*unknown.issues, 'outcome_unknown'))))))
-            raise DomainError('outcome_unknown', 'cancellation needs remote reconciliation') from None
+            self._unknown_cancel(state, order)
+        if receipt.status is OrderStatus.UNKNOWN:
+            self._unknown_cancel(state, order)
+
+    def _unknown_cancel(self, state: AppState, order: LocalOrder) -> None:
+        unknown = replace_order(state, replace(order, status=OrderStatus.UNKNOWN))
+        self.persist('cancel_unknown', replace(unknown, stopped=True, reconciled=False, issues=tuple(sorted(set((*unknown.issues, 'outcome_unknown'))))))
+        raise DomainError('outcome_unknown', 'cancellation needs remote reconciliation') from None
 
 
 def check_event(state: AppState, event: OrderEvent) -> LocalOrder | None:
