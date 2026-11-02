@@ -860,6 +860,15 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
+| `desktop_app/strings/m2_maintenance.py` | 12 | shared | `desktop_app/strings/m2_maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/adapters/official/stock_data.py` | 175 | infrastructure | `quantlab/trading/adapters/official/stock_data.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/adapters/storage/daily_stock_store.py` | 157 | infrastructure | `quantlab/trading/adapters/storage/daily_stock_store.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/application/stock_history.py` | 122 | application | `quantlab/trading/application/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/domain/maintenance.py` | 97 | domain | `quantlab/trading/domain/maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/domain/stock_history.py` | 112 | domain | `quantlab/trading/domain/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/ports/stock_history.py` | 36 | application | `quantlab/trading/ports/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/runtime/stock_history.py` | 82 | composition | `quantlab/trading/runtime/stock_history.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
+| `quantlab/trading/runtime/stock_maintenance.py` | 104 | composition | `quantlab/trading/runtime/stock_maintenance.py` | M2-9 additive official daily data, immutable costs and maintenance; offline-only tests and no LIVE routing. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -1850,3 +1859,15 @@ fallback. Use existing transition and authenticated-IPC regressions plus a full
 suite/startup check before removing old bodies. This later behavior-preserving
 extraction is outside the final first-round safety correction. The independent
 inventory baseline only updates owned measurements; no test or source cap moves.
+
+## M2-9 offline test inventory (2026-11-02)
+
+- `tests/test_m2_stock_history.py`: synthetic native-schema parsers, all-or-nothing
+  SQLite import, retained source revisions, point-in-time adjustment, five-year
+  exact-session admission and fake HTTP boundary failures. No recorded exchange
+  sample or live endpoint validation is claimed.
+- `tests/test_m2_stock_maintenance.py`: immutable legacy cost wire, Taiwan fee/tax
+  variants, cost-history preservation, expiry dates and fail-closed calendar/
+  versioned expiry-file integration, fake login expiry refusal.
+- New production modules are registered in the layer table above by the baseline
+  tool. No source was moved and no layer exception or G3 allowance was added.

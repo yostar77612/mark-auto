@@ -2952,7 +2952,15 @@
       "m2m.not_submitted": "已確認這筆請求尚未送出。請先對帳，再重新預覽。",
       "m2m.allocation_exceeds_settings": "已確認的虛擬分配超過目前設定上限。請先調整設定；仍可退出合法部位。",
       "m2m.order_columns": "委託欄位",
-      "m2m.order_columns_hint": "選擇委託表顯示的欄位，選擇會儲存在本機。"
+      "m2m.order_columns_hint": "選擇委託表顯示的欄位，選擇會儲存在本機。",
+      "m2.maintenance.expiry": "API 金鑰到期日",
+      "m2.maintenance.expiry_hint": "YYYY-MM-DD；留空表示未知",
+      "m2.maintenance.expiry_unknown": "API 金鑰到期日：未知",
+      "m2.maintenance.expired": "API 金鑰已到期，請更新金鑰與到期日後重新連線。",
+      "m2.maintenance.expiry_due": "API 金鑰剩餘 {} 天，請提前更新。",
+      "m2.maintenance.expiry_days": "API 金鑰剩餘 {} 天。",
+      "m2.maintenance.minimum_fee": "每筆最低手續費（元）",
+      "m2.maintenance.tmf_fee": "微台每口手續費（元）"
     }
   },
   "aliases": {
@@ -7233,6 +7241,14 @@
       "m2m.allocation_exceeds_settings": "已確認的虛擬分配超過目前設定上限。請先調整設定；仍可退出合法部位。",
       "m2m.order_columns": "委託欄位",
       "m2m.order_columns_hint": "選擇委託表顯示的欄位，選擇會儲存在本機。",
+      "m2.maintenance.expiry": "API 金鑰到期日",
+      "m2.maintenance.expiry_hint": "YYYY-MM-DD；留空表示未知",
+      "m2.maintenance.expiry_unknown": "API 金鑰到期日：未知",
+      "m2.maintenance.expired": "API 金鑰已到期，請更新金鑰與到期日後重新連線。",
+      "m2.maintenance.expiry_due": "API 金鑰剩餘 {} 天，請提前更新。",
+      "m2.maintenance.expiry_days": "API 金鑰剩餘 {} 天。",
+      "m2.maintenance.minimum_fee": "每筆最低手續費（元）",
+      "m2.maintenance.tmf_fee": "微台每口手續費（元）",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -11509,7 +11525,15 @@
     "m2m.not_submitted",
     "m2m.allocation_exceeds_settings",
     "m2m.order_columns",
-    "m2m.order_columns_hint"
+    "m2m.order_columns_hint",
+    "m2.maintenance.expiry",
+    "m2.maintenance.expiry_hint",
+    "m2.maintenance.expiry_unknown",
+    "m2.maintenance.expired",
+    "m2.maintenance.expiry_due",
+    "m2.maintenance.expiry_days",
+    "m2.maintenance.minimum_fee",
+    "m2.maintenance.tmf_fee"
   ],
   "alias_order": [
     "ui.research_controls.text_1",
