@@ -108,6 +108,15 @@ class RuntimeContextRegistryTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 'state_conflict')
         self.assertEqual(RuntimeContextManager(manager.base_root).selected_account, 'local-futures')
 
+    def test_remembered_account_that_no_longer_exists_starts_on_the_local_engine(self):
+        manager = RuntimeContextManager(self.root / 'base')
+        manager.persist_selection('local', 'local-stock')
+        body = json.loads(manager.registry_path.read_text(encoding='utf-8'))
+        body['selected_account'] = 'sinopac-removed-alias'
+        manager.registry_path.write_text(json.dumps(body), encoding='utf-8')
+        restored = RuntimeContextManager(manager.base_root)
+        self.assertEqual((restored.selected_context, restored.selected_account), ('local', 'local-stock'))
+
     def test_invalid_selected_profile_stays_explicitly_unavailable_without_local_fallback(self):
         profile = profile_fixture(self.root / 'bundle', Environment.LIVE)
         manager = RuntimeContextManager(self.root / 'base')

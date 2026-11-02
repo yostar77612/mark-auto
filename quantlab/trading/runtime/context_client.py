@@ -274,13 +274,16 @@ class RuntimeContextManager:
             entry = self._entry(item['context_id'], item['label'], launch)
             entries[entry.context_id] = entry
         selected, account = body['selected_context'], body['selected_account']
-        if (
-            type(selected) is not str
-            or type(account) is not str
-            or selected not in entries
-            or (account not in entries[selected].accounts() and not entries[selected].error)
-        ):
+        if type(selected) is not str or type(account) is not str or selected not in entries:
             raise DomainError('validation_failed', 'selected registry context/account is unavailable')
+        if account not in entries[selected].accounts() and not entries[selected].error:
+            # A remembered account that no longer exists (for example its alias was
+            # re-keyed by the alias hardening) never selects another broker account:
+            # start on the local engine and let the owner choose again.
+            local = entries.get('local')
+            if local is None or not local.accounts():
+                raise DomainError('validation_failed', 'selected registry context/account is unavailable')
+            selected, account = 'local', local.accounts()[0]
         self._entries, self.selected_context, self.selected_account = entries, selected, account
         connection = body.get('connection_context', '')
         if type(connection) is not str or connection and (connection not in entries or not entries[connection].launch.sinopac):
