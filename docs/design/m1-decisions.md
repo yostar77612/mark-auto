@@ -203,3 +203,5 @@
   影響 `tests/test_trading_graceful_exit.py`，詳細計時見 `fix-graceful-exit.md`。
 - 現成 frozen 0.3.0 隔離 smoke 通過，但不是本修正的 frozen v2 證據；本機 Python 3.13.11
   不符打包所需 3.13.16，重建安裝版實測明列待擁有者確認。完整測試留給 CI，PR 直接對 main。
+- 15:08：main 的 M3 文件 code fence 只有 CRLF/LF 格式差異；依既有 ADR 規則在
+  `.gitattributes` 單檔固定 LF，獨立 baseline commit，不改文件文字、產品邏輯或測試斷言。

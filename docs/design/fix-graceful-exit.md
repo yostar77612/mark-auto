@@ -103,8 +103,11 @@ The installed external processes were identified read-only as PIDs 168580 and
 `8f192ff`). They predate this task and were not touched. The new regression's
 final four tests passed in 32.744 s, including the explicit pending-call check.
 Python 3.11 syntax (1,144 tracked files), Ruff lint, quality and layer gates
-passed. Pre-push exposed one existing main M3-document code-fence format failure;
-its formatting-only repair is isolated in a separate baseline commit.
+passed. Pre-push exposed one existing main M3-document code-fence CRLF/LF failure;
+Ruff changed only line endings, so its text has no git diff. The repair pins that
+single document to LF in `.gitattributes`, following the existing Ruff ADR rule,
+and is isolated in a separate baseline commit. Full cheap pre-push gates then
+passed (Ruff 1,240 files; Python 3.11 syntax 1,145 files; static gate zero findings).
 
 ## Frozen scope and remaining owner check
 
