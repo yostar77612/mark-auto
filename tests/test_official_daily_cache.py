@@ -32,6 +32,108 @@ class OfficialDailyCacheTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, code)
         return caught.exception
 
+    def probe(self, *, instrument=fixtures.ID, calendar=None, through=fixtures.THROUGH, start=fixtures.FIRST):
+        return self.source.cached_history(instrument, calendar or self.calendar, through=through, start=start)
+
+    def test_public_cache_probe_absent_key_returns_none_without_history_or_cold_work(self):
+        with (
+            patch.object(self.source, 'history', wraps=self.source.history) as history,
+            patch.object(self.source, '_load_history', wraps=self.source._load_history) as cold,
+        ):
+            self.assertIsNone(self.probe())
+            history.assert_not_called()
+            cold.assert_not_called()
+        self.assertEqual(self.store.calls, [])
+        self.assertEqual(len(self.source._cache), 0)
+
+    def test_public_cache_probe_hot_reads_call_history_method_exactly_zero_times(self):
+        expected = self.read()
+        calls = tuple(self.store.calls)
+        with (
+            patch.object(self.source, 'history', wraps=self.source.history) as history,
+            patch.object(self.source, '_load_history', wraps=self.source._load_history) as cold,
+        ):
+            for _ in range(10):
+                self.assertIs(self.probe(), expected)
+            history.assert_not_called()
+            cold.assert_not_called()
+        self.assertEqual(tuple(self.store.calls), calls)
+
+    def test_public_cache_probe_revision_change_is_a_miss_without_revalidation(self):
+        self.read()
+        calls = tuple(self.store.calls)
+        self.store.revision += 1
+        with patch.object(self.source, 'history', wraps=self.source.history) as history:
+            self.assertIsNone(self.probe())
+            history.assert_not_called()
+        self.assertEqual(tuple(self.store.calls), calls)
+
+    def test_public_cache_probe_all_request_and_calendar_identities_remain_separate(self):
+        self.read()
+        options = ({'instrument': 'TWSE:0050'}, {'start': None}, {'through': fixtures.FIRST}, {'calendar': replace(self.calendar, version='changed-calendar')})
+        for fields in options:
+            with self.subTest(fields=fields):
+                self.assertIsNone(self.probe(**fields))
+
+    def test_public_cache_miss_still_checks_the_final_strict_revision(self):
+        with patch.object(type(self.store), 'verification_revision', new_callable=PropertyMock, side_effect=(0, 1)):
+            self.rejected('daily_signal_source_unverified', self.probe)
+        self.assertEqual(self.store.calls, [])
+
+    def test_public_cache_miss_still_checks_the_final_store_identity(self):
+        replacement = fixtures.CachedStore(fixtures.sample())
+
+        def swap():
+            self.source.store = replacement
+            return 0
+
+        with patch.object(type(self.store), 'verification_revision', new_callable=PropertyMock, side_effect=swap):
+            self.rejected('daily_signal_source_unverified', self.probe)
+        self.assertEqual(self.store.calls, [])
+        self.assertEqual(replacement.calls, [])
+
+    def test_public_cache_probe_preserves_deliberate_port_refusals(self):
+        with patch.object(type(self.store), 'verification_revision', new_callable=PropertyMock, side_effect=DomainError('official_stock_invalid')):
+            self.rejected('official_stock_invalid', self.probe)
+
+    def test_public_cache_probe_sanitizes_io_and_clock_exceptions_without_miss(self):
+        with patch.object(type(self.store), 'verification_revision', new_callable=PropertyMock, side_effect=OSError('private revision IO')):
+            error = self.rejected('daily_signal_source_unverified', self.probe)
+            self.assertNotIn('private revision IO', str(error))
+        with patch.object(self.clock, 'now', side_effect=RuntimeError('private clock IO')):
+            error = self.rejected('daily_signal_source_unverified', self.probe)
+            self.assertNotIn('private clock IO', str(error))
+
+    def test_public_cache_probe_does_not_convert_process_control_to_miss(self):
+        with patch.object(self.clock, 'now', side_effect=KeyboardInterrupt), self.assertRaises(KeyboardInterrupt):
+            self.probe()
+
+    def test_public_cache_probe_does_not_convert_prior_civil_day_refusal_to_miss(self):
+        self.now = datetime(2020, 1, 3, 8, tzinfo=timezone.utc)
+        self.rejected('daily_signal_not_available', self.probe)
+
+    def test_public_cache_probe_does_not_convert_unclosed_day_refusal_to_miss(self):
+        changed = replace(
+            self.calendar,
+            sessions=tuple(
+                replace(row, closes_at=self.now + timedelta(hours=1)) if row.trade_date == fixtures.THROUGH else row for row in self.calendar.sessions
+            ),
+        )
+        self.rejected('daily_signal_not_available', lambda: self.probe(calendar=changed))
+
+    def test_public_cache_probe_does_not_return_future_observation_as_hit_or_miss(self):
+        self.store.arrival = self.now
+        self.read()
+        self.now -= timedelta(hours=1)
+        self.rejected('daily_signal_not_available', self.probe)
+
+    def test_public_cache_probe_hot_postcheck_refusals_are_not_misses(self):
+        self.read()
+        for result in (1, OSError('postcheck IO'), DomainError('official_stock_invalid')):
+            with self.subTest(result=result), patch.object(type(self.store), 'verification_revision', new_callable=PropertyMock, side_effect=(0, result)):
+                code = 'official_stock_invalid' if isinstance(result, DomainError) else 'daily_signal_source_unverified'
+                self.rejected(code, self.probe)
+
     def test_repeated_hit_does_not_read_or_parse_immutable_payloads(self):
         first = self.read()
         calls = tuple(self.store.calls)

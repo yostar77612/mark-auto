@@ -202,13 +202,82 @@ class DailySignalProjectionTests(unittest.TestCase):
             self.assertIsNotNone(stock_daily_window(self.engine, self.case.record, self.history.instrument_id, self.calendar))
         unexpected.assert_not_called()
 
+    def test_locked_native_source_miss_refuses_without_history_fallback(self):
+        self.engine.daily_signal_cached_only = True
+        with patch.object(self.source, 'cached_history', return_value=None) as lookup:
+            with patch.object(self.source, 'history', side_effect=AssertionError('locked acquisition')) as history:
+                self.assertIsNone(stock_daily_window(self.engine, self.case.record, self.history.instrument_id, self.calendar))
+        self.assertEqual(lookup.call_count, 1)
+        history.assert_not_called()
+        self.assertEqual(daily_signal_views(self.engine)[0].reason, 'daily_signal_not_available')
+
+    def test_locked_native_source_hit_never_calls_history_method(self):
+        self.engine.daily_signal_cached_only = True
+        self.prepare()
+        original = self.source.cached_history
+        with patch.object(self.source, 'cached_history', wraps=original) as lookup:
+            with patch.object(self.source, 'history', side_effect=AssertionError('hot history method')) as history:
+                self.assertIsNotNone(stock_daily_window(self.engine, self.case.record, self.history.instrument_id, self.calendar))
+        self.assertGreater(lookup.call_count, 0)
+        history.assert_not_called()
+
+    def test_pump_preparation_hot_history_never_calls_acquisition_method(self):
+        self.engine.daily_signal_cached_only = True
+        bundle = self.bundle()
+        expected = {
+            day: self.source.history(self.history.instrument_id, self.calendar, through=day, start=self.basis.start) for day in (self.through, self.basis.end)
+        }
+
+        def cached(instrument_id, calendar, *, through, start):
+            self.assertFalse(bundle.lock._is_owned())
+            self.assertFalse(self.engine.lock._is_owned())
+            self.assertEqual((instrument_id, calendar, start), (self.history.instrument_id, self.calendar, self.basis.start))
+            return expected[through]
+
+        with patch.object(self.source, 'cached_history', side_effect=cached, create=True) as lookup:
+            with patch.object(self.source, 'history', side_effect=AssertionError('hot source.history call')) as history:
+                prepare_daily_sources(bundle, self.engine)
+                prepare_daily_sources(bundle, self.engine)
+        self.assertEqual(lookup.call_count, 4)
+        history.assert_not_called()
+        self.assertIsNotNone(self.cached(history=expected[self.through]))
+        self.assertIsNotNone(self.cached(history=expected[self.basis.end], through=self.basis.end))
+
+    def test_pump_preparation_only_absent_cache_acquires_outside_writer_locks(self):
+        self.engine.daily_signal_cached_only = True
+        bundle = self.bundle()
+        original = self.source.history
+
+        def acquire(*args, **kwargs):
+            self.assertFalse(bundle.lock._is_owned())
+            self.assertFalse(self.engine.lock._is_owned())
+            return original(*args, **kwargs)
+
+        with patch.object(self.source, 'cached_history', return_value=None, create=True) as lookup:
+            with patch.object(self.source, 'history', side_effect=acquire) as history:
+                prepare_daily_sources(bundle, self.engine)
+        self.assertEqual(lookup.call_count, 2)
+        self.assertEqual(history.call_count, 2)
+        self.assertEqual({call.kwargs['through'] for call in history.call_args_list}, {self.through, self.basis.end})
+
+    def test_pump_preparation_never_retries_cache_authority_or_temporal_refusals(self):
+        self.engine.daily_signal_cached_only = True
+        for code in ('daily_signal_source_unverified', 'daily_signal_not_available', 'official_stock_invalid'):
+            with self.subTest(code=code):
+                with patch.object(self.source, 'cached_history', side_effect=DomainError(code), create=True) as lookup:
+                    with patch.object(self.source, 'history') as history:
+                        prepare_daily_sources(self.bundle(), self.engine)
+                self.assertEqual(lookup.call_count, 2)
+                history.assert_not_called()
+        self.assertEqual(len(projection._cache), 0)
+
     def test_hit_never_caches_source_authority_or_clock_evidence_comparisons(self):
         self.prepare()
         self.engine.daily_signal_cached_only = True
-        self.source.history = Mock(side_effect=DomainError('daily_signal_source_unverified'))
+        self.source.cached_history = Mock(side_effect=DomainError('daily_signal_source_unverified'))
         self.assertIsNone(stock_daily_window(self.engine, self.case.record, self.history.instrument_id, self.calendar))
         self.assertEqual(daily_signal_views(self.engine)[0].reason, 'daily_signal_source_unverified')
-        self.source.history.assert_called_once()
+        self.source.cached_history.assert_called_once()
         altered = replace(self.case.record, evidence_hash='bad')
         with self.assertRaises(DomainError) as caught:
             official_daily_result(self.engine, altered, self.case.result, history=self.history)

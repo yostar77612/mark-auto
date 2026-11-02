@@ -7947,3 +7947,17 @@ fresh status remains connected; connection loss retains disconnected guidance.
 No call sequence, retry, automatic execution, order action or IPC shape changes.
 Strings phase71/orders3108–3110; evidence:
 docs/analysis/connection-failures/verification.md.
+
+## M2-3d deterministic verification contract (owner update, 2026-11-03)
+
+`OfficialDailySignalSource.cached_history(...) -> OfficialDailyHistory | None`
+reads a current verified value without calling full history verification. None
+means only an absent revision/calendar/request key after the normal source,
+time and store checks; errors remain typed refusals. Native locked admission
+refuses None. Only lock-free preparation may turn that miss into history().
+The legacy history(cached_only=True) miss still raises its existing error.
+Duplicate same-revision pumps must call history zero times; a changed revision
+must reverify payload bytes. Tests observe actual bundle/engine/owner lock state
+at history, parser, digest and payload calls. Wall-clock values are measurements
+only, replacing the owner-superseded 0.5-second assertion without increasing it.
+No serialized DTO, UiAction, IPC operation or error code is added by this seam.

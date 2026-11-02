@@ -1,5 +1,11 @@
 # M2-3d review-fix verification
 
+Current acceptance update: the owner's later PR166 instruction replaces the
+0.5-second wall-time assertion with deterministic lock-state, method-call and
+revision assertions. Older timing assertions/results below describe their
+original source epoch; current timings are measurements only. See the final
+deterministic verification section and PR for the latest source and CI result.
+
 Scope: `codex/m2-3d-daily-basis-fixes`, based on main `6387968`.
 Integrated main `4867549` in `49d7064`, preserving both contract sections and keeping desktop bytes identical to main.
 First contract commit: `e763bdb`. This report records focused local evidence,

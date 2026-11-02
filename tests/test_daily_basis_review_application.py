@@ -93,17 +93,23 @@ class DailyBasisReviewApplicationTests(unittest.TestCase):
             self.assertFalse(uses_official_daily(record))
 
     def test_locked_read_miss_never_falls_back_to_full_verification(self):
+        from quantlab.trading.application.reservations import current_reservations
+
         self.engine.daily_signal_cached_only = True
-
-        def miss(*args, cached_only=False, **kwargs):
-            self.assertTrue(cached_only)
-            raise DomainError('daily_signal_not_available')
-
-        self.source.history = Mock(side_effect=miss)
+        before = self.engine.state
+        reserved = current_reservations(self.engine)
+        self.source.cached_history = Mock(return_value=None)
+        self.source.history = Mock(side_effect=AssertionError('locked full verification'))
         self.assertIsNone(stock_daily_window(self.engine, self.case.record, self.case.spec.instrument_id, self.case.calendar))
-        self.assertEqual(self.source.history.call_count, 1)
-        self.assertIs(self.source.history.call_args.kwargs['cached_only'], True)
+        self.source.cached_history.assert_called_once_with(
+            self.case.spec.instrument_id, self.case.calendar, through=self.case.day, start=self.case.result.daily_basis.start
+        )
+        self.source.history.assert_not_called()
         self.assertEqual(self.engine.state.automatic.daily.intents, ())
+        self.assertEqual(self.engine.state.orders, before.orders)
+        self.assertEqual(self.engine.state.automatic.evaluations, before.automatic.evaluations)
+        self.assertEqual(current_reservations(self.engine), reserved)
+        self.assertEqual(daily_signal_views(self.engine)[0].reason, 'daily_signal_not_available')
 
     def test_dispatch_source_io_error_is_a_typed_refusal_with_invalidated_view(self):
         intent = self.case.save()
@@ -130,20 +136,33 @@ class DailyBasisReviewApplicationTests(unittest.TestCase):
         checked = []
         original = self.source.history
 
-        def read(*args, **kwargs):
+        def unlocked(label):
             def peer():
                 with bundle.lock, self.engine.lock, owner_lock:
-                    checked.append(True)
+                    checked.append(label)
 
             thread = Thread(target=peer)
             thread.start()
             thread.join(1)
             self.assertFalse(thread.is_alive(), 'source IO holds an ownership lock')
+
+        def read(*args, **kwargs):
+            unlocked('history')
             return original(*args, **kwargs)
 
-        self.source.history = read
+        def miss(*args, **kwargs):
+            unlocked('cached_history')
+            return None
+
+        self.source.cached_history = Mock(side_effect=miss)
+        self.source.history = Mock(side_effect=read)
         prepare_daily_sources(bundle, self.engine)
         self.assertTrue(checked)
+        self.assertEqual(checked.count('cached_history'), 2)
+        self.assertEqual(checked.count('history'), 2)
+        self.assertEqual(self.source.cached_history.call_count, 2)
+        self.assertEqual(self.source.history.call_count, 2)
+        self.assertEqual({row.kwargs['through'] for row in self.source.history.call_args_list}, {self.case.day, self.case.result.daily_basis.end})
 
     def test_preparation_skips_already_evaluated_cursor(self):
         with patch('quantlab.trading.application.daily_execution._make_actions', return_value=()):
@@ -176,9 +195,11 @@ class DailyBasisReviewApplicationTests(unittest.TestCase):
             resources_closed=False,
             control_failed=False,
         )
+        self.source.cached_history = Mock(side_effect=AssertionError('saved pre-open intent needs no new window'))
         self.source.history = Mock(side_effect=AssertionError('saved pre-open intent needs no new window'))
         prepare_daily_sources(bundle, self.engine)
         self.source.history.assert_not_called()
+        self.source.cached_history.assert_not_called()
 
     def test_expired_intent_never_rebuilds_a_dispatch_window(self):
         intent = self.case.save()
@@ -195,9 +216,11 @@ class DailyBasisReviewApplicationTests(unittest.TestCase):
             resources_closed=False,
             control_failed=False,
         )
+        self.source.cached_history = Mock(side_effect=AssertionError('expired intent must not rebuild'))
         self.source.history = Mock(side_effect=AssertionError('expired intent must not rebuild'))
         prepare_daily_sources(bundle, self.engine)
         self.source.history.assert_not_called()
+        self.source.cached_history.assert_not_called()
 
     def test_typed_sim_entry_without_manual_book_cannot_select_legacy_admission(self):
         engine = self.engine

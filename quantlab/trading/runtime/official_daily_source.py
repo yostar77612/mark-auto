@@ -153,7 +153,19 @@ class OfficialDailyStockSource:
     ) -> OfficialDailyHistory:
         """Only warmed same-revision values are usable by the locked hot path."""
         try:
-            return self._cached_history(instrument_id, calendar, through=through, start=start, cached_only=cached_only)
+            history = self._cached_history(instrument_id, calendar, through=through, start=start, cached_only=cached_only)
+            if history is None:
+                raise DomainError('daily_signal_not_available', 'verified official history must be prepared outside the writer locks')
+            return history
+        except DomainError:
+            raise
+        except Exception:
+            raise DomainError('daily_signal_source_unverified', 'official history boundary failed') from None
+
+    def cached_history(self, instrument_id: str, calendar: TradingCalendar, *, through: date, start: date | None = None) -> OfficialDailyHistory | None:
+        """Probe current verified values only; None means an actual absent cache key."""
+        try:
+            return self._cached_history(instrument_id, calendar, through=through, start=start, cached_only=True)
         except DomainError:
             raise
         except Exception:
@@ -177,12 +189,12 @@ class OfficialDailyStockSource:
             history = self._cache.get(key)
             if history is not None:
                 self._cache.move_to_end(key)
-        if history is None:
-            if cached_only:
-                raise DomainError('daily_signal_not_available', 'verified official history must be prepared outside the writer locks')
+        if history is None and not cached_only:
             history = self._load_history(store, instrument_id, calendar, through=through, start=start, now=now)
         if self.store is not store or store.verification_revision != revision:
             raise DomainError('daily_signal_source_unverified', 'official cache changed while verifying history')
+        if history is None:
+            return None
         if history.observed_at > now:
             raise DomainError('daily_signal_not_available', 'official history has not arrived at this clock time')
         with self._cache_lock:

@@ -2585,3 +2585,22 @@ projection work was outside bundle/engine/owner locks and duplicate pumps added
 no such work. Bypassing the math cache is independently killed by the held-lock
 work assertion. These finite samples are evidence, not a universal latency bound.
 No LIVE path, automatic retry/resume, desktop, SDK, costs or workflow changes.
+
+### M2-3d owner update: deterministic lock/call assertions
+
+The owner's subsequent instruction replaces the runner-dependent wall-clock
+assertion with direct structural evidence. Keep elapsed times as measurements
+only; do not increase a threshold or present the old 0.5-second assertion as
+current acceptance. Preserve the real SQLite, source, native deployment, SDK,
+orders, archive size, parser and revision fixture checks.
+
+Observe all three actual ownership locks at every source.history call and every
+payload/hash/parser/semantic derivation. Cold verification must occur outside all
+three; same-revision duplicate pumps must call history zero times, and a changed
+revision must call it and revalidate bytes again. The new cached_history port
+returns None only for an absent key after current revision/time/store checks;
+all typed refusals propagate without cold fallback. Native locked admission
+uses this cache-only port and refuses None. Preparation alone can turn that
+specific miss into a full history read, outside the ownership locks. Preserve
+the prior history(cached_only=True) API's typed-miss behavior for compatibility.
+This is a calculation/read boundary, not an order retry or new permission path.

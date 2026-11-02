@@ -59,7 +59,9 @@ def prepare_daily_sources(bundle, engine):
     # intervening store revision makes the locked cached-only read fail closed.
     for instrument_id, calendar, through, start, basis in requests:
         try:
-            history = source.history(instrument_id, calendar, through=through, start=start)
+            history = source.cached_history(instrument_id, calendar, through=through, start=start)
+            if history is None:
+                history = source.history(instrument_id, calendar, through=through, start=start)
             prepare_daily_projection(history, calendar, basis, through)
         except DomainError:
             continue

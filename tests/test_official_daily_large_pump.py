@@ -116,7 +116,7 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
 
         gc.callbacks.append(collection)
         self.addCleanup(gc.callbacks.remove, collection)
-        lock_violations, full_reads, payload_reads = [], [], []
+        lock_violations, full_reads, payload_reads, history_calls = [], [], [], []
 
         def held():
             engine_held = bool(getattr(fixture.engine.lock._local, 'depth', 0))
@@ -125,6 +125,18 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
         original_history = fixture.engine.daily_signal_source.history
 
         def history(*args, **kwargs):
+            scope = tuple(
+                name
+                for name, owned in (
+                    ('bundle', measured._is_owned()),
+                    ('engine', bool(getattr(fixture.engine.lock._local, 'depth', 0))),
+                    ('owner', fixture.bundle.sinopac_connection.lock._is_owned()),
+                )
+                if owned
+            )
+            history_calls.append({'phase': measured.phase, 'cached_only': kwargs.get('cached_only', False), 'held_locks': scope})
+            if scope:
+                lock_violations.append('history-method:' + ','.join(scope))
             if not kwargs.get('cached_only', False):
                 full_reads.append((kwargs['start'].isoformat(), kwargs['through'].isoformat()))
                 if held():
@@ -149,6 +161,7 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
         self.addCleanup(fixture.bundle.kline_store._db.set_trace_callback, None)
         with (
             patch.object(fixture.engine.daily_signal_source, 'history', side_effect=history),
+            patch.object(fixture.engine.daily_signal_source, 'cached_history', wraps=fixture.engine.daily_signal_source.cached_history) as cached_probe,
             patch.object(official_daily_source, 'parse_daily', side_effect=parsed(official_daily_source.parse_daily)) as daily_parser,
             patch.object(official_daily_source, 'parse_events', side_effect=parsed(official_daily_source.parse_events)) as events_parser,
             patch.object(official_daily_source, 'sha256', side_effect=parsed(official_daily_source.sha256)) as digest,
@@ -167,13 +180,21 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
                 'payload_reads': len(payload_reads),
                 'full_reads': len(full_reads),
                 'semantic_derivations': projection.call_count,
+                'history_calls': len(history_calls),
             }
             self.assertGreaterEqual(cold['daily_parses'], 72)
             self.assertGreater(cold['sha_calls'], 0)
             self.assertGreater(cold['payload_reads'], 0)
             self.assertGreater(cold['semantic_derivations'], 0)
+            self.assertGreater(cold['history_calls'], 0)
             self.assertEqual(fixture.engine.state.automatic.daily.intents[0].phase, 'READY')
             full_before = len(full_reads)
+            cold_cache_probes = cached_probe.call_count
+            saved_run = fixture.engine.state.automatic.daily.authorized_run
+            self.assertTrue(saved_run)
+            # A real due request must consult the cache. Fresh SDK adoption is
+            # deliberately deferred until the existing revision phase below.
+            fixture.clock.value = native.OPEN + timedelta(seconds=1)
             measured.phase = 'hot_pump'
             for _ in range(3):
                 fixture.bundle.pump()
@@ -184,8 +205,15 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
                 'payload_reads': len(payload_reads) - cold['payload_reads'],
                 'full_reads': len(full_reads) - full_before,
                 'semantic_derivations': projection.call_count - cold['semantic_derivations'],
+                'history_calls': len(history_calls) - cold['history_calls'],
             }
             self.assertEqual(hot, dict.fromkeys(hot, 0))
+            hot_cache_probes = cached_probe.call_count - cold_cache_probes
+            self.assertGreater(hot_cache_probes, 0)
+            self.assertEqual(fixture.engine.state.automatic.daily.intents[0].phase, 'READY')
+            self.assertEqual(fixture.engine.state.automatic.daily.authorized_run, saved_run)
+            self.assertFalse(fixture.engine.state.automatic.auto_paused)
+            self.assertEqual(fixture.placed(), fixture.initial_orders)
             with closing(KlineStore(fixture.bundle.kline_store.path, arrival_clock=fixture.clock.now)) as store:
                 store.import_daily(make_official_batch(fixture.spec.instrument_id, FIRST, date(2025, 6, 13), nonce=251, calendar=fixture.calendar))
             measured.phase = 'query_adopt'
@@ -197,16 +225,20 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
                 'sha_calls': digest.call_count - cold['sha_calls'],
                 'full_reads': len(full_reads) - full_before,
                 'semantic_derivations': projection.call_count - cold['semantic_derivations'],
+                'history_calls': len(history_calls) - cold['history_calls'],
             }
             self.assertGreater(revision['daily_parses'], 0)
             self.assertGreater(revision['sha_calls'], 0)
             self.assertGreater(revision['semantic_derivations'], 0)
+            self.assertGreater(revision['history_calls'], 0)
         self.assertEqual(lock_violations, [])
+        self.assertFalse(any(row['cached_only'] for row in history_calls), 'native verification calls history only for full outside-lock verification')
         self.assertEqual(fixture.placed(), fixture.initial_orders + 1)
         maxima = {phase: max(row['seconds'] for row in measured.records if row['phase'] == phase) for phase in {row['phase'] for row in measured.records}}
         pump_max = max(value for phase, value in maxima.items() if phase.endswith('_pump'))
         report = {
             'synthetic_fixture': True,
+            'wall_clock_metrics_only': True,
             'months': 72,
             'bars': len(data['current'].bars),
             'refreshes': 250,
@@ -224,13 +256,17 @@ class OfficialDailyLargePumpTests(unittest.TestCase):
             'lock_violations': lock_violations,
             'cold': cold,
             'three_hot_pumps': hot,
+            'cached_history_calls': {
+                'cold': cold_cache_probes,
+                'hot': hot_cache_probes,
+                'revision': cached_probe.call_count - cold_cache_probes - hot_cache_probes,
+            },
             'revision_revalidation': revision,
         }
         target = Path.cwd() / '.gitnexus/verification/official-daily-large-pump.json'
         if target.parent.is_dir():
             target.write_text(json.dumps(report, indent=2) + '\n')
         print(json.dumps({key: value for key, value in report.items() if key != 'gc_collections'}, sort_keys=True))
-        self.assertLess(pump_max, 0.5, 'cold public-source work must not reside in bundle/engine/owner locks')
 
 
 if __name__ == '__main__':

@@ -20,7 +20,10 @@ def _source_history(engine, source, instrument_id, calendar, *, through, start):
     """Only native pump admission requests a prepared, revision-bound cache hit."""
     try:
         if getattr(engine, 'daily_signal_cached_only', False):
-            return source.history(instrument_id, calendar, through=through, start=start, cached_only=True)
+            history = source.cached_history(instrument_id, calendar, through=through, start=start)
+            if history is None:
+                raise DomainError('daily_signal_not_available', 'verified official history must be prepared outside the writer locks')
+            return history
         return source.history(instrument_id, calendar, through=through, start=start)
     except DomainError:
         raise
