@@ -2187,3 +2187,40 @@ MEDIUM (98), registry initialize MEDIUM (22). Callers include snapshot/IPC,
 serialization, startup and existing observers. No FTS download/repair is used;
 missing flows are not evidence of safety. Contract/codec smoke passes before
 the first small commit. Generated baselines remain one separate final batch.
+
+### M2-3 daily execution: mixed market hours and scoped reductions
+
+2026-11-02. A native fake-SDK regression confirms that requiring every selected
+product to be open at once suppresses a TMF completed five-minute normal exit
+after stocks close at13:30. Preserve the all-account admission for new risk;
+during normal scheduled daily waiting, allow only owned completed-bar reductions
+in an actually open product. Forming bars, repeated cursors and new entries stay
+blocked by their existing boundaries. Fault pauses still retain only the
+independently legal protective path.
+
+Do not invent a live mark from a closed stock quote. While a preserved run is
+normally waiting, background risk monitoring may defer a stale mark only when
+explicit verified sessions prove every held product in that account is closed.
+Other open accounts remain monitored. Manual observation adoption retains its
+accepted quantity caches if aggregate valuation alone is unavailable; an open
+stale market still halts new risk. Submission-time risk admission remains strict.
+Book capital/opening day and lifetime manual accounting are never reset at dawn;
+shared daily PnL uses the committed exact per-account closing evidence.
+
+GitNexus observe_account_limits is HIGH (25 upstream, including engine submit,
+manual resume, runtime and risk observers). Source confirms the dynamic runtime
+route in addition to the graph's limited completed-bar caller set. This is not
+permission to infer safety from absent process edges.
+
+### M2-3 daily evaluation interrupted before signal saving
+
+An interruption after the pure daily evaluation claim but before atomic signal
+saving has no dispatch authority. Explicit reconciliation can discard that work
+only when verified full-state journal history proves the dedicated
+daily_evaluation_claimed transition for the exact cursor/evaluation time and
+there is no saved intent or semantic matching local order. Complete the existing
+evaluation as daily_signal_invalidated with its cursor retained. Never reevaluate
+that close, reset budgets, send an order or resume. Any dispatcher uncertainty,
+minute claim, missing provenance or unknown manual observation remains blocked.
+This avoids turning a harmless pure-evaluation crash into a permanently
+unrecoverable pause while preserving unknown financial outcomes.

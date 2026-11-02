@@ -1,0 +1,174 @@
+{
+  "scope": "M2-3 daily close and next verified DAY engine path",
+  "pr": "https://github.com/yostar77612/mark-auto/pull/147",
+  "base_main": "e5a5941bdd66c8f216d4ecdb4d81e1f872406f66",
+  "first_contract_commit": "3b67a1079680b0bd34aa40f3052dac339b4a4654",
+  "merge_gate": "Leave open for Claude review after complete green CI. No automatic merge.",
+  "mutations": {
+    "total": 346,
+    "killed": 346,
+    "groups": {
+      "daily_state": {
+        "total": 91,
+        "killed": 91,
+        "raw_evidence": ".gitnexus/verification/daily-state-production-mutation-results.json",
+        "raw_sha256": "ee1893dc1d02255edb9539733fbfd558fc7bc1309dae9083dd6e0b528fa91ef4"
+      },
+      "close_valuation": {
+        "total": 70,
+        "killed": 70,
+        "raw_evidence": ".gitnexus/verification/daily-closes-mutation-results.json",
+        "raw_sha256": "9df7a2e5ee47c7b20f2b2e40351daad99fe53aa651be90641ff5d0352355d352"
+      },
+      "manual_daily_baselines": {
+        "total": 52,
+        "killed": 52,
+        "raw_evidence": ".gitnexus/verification/manual-daily-baseline-production-mutation-results.json",
+        "raw_sha256": "60e7582712db8806e7d5aedb2f621fd188d150334ee4f6da2397ccbfa1b392dc"
+      },
+      "pure_evaluation_recovery": {
+        "total": 35,
+        "killed": 35,
+        "raw_evidence": ".gitnexus/verification/daily-recovery-mutation-results.json",
+        "raw_sha256": "dc343de4281d284db772e56ab133ff9ea59c5f61d270ec2916d7f7620cd3c61f"
+      },
+      "runtime_and_native_exit": {
+        "total": 73,
+        "killed": 73,
+        "raw_evidence": ".gitnexus/verification/daily-final-independent-mutation-aggregate.json",
+        "raw_sha256": "c33a144288a6292e9e0673db2416d3fe2868d27d5b7a539d3e403248e148051f"
+      },
+      "daily_commit_admission": {
+        "total": 25,
+        "killed": 25,
+        "raw_evidence": ".gitnexus/verification/daily-commit-mutation-results.json",
+        "raw_sha256": "87f696274392f7cd0af3511a5c7d8019bdec38ae792ea5533f54f9342bbd28ea"
+      }
+    }
+  },
+  "startups": {
+    "LOCAL": {
+      "elapsed_seconds": 5.432,
+      "engine_state": "WAITING_RECONCILIATION",
+      "environment": "LOCAL",
+      "errors": [],
+      "mode": "LOCAL",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [
+        {
+          "exit_code": 0,
+          "shutdown": "NORMAL"
+        }
+      ],
+      "passed": true,
+      "real_sdk_imported": false,
+      "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2",
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    },
+    "BROKER_SIMULATION": {
+      "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+      "elapsed_seconds": 3.03,
+      "engine_state": "DISCONNECTED",
+      "environment": "BROKER_SIMULATION",
+      "errors": [],
+      "fake_sdk_connected": true,
+      "fake_sdk_login_count": 1,
+      "fake_sdk_logout_count": 1,
+      "host_return_code": 0,
+      "mode": "BROKER_SIMULATION",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [],
+      "passed": true,
+      "real_sdk_imported": false,
+      "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2",
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    }
+  },
+  "product_sources": [
+    {
+      "path": "quantlab/trading/application/account_risk.py",
+      "sha256": "26e9c2dc04099a336fe38062ca59680fe4a9d70ab7e6d1bcdab4e21e0a34f36d"
+    },
+    {
+      "path": "quantlab/trading/application/automatic.py",
+      "sha256": "cfb4c21674f851145f0f2d9af7ec2e756a067ffec57d432cfde6e30abf66b323"
+    },
+    {
+      "path": "quantlab/trading/application/automatic_baseline.py",
+      "sha256": "00557fb3691a2a4d757985f4f8c2572f43b5a2ccf0be714f762ac30fb3dc8f2a"
+    },
+    {
+      "path": "quantlab/trading/application/automatic_state.py",
+      "sha256": "7978abd53a7acecd5727a2566b42a9fee44c541aa2c64672f09ac4758b9d7037"
+    },
+    {
+      "path": "quantlab/trading/application/coordinator.py",
+      "sha256": "73d4be8c9a2067fdb2848864e72fbee108fbdd0467cebf102f44c3bd31a99e6e"
+    },
+    {
+      "path": "quantlab/trading/application/daily_closes.py",
+      "sha256": "a1b206fabc310e21ff926c53c3976a0ab8154f10a5a63baaf03b51ad7a116a6e"
+    },
+    {
+      "path": "quantlab/trading/application/daily_execution.py",
+      "sha256": "eccd1ee800df777983abfb6def3989162d074ef8bcc62ec45403e77ce1a0a441"
+    },
+    {
+      "path": "quantlab/trading/application/daily_recovery.py",
+      "sha256": "ab95a5fcd198d50cf62f3d00d40f2b6307f12ba28dab26275b0f9e26ab331e89"
+    },
+    {
+      "path": "quantlab/trading/application/daily_state.py",
+      "sha256": "5c98fd44b45d9d2c932d41c85e1b823f482235a36753560e5e8681892bc4bd11"
+    },
+    {
+      "path": "quantlab/trading/application/engine.py",
+      "sha256": "c96fd9fb956ddf99581b1acaef4e69be80ec1c4eda2fb53e77405d2bf38dcf26"
+    },
+    {
+      "path": "quantlab/trading/application/manual_book.py",
+      "sha256": "97355f8bcf2192144ca5befd4b9e8d05f376f5ae5c16773f0c6aaf1c3a25cf1c"
+    },
+    {
+      "path": "quantlab/trading/application/manual_trading.py",
+      "sha256": "62c97dbc27715eb1f4b9fe286fb41cd6bd0028d34784ee4b2b2b299a7c494075"
+    },
+    {
+      "path": "quantlab/trading/application/performance.py",
+      "sha256": "a98eaf4dd73b1259d4eae6386f510f4767841d1ac00762d7c2060999dde909eb"
+    },
+    {
+      "path": "quantlab/trading/application/views.py",
+      "sha256": "ef39e9123fad7c0d0b2cf9fcfc918032850d6b4cfe0ad65177e9c714a7f71105"
+    },
+    {
+      "path": "quantlab/trading/domain/auto_cycle.py",
+      "sha256": "2d67fa39d5c5886cf9fa7f7d3bde8a9fc24775ab7df95bd11116d37349527f84"
+    },
+    {
+      "path": "quantlab/trading/runtime/automatic.py",
+      "sha256": "170da26c84153ce5f7d6697d6f252980795cf3d75d44b5a89e89b3a4c87cd6af"
+    },
+    {
+      "path": "quantlab/trading/runtime/daily_automatic.py",
+      "sha256": "45f20f96d2962c2296e4bb96bc9f9343f4a80e5d07a192eca55cc5211115504d"
+    },
+    {
+      "path": "quantlab/trading/runtime/manual_trading.py",
+      "sha256": "c5526d0b3d87d4cd92bcc9edfc49da2fa263b27b755a882e7516d2a1c0f4c50f"
+    }
+  ],
+  "local_related_tests": "Final result recorded in adjacent Markdown and local daily-related-final.log; full discover reserved for CI.",
+  "ci": "Complete final-head checks are authoritative on PR147; CI is required before Claude review.",
+  "owner_acceptance": "Real broker automation and UI rendering remain separate owner/desktop-lane acceptance."
+}

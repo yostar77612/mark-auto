@@ -299,6 +299,7 @@ class ManualRuntime:
                 engine.automatic_observation_validator = self.bundle.automatic_runtime.validate_observation
                 engine.automatic_entry_validator = self.bundle.automatic_runtime.validate_entry
                 engine.automatic_submission_guard = self.bundle.automatic_runtime.submission_guard
+                engine.automatic_owner_stamp = self.bundle.automatic_runtime.owner_stamp
             adapter.session_resolver = CalendarResolver(engine)
             adapter.quote_version = 'v1'
             if adapter.tick_stream is not None:

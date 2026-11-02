@@ -77,6 +77,7 @@ class AutomaticEngineTests(unittest.TestCase):
         self.engine.automatic_observation_validator = self.runtime.validate_observation
         self.engine.automatic_entry_validator = self.runtime.validate_entry
         self.engine.automatic_submission_guard = self.runtime.submission_guard
+        self.engine.automatic_owner_stamp = self.runtime.owner_stamp
 
     def deploy(self, *, stock=False, intraday=False, activate=True):
         spec = self.stock if stock else self.case.spec

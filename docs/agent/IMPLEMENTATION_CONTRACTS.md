@@ -7459,3 +7459,18 @@ is UNKNOWN when resolution is blocked.
 - LIVE remains hard-disabled. LOCAL day stepping and independently legal
   protective exits retain their existing paths. UI rendering/strings belong to
   the separate desktop lane. This PR remains open for Claude review after CI.
+- Mixed stock/TMF calendar waiting does not suppress completed-bar owned exits
+  in a product still open. It grants no new entry; full current account proofs
+  remain mandatory for new risk. Closed-account stale marks may be deferred in
+  background monitoring only during normal preserved waiting, using explicit
+  verified product sessions. No closing price becomes a synthetic live quote.
+- A shared manual book keeps its original capital/opening day. Current-day
+  shared PnL subtracts the exact committed account close; normal day rollover
+  cannot reset lifetime PnL, user stops or loss locks. Accepted scoped quantity
+  observations survive an unavailable aggregate mark, preserving independently
+  provable protective reductions.
+- Explicit reconciliation may discard a pure interrupted daily evaluation only
+  after replay proves the dedicated close-evaluation claim, current trusted
+  account observations and no saved intent or matching order. It preserves the
+  consumed cursor and paused state. Dispatch UNKNOWN, minute claims, reservations
+  and unrelated issues are never erased by this operation.
