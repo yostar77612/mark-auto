@@ -764,3 +764,13 @@ Each mutation ran separately against its named test, restoring source in finally
 - 將以獨立基準 commit 登記五個 application 檔案與上述兩個 observer；只更新預期值，不修改斷言。最終基準與 affected-tests 結果由後續驗證追加。
 
 新增／使用錯誤碼完整集合：`candidate_not_passed`、`candidate_unavailable`、`candidate_spec_unsupported`、`candidate_data_mismatch`、`auto_instrument_not_allowed`、`auto_instrument_busy`、`auto_execution_data_insufficient`、`auto_evidence_changed`、`auto_frozen`，並沿用 `validation_failed`、`stage_transition_denied` 及既有 calendar／instrument 邊界錯誤。中央 UI ErrorText 對照仍屬 M3-4。
+
+## 最終基準與 affected-tests 驗證
+
+- 功能 commit：`5204687`。獨立 `test(baseline)` commit：`7b0c827`，只含五個檔案盤點列與兩個測試 observer 預期值。
+- `QT_QPA_PLATFORM=offscreen python tools/repin_baselines.py --only inventory --only observers --inventory-note 'M3-3 signal strategy application services; existing domain and M2 interfaces unchanged' --write`：exit 0，工具內建驗證完成。
+- 寫入後 `python tools/repin_baselines.py --only inventory --only observers`：exit 0，兩組皆 up-to-date。
+- `python tools/affected_tests.py --list` 選取 16 個模組；逐模組名交給 unittest（不是 discover 全套）：**263 tests，exit 0，36.531 秒**。
+  模組：`test_affected_tests`、`test_docs_layering`、`test_download_auto_import_contracts`、`test_import_graph`、`test_layer_gate`、`test_lb_b3_indicators`、`test_m3_candidate_intake`、`test_m3_prefix_consistency`、`test_m3_promotion_service`、`test_m3_signal_research`、`test_m3_stage_matrix`、`test_page_services_r1`、`test_r7_characterization`、`test_repin_baselines`、`test_repo_layout`、`test_trade_statistics_b1`。
+- 最終 `check_layers.py --baseline-ref origin/main`：exit 0。`git diff --check` 無 whitespace 問題；M3-1、G3、desktop_app、PROJECT_STATE 與 SDK 版本無修改。
+- 本機不推送、不合併；主協調者負責更新正式 PR 與 CI。CI 尚未在此報告宣稱通過。
