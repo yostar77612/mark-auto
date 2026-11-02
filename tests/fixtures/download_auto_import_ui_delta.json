@@ -813,16 +813,6 @@
         },
         {
           "row": {
-            "file": "tests/test_m2_automatic_engine.py",
-            "kind": "assignment",
-            "line": 516,
-            "name": "history",
-            "receiver": "self.engine"
-          },
-          "count": 1
-        },
-        {
-          "row": {
             "file": "tests/test_minute_research_history.py",
             "kind": "assignment",
             "line": 55,
@@ -853,16 +843,6 @@
         },
         {
           "row": {
-            "file": "tests/test_m2_automatic_engine.py",
-            "kind": "assignment",
-            "line": 495,
-            "name": "history",
-            "receiver": "self.engine"
-          },
-          "count": 1
-        },
-        {
-          "row": {
             "file": "tests/test_m2_daily_recovery.py",
             "kind": "assignment",
             "line": 60,
@@ -878,6 +858,16 @@
             "line": 641,
             "name": "history",
             "receiver": "engine"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m2_automatic_engine.py",
+            "kind": "assignment",
+            "line": 517,
+            "name": "history",
+            "receiver": "self.engine"
           },
           "count": 1
         }
