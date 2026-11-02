@@ -7646,3 +7646,43 @@ failure bound if dispatch never occurs. The real deadline check and cleanup run
 unchanged; the original under-one-second return, retiring worker, absent receipt,
 empty cache and complete missing-range assertions remain. No production behavior,
 SDK access, execution policy or acceptance score changes.
+
+## M2-9 explicit cash-only training accounting (2026-11-02)
+
+A trusted official-stock source port can supply `CashDividendAction`: positive
+issuer cash per share, cash-only status and a payment date on/after ex-date,
+bound to its original source URL/payload digest. The existing native TWSE/TPEx
+parser does not manufacture these facts from the reference-price ratio. This
+slice is verified with explicitly synthetic port fixtures, not recorded exchange
+samples. Cash/share native entitlement ingestion remains unverified; unknown,
+share and mixed-action crossings, and short-side cash obligations, still refuse
+publication. Duplicate/conflicting same-day events fail the atomic import.
+
+Original `CorporateAction`, `ResearchTrade`, `ResearchResult` and
+`StockResearchArtifact` wire shapes and old no-entitlement hashes remain intact.
+Cash facts use additive storage with a canonical facts checksum against ordinary
+row corruption; this is integrity of trusted adapter output, not an attestation
+that arbitrary JSON or an official-looking URL is authoritative. Historical
+source bytes remain preserved; a failed refresh rolls back prices and cash facts.
+
+The new `markauto-official-stock-cash-training-1` artifact stores separate gross
+issuer cash accrual under `gross-issuer-cash-accrual-v1`. Entry before ex-date
+qualifies, including sale on ex-date; ex-date purchases do not. The observation
+horizon is the final research bar date. `gross_payable` means distribution
+scheduled by that date, NOT verified bank receipt; later amounts remain gross
+receivables even after the shares are sold. Personal withholding and remittance
+fees are excluded from this gross basis, not assumed to be zero. Neither bucket
+funds another entry; the existing static-allocation check is unchanged.
+Per-share amounts are multiplied exactly; issuer-specific rounding is not modeled
+or represented as known. Typed `StrategyParameters` remain unsupported by this
+legacy daily runner; existing static one-lot sizing is unchanged.
+
+Standard trade gross PnL, result net PnL and drawdown remain raw-price-only.
+`cash_accounting.raw_net_plus_entitlement` is explicitly a separate gross-cash
+accrual total, not a total-return drawdown/performance feed or new activation
+permission. Every new cash fact, schedule, method and summary is frozen into the
+artifact hash and verified during replay. Existing fee/slippage models, TRAINING
+partition, completion/coverage checks, cancellation/deadline and append-only
+publication remain in force. No UI, G3, M3-1 contract, OOS, live-order, credentials
+or market-network path changes. See `docs/design/m2-9-cash-entitlements.md` for
+assumptions, primary references, scope and verification limits.

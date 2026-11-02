@@ -123,7 +123,11 @@ def price_series(bars: tuple[DailyStockBar, ...], events: tuple[CorporateAction,
         [(b.instrument_id, b.trade_date.isoformat(), *(str(v) for v in (b.open, b.high, b.low, b.close)), b.volume, b.source_digest) for b in bars]
     )
     events_digest = _digest(
-        [(e.instrument_id, e.ex_date.isoformat(), str(e.previous_close), str(e.reference_price), e.source_digest, e.source_url) for e in events]
+        [
+            (e.instrument_id, e.ex_date.isoformat(), str(e.previous_close), str(e.reference_price), e.source_digest, e.source_url)
+            + (('cash-only-v1', str(e.cash_per_share), e.payment_date.isoformat()) if isinstance(e, CashDividendAction) else ())
+            for e in events
+        ]
     )
     result = []
     for bar in bars:
