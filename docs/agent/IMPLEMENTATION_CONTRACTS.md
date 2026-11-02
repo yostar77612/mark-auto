@@ -7147,3 +7147,37 @@ are unchanged; native dangerous confirmations still include the account.
 Stock total and cumulative fills display exact fractional lots, including0.5 lots
 for500 shares, with canonical share tooltips; futures remain contracts. Choices
 and failed preference writes do not invoke a trading command.
+
+## M2-2b manual SIM review fixes (2026-11-02)
+
+Production orders stay hard-disabled; every change below sends nothing and adds no LIVE path.
+
+- Port contract: for `ExecutionPort.submit/cancel/amend` a `DomainError` other than
+  `outcome_unknown` proves the SDK was never invoked. `ShioajiAdapter.submit` raises it
+  before the native call and removes its placeholder; any exception after the call is an
+  UNKNOWN receipt. The execution service seals such an order `REJECTED` (reservation
+  released, engine not stopped) and restores a working order after a refused cancel;
+  the manual service closes the request as known `REJECTED` with the error code.
+  Unknown outcomes after the SDK call are unchanged: halt, keep the reservation, no resend.
+- Unknown submission recovery: every manual SDK order carries `custom_field` (first six
+  characters of the local order id). A healthy manual observation re-attaches a broker
+  order to a pending placeholder only when the tag and code, side, quantity and price all
+  match exactly one placeholder. Otherwise the order is reported in
+  `ManualAccountObservation.unmapped` with its candidate local orders; the book stays
+  halted and positions are not verified while the submission is unresolved. The generic
+  `refresh` still quarantines every unmapped broker order.
+- Explicit operations `UiAction.ADOPT_MANUAL_ORDER` (optional `target_id` = observed broker
+  order id) and `UiAction.DECLARE_MANUAL_NOT_SENT` take a confirmed `ManualMutationForm`
+  for an unknown manual submission, need a fresh healthy observation and never call the
+  SDK. Adopt binds the broker reference (durably, in the local order); the next
+  observation closes the request from broker evidence. Declare is refused while a matching
+  broker order exists; otherwise it seals the order `REJECTED`, releases its reservation
+  and closes the request as `manual_declared_not_sent`. The book still needs the existing
+  explicit RESUME.
+- Unknown amend: a healthy observation that still shows another price closes the request
+  as `manual_amend_not_applied`; an unknown cancel closes the same way when the order is
+  still working. Cancel is allowed while an amend is open; a second amend is not.
+- Limit price protection: a marketable manual limit further than
+  `MANUAL_MAX_PRICE_DEVIATION` (1%) beyond the opposite quote is refused with
+  `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
+  An exit order may be amended to any legal price (it reserves no cash and has no stop).
