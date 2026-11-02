@@ -106,7 +106,11 @@ def snapshot(engine: 'TradingEngine') -> UiState:
             ),
             parameters=s.parameters,
             recent_signal=s.recent_signal,
-            margin_source=('BROKER' if engine.catalog.resolve(s.form.instrument_id).margin is not None else 'BUILTIN_CONSERVATIVE')
+            margin_source=(
+                ('BROKER' if engine.catalog.resolve(resolved[s.strategy_id, s.version]).margin is not None else 'BUILTIN_CONSERVATIVE')
+                if resolved[s.strategy_id, s.version]
+                else 'UNKNOWN'
+            )
             if s.parameters is not None and s.form.market is not Market.STOCK
             else '',
             resolved_instrument_id=resolved[s.strategy_id, s.version],

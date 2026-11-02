@@ -372,6 +372,41 @@
       "name": "strategy_profit_ceiling",
       "status": "KILLED",
       "test_count": 1
+    },
+    {
+      "name": "mixed_legacy_allocation",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "persistent_account_adoption",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "json_revision_reconstruct",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "json_revision_interval",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "json_revision_holding",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "clone_form_boundary",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "resolved_margin_source",
+      "status": "KILLED",
+      "test_count": 1
     }
   ],
   "startup": [

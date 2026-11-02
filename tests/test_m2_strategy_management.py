@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import timedelta
 from decimal import Decimal
 from hashlib import sha256
+import json
 import unittest
 
 from test_live_order_guard import GuardJournal
@@ -214,6 +215,27 @@ class StrategyManagementTests(unittest.TestCase):
         self.assertEqual(self.engine.strategy(first).state, 'ACTIVE')
         self.assertEqual(self.engine.strategy(second).state, 'ACTIVE')
 
+    def test_legacy_creation_cannot_bypass_active_typed_allocation_cap(self):
+        first = self.deploy(allocation=D('40000'))
+        legacy = self.command(UiAction.CREATE_STRATEGY, strategy=self.form('TWSE:DEMO01', D('40000'))).reference
+        self.research(legacy)
+        result = self.command(UiAction.DEPLOY, target_id=legacy, accepted=False)
+        self.assertEqual(result.code, 'strategy_allocation_exceeded')
+        self.assertEqual(self.engine.strategy(first).state, 'ACTIVE')
+        self.assertNotEqual(self.engine.strategy(legacy).state, 'ACTIVE')
+
+    def test_typed_tombstone_keeps_account_allocation_cap_for_legacy_versions(self):
+        typed = self.create()
+        self.command(UiAction.DELETE_STRATEGY, target_id=typed)
+        legacy_first = self.command(UiAction.CREATE_STRATEGY, strategy=self.form(allocation=D('40000'))).reference
+        self.research(legacy_first)
+        self.command(UiAction.DEPLOY, target_id=legacy_first)
+        legacy_second = self.command(UiAction.CREATE_STRATEGY, strategy=self.form('TWSE:DEMO01', D('40000'))).reference
+        self.research(legacy_second)
+        result = self.command(UiAction.DEPLOY, target_id=legacy_second, accepted=False)
+        self.assertEqual(result.code, 'strategy_allocation_exceeded')
+        self.assertEqual(self.engine.strategy(legacy_first).state, 'ACTIVE')
+
     def test_disable_retains_positions_and_protection_and_can_reenable_same_evidence(self):
         reference = self.deploy()
         order = self.submit(reference)
@@ -262,6 +284,51 @@ class StrategyManagementTests(unittest.TestCase):
         with self.assertRaises(DomainError) as rejected:
             self.engine.clone_strategy(first, self.form())
         self.assertEqual(rejected.exception.code, 'strategy_parameters_invalid')
+
+    def test_direct_engine_revision_rejects_untyped_form_at_boundary(self):
+        first = self.deploy()
+        with self.assertRaises(DomainError) as rejected:
+            self.engine.clone_strategy(first, 'untyped', self.parameters())
+        self.assertEqual(rejected.exception.code, 'validation_failed')
+
+    def structured_form(self):
+        body = {
+            'schema_version': 2,
+            'strategy_id': 'json-proposal',
+            'version': 1,
+            'market': 'STOCK',
+            'holding_policy': {'kind': 'SWING', 'min_days': 2, 'max_days': 10, 'night_enabled': False, 'expiry_action': 'EXIT'},
+            'bar_interval': '1d',
+            'direction': 'LONG_ONLY',
+            'entry': [{'field': 'close', 'operator': 'GT', 'value': '0'}, {'field': 'volume', 'operator': 'GE', 'value': '0'}],
+            'exit': [{'field': 'return5', 'operator': 'LT', 'value': '-0.2'}],
+            'cost_version': self.fees.version,
+            'risk_ref': self.engine.risk().policy.version,
+        }
+        return replace(self.form(), rule_kind='STRUCTURED_JSON', draft_json=json.dumps(body))
+
+    def test_json_parameter_only_revision_preserves_original_rules(self):
+        first = self.command(UiAction.CREATE_TYPED_STRATEGY, strategy=self.structured_form(), strategy_parameters=self.parameters()).reference
+        original = self.engine.strategy(first)
+        self.assertEqual(original.form.draft_json, '')
+        revised = self.command(
+            UiAction.REVISE_STRATEGY, target_id=first, strategy=original.form, strategy_parameters=self.parameters(entry_amount=D('15000'))
+        ).reference
+        record = self.engine.strategy(revised)
+        self.assertEqual((record.definition.entry, record.definition.exit), (original.definition.entry, original.definition.exit))
+        self.assertEqual(record.parameters.entry_amount, D('15000'))
+        self.assertEqual(record.version, original.version + 1)
+        self.assertEqual((record.state, record.evidence_hash, record.research_blob), ('DRAFT', '', ''))
+
+    def test_json_revision_updates_interval_and_holding_envelope_without_changing_rules(self):
+        first = self.command(UiAction.CREATE_TYPED_STRATEGY, strategy=self.structured_form(), strategy_parameters=self.parameters()).reference
+        original = self.engine.strategy(first)
+        form = replace(original.form, min_days=3, max_days=8)
+        revised = self.command(UiAction.REVISE_STRATEGY, target_id=first, strategy=form, strategy_parameters=self.parameters(bar_interval='5m')).reference
+        record = self.engine.strategy(revised)
+        self.assertEqual(record.definition.bar_interval, '5m')
+        self.assertEqual((record.definition.policy.min_days, record.definition.policy.max_days), (3, 8))
+        self.assertEqual((record.definition.entry, record.definition.exit), (original.definition.entry, original.definition.exit))
 
     def test_delete_without_fills_hides_tombstone_and_never_reuses_version(self):
         reference = self.create()
@@ -388,6 +455,20 @@ class StrategyManagementTests(unittest.TestCase):
         self.engine._persist('missing_next_contract_fixture', replace(self.engine.state, trading_day=previous))
         view = self.facade.snapshot().strategies[0]
         self.assertEqual((view.resolved_instrument_id, view.entry_block_code), ('', 'instrument_unresolved'))
+
+    def test_rollover_margin_provenance_uses_resolved_contract_and_blocked_is_unknown(self):
+        front = next(s for s in self.specs if s.market is Market.INDEX_FUTURE)
+        next_month = replace(next(s for s in synthetic_catalog().instruments if s.instrument_id == 'TAIFEX:TMF:202703'), margin=None)
+        form = replace(self.form(), market=front.market, holding_kind=HoldingKind.INTRADAY, min_days=0, max_days=0, instrument_id=front.instrument_id)
+        self.command(UiAction.CREATE_TYPED_STRATEGY, strategy=form, strategy_parameters=self.parameters(bar_interval='5m', instrument_rule='TMF_NEAR'))
+        self.engine.catalog = Catalog((*self.specs, next_month))
+        previous = self.calendar.days[self.calendar.index(front.expiry) - 1]
+        self.engine._persist('roll_margin_fixture', replace(self.engine.state, trading_day=previous))
+        view = self.facade.snapshot().strategies[0]
+        self.assertEqual((view.resolved_instrument_id, view.margin_source), (next_month.instrument_id, 'BUILTIN_CONSERVATIVE'))
+        self.engine._persist('roll_margin_settlement_fixture', replace(self.engine.state, trading_day=front.expiry))
+        view = self.facade.snapshot().strategies[0]
+        self.assertEqual((view.resolved_instrument_id, view.margin_source), ('', 'UNKNOWN'))
 
     def test_entry_cannot_spend_another_strategy_risk_budget(self):
         reference = self.deploy(allocation=D('20000'))

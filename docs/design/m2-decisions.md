@@ -1978,3 +1978,12 @@ M2-4 final local updates: management30 tests pass and20/20 management mutants
 killed, including cumulative losses and a no-profit-expansion allocation ceiling.
 Near-month View DTO tests cover rollover, settlement-day block and missing next
 contract. See m2-4-engine-verification.md/.json for evidence and exact limitations.
+
+M2-4 independent review corrected a mixed legacy/typed allocation bypass, JSON
+rule-preserving parameter revisions, and rollover margin provenance. An account
+adopts the M2 allocation contract persistently when its first typed version is
+created (including later tombstones), so the old creation entry point cannot
+bypass the new account ceiling. Legacy-only ledgers retain their original
+contract. Management36 tests and27/27 mutants pass; existing margin/coordinator
+regression13 pass. JSON interval/holding changes still preserve entry/exit rules
+and clear all research evidence for the new version.

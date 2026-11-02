@@ -7217,3 +7217,9 @@ M2-4 implementation details:
   cash/risk commitments remain isolated across all versions of each strategy.
 - New tests: test_m2_strategy_domain.py and test_m2_strategy_management.py. No new
   product files, no desktop edits and no layer-map changes are required.
+
+M2-4 review clarifications: account allocation limits cover all creation routes
+once an account has any typed version, even a disabled/deleted marker. JSON
+parameter revisions preserve rules but rebuild explicit form/interval metadata
+and invalidate evidence. Margin provenance follows resolved_instrument_id and
+is UNKNOWN when resolution is blocked.

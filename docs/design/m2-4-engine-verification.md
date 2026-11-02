@@ -23,7 +23,7 @@ Environment: `QT_QPA_PLATFORM=offscreen`, `PYTHONUTF8=1`.
 - `python tools/affected_tests.py --list --quiet`: exit0, selected161 modules;
   engine-focused modules below executed locally; full discovery is reserved for CI.
 - `python -m unittest discover -s tests -p test_m2_strategy_domain.py`:22 pass.
-- `python -m unittest discover -s tests -p test_m2_strategy_management.py`:30 pass.
+- `python -m unittest discover -s tests -p test_m2_strategy_management.py`:36 pass.
 - Existing trading domain44, application29, selected coordinator/LIVE/draft/scope/
   execution-environment/valuation41 all pass.
 - Independent lifecycle/performance/price43, runtime/UI44, research worker10,
@@ -48,7 +48,7 @@ not a claim of a running strategy account. No actual credentials/SDK/CA/order.
 ## Guard mutation evidence
 
 [Machine-readable results](m2-4-engine-verification.json): domain30/30 and
-management20/20 killed. Each runner compiles a single source replacement into a
+management27/27 killed. Each runner compiles a single source replacement into a
 fresh subprocess without rewriting product files. Domain JSON lists each mutant
 and independently targeted test. Management cases include typed payloads,
 research prerequisite/integrity, allocation cap, both fill-history sources,
@@ -76,3 +76,14 @@ strategy decisions; existing lots keep their protection and history.
 
 CI is pending at report creation. Consult the PR checks on the final head for
 acceptance; local checks above are not a claim that full CI passed.
+
+
+Independent review fixes before final CI: account allocation enforcement now
+covers typed and legacy entry points after any typed version adopts the M2
+contract for an account (the marker survives disabling/deletion). Pure legacy
+ledgers retain their original margin-reuse fixture behavior. JSON revisions copy
+rules while rebuilding the explicit form/interval/current cost/risk envelope,
+and require new evidence. Margin provenance follows the resolved contract; a
+blocked near-month reference is UNKNOWN. Six new regression tests pass and seven
+additional individual mutants are killed. Existing double-futures margin test
+and full coordinator module pass13/13 after this correction.

@@ -337,16 +337,17 @@ class TradingEngine:
             from quantlab.trading.domain.strategy import validate_strategy_parameters
 
             validate_strategy_parameters(strategy.policy.kind, self.catalog.resolve(strategy.form.instrument_id), strategy.parameters)
-            active_cash = sum(
-                (
-                    s.form.allocation
-                    for s in self.state.strategies
-                    if s.state == 'ACTIVE' and s.form.account_ref == strategy.form.account_ref and s.strategy_id != strategy.strategy_id
-                ),
-                ZERO,
-            )
-            if active_cash + strategy.form.allocation > self.account(strategy.form.account_ref).allocated_cash:
-                raise DomainError('strategy_allocation_exceeded')
+        active_cash = sum(
+            (
+                s.form.allocation
+                for s in self.state.strategies
+                if s.state == 'ACTIVE' and s.form.account_ref == strategy.form.account_ref and s.strategy_id != strategy.strategy_id
+            ),
+            ZERO,
+        )
+        m2_account = any(s.parameters is not None and s.form.account_ref == strategy.form.account_ref for s in self.state.strategies)
+        if m2_account and active_cash + strategy.form.allocation > self.account(strategy.form.account_ref).allocated_cash:
+            raise DomainError('strategy_allocation_exceeded')
         self.validate_strategy(reference)
         for existing in self.state.strategies:
             if (
@@ -367,10 +368,12 @@ class TradingEngine:
 
     def clone_strategy(self, reference: str, form: StrategyForm | None = None, parameters: StrategyParameters | None = None) -> str:
         record = self.strategy(reference)
+        if form is not None and not isinstance(form, StrategyForm):
+            raise DomainError('validation_failed', 'typed strategy revision form required')
         source = form or record.form
         if form is not None and parameters is None and record.parameters is not None:
             raise DomainError('strategy_parameters_invalid', 'revisions require complete execution parameters')
-        if record.definition is not None and form is None:
+        if record.definition is not None and source.rule_kind == 'STRUCTURED_JSON' and not source.draft_json:
             import json
 
             definition = record.definition
@@ -381,20 +384,20 @@ class TradingEngine:
                         'schema_version': definition.schema_version,
                         'strategy_id': definition.strategy_id,
                         'version': definition.version,
-                        'market': definition.market.value,
+                        'market': source.market.value,
                         'holding_policy': {
-                            'kind': definition.policy.kind.value,
-                            'min_days': definition.policy.min_days,
-                            'max_days': definition.policy.max_days,
-                            'night_enabled': definition.policy.night_enabled,
-                            'expiry_action': definition.policy.expiry_action,
+                            'kind': source.holding_kind.value,
+                            'min_days': source.min_days,
+                            'max_days': source.max_days,
+                            'night_enabled': False,
+                            'expiry_action': source.expiry_action,
                         },
-                        'bar_interval': definition.bar_interval,
-                        'direction': definition.direction,
+                        'bar_interval': parameters.bar_interval if parameters is not None else definition.bar_interval,
+                        'direction': 'LONG_ONLY' if source.direction is Side.BUY else 'SHORT_ONLY',
                         'entry': [{'field': r.field, 'operator': r.operator, 'value': str(r.value)} for r in definition.entry],
                         'exit': [{'field': r.field, 'operator': r.operator, 'value': str(r.value)} for r in definition.exit],
-                        'cost_version': definition.cost_version,
-                        'risk_ref': definition.risk_ref,
+                        'cost_version': self.fees.version,
+                        'risk_ref': self.risk().policy.version,
                     }
                 ),
             )
