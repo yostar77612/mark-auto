@@ -22,12 +22,12 @@ from PySide6.QtWidgets import (
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import StrategyForm, UiState
-from quantlab.trading.domain.models import HoldingKind, Market, Side
+from quantlab.trading.domain.models import Environment, HoldingKind, Market, Side
 from quantlab.trading.domain.validation import DomainError
 from desktop_app.features.trading.strategy_options import StrategyOptions
 
 from desktop_app.features.trading.labels import state_label
-from desktop_app.features.trading.widgets import combo, fit_available_screen, label
+from desktop_app.features.trading.widgets import button, combo, fit_available_screen, label
 
 
 MARKETS = (('v2.stock', Market.STOCK), ('v2.index_future', Market.INDEX_FUTURE), ('v2.stock_future', Market.STOCK_FUTURE))
@@ -37,6 +37,11 @@ POLICIES = (
     ('v2.position', HoldingKind.POSITION),
     ('v2.custom', HoldingKind.CUSTOM),
 )
+
+
+class MarketPage(QWizardPage):
+    def isComplete(self) -> bool:
+        return self.wizard().market.count() > 0
 
 
 class StrategyWizard(QWizard):
@@ -49,6 +54,7 @@ class StrategyWizard(QWizard):
         self.state = state
         self.parent_strategy_id = parent_strategy_id
         self.accepted_form = self.accepted_parameters = None
+        self.open_settings_requested = False
         self._screen_hooked = False
         self.setObjectName('trading_strategy_wizard')
         self.setWindowTitle(ui_text('v2.wizard_title'))
@@ -144,7 +150,23 @@ class StrategyWizard(QWizard):
             ),
             'u3.kind_hint',
         )
-        self._page('u3.step_market', ((ui_text('v2.market'), self.market), ('', self.expiry_group)), 'v2.market_hint')
+        self.market_empty = QWidget()
+        self.market_empty.setObjectName('wizard_market_empty')
+        empty_layout = QVBoxLayout(self.market_empty)
+        self.market_empty_reason = QLabel()
+        self.market_empty_reason.setObjectName('wizard_market_empty_reason')
+        self.market_empty_reason.setTextFormat(Qt.TextFormat.PlainText)
+        self.market_empty_reason.setWordWrap(True)
+        self.market_empty_reason.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(self.market_empty_reason)
+        self.market_settings = button('strategy.empty.settings', 'wizard_market_settings')
+        self.market_settings.clicked.connect(self._open_settings)
+        empty_layout.addWidget(self.market_settings, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.market_page = self._page(
+            'u3.step_market',
+            ((ui_text('v2.market'), self.market), ('', self.market_empty), ('', self.expiry_group)),
+            'v2.market_hint',
+        )
         self._page('v2.step_direction', ((ui_text('v2.direction'), self.direction),), 'v2.direction_hint')
         self._page('v2.step_instrument', ((ui_text('v2.instrument'), self.instrument),), 'v2.instrument_hint')
         self._page(
@@ -188,8 +210,8 @@ class StrategyWizard(QWizard):
         self._rules_changed()
         self._roll_targets()
 
-    def _page(self, title_key: str, controls: tuple, hint_key: str) -> None:
-        page = QWizardPage()
+    def _page(self, title_key: str, controls: tuple, hint_key: str) -> QWizardPage:
+        page = MarketPage() if title_key == 'u3.step_market' else QWizardPage()
         page.setTitle(ui_text(title_key))
         page_layout = QVBoxLayout(page)
         scroll = QScrollArea()
@@ -203,6 +225,28 @@ class StrategyWizard(QWizard):
         scroll.setWidget(content)
         page_layout.addWidget(scroll)
         self.addPage(page)
+        return page
+
+    def _market_availability(self) -> None:
+        available = self.market.count() > 0
+        self.market.setEnabled(available)
+        self.market_empty.setVisible(not available)
+        if self.state.strategy_products:
+            reason = ui_text('u3.no_products')
+        elif self.state.environment is Environment.LOCAL:
+            reason = ui_text('strategy.empty.local')
+        elif self.state.sinopac_connection.phase == 'CONNECTED':
+            reason = ui_text('strategy.empty.catalog')
+        else:
+            reason = ui_text('strategy.empty.disconnected')
+        self.market_empty_reason.setText(reason)
+        self.market_empty_reason.setAccessibleName(reason)
+        self.market.setToolTip('' if available else reason)
+        self.market_page.completeChanged.emit()
+
+    def _open_settings(self) -> None:
+        self.open_settings_requested = True
+        self.reject()
 
     def _candidates(self) -> None:
         self.options.candidates()

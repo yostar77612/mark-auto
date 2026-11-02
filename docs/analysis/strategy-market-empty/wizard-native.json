@@ -1,0 +1,78 @@
+{
+  "platform": "windows",
+  "commands": 0,
+  "captures": [
+    {
+      "owner": [
+        1366,
+        768
+      ],
+      "dialog": [
+        680,
+        520
+      ],
+      "reason": "\u672c\u6a5f\u6a21\u64ec\u76ee\u524d\u6c92\u6709\u53ef\u4ea4\u6613\u5546\u54c1\u3002\u8acb\u5230\u8a2d\u5b9a\u9801\u78ba\u8a8d\u57f7\u884c\u74b0\u5883\u3002",
+      "path": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\ui-u1\\docs\\analysis\\strategy-market-empty\\local-1366.png"
+    },
+    {
+      "owner": [
+        1366,
+        768
+      ],
+      "dialog": [
+        680,
+        520
+      ],
+      "reason": "\u5c1a\u672a\u9023\u7dda\uff0c\u7121\u6cd5\u53d6\u5f97\u53ef\u4ea4\u6613\u5546\u54c1\u3002\u8acb\u5148\u5230\u8a2d\u5b9a\u9801\u9023\u7dda\uff0c\u6216\u5207\u63db\u81f3\u672c\u6a5f\u6a21\u64ec\u3002",
+      "path": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\ui-u1\\docs\\analysis\\strategy-market-empty\\disconnected-1366.png"
+    },
+    {
+      "owner": [
+        1366,
+        768
+      ],
+      "dialog": [
+        680,
+        520
+      ],
+      "reason": "\u76ee\u524d\u74b0\u5883\u6c92\u6709\u53ef\u4ea4\u6613\u5546\u54c1\u3002\u8acb\u5230\u8a2d\u5b9a\u9801\u6aa2\u67e5\u9023\u7dda\u8207\u5546\u54c1\u76ee\u9304\uff0c\u6216\u5207\u63db\u81f3\u672c\u6a5f\u6a21\u64ec\u3002",
+      "path": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\ui-u1\\docs\\analysis\\strategy-market-empty\\catalog-1366.png"
+    },
+    {
+      "owner": [
+        1920,
+        1061
+      ],
+      "dialog": [
+        680,
+        520
+      ],
+      "reason": "\u672c\u6a5f\u6a21\u64ec\u76ee\u524d\u6c92\u6709\u53ef\u4ea4\u6613\u5546\u54c1\u3002\u8acb\u5230\u8a2d\u5b9a\u9801\u78ba\u8a8d\u57f7\u884c\u74b0\u5883\u3002",
+      "path": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\ui-u1\\docs\\analysis\\strategy-market-empty\\local-1920.png"
+    },
+    {
+      "owner": [
+        1920,
+        1061
+      ],
+      "dialog": [
+        680,
+        520
+      ],
+      "reason": "\u5c1a\u672a\u9023\u7dda\uff0c\u7121\u6cd5\u53d6\u5f97\u53ef\u4ea4\u6613\u5546\u54c1\u3002\u8acb\u5148\u5230\u8a2d\u5b9a\u9801\u9023\u7dda\uff0c\u6216\u5207\u63db\u81f3\u672c\u6a5f\u6a21\u64ec\u3002",
+      "path": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\ui-u1\\docs\\analysis\\strategy-market-empty\\disconnected-1920.png"
+    },
+    {
+      "owner": [
+        1920,
+        1061
+      ],
+      "dialog": [
+        680,
+        520
+      ],
+      "reason": "\u76ee\u524d\u74b0\u5883\u6c92\u6709\u53ef\u4ea4\u6613\u5546\u54c1\u3002\u8acb\u5230\u8a2d\u5b9a\u9801\u6aa2\u67e5\u9023\u7dda\u8207\u5546\u54c1\u76ee\u9304\uff0c\u6216\u5207\u63db\u81f3\u672c\u6a5f\u6a21\u64ec\u3002",
+      "path": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\ui-u1\\docs\\analysis\\strategy-market-empty\\catalog-1920.png"
+    }
+  ]
+}
