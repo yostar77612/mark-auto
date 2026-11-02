@@ -22,9 +22,10 @@ from .manual_book import (
     book_for,
     manual_allocations_valid,
     manual_capacity,
+    manual_daily_pnl,
+    manual_day_ready,
     diagnostic_passed,
     manual_market,
-    manual_net_pnl,
     manual_policy,
     manual_risk_context,
     manual_stock_availability,
@@ -224,7 +225,7 @@ class ManualTradingService:
         book = self._book(form.scope.account_ref)
         if form.capital != book.capital:
             raise DomainError('state_conflict', 'manual capital and loss history cannot be reset')
-        if book.opening_day != self.engine.state.trading_day:
+        if not manual_day_ready(self.engine, book):
             raise DomainError('manual_day_baseline_required')
         if any(not request.outcome_known for request in self.engine.state.manual_requests):
             raise DomainError('outcome_unknown')
@@ -854,13 +855,34 @@ class ManualTradingService:
                 self._complete_requests(rows)
                 if unresolved:
                     self._halt('outcome_unknown')
+                daily_marks = []
                 for book in engine.state.manual_books:
                     if any(lot.quantity and lot.strategy_id == book.book_id for lot in engine.state.positions):
                         self._halt('manual_unprotected_position')
-                    if book.opening_day != engine.state.trading_day:
+                    if not manual_day_ready(engine, book):
                         self._halt('manual_day_baseline_required')
-                daily_pnl = sum((manual_net_pnl(engine, book) for book in engine.state.manual_books), ZERO)
-                if -daily_pnl >= engine.risk().policy.total_budget * engine.state.settings.daily_loss_fraction:
+                    try:
+                        daily_marks.append(manual_daily_pnl(engine, book))
+                    except DomainError as error:
+                        if (
+                            error.code == 'stale_quote'
+                            and book.source == CAPACITY_SOURCE
+                            and any(row.parameters is not None for row in engine.state.strategies)
+                        ):
+                            from .account_risk import account_markets_closed
+
+                            # Quantity reconciliation remains valid. A closed
+                            # market supplies no new aggregate mark or grant.
+                            if not account_markets_closed(engine, book.account_ref):
+                                self._halt('stale_quote')
+                        elif error.code == 'manual_day_baseline_required':
+                            self._halt('manual_day_baseline_required')
+                        else:
+                            raise
+                if (
+                    len(daily_marks) == len(engine.state.manual_books)
+                    and -sum(daily_marks, ZERO) >= engine.risk().policy.total_budget * engine.state.settings.daily_loss_fraction
+                ):
                     if engine.state.trading_day not in engine.state.daily_locks:
                         engine._persist('manual_daily_loss_latched', replace(engine.state, daily_locks=(*engine.state.daily_locks, engine.state.trading_day)))
                     self._halt('risk_rejected')

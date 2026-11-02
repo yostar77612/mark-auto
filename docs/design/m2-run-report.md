@@ -271,3 +271,26 @@ M2-9多年股價／成本、畫面接線與真實券商自動交易均由相應�
 詳細證據：[M2-4](m2-4-engine-verification.md)、[M2-5](m2-5-engine-verification.md)、
 [M2-3](m2-3-engine-verification.md)與相鄰JSON；[決策](m2-decisions.md)、
 [行為契約](../agent/IMPLEMENTATION_CONTRACTS.md)。
+
+## M2-3 下一輪：日 K 收盤保存與下一可信交易時段（PR147）
+
+2026-11-02，從 main e5a5941 建立 codex/m2-3-daily-next-session；第一個小
+commit3b67a10先提供 AutomaticView／DailyIntentView、既有 UiAction 的操作語意
+與六個錯誤碼契約。日 K 完成只保存訊號身分，下一個已提供的可信 DAY 以當時
+報價、整張／口數與原資金風控核准執行；不保存昨日委託價格或保留金、不猜假日、
+不跨過目標時段追單。保存出場訊號的 native fake SDK 跨日減倉也已驗證。
+
+正常跨夜保留連線擁有權授權；斷線、重啟、風控、使用者停止或未知結果均撤銷，
+仍須對帳與明確恢復。可信收盤證據建立逐帳戶新日基準，保留手動資金與歷史損益；
+股票收盤不阻斷仍開盤 TMF 的完成 K 正常減倉。純日 K 評估中斷只能在明確對帳、
+完整 journal 證明沒有訊號或委託後捨棄，不能清除未知下單或重評同一收盤。
+
+196項新增專屬測試與347/347個獨立產品守衛變異通過；舊模組的 R8 相關驗證與
+完整 CI 結果以 [PR147](https://github.com/yostar77612/mark-auto/pull/147) 為準。
+原始視窗 LOCAL6.075秒／fake-SIM3.606秒皆返回0並完成資源清理；未匯入真 SDK。
+機械基準用指定工具集中一次，獨立 commit，不弱化既有斷言。
+
+本 PR **不自行合併**；CI 全綠後仍留給 Claude 審查自動下單路徑。真實券商自動
+交易與畫面接線驗收由擁有者／畫面車道另行進行。LIVE 保持硬關閉，未修改
+desktop_app/、G3、SDK版本、PROJECT_STATE、成本實作、workflow或分層規則。
+詳細證據：[日 K 引擎驗證](m2-3-daily-engine-verification.md)及相鄰 JSON。

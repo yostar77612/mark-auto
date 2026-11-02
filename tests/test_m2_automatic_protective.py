@@ -151,9 +151,10 @@ class AutomaticProtectiveTests(unittest.TestCase):
     def test_new_non_scope_failure_cannot_inherit_previous_scope_failure_marker(self):
         self.adopt_bad_scope()
         rows = self.rows()
-        with patch('quantlab.trading.application.manual_trading.manual_net_pnl', side_effect=DomainError('stale_quote')):
-            with self.assertRaises(DomainError):
+        with patch('quantlab.trading.application.manual_trading.manual_daily_pnl', side_effect=DomainError('instrument_unresolved')):
+            with self.assertRaises(DomainError) as rejected:
                 self.manual.service.adopt(rows)
+        self.assertEqual(rejected.exception.code, 'instrument_unresolved')
         self.assertEqual(self.engine.manual_protective_observations, {})
 
     def test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker(self):

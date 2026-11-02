@@ -19,8 +19,8 @@ if TYPE_CHECKING:
 
 
 @decimal_operation
-def confirm_automatic_baseline(engine: 'TradingEngine', evidence: DailyBaselineEvidence, *, trusted_sources: frozenset[str]) -> None:
-    """Trusted provider only; there is no command carrying evidence/source grants."""
+def automatic_baseline_rows(engine: 'TradingEngine', evidence: DailyBaselineEvidence, *, trusted_sources: frozenset[str]) -> tuple[AccountDailyBaseline, ...]:
+    """One validation authority for explicit confirmation and scheduled continuation."""
     with engine.lock:
         engine.assert_execution_allowed()
         if engine.configuration.environment is not Environment.BROKER_SIMULATION or not engine.state.manual_books:
@@ -53,6 +53,13 @@ def confirm_automatic_baseline(engine: 'TradingEngine', evidence: DailyBaselineE
             if previous is not None and previous.previous_close_pnl != value:
                 raise DomainError('state_conflict', 'same-day account baseline is immutable')
             rows = (*tuple(row for row in rows if row.account_ref != reference), AccountDailyBaseline(reference, context.trade_date, value, evidence.source_id))
+        return rows
+
+
+def confirm_automatic_baseline(engine: 'TradingEngine', evidence: DailyBaselineEvidence, *, trusted_sources: frozenset[str]) -> None:
+    """Trusted provider only; explicit confirmation never resumes a stopped run."""
+    with engine.lock:
+        rows = automatic_baseline_rows(engine, evidence, trusted_sources=trusted_sources)
         engine._persist(
             'automatic_account_closes_attested',
             replace(
