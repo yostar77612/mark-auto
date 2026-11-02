@@ -125,7 +125,16 @@ def run_window(
     # The independent helper additionally waits for this exact desktop PID and
     # refuses another application/engine's still-present installation guard.
     try:
-        launch_pending_install()
+        launch_pending_install(
+            lambda command: subprocess.Popen(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                close_fds=True,
+            )
+        )
     except OSError:
         _abort_update('update_install_start_failed')
         return 1

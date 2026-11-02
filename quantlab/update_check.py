@@ -16,6 +16,7 @@ import json
 import re
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, HTTPSHandler, OpenerDirector, Request, build_opener
+from zoneinfo import ZoneInfo
 
 from quantlab.payload_cleanup import parse_version
 from quantlab.tls_trust import build_trust_context
@@ -70,7 +71,7 @@ def release_source_url(url: str) -> str:
     """Validate the external initial URL against the one repository whitelist."""
     try:
         _https(url)
-        if any(character.isspace() or ord(character) < 32 or ord(character) == 127 or character in '<>\"\'' for character in url):
+        if any(character.isspace() or ord(character) < 32 or ord(character) == 127 or character in '<>"\'' for character in url):
             raise ValueError('invalid_source')
         parts = urlsplit(url)
         suffix = url.removeprefix(RELEASE_DOWNLOAD_PREFIX)
@@ -128,11 +129,15 @@ def _release_info(manifest, version: str, commit: str) -> ReleaseInfo | None:
     published_at = datetime.fromisoformat(published.replace('Z', '+00:00'))
     if published_at.tzinfo is None or published_at.utcoffset() is None:
         raise ValueError('bad_manifest')
+    published_at = published_at.astimezone(timezone.utc)
+    # Reject external timestamps that cannot be displayed in the desktop's
+    # timezone, before sending a successful typed result across to Qt.
+    published_at.astimezone(ZoneInfo('Asia/Taipei'))
     url = release_source_url(installer.get('url'))
     sha256 = installer.get('sha256')
     if not isinstance(sha256, str) or not re.fullmatch(r'[a-fA-F0-9]{64}', sha256) or not urlsplit(url).path.endswith('.exe'):
         raise ValueError('bad_manifest')
-    return ReleaseInfo(version, commit, published_at.astimezone(timezone.utc), url, sha256.lower())
+    return ReleaseInfo(version, commit, published_at, url, sha256.lower())
 
 
 def check_for_update(installed_version, installed_commit='', *, transport=None, url=RELEASE_METADATA_URL):
@@ -165,6 +170,6 @@ def check_for_update(installed_version, installed_commit='', *, transport=None, 
         rebuilt = latest == installed and bool(commit and installed_commit) and not commit.startswith(installed_commit)
         status = 'update_available' if latest > installed or rebuilt else 'up_to_date'
         return UpdateResult(status, status, f'{version} ({commit[:7]})' if commit else version, _release_info(manifest, version, commit))
-    except (ValueError, TypeError, OSError, RuntimeError, HTTPException):
+    except (ValueError, TypeError, OSError, RuntimeError, HTTPException, OverflowError):
         # Fixed code only: server bodies, URLs and OS details never become UI text.
         return UpdateResult('error', 'check_failed')

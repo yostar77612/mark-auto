@@ -1,5 +1,6 @@
 """M4a explicit consent, presentation and close-handoff guards."""
 
+from dataclasses import replace
 from datetime import datetime, timezone
 import os
 from pathlib import Path
@@ -50,8 +51,65 @@ class UpdatePanelTests(unittest.TestCase):
         directory.mkdir()
         path = directory / 'MarkAuto-setup.exe'
         path.write_bytes(b'fake-complete')
+        if self.panel.download_release is None:
+            self.panel.download_release = self.panel.release
         self.panel.downloads.put(DownloadResult(path))
         return path
+
+    def test_update_check_disables_install_until_its_result_arrives(self):
+        with patch('desktop_app.features.settings.maintenance.Thread') as thread:
+            self.panel.check_updates()
+            self.assertFalse(self.panel.install_button.isEnabled())
+            self.assertTrue(self.panel.timer.isActive())
+            thread.return_value.start.assert_called_once()
+        self.panel.results.put(UpdateResult('update_available', 'update_available', '9.0', self.release))
+        self.panel.poll_update()
+        self.assertTrue(self.panel.install_button.isEnabled())
+
+    def test_active_check_timer_blocks_install_even_if_button_is_enabled(self):
+        self.panel.timer.start()
+        self.panel.install_button.setEnabled(True)
+        with patch('desktop_app.features.settings.maintenance.QMessageBox.question') as question:
+            self.panel.install_update()
+        question.assert_not_called()
+        self.queued.assert_not_called()
+        self.panel.timer.stop()
+
+    def test_modal_confirmation_and_later_check_cannot_replace_the_accepted_digest(self):
+        replacement = replace(self.release, version='10.0', installer_sha256='c' * 64)
+
+        def confirm(*args):
+            self.panel.results.put(UpdateResult('update_available', 'update_available', '10.0', replacement))
+            self.panel.poll_update()
+            return QMessageBox.Yes
+
+        with (
+            patch('desktop_app.features.settings.maintenance.QMessageBox.question', side_effect=confirm),
+            patch('desktop_app.features.settings.maintenance.Thread') as thread,
+        ):
+            self.panel.install_update()
+        self.assertIs(thread.call_args.kwargs['args'][1], self.release)
+        self.panel.results.put(UpdateResult('error', 'check_failed'))
+        self.panel.poll_update()
+        self.assertIsNone(self.panel.release)
+        self.assertFalse(self.panel.update_button.isEnabled())
+        self.complete()
+        with patch.object(self.panel, 'close', return_value=True):
+            self.panel.poll_download()
+        self.assertEqual(self.queued.call_args.args[1], self.release.installer_sha256)
+
+    def test_modal_confirmation_cannot_start_a_second_update_check(self):
+        def confirm(*args):
+            self.panel.check_updates()
+            return QMessageBox.Cancel
+
+        with (
+            patch('desktop_app.features.settings.maintenance.QMessageBox.question', side_effect=confirm),
+            patch('desktop_app.features.settings.maintenance.Thread') as thread,
+        ):
+            self.panel.install_update()
+        thread.assert_not_called()
+        self.assertTrue(self.panel.update_button.isEnabled())
 
     def test_release_metadata_is_plain_text_taipei_and_primary(self):
         self.assertEqual(self.panel.latest_label.text(), ui_text('update.latest').format('9.0'))

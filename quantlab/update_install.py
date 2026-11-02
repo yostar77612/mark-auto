@@ -6,11 +6,11 @@ guard. No process is terminated, and no workspace/settings path is written.
 """
 
 import base64
+from collections.abc import Callable
 from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 
 from quantlab.runtime_support import WINDOWS_APP_MUTEX
@@ -175,19 +175,12 @@ def _helper_command(
     return [str(powershell), '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-EncodedCommand', command]
 
 
-def launch_pending_install() -> None:
+def launch_pending_install(launch: Callable[[list[str]], object]) -> None:
     """Called only after the normal owned-engine close and guard release."""
     global _pending
     request = _pending
     if request is None:
         return
     command = _helper_command(request, parent_pid=os.getpid())
-    subprocess.Popen(
-        command,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=subprocess.CREATE_NO_WINDOW,
-        close_fds=True,
-    )
+    launch(command)
     _pending = None

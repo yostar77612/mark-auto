@@ -47,9 +47,9 @@ class InstallHandoffTests(unittest.TestCase):
             sentinel = root / 'workspace'
             sentinel.write_bytes(b'preserved')
             install._pending = install.InstallRequest(executable, 'a' * 64, root, {})
-            with patch.object(install.subprocess, 'Popen') as launch:
-                install.cancel_pending_install()
-                install.launch_pending_install()
+            launch = Mock()
+            install.cancel_pending_install()
+            install.launch_pending_install(launch)
             launch.assert_not_called()
             self.assertFalse(download.exists())
             self.assertEqual(sentinel.read_bytes(), b'preserved')
@@ -57,9 +57,11 @@ class InstallHandoffTests(unittest.TestCase):
     def test_helper_launch_failure_keeps_request_available_for_explicit_cleanup(self):
         request = install.InstallRequest(Path('download/setup.exe'), 'a' * 64, Path('install'), {})
         install._pending = request
-        with patch.object(install, '_helper_command', return_value=['powershell']), patch.object(install.subprocess, 'Popen', side_effect=OSError):
+        launch = Mock(side_effect=OSError)
+        with patch.object(install, '_helper_command', return_value=['powershell']):
             with self.assertRaises(OSError):
-                install.launch_pending_install()
+                install.launch_pending_install(launch)
+        launch.assert_called_once_with(['powershell'])
         self.assertIs(install._pending, request)
 
     def test_helper_payload_is_encoded_data_and_does_not_change_execution_policy(self):
@@ -79,10 +81,19 @@ class InstallHandoffTests(unittest.TestCase):
             patch.object(trading_runtime, 'WindowsAppMutex', return_value=guard),
             patch.object(trading_runtime, '_run_window', return_value=0),
             patch.object(trading_runtime, '_close_window_engines', side_effect=lambda previous: events.append('children-exited')),
-            patch.object(install, 'launch_pending_install', side_effect=lambda: events.append('helper-launched')),
+            patch.object(install, 'launch_pending_install', side_effect=lambda launch: (events.append('helper-launched'), launch(['powershell']))),
+            patch.object(trading_runtime.subprocess, 'Popen') as started,
         ):
             self.assertEqual(trading_runtime.run_window(), 0)
         self.assertEqual(events, ['children-exited', 'guard-released', 'helper-launched'])
+        started.assert_called_once_with(
+            ['powershell'],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+            close_fds=True,
+        )
 
     def test_runtime_owned_shutdown_timeout_aborts_update_without_launch(self):
         install._pending = install.InstallRequest(Path('unused'), 'a' * 64, Path('install'), {})
@@ -152,12 +163,14 @@ class NativeInstallerHelperTests(unittest.TestCase):
         source.write_text(
             r'''
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
 class Fixture {
     static int Main(string[] args) {
         string own = Assembly.GetExecutingAssembly().Location;
+        File.WriteAllText(own + ".pid", Process.GetCurrentProcess().Id.ToString());
         File.WriteAllLines(own + ".called", args);
         string folder = Path.GetDirectoryName(own);
         string delay = Path.Combine(folder, "delay.txt");
@@ -189,10 +202,35 @@ class Fixture {
         self.payload = self.folder / 'installed/payloads/2.0/new'
         self.payload.mkdir(parents=True)
         shutil.copyfile(self.fixture, self.payload / 'MarkAuto.exe')
+        self.addCleanup(self.wait_fixture_exit, self.payload / 'MarkAuto.exe')
         (self.download / 'payload.txt').write_text(str(self.payload))
         self.result = self.folder / 'helper-result.json'
         self.mutex = 'Local\\MarkAuto.UpdateTest.' + uuid4().hex
         return install.InstallRequest(self.installer, sha256(self.installer.read_bytes()).hexdigest(), self.folder / 'installed', {})
+
+    def wait_fixture_exit(self, executable):
+        # The launched app is an independent child of PowerShell. Its startup
+        # marker is not proof of exit: await its exact native process handle
+        # before TemporaryDirectory tries to remove the executable image.
+        pid_file = Path(str(executable) + '.pid')
+        if not pid_file.exists():
+            return
+        import ctypes
+        from ctypes import wintypes
+
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+        kernel.OpenProcess.restype = wintypes.HANDLE
+        kernel.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+        kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
+        handle = kernel.OpenProcess(0x00100000, False, int(pid_file.read_text()))
+        if not handle:
+            self.assertEqual(ctypes.get_last_error(), 87, 'fixture process exit could not be confirmed')
+            return
+        try:
+            self.assertEqual(kernel.WaitForSingleObject(handle, 5000), 0, 'restarted fixture did not exit normally')
+        finally:
+            kernel.CloseHandle(handle)
 
     def execute(self, request, **options):
         command = install._helper_command(
@@ -280,8 +318,12 @@ class Fixture {
         if os.name != 'nt':
             return
         request = self.tree()
-        (self.download / 'payload.txt').write_text(str(self.folder / 'outside'))
+        outside = self.folder / 'outside'
+        outside.mkdir()
+        shutil.copyfile(self.fixture, outside / 'MarkAuto.exe')
+        (self.download / 'payload.txt').write_text(str(outside))
         self.assertEqual(self.execute(request)['code'], 'update_restart_failed')
+        self.assertFalse((outside / 'MarkAuto.exe.called').exists())
         self.assertFalse((self.payload / 'MarkAuto.exe.called').exists())
 
 

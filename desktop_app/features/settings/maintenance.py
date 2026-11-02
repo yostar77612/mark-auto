@@ -78,6 +78,7 @@ class MaintenancePanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.release = None
+        self.download_release = None
         self.download_cancel = Event()
         self.download_lock = Lock()
         self.downloads = SimpleQueue()
@@ -129,6 +130,7 @@ class MaintenancePanel(QWidget):
         if not self.update_button.isEnabled():
             return
         self.update_button.setEnabled(False)
+        self.install_button.setEnabled(False)
         self.async_status.set_state('loading')
         try:
             Thread(target=_check_in_background, args=(self.results, __version__, build_commit()), daemon=True).start()
@@ -147,7 +149,8 @@ class MaintenancePanel(QWidget):
             return
         result = self.results.get_nowait()
         self.timer.stop()
-        self.update_button.setEnabled(True)
+        self.update_button.setEnabled(not self.download_timer.isActive())
+        self.install_button.setEnabled(not self.download_timer.isActive())
         key = {'update_available': 'maintenance.available', 'up_to_date': 'maintenance.current', 'error': 'maintenance.update_error'}[result.status]
         if result.status == 'error':
             self.async_status.set_state('error', error_code='update_check_failed', retry=self.check_updates)
@@ -165,7 +168,7 @@ class MaintenancePanel(QWidget):
         self.install_button.setVisible(result.status == 'update_available')
 
     def install_update(self):
-        if self.property('offlinePreview') is True or self.download_timer.isActive():
+        if self.property('offlinePreview') is True or self.timer.isActive() or self.download_timer.isActive():
             return
         if self.release is None:
             self.async_status.set_state('error', error_code='update_metadata_missing')
@@ -175,6 +178,10 @@ class MaintenancePanel(QWidget):
             self.async_status.set_state('error', error_code='update_not_installed')
             return
         release = self.release
+        # The confirmation runs a nested Qt event loop. Keep both the consent
+        # text and eventual installer hash tied to this exact release.
+        self.install_button.setEnabled(False)
+        self.update_button.setEnabled(False)
         confirmed = QMessageBox.question(
             self,
             ui_text('update.confirm_title'),
@@ -183,7 +190,10 @@ class MaintenancePanel(QWidget):
             QMessageBox.Cancel,
         )
         if confirmed != QMessageBox.Yes:
+            self.install_button.setEnabled(True)
+            self.update_button.setEnabled(True)
             return
+        self.download_release = release
         self.download_cancel.clear()
         self.install_button.setEnabled(False)
         self.update_button.setEnabled(False)
@@ -206,6 +216,7 @@ class MaintenancePanel(QWidget):
         if self.downloads.empty():
             return
         result = self.downloads.get_nowait()
+        release, self.download_release = self.download_release, None
         self.download_timer.stop()
         self.cancel_button.hide()
         self.install_button.setEnabled(True)
@@ -224,7 +235,7 @@ class MaintenancePanel(QWidget):
             return
         errors = {code: entry.explanation + ' ' + entry.action for code, entry in ERROR_TABLE.items() if code.startswith('update_')}
         try:
-            self.app.property('maintenanceQueueInstall')(result.path, self.release.installer_sha256, errors)
+            self.app.property('maintenanceQueueInstall')(result.path, release.installer_sha256, errors)
         except (UpdateError, OSError) as exc:
             result.path.unlink(missing_ok=True)
             result.path.parent.rmdir()

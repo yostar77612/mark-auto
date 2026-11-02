@@ -164,8 +164,18 @@ class DownloadTests(unittest.TestCase):
                 self.assert_clean()
 
     def test_declared_content_length_enforces_limit_before_read(self):
-        with http_fixture() as transport, self.assertRaises(UpdateError) as caught:
-            download_installer(release(), Event(), temp_root=self.root, max_bytes=len(PAYLOAD) - 1, transport=transport)
+        responses = []
+        with http_fixture() as request:
+
+            def transport(url, timeout):
+                response = request(url, timeout)
+                response.read1 = Mock(wraps=response.read1)
+                responses.append(response)
+                return response
+
+            with self.assertRaises(UpdateError) as caught:
+                download_installer(release(), Event(), temp_root=self.root, max_bytes=len(PAYLOAD) - 1, transport=transport)
+        responses[0].read1.assert_not_called()
         self.assertEqual(caught.exception.code, 'update_too_large')
         self.assert_clean()
 
