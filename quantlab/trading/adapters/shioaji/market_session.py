@@ -192,15 +192,6 @@ class MarketSession:
                 if reference > 0:
                     with self._quote_lock:
                         self._details.setdefault(instrument.instrument_id, {})['reference_price'] = reference
-            if instrument.kind is WatchKind.STOCK:
-                try:
-                    bands = self.facade.contracts.tick_bands(info)
-                except DomainError:
-                    bands = ()
-                if bands and reference is not None:
-                    band = next(band for band in bands if band.lower <= reference and (band.upper is None or reference < band.upper))
-                    with self._quote_lock:
-                        self._details.setdefault(instrument.instrument_id, {})['price_tick'] = band.tick
             self.tick_stream.by_code[instrument.code] = instrument.instrument_id
             self.tick_stream.set_active(set(self.subscriptions) | {instrument.instrument_id})
             self.facade.market_subscribe(contract)
