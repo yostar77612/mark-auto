@@ -77,3 +77,22 @@ AppState HIGH86, engine HIGH85 and account monitor HIGH25 upstream dependencies.
 These include snapshot/IPC, codec/startup, manual and automatic commitment.
 Dynamic receiver edges are confirmed in source; UNKNOWN and missing process
 edges are not treated as low risk. No offline FTS extension is downloaded.
+
+## First full CI and focused correction
+
+Full CI run41407107387 on ddb6d68 exposed one shared test failure across Windows
+and Linux partitions: an old protective-cache test patched the removed
+manual_trading.manual_net_pnl import. Patch the current manual_daily_pnl helper
+and inject a non-deferred instrument_unresolved valuation error. Keep the old
+must-raise/cache-empty assertions and additionally require the exact injected
+error code. Closed/open stale_quote monitor-only handling has its own native
+regressions and independent mutations. No production source changes are needed.
+The protective/runtime/manual-day modules pass98 tests after this correction;
+all generated baselines remain up-to-date on a fresh dry-run.
+
+The broad R8 local selection executed2346 tests. Its earlier runtime fixture
+errors were separately corrected and rerun44/44; the later CI correction is
+verified above. Combined-suite subprocess/fake-root effects and installer mutex
+checks against a preexisting app are preserved as local failures, not claimed
+green or hidden by changing assertions. Full isolated Windows/Linux CI is still
+required. No user app was closed to make a local installer lifetime test pass.
