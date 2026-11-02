@@ -1,9 +1,11 @@
 """Feature partitions in original registration order."""
 
+from .m2_maintenance import ENTRIES as _part_m2_maintenance
 from .alerts import ENTRIES as _part_alerts
 from .m2_trading import ENTRIES as _part_m2_trading
 from .sinopac_connection import ENTRIES as _part_sinopac_connection
 from .m2_manual import ENTRIES as _part_m2_manual
+from .account_readiness import ENTRIES as _part_account_readiness
 from .assistant import ENTRIES as _part_assistant
 from .terminal import ENTRIES as _part_terminal
 from .marketdata import ENTRIES as _part_marketdata
@@ -80,6 +82,8 @@ from .watch import ENTRIES as _part_watch
 from .dashboard import ENTRIES as _part_dashboard
 
 PARTS = (
+    _part_account_readiness,
+    _part_m2_maintenance,
     _part_m2_trading,
     _part_sinopac_connection,
     _part_m2_manual,

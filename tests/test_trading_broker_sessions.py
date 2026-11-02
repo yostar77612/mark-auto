@@ -170,9 +170,17 @@ class BrokerSessionLifecycleTests(unittest.TestCase):
             configuration=self.execution_profile,
             source_profile=compute_profile(),
             fees=self.fees,
+            automatic_entry_check=self.check_test_maintenance,
             historical_bars=synthetic_history(self.catalog, self.calendar),
         )
         self.facade = LocalFacade(self.engine)
+
+    def check_test_maintenance(self):
+        from quantlab.trading.domain.maintenance import maintenance_check
+
+        maintenance_check(
+            self.calendar, self.clock.now().date(), expires_on=self.calendar.days[-1], expiries=None, futures_required=False
+        ).require_automatic_entry()
 
     def publish(self, price=D('100')) -> None:
         self.engine.quote(
@@ -233,6 +241,27 @@ class BrokerSessionLifecycleTests(unittest.TestCase):
         fee = self.fees.transaction(self.spec, plan.side, plan.limit_price, 1)
         self.broker.fill(order_id, 1, plan.limit_price, fee=fee)
         poll_events(self.engine)
+
+    def test_missing_maintenance_blocks_automatic_entry_before_submission(self):
+        self.engine.automatic_entry_check = None
+        before = self.broker.submission_count
+        with self.assertRaises(DomainError) as caught:
+            self.open_position()
+        self.assertEqual(caught.exception.code, 'calendar_coverage_missing')
+        self.assertEqual(self.broker.submission_count, before)
+        self.assertEqual(self.engine.state.orders, ())
+
+    def test_maintenance_failure_does_not_block_protective_exit(self):
+        self.open_position()
+        lot = next(lot for lot in self.engine.state.positions if lot.quantity)
+
+        def unavailable():
+            raise DomainError('calendar_coverage_missing')
+
+        self.engine.automatic_entry_check = unavailable
+        exit_id = self.engine.exit_lot(lot.lot_id, protective=True)
+        self.assertIsNotNone(exit_id)
+        self.assertTrue(next(order for order in self.engine.state.orders if order.order_id == exit_id).plan.reduce_only)
 
     def next_day(self) -> None:
         day = self.calendar.advance(self.engine.state.trading_day, 1)

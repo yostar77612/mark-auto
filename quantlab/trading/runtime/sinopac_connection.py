@@ -4,6 +4,7 @@ from dataclasses import replace
 from threading import Event, RLock, Thread
 from time import monotonic
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from quantlab.trading.adapters.shioaji.symbol_directory import SymbolDirectory
 from quantlab.trading.application.contracts import UiAction, UiReceipt
@@ -12,6 +13,7 @@ from quantlab.trading.application.sinopac_contracts import SinopacAccountView, S
 from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError
 from .sinopac_settings import SinopacSettingsStore
+from .sinopac_calendar import built_in_calendar
 from .sinopac_transition import transition
 
 SINOPAC_ACTIONS = frozenset((UiAction.SAVE_AND_CONNECT_SINOPAC, UiAction.SELECT_SINOPAC_ACCOUNTS, UiAction.ACTIVATE_SINOPAC_CA, UiAction.DISCONNECT_SINOPAC))
@@ -33,8 +35,18 @@ class SinopacConnection:
             raise DomainError('validation_failed', 'bounded connection deadline required')
         self.root, self.factory = root, factory
         self.secrets, self.clock = secrets if secrets is not None else WindowsSecretResolver(), clock or MarketClock()
+        from .stock_maintenance import StockMaintenanceStore
+
+        self.maintenance = StockMaintenanceStore(root)
         self.preferences = SinopacSettingsStore(root)
         self.configuration, self.selected = self.preferences.load()
+        costs = self.maintenance.load()
+        self.configuration = replace(
+            self.configuration,
+            api_key_expires_on=self.maintenance.key_expiry(self.configuration.key_ref),
+            minimum_fee=costs.minimum_fee,
+            tmf_fee_per_contract=costs.tmf_fee_per_contract,
+        )
         if environment is not None:
             self.configuration = replace(self.configuration, environment=environment)
         self.environment = environment
@@ -78,6 +90,10 @@ class SinopacConnection:
 
     def snapshot(self):
         with self.lock:
+            today = self.clock.now().astimezone(ZoneInfo('Asia/Taipei')).date()
+            futures_required = not self.selected or any(account.market is not Market.STOCK for account in self.accounts if account.alias in self.selected)
+            maintenance = self.maintenance.pre_open(built_in_calendar(), today, self.configuration.key_ref, futures_required=futures_required)
+            self.publish(api_key_remaining_days=maintenance.key.remaining_days, api_key_expiry_state=maintenance.key.state, pre_open=maintenance)
             if not self.closed and self.worker is not None and self.worker.is_alive() and monotonic() >= self.deadline:
                 from .sinopac_transition import readiness
 
@@ -121,6 +137,15 @@ class SinopacConnection:
                 if self.environment is not None and settings.environment is not self.environment:
                     return UiReceipt(False, 'state_conflict', '')
                 selected = self.selected if settings.environment is self.configuration.environment else ()
+                self.maintenance.set_key_expiry(settings.key_ref, settings.api_key_expires_on)
+                self.maintenance.save(
+                    replace(
+                        self.maintenance.load(),
+                        discount=settings.fee_discount,
+                        minimum_fee=settings.minimum_fee,
+                        tmf_fee_per_contract=settings.tmf_fee_per_contract,
+                    )
+                )
                 self.preferences.save(settings, selected)
                 self.configuration, self.selected = settings, selected
                 self.publish(settings=settings, environment=settings.environment, generation=uuid4().hex, phase='CONNECTING', error_code='')

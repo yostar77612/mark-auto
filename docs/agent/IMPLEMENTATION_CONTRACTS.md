@@ -6907,6 +6907,17 @@ connection state unchanged. The executor checks the same boundary independently;
 the LIVE UI disables CA controls using the existing formal-readonly reason.
 This restriction does not modify the separately retained legacy CA connector.
 
+## U1 account readiness presentation (2026-11-02)
+
+Account signature facts retain their accepted true/false/unknown meanings. A
+read-only, keyboard-toggleable next-step disclosure explains official signing,
+vendor simulation testing and disconnect/reconnect, without a URL or external
+navigation. Simulation does not need CA. Per-fact CA, quote freshness, account
+reconciliation, simulation and LIVE guidance does not grant readiness or issue
+commands. Expanded account help survives polling and is removed with its account.
+No application/domain/IPC contract or LIVE action set changes. Focused tests and
+native fake-SDK startup evidence are in `docs/analysis/u1-readiness/verification.md`.
+
 ## M2-1 unified connection presentation contract (2026-11-01)
 
 Settings exposes one reference-only three-step Sinopac connection panel. Draft
@@ -7148,6 +7159,40 @@ Stock total and cumulative fills display exact fractional lots, including0.5 lot
 for500 shares, with canonical share tooltips; futures remain contracts. Choices
 and failed preference writes do not invoke a trading command.
 
+## M2-9 official daily data and maintenance boundaries
+
+Official stock refresh is explicitly consented per call, half-open dated, limited
+and all-or-nothing across every monthly response and the event response. It adds
+`bars_1d`/events/provenance to the M1 SQLite store without rewriting minute bars
+or their schema marker. Invalid/missing data or failed publication retains the
+old interval. Historical response bytes remain addressable by URL and SHA-256
+after corrections. Current coverage plus every expected calendar session is
+required before producing five-year training input metadata; missing dates are
+not invented. Synthetic schema tests are not represented as recorded samples.
+
+The combined exchange reference-price / previous-close ratio defines backward
+adjustment. Point-in-time signal histories exclude subsequent observations and
+actions. Raw bars remain the explicit execution/PnL inputs; metadata freezes
+method, raw/event/source digests, official URLs, calendar and cost versions. This
+is a training input interface, not an automatically admitted BACKTEST result.
+Legacy daily research and its serialized FeeSchedule fields remain unchanged.
+
+`FeeSchedule.taiwan` creates immutable versions for discount, minimum commission,
+stock/day-trade/ETF tax treatment, TMF fee/tax and slippage. Eligibility is an
+explicit input, never inferred from an instrument code. Existing consumers use
+the same FeeSchedule type; saved cost snapshots are append-only. Date preferences
+contain only validated broker secret references, never credential values.
+Unknown key expiry displays unknown; 14 remaining days starts renewal reminders;
+zero days is conservatively expired and refused before secret resolution/login.
+Unaccepted UI date/reference drafts never display the old healthy countdown.
+
+Automatic non-LOCAL new entries require an injected maintenance check, 30 future
+explicit calendar dates and, for futures, verified expiry-month coverage using
+the existing TAIFEX data format. Missing checks fail closed. December produces an
+annual calendar reminder. Protective/reducing exits and manual paths retain
+existing guards and are not blocked by this new automatic-entry check. No LIVE
+execution path is added. All tests use fakes; Windows remains CI/native evidence.
+
 ## M2-2b manual SIM review fixes (2026-11-02)
 
 Production orders stay hard-disabled; every change below sends nothing and adds no LIVE path.
@@ -7182,6 +7227,65 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
 
+## M2-9 continuation: executable stock training and pre-open checklist
+
+`runtime.stock_research.run_stock_research` now composes the M1 daily store,
+complete five-year calendar admission, the shared immutable FeeSchedule, an
+additive stock backtest and a dedicated append-only SQLite evidence journal.
+The job accepts TRAINING only, at most 6000 observations/events and a deadline
+no greater than 15 minutes; cancellation/deadline/source-change/storage failures
+publish no new artifact. The runner owns no broker, execution port or child
+process and does not acquire a trading writer lock. Existing daily research,
+its results, serialized fee fields and historical producer identities are not
+rewritten. The unchanged generic ResearchResult and ResearchEvidence are stored
+with frozen strategy/instrument/calendar/profile, event/source/method metadata,
+full fee snapshot and explicit STOCK/ETF/day-trade treatment. Replay verifies the
+sidecar and its training/backtest identity; it cannot relabel a research result
+as activation permission. No strategy is automatically enabled by this service.
+
+Only already completed bars/events enter point-in-time adjusted signals; the
+next bar opens at raw price plus the configured tick slippage. Day trades close
+at that daily bar's raw close; this is the existing daily model, not the separate
+M2-7 intraday minute execution model. Fees and raw-price PnL are Decimal. Reduced
+day-trade tax requires explicit eligibility and an intraday policy. A combined
+ex-right/dividend reference ratio is NOT a cash/share entitlement: any held
+position crossing such an event refuses the entire result with
+`stock_entitlement_unknown`, rather than invent a distribution or report a
+fictitious loss. Flat-before-event and same-day positions may still be studied.
+
+The existing Sinopac connection snapshot now carries PreOpenMaintenance, including
+remaining key days, future-session coverage, issues and reminders. Its existing
+readiness group presents a minimal pre-open checklist with 14-day renewal and
+December annual reminders. A dirty settings draft or unavailable snapshot shows
+unknown instead of an old healthy checklist. The four original readiness facts,
+manual/protective exits and all production-order refusals remain unchanged.
+
+Tests use synthetic, explicitly labelled official-shaped documents. Recorded
+TWSE/TPEx compatibility is still unverified; no live downloads or credentials
+were used. The source-only recycled Linux environment lacks Qt/Ruff. Catalog
+baseline generation is separated from verification; dependency-complete Qt,
+formatter and Windows checks remain required in CI, with no test skips added.
+
+The concrete application entry is `RuntimeBundle.research_stocks(reference,
+start,end,stock_kind=...,day_trade=...)`. It snapshots the host's selected
+strategy, catalog spec and calendar, and uses that same host's M1 KlineStore
+and workspace cost preferences; it does not create a disconnected test-only
+research universe. Computation runs outside bundle/engine locks and cancels
+when the host closes. Integration tests build the real RuntimeBundle, import
+synthetic official data into its owned store, create/validate the strategy,
+and prove that research preserves the engine state and has no download calls.
+Sizing is one instrument lot only when the shared FeeSchedule's raw-price entry
+cash estimate fits the strategy allocation; adjusted prices cannot make an
+unaffordable raw lot appear affordable.
+M2-9 integration with upstream M2-3/4/5: typed automatic submissions may bypass
+only the old daily baseline branch, never the maintenance new-risk gate. The
+shared manual/automatic host binds the real persisted key date and current
+calendar/expiry coverage under the owner lock. Missing maintenance blocks new
+risk; explicit manual operations and known protective reductions remain legal.
+The stock daily research entry retains the existing CREATE_STRATEGY UI path.
+Explicit CREATE_TYPED_STRATEGY parameters include execution sizing/stops not
+modeled by this daily runner; those requests fail validation before evidence,
+including typed 1d requests, rather than silently ignoring their parameters.
 ## M2-7 — bounded TMF minute training (2026-11-02)
 
 `MinuteResearchService` reads only the selected explicit TMF delivery contract
