@@ -886,6 +886,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/runtime/automatic.py` | 348 | composition | `quantlab/trading/runtime/automatic.py` | M2-3 completed-bar execution, durable claims, shared SIM capacity, trusted close evidence and runtime owner binding; engine-only delivery |
 
 | `tests/test_minute_research_basis.py` | 136 | tooling | `tests/test_minute_research_basis.py` | M2-7: explicit fixed-model assumption/UNKNOWN basis, generated SDK host, unchanged legacy wire hashes and preserved contract/grid/cancellation guards. |
+| `quantlab/trading/application/daily_closes.py` | 267 | application | `quantlab/trading/application/daily_closes.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/application/daily_execution.py` | 327 | application | `quantlab/trading/application/daily_execution.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/application/daily_recovery.py` | 61 | application | `quantlab/trading/application/daily_recovery.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/application/daily_state.py` | 232 | application | `quantlab/trading/application/daily_state.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
+| `quantlab/trading/runtime/daily_automatic.py` | 75 | composition | `quantlab/trading/runtime/daily_automatic.py` | M2-3 daily-close signals, attested account closes and next verified DAY dispatch; engine-only native verification. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
