@@ -7526,3 +7526,16 @@ is UNKNOWN when resolution is blocked.
   Any remaining uncertain order, claim or manual operation keeps recovery
   blocked. This transition changes neither reservations nor submission count
   and keeps automatic execution paused until separate AUTO_RESUME.
+
+## Desktop graceful exit (2026-11-02)
+
+The v2 desktop's normal exit or startup exception requests authenticated engine
+shutdown only for original Popen handles newly retained during that window's
+lifetime. Reused/discovered hosts and earlier handles are not controlled. A
+matching session PID is required before IPC; only the retained child's zero exit
+confirms success and releases its registry entry. All children share a five-second
+exit wait allowance; uncertainty is an error, never permission to force terminate
+or search by process name. The UI installation guard covers this shutdown wait.
+Existing engine stop/reconciliation semantics and LIVE prohibition are unchanged.
+Real-process regressions cover active subscriptions, in-flight history, native
+mutex disappearance, research QLockFile reacquisition and journal lease reopening.
