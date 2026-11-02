@@ -2121,3 +2121,13 @@ explicit trusted reconciliation clears the issue; it never resumes, resends or
 releases a reservation. GitNexus reconcile_automatic impact:294 upstream,
 166 processes,20 modules,CRITICAL. Regression tests use the actual fake SDK;
 independent guard mutations accompany the correction.
+
+### 2026-11-02 — Alias integration with updated automatic SIM main
+
+The M2-3 engine uses manual materialization but separate automatic entry and
+protective observation admission. Preserve upstream execution behavior and add
+only fresh alias-selection rejection to those existing boundaries. The
+preflight collector also supplies automatic resume/completed-bar health; it
+still performs no SDK queries. Empty-ledger automatic exemption remains blocked
+on ownership/quiescence; this sync introduces neither journal migration nor
+new execution capability.

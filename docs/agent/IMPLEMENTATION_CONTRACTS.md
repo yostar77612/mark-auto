@@ -7351,3 +7351,17 @@ is UNKNOWN when resolution is blocked.
   Any remaining uncertain order, claim or manual operation keeps recovery
   blocked. This transition changes neither reservations nor submission count
   and keeps automatic execution paused until separate AUTO_RESUME.
+
+### Alias fence after M2-3 engine integration (2026-11-02)
+
+Automatic SIM still materializes through ManualRuntime._materialize, so the
+manual alias fence applies to engine creation. Its already-materialized entry
+and protective execution paths have separate validators: the current-owner
+preflight collector and AutomaticRuntime.validate_observation now also check
+fresh workspace-keyed selection metadata. This rejects stale aliases before
+entry or reduce-only submission; automatic resume and completed-bar admission
+use the same preflight collector. Broker facts remain cache-only; this new
+check reads local alias metadata, not broker data. Fake integration tests cover
+a second connection observing key loss, both submission-guard branches, resume
+and completed-bar rejection with zero native side effects. Existing unknown
+orders/positions and conservative ledger migration gates are not reset.

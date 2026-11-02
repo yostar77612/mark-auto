@@ -152,6 +152,7 @@ class AutomaticRuntime:
                 raise DomainError('state_conflict')
             view = owner.snapshot()
             selected, shared = tuple(sorted(owner.selected)), owner.shared
+            owner.preferences.check_selection(selected)
             protective = getattr(engine, 'manual_protective_observations', {}).get(account_ref) is row and row is not None
             if (
                 view.phase != 'CONNECTED'

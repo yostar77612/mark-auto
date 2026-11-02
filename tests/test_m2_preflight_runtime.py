@@ -81,7 +81,10 @@ class RuntimePreflightTests(unittest.TestCase):
             ),
         )
         self.shared = SimpleNamespace(callback_errors=0, activate_ca=Mock(side_effect=AssertionError('preflight never activates CA')))
-        self.owner = SimpleNamespace(snapshot=Mock(return_value=self.view), selected=('stock', 'futures'), shared=self.shared, query_ready=True)
+        self.owner = SimpleNamespace(
+            preferences=SimpleNamespace(check_selection=Mock()),
+            snapshot=Mock(return_value=self.view), selected=('stock', 'futures'), shared=self.shared, query_ready=True
+        )
         self.manual = SimpleNamespace(stamp=(self.view.generation, self.view.revision, ('futures', 'stock'), self.shared), error='')
         self.bundle = SimpleNamespace(
             sinopac_connection=self.owner,
@@ -488,7 +491,11 @@ class PreflightDispatchTests(unittest.TestCase):
         )
         self.manual = SimpleNamespace(handles=Mock(return_value=False), execute=Mock(side_effect=AssertionError('preflight is not a manual request')))
         self.owner_view = SinopacConnectionView(environment=Environment.BROKER_SIMULATION, generation='dispatcher-generation', revision=3, phase='CONNECTED')
-        self.owner = SimpleNamespace(lock=RLock(), snapshot=Mock(return_value=self.owner_view), selected=('stock',), shared=object())
+        self.owner = SimpleNamespace(
+            preferences=SimpleNamespace(check_selection=Mock()),
+            lock=RLock(),
+            snapshot=Mock(return_value=self.owner_view), selected=('stock',), shared=object()
+        )
         self.bundle = SimpleNamespace(
             lock=RLock(),
             engine=self.engine,

@@ -42,7 +42,11 @@ class AutomaticRuntimeTests(unittest.TestCase):
             accounts=(SinopacAccountView('account', '***fixture', Market.INDEX_FUTURE, True, True),),
         )
         self.shared = SimpleNamespace(callback_errors=0)
-        self.owner = SimpleNamespace(lock=RLock(), snapshot=Mock(side_effect=lambda: self.view), selected=('account',), shared=self.shared, query_ready=True)
+        self.owner = SimpleNamespace(
+            preferences=SimpleNamespace(check_selection=Mock()),
+            lock=RLock(),
+            snapshot=Mock(side_effect=lambda: self.view), selected=('account',), shared=self.shared, query_ready=True
+        )
         self.observation = ManualAccountObservation('account', SIM, (), (), (), self.clock.now())
         typed = SimpleNamespace(parameters=object(), form=SimpleNamespace(account_ref='account'))
         self.engine = SimpleNamespace(
@@ -732,6 +736,54 @@ class NativeAutomaticRuntimeTests(unittest.TestCase):
         with engine.lock:
             engine._persist('automatic_runtime_fixture', replace(engine.state, strategies=(record,)))
         return fixture, engine, bundle
+
+    def test_key_loss_observed_by_second_connection_blocks_automatic_entry_and_protection(self):
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+        from quantlab.trading.runtime.sinopac_connection import SinopacConnection
+
+        fixture, engine, bundle = self.native_fixture()
+        selected = bundle.sinopac_connection.selected
+        (bundle.launch.root / KEY_FILE).unlink()
+        peer = SinopacConnection(
+            bundle.launch.root, factory=lambda environment: self.fail('peer must not log in'), secrets=SimpleNamespace(), clock=fixture.clock
+        )
+        self.addCleanup(peer.close)
+        self.assertEqual(peer.selected, ())
+        self.assertEqual(bundle.sinopac_connection.selected, selected)
+        runtime = bundle.automatic_runtime
+        before, original = tuple(fixture.native._seen), engine.state
+        observation = engine.manual_observations[fixture.alias]
+        with self.assertRaises(DomainError) as error:
+            runtime.validate_observation(fixture.alias, observation)
+        self.assertEqual(error.exception.code, 'reconciliation_required')
+        for reduce_only in (False, True):
+            with self.subTest(reduce_only=reduce_only), self.assertRaises(DomainError) as error:
+                with runtime.submission_guard(fixture.alias, reduce_only=reduce_only):
+                    self.fail('stale alias must never reach the SDK mutation body')
+            self.assertEqual(error.exception.code, 'reconciliation_required')
+        self.assertEqual(engine.state, original)
+        self.assertEqual(tuple(fixture.native._seen), before)
+
+    def test_key_loss_blocks_automatic_resume_and_completed_bar_evaluation(self):
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+
+        fixture, engine, bundle = self.native_fixture()
+        before = tuple(fixture.native._seen)
+        (bundle.launch.root / KEY_FILE).unlink()
+        runtime = bundle.automatic_runtime
+        command = UiCommand(UiAction.AUTO_RESUME, engine.state.version + bundle.version_offset, environment=SIM, account_ref=fixture.alias)
+        receipt = runtime.execute(command)
+        self.assertFalse(receipt.accepted)
+        self.assertEqual(receipt.code, 'reconciliation_required')
+        now = fixture.clock.now()
+        bar = LiveBar(fixture.spec.instrument_id, now - timedelta(minutes=1), now, now.date(), 'DAY', *([Decimal('25000')] * 4), 1, final=True)
+        runtime._enqueue((bar,))
+        with patch('quantlab.trading.application.automatic.on_completed_bars') as evaluate:
+            runtime.pump()
+        evaluate.assert_not_called()
+        self.assertTrue(engine.state.automatic.auto_paused)
+        self.assertIn('reconciliation_required', engine.state.automatic.reasons)
+        self.assertEqual(tuple(fixture.native._seen), before)
 
     def test_real_bundle_fake_sdk_refuses_unproven_permission_without_new_native_queries(self):
         fixture, engine, bundle = self.native_fixture()
