@@ -7,6 +7,7 @@ import sqlite3
 from threading import RLock
 from uuid import uuid4
 
+from .daily_stock_store import DailyStockStorage
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.validation import DomainError, aware, decimal_value, identity, integer, trading_date
 
@@ -115,6 +116,21 @@ class KlineStore:
             if len(self._db.execute(f'PRAGMA table_info({table})').fetchall()) != expected:
                 raise DomainError('kline_store_unavailable', 'invalid cache schema')
         self._db.commit()
+        self.daily = DailyStockStorage(self._db, self._lock)
+
+    def import_daily(self, batch) -> None:
+        with self._lock:
+            self.daily.import_daily(batch)
+            self.revision += 1
+
+    def official_payload(self, source_url, digest):
+        return self.daily.official_payload(source_url, digest)
+
+    def daily_history(self, instrument_id, start, end):
+        return self.daily.daily_history(instrument_id, start, end)
+
+    def daily_coverage(self, instrument_id, start, end):
+        return self.daily.daily_coverage(instrument_id, start, end)
 
     def upsert(self, bars: tuple[LiveBar, ...], *, source: str = 'SHIOAJI_KBARS') -> None:
         if source not in ('SHIOAJI_KBARS', 'LIVE_TICKS'):
@@ -180,7 +196,7 @@ class KlineStore:
 
     def instrument_ids(self) -> tuple[str, ...]:
         with self._lock:
-            return tuple(row[0] for row in self._db.execute('SELECT DISTINCT instrument_id FROM bars_1m ORDER BY instrument_id'))
+            return tuple(row[0] for row in self._db.execute('SELECT instrument_id FROM bars_1m UNION SELECT instrument_id FROM bars_1d ORDER BY instrument_id'))
 
     def record_queried_bars(self, day: date, count: int) -> None:
         integer(count, 'queried bars')

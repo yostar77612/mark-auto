@@ -19,7 +19,7 @@ from . import (
     sinopac_contracts,
 )
 from .codec import register
-from quantlab.trading.domain import auto_cycle, calendar, costs, lifecycle, live_bars, models, risk, strategy, watch
+from quantlab.trading.domain import auto_cycle, calendar, costs, lifecycle, live_bars, maintenance, models, risk, strategy, watch
 from quantlab.trading.ports import contracts as port_contracts
 from quantlab.trading.ports import manual as manual_ports
 
@@ -31,6 +31,7 @@ def initialize() -> None:
         models,
         calendar,
         costs,
+        maintenance,
         risk,
         strategy,
         lifecycle,

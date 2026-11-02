@@ -1,5 +1,6 @@
 """Explicit broker composition; readiness never resolves credentials or connects."""
 
+from zoneinfo import ZoneInfo
 from dataclasses import dataclass, replace
 from datetime import datetime
 from decimal import Decimal
@@ -131,6 +132,7 @@ class BrokerRuntime:
         research_runner: ResearchRunner | None = None,
         reference_inspector: FilesystemReferenceInspector | None = None,
         historical_bars: dict[str, tuple[CompletedBar, ...]] | None = None,
+        automatic_entry_check: Callable[[], None] | None = None,
     ) -> TradingEngine:
         """Assemble selected typed resources without login or execution arming.
 
@@ -161,6 +163,7 @@ class BrokerRuntime:
             fees=fees,
             reference_inspector=reference_inspector,
             historical_bars=historical_bars,
+            automatic_entry_check=automatic_entry_check,
         )
 
     def connect_read_only(self) -> ConnectionState:
@@ -316,6 +319,9 @@ def connect_profile_engine(launch, resources, *, factory: BrokerClientFactory | 
             runtime.adapter.subscribe(subscriptions)
         journal = Ledger(launch.root / 'broker-trading-v2.sqlite', 'broker-platform-' + launch.environment.value, clock.now())
         runner = SpawnResearchRunner()
+        from .stock_maintenance import StockMaintenanceStore
+
+        maintenance = StockMaintenanceStore(launch.root)
         engine = runtime.compose_engine(
             journal,
             clock,
@@ -326,6 +332,12 @@ def connect_profile_engine(launch, resources, *, factory: BrokerClientFactory | 
             research_runner=runner,
             reference_inspector=FilesystemReferenceInspector((resources.profile.source_path.parent,)),
             historical_bars=dict(resources.history),
+            automatic_entry_check=lambda: maintenance.pre_open(
+                resources.calendar,
+                clock.now().astimezone(ZoneInfo('Asia/Taipei')).date(),
+                settings.broker_secret_ref,
+                futures_required=bool(settings.futures_account_ref),
+            ).require_automatic_entry(),
         )
         engine._persist(
             'readonly_broker_context_configured',

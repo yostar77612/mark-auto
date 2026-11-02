@@ -23,6 +23,7 @@ def reason_text(code):
         'callback_failed': ui_text('m2.connection.outcome_unknown'),
         'permission_denied': ui_text('m2.connection.permission_denied'),
         'broker_permission_missing': ui_text('m2.connection.permission_denied'),
+        'api_key_expired': ui_text('m2.maintenance.expired'),
         'broker_login_failed': ui_text('m2.connection.login_failed'),
         'market_sdk_missing': market_connection_guidance('market_sdk_missing'),
         'connection_timeout': ui_text('m2.connection.timeout'),
@@ -109,3 +110,33 @@ def account_text(item):
         else ui_text('m2.connection.signed_unknown')
     )
     return ui_text('m2.connection.account_text').format(market, item.label, signed)
+
+
+def expiry_text(view):
+    if view.api_key_remaining_days is None:
+        return ui_text('m2.maintenance.expiry_unknown')
+    if view.api_key_expiry_state == 'EXPIRED':
+        return ui_text('m2.maintenance.expired')
+    if view.api_key_expiry_state == 'DUE':
+        return ui_text('m2.maintenance.expiry_due').format(view.api_key_remaining_days)
+    return ui_text('m2.maintenance.expiry_days').format(view.api_key_remaining_days)
+
+
+def maintenance_text(view, *, reachable=True):
+    check = view.pre_open
+    if not reachable or check is None:
+        return ui_text('m2.maintenance.unknown')
+    rows = [
+        ui_text('m2.maintenance.checklist'),
+        expiry_text(view),
+        ui_text('m2.maintenance.calendar_days').format(check.future_trading_days, check.calendar_version),
+    ]
+    if 'calendar_coverage_missing' in check.issues:
+        rows.append(ui_text('m2.maintenance.calendar_missing'))
+    if 'expiry_coverage_missing' in check.issues:
+        rows.append(ui_text('m2.maintenance.expiries_missing'))
+    if 'calendar_annual_update_due' in check.reminders:
+        rows.append(ui_text('m2.maintenance.annual_reminder'))
+    if check.can_open_new:
+        rows.append(ui_text('m2.maintenance.ready'))
+    return '\n'.join(rows)

@@ -128,9 +128,7 @@ def generated_resources(owner, account_ref, *, include_next=False):
     if include_next and account.market is Market.INDEX_FUTURE:
         pairs = (*pairs, _future_binding(facade, now, 1))
     discount = owner.configuration.fee_discount
-    fees = FeeSchedule(
-        version='sinopac-estimated-v1-discount-' + str(discount), buy_rate=Decimal('0.001425') * discount, sell_rate=Decimal('0.001425') * discount
-    )
+    fees = FeeSchedule.taiwan(discount=discount, minimum_fee=owner.configuration.minimum_fee, futures_fee_per_contract=owner.configuration.tmf_fee_per_contract)
     limits = ()
     for current, current_info in pairs:
         lower, upper = getattr(current_info, 'limit_down', None), getattr(current_info, 'limit_up', None)

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, replace
 from contextlib import nullcontext
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import stat
 from threading import RLock, Thread, current_thread
@@ -146,6 +146,36 @@ class RuntimeBundle:
                 self.high_water = checkpoint.high_water
                 self.version_sequence = event.sequence
             self.version_offset = max(0, self.high_water + 1 - self.facade.snapshot().version)
+
+    def research_stocks(self, reference: str, start: date, end: date, *, stock_kind: str, day_trade=False, cancelled=lambda: False):
+        """Explicit local research over this host's M1 store and selected strategy.
+
+        Snapshot only under the writer lock; computation/evidence publication
+        use a separate journal and never enable a strategy or connect a broker.
+        """
+        from .stock_research import run_stock_research
+
+        with self.lock:
+            if self.closing or self.engine is None:
+                raise DomainError('capability_missing', 'an open strategy host is required for stock research')
+            engine = self.engine
+            with engine.lock:
+                strategy = engine.strategy(reference)
+                spec = engine.catalog.resolve(strategy.form.instrument_id)
+                calendar, clock = engine.calendar, engine.clock
+        return run_stock_research(
+            self.launch.root,
+            self.kline_store,
+            strategy,
+            spec,
+            calendar,
+            start,
+            end,
+            stock_kind=stock_kind,
+            day_trade=day_trade,
+            clock=clock,
+            cancelled=lambda: self.closing or cancelled(),
+        )
 
     @property
     def configuration_id(self) -> str:
