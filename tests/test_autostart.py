@@ -193,19 +193,19 @@ class AutostartPanelTests(unittest.TestCase):
         controller.set_enabled.side_effect = AutostartError('autostart_write_failed')
         panel.enabled.setChecked(True)
         self.assertFalse(panel.enabled.isChecked())
-        self.assertIn('autostart_write_failed', panel.async_status.label.text())
+        self.assertIn('autostart_write_failed', panel.status.text())
 
     def test_remove_error_preserves_checked_state(self):
         panel, controller = self.panel(enabled=True)
         controller.set_enabled.side_effect = AutostartError('autostart_remove_failed')
         panel.enabled.setChecked(False)
         self.assertTrue(panel.enabled.isChecked())
-        self.assertIn('autostart_remove_failed', panel.async_status.label.text())
+        self.assertIn('autostart_remove_failed', panel.status.text())
 
     def test_read_error_disables_control_with_specific_error(self):
         panel, _ = self.panel(error='autostart_read_failed')
         self.assertFalse(panel.enabled.isEnabled())
-        self.assertIn('autostart_read_failed', panel.async_status.label.text())
+        self.assertIn('autostart_read_failed', panel.status.text())
 
     def test_source_preview_cannot_register(self):
         from desktop_app.features.settings.autostart_panel import AutostartPanel

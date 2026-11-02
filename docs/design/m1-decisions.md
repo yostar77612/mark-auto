@@ -245,3 +245,6 @@
 - 本機原生 installer guard 的兩個既有測試因其他使用中 MarkAuto 持有真實 mutex 而安全拒跑；不擾動既有程序、不削弱斷言，交由隔離的 Windows CI 執行。模組式執行曾遇測試互相import路徑差異，改用 discover 的專案標準指令。
 
 - 2026-11-02 23:35 Asia/Taipei，M4a CI 回歸：設定頁不得透過 window() 探索 shell，改由 trading_runtime 注入 maintenanceRequestClose。保留原更新說明的 help 身份與不背景自動下載的提示，同時展示新的手動安裝說明；恢復原完整 help 基準，不改既有邊界／可達性斷言。新 head 重新執行兩套完整 CI，不使用 failed-only。
+
+- M4a 完整 CI 基準收斂：18 個新增 ErrorText 逐項鎖完整 render，另鎖新增來源區塊雜湊，重建後保留原 64 筆／原來源雜湊；三個 widget 名稱獨立列出後仍保留歷史集合 digest。R7 僅加入四列精準增量（focus 與四種 refresh 各四列），無刪除，r7_base 未改。
+- 新核取方塊增加預設輸入數 4→5；擴充 repin_baselines 的 settings_inputs plan 以工具集中產生這個精準數據，其他頁面數量、頁高、primary 上限與未標示輸入檢查不變。autostart 只需文字狀態，改 PlainText QLabel 消除不必要的隱藏 action 重名，補上核取方塊 tooltip。20 個錯誤／歷史集合測試、16 個 R7 測試，以及完整原失敗模組 90 個測試通過；最終兩模式 native 視窗與八張截圖皆通過。
