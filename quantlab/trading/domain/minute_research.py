@@ -8,7 +8,7 @@ from .calendar import TradingCalendar, TradingSession
 from .live_bars import LiveBar
 from .minute_contract import HistoricalContractEvidence
 from .strategy import CompletedBar
-from .validation import DomainError, aware, decimal_value, integer, trading_date
+from .validation import DomainError, aware, decimal_value, identity, integer, trading_date
 
 TAIPEI = ZoneInfo('Asia/Taipei')
 MINUTE = timedelta(minutes=1)
@@ -81,6 +81,33 @@ class MinuteResearchSettings:
         if sum(int((s.closes_at - s.opens_at) / MINUTE) for s in sessions) > 10000:
             raise DomainError('validation_failed', 'minute training window exceeds 10000 raw bars')
         return sessions
+
+
+@dataclass(frozen=True)
+class FixedModelMinuteSettings(MinuteResearchSettings):
+    """Explicit fixed-parameter research, not verified historical contract terms.
+
+    The supplied spec tick grid, multiplier and lot size plus FeeSchedule apply
+    to every selected bar. Margin feasibility and daily limits are not modeled.
+    Existing interval-reference DTOs retain their original wire representation.
+    """
+
+    sdk_code: str = ''
+    model_version: str = 'minute-fixed-model-v1'
+    basis: str = 'FIXED_MODEL'
+    historical_applicability: str = 'UNKNOWN'
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        identity(self.sdk_code)
+        if (
+            self.historical_contract is not None
+            or self.sdk_code.endswith(('R1', 'R2'))
+            or self.model_version != 'minute-fixed-model-v1'
+            or self.basis != 'FIXED_MODEL'
+            or self.historical_applicability != 'UNKNOWN'
+        ):
+            raise DomainError('validation_failed', 'explicit fixed-model settings without historical proof required')
 
 
 def complete_minutes(

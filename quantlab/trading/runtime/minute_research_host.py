@@ -7,6 +7,7 @@ from quantlab.trading.runtime.minute_receipt_store import MinuteReceiptStore
 from quantlab.trading.application.history_sync import HistorySync
 from quantlab.trading.application.minute_receipt import MinuteResearchReceipt
 from quantlab.trading.application.minute_research import validate_minute_request
+from quantlab.trading.domain.minute_research import FixedModelMinuteSettings
 from quantlab.trading.domain.validation import DomainError
 from .minute_research import MinuteResearchService
 from .minute_research_wait import MinuteResearchBudget
@@ -27,8 +28,11 @@ def _snapshot(bundle, strategy, settings, calendar):
         raise DomainError('instrument_unresolved', 'host catalogue and observed contract differ')
     sessions = validate_minute_request(strategy, spec, calendar, settings)
     evidence = settings.historical_contract
-    if evidence is not None and evidence.sdk_code != context.bindings[spec.instrument_id].sdk_code:
-        raise DomainError('instrument_unresolved', 'historical evidence contract code mismatch')
+    sdk_code = evidence.sdk_code if evidence is not None else None
+    if isinstance(settings, FixedModelMinuteSettings):
+        sdk_code = settings.sdk_code
+    if sdk_code is not None and sdk_code != context.bindings[spec.instrument_id].sdk_code:
+        raise DomainError('instrument_unresolved', 'research contract code mismatch')
     owner = bundle.sinopac_connection
     stamp = None if owner is None else (owner.snapshot().generation, owner.shared)
     if owner is not None and owner.snapshot().phase != 'CONNECTED':
@@ -47,7 +51,7 @@ def _guard(bundle, original, strategy, settings, calendar, budget):
 def run_minute_research(bundle, strategy, settings, *, calendar, deadline, cancel_event=None):
     """Synchronous research-only entry; callers may invoke on their owned worker.
 
-    Historical applicability and full DAY calendar are explicit verified inputs.
+    Historical reference or fixed-model assumptions and full DAY calendar are explicit inputs.
     No observation timestamp is rewritten, and no automatic login is attempted.
     """
     budget = MinuteResearchBudget(deadline, cancel_event)

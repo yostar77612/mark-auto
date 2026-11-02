@@ -16,7 +16,7 @@ from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.minute_contract import HistoricalContractEvidence, is_tmf_contract
-from quantlab.trading.domain.minute_research import MINUTE, TAIPEI, MinuteResearchSettings
+from quantlab.trading.domain.minute_research import MINUTE, TAIPEI, FixedModelMinuteSettings, MinuteResearchSettings
 from quantlab.trading.domain.models import HoldingKind, InstrumentSpec, Side
 from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.domain.validation import DomainError
@@ -30,7 +30,7 @@ class MinuteResearchResult(ResearchResult):
     price_basis: str = 'RAW_CONTRACT'
 
 
-register(HistoricalContractEvidence, MinuteResearchSettings, MinuteResearchResult)
+register(HistoricalContractEvidence, MinuteResearchSettings, FixedModelMinuteSettings, MinuteResearchResult)
 
 
 def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
@@ -46,6 +46,8 @@ def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
         raise DomainError('validation_failed', 'minute intraday policy or TMF cutoff mismatch')
     sessions = settings.sessions(calendar)
     evidence = settings.historical_contract
+    if isinstance(settings, FixedModelMinuteSettings):
+        return sessions  # Explicit model assumption, not an assertion of historical applicability.
     if evidence is None:
         historically_applicable = sessions[0].opens_at >= spec.effective_at
     else:

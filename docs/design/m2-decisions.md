@@ -2012,6 +2012,11 @@ inventory regeneration is verified locally. Observer generation is mechanical,
 but its Qt-dependent verification cannot run here; retain the unchanged tests
 for CI and report the no-verify generation explicitly. Do not modify stylesheet
 baselines or assertions to hide that limit.
+### M2-7 明確固定模型，而非偽造完整歷史快照（2026-11-02）
+
+`InstrumentSpec.effective_at` 在 generated resources 是觀測時間，margin 與 source/version 也不是歷史市場條款。新增顯式 `FixedModelMinuteSettings`：以指定 spec/fee 參數研究歷史價，歷史適用性標記 UNKNOWN，不要求 caller 提供無關的完整歷史觀測快照。這不是改寫既有 interval-reference 的判定，也不是自動 fallback。舊 reference 只代表 caller 提供的區間／來源引用，不會因 digest 格式正確而取得可信來源身分。完整 spec 仍保存在 receipt 與 fingerprint；margin feasibility／daily price limits 未模擬，research-only 與完整資料／取消守衛不變。
+
+
 ## M2 second round: engine decisions (2026-11-02)
 
 M2-4 keeps legacy StrategyForm unchanged so historical daily research material

@@ -17,11 +17,11 @@ def is_tmf_contract(spec: InstrumentSpec) -> bool:
 
 @dataclass(frozen=True)
 class HistoricalContractEvidence:
-    """An independently verified specification interval; never inferred from SDK now.
+    """A caller-supplied interval reference; never authenticated by this DTO.
 
-    The source artifact digest and full observed specification are retained in
-    research evidence. Merely knowing delivery month/expiry does not prove the
-    multiplier, tick grid or listing/validity dates over a historical interval.
+    The source label/digest and observed spec are retained, but neither hex
+    syntax nor a matching interval verifies an artifact or its truth. Existing
+    reference semantics and wire identity are preserved for saved receipts.
     """
 
     spec: InstrumentSpec

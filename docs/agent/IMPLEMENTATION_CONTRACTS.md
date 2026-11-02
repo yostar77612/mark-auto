@@ -7294,6 +7294,16 @@ so no layer exception is added.
 `StrategyRecord.parameters` 非空時，1m／5m admission 一律以 `capability_missing` 拒絕，發生在回補、worker 與證據發布之前。現有 minute engine 尚未實作 typed stop、entry amount、contracts、近月規則，不能用 legacy 訊號／單口結果冒充；有無 legacy definition 均相同。parameters 為 None 的既有研究保持原語意與結果。
 
 
+
+### M2-7：明確選取固定模型假設（2026-11-02）
+
+- 新 `FixedModelMinuteSettings` 是 caller 必須明確建立的獨立 wire 型別；不是資料不足或證明不足時的自動 fallback。持久化 `basis=FIXED_MODEL`、`model_version=minute-fixed-model-v1`、`historical_applicability=UNKNOWN`、exact SDK code。
+- 將傳入 spec 的 tick grid／multiplier／lot size 與 FeeSchedule 套用到歷史原始價，是明確研究模型假設，不聲稱歷史條款已驗證。margin feasibility、追繳、歷史每日漲跌停不在模型內；當前 observation time／margin 留作 snapshot provenance，不充當歷史事實。
+- 固定模型不得同時帶 `HistoricalContractEvidence`。exact contract identity／SDK binding、expiry、完整 session/grid、下一棒開盤、無前視、成本與滑價、取消／逾時及 receipt publication 守衛保持；typed StrategyParameters 仍不支援。結果仍為 research-only，不得用來取得 execution／activation 權限。
+- 既有 `MinuteResearchSettings` 與 interval-reference 的欄位、wire 名稱、拒絕行為均不改；舊模式所謂 evidence 是 caller-supplied reference，並非程式已驗證的權威來源。source 字串或 64-hex digest 不能驗證 artifact 或其真實性，這項澄清取代先前任何「已驗證」措辭。
+- 模型型別與欄位透過原 settings/result/receipt codec 進入 dataset/hash/fingerprint；新增 golden regression 固定既有 synthetic settings/result/receipt wire hash，舊紀錄不遷移、不重算。
+
+
 ## M2-4 engine contract (2026-11-02)
 
 - New typed creation: `UiAction.CREATE_TYPED_STRATEGY`, `UiCommand.strategy` and
