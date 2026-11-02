@@ -14,12 +14,18 @@ from quantlab.trading.ports.tick_stream import MarketConnectionSource, TickLoss,
 
 class CalendarResolver:
     def __init__(self, engine: TradingEngine) -> None:
+        self.engine = engine
         self.calendar = engine.calendar
         self.catalog = engine.catalog
 
     def session_at(self, instrument_id: str, timestamp: datetime) -> tuple[date, str]:
         spec = self.catalog.resolve(instrument_id)
-        session = self.calendar.session_at(timestamp, allow_night=spec.market is not Market.STOCK)
+        calendar = self.calendar
+        if self.engine.state.manual_books and any(row.parameters is not None for row in self.engine.state.strategies):
+            from quantlab.trading.domain.automatic_calendar import calendar_for_instrument
+
+            calendar = calendar_for_instrument(calendar, spec)
+        session = calendar.session_at(timestamp, allow_night=spec.market is not Market.STOCK)
         return session.trade_date, session.kind
 
 

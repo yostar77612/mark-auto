@@ -10,6 +10,11 @@ from quantlab.trading.domain.models import Environment, HoldingKind, Market, Qua
 from quantlab.trading.domain.live_bars import DataGap, LiveBar
 from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.validation import DomainError, identity, integer
+from quantlab.trading.domain.strategy import StrategyParameters
+from quantlab.trading.domain.strategy import StrategyDefaults as StrategyDefaults, strategy_defaults as strategy_defaults
+from quantlab.trading.domain.risk import AccountRiskLimits
+from .preflight import PreflightView
+from .automatic_state import EvaluationStatus
 from .broker_settings import BrokerReadiness, BrokerSettings
 from .market_settings import MarketDataSettings
 from .manual_contracts import (
@@ -102,6 +107,15 @@ class MarketSeriesPage:
 
 
 class UiAction(str, Enum):
+    AUTO_RESUME = 'auto_resume'
+    AUTO_RECONCILE = 'auto_reconcile'
+    CHECK_PREFLIGHT = 'check_preflight'
+    SAVE_ACCOUNT_RISK = 'save_account_risk'
+    CREATE_TYPED_STRATEGY = 'create_typed_strategy'
+    DISABLE_STRATEGY = 'disable_strategy'
+    CLONE_STRATEGY = 'clone_strategy'
+    REVISE_STRATEGY = 'revise_strategy'
+    DELETE_STRATEGY = 'delete_strategy'
     ENABLE_MANUAL_BOOK = 'enable_manual_book'
     PREVIEW_MANUAL = 'preview_manual'
     SUBMIT_MANUAL = 'submit_manual'
@@ -193,6 +207,8 @@ class UiCommand:
     # Deny-only forwarding after an outer preflight refused the original request.
     # It never grants permission to execute the financial command body.
     manual_no_admission: bool = False
+    strategy_parameters: StrategyParameters | None = None
+    account_risk: AccountRiskLimits | None = None
 
 
 @dataclass(frozen=True)
@@ -223,6 +239,11 @@ class StrategyView:
     today_order_count: int | None = None
     today_pnl: Decimal | None = None
     activity_state: str | None = None
+    parameters: StrategyParameters | None = None
+    recent_signal: str = ''
+    margin_source: str = ''
+    resolved_instrument_id: str = ''
+    entry_block_code: str = ''
 
 
 @dataclass(frozen=True)
@@ -325,6 +346,32 @@ class ContextOption:
 
 
 @dataclass(frozen=True)
+class AccountRiskView:
+    account_ref: str
+    limits: AccountRiskLimits
+    daily_pnl: Decimal | None
+    daily_loss_limit: Decimal
+    position_count: int
+    paused: bool
+    reasons: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class StrategyProductView:
+    instrument_id: str
+    market: Market
+    holding_kinds: tuple[HoldingKind, ...]
+    stock_intraday_optional: bool = False
+
+
+@dataclass(frozen=True)
+class AutomaticView:
+    state: str = 'PAUSED_WAITING_RESUME'
+    reasons: tuple[str, ...] = ('program_restarted',)
+    evaluations: tuple[EvaluationStatus, ...] = ()
+
+
+@dataclass(frozen=True)
 class UiState:
     environment: Environment
     account_ref: str
@@ -370,6 +417,10 @@ class UiState:
     market_data_error: str = ''
     sinopac_connection: SinopacConnectionView = SinopacConnectionView()
     manual: ManualTradingView = ManualTradingView()
+    strategy_products: tuple[StrategyProductView, ...] = ()
+    account_risks: tuple[AccountRiskView, ...] = ()
+    preflight: tuple[PreflightView, ...] = ()
+    automatic: AutomaticView = AutomaticView()
 
 
 class TradingFacade(Protocol):
