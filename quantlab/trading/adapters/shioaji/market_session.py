@@ -86,11 +86,13 @@ class MarketSession:
             self.disconnect()
         if not self.settings.enabled:
             raise DomainError('market_data_not_configured')
+        authenticated = False
         try:
             client = self.sdk_module.Shioaji(simulation=self.settings.environment is Environment.BROKER_SIMULATION)
             self.facade = ShioajiSDKFacade(client, self.sdk_module, environment=self.settings.environment)
             credentials = self.secret_resolver.broker_credentials(self.settings.secret_ref)
             self.facade.login(api_key=credentials.api_key, secret_key=credentials.secret_key, subscribe_trade=False)
+            authenticated = True
             del credentials
             self._start_quotes()
         except Exception:
@@ -101,7 +103,7 @@ class MarketSession:
                 except Exception:
                     pass
             self.facade = None
-            raise DomainError('market_data_login_failed') from None
+            raise DomainError('broker_initialization_failed' if authenticated else 'market_data_login_failed') from None
 
     def attach_authenticated(self, facade: ShioajiSDKFacade) -> None:
         """Adopt a shared consumer; its logout releases only this consumer."""
@@ -116,7 +118,7 @@ class MarketSession:
             try:
                 facade.logout()
             finally:
-                raise DomainError('market_data_login_failed') from None
+                raise DomainError('broker_initialization_failed') from None
 
     def _start_quotes(self) -> None:
         self.directory.refresh(self.facade, self.clock.now())
@@ -198,7 +200,7 @@ class MarketSession:
             self.subscriptions[instrument.instrument_id] = contract
         except Exception:
             self.tick_stream.set_active(set(self.subscriptions))
-            raise DomainError('market_data_not_connected') from None
+            raise DomainError('market_data_subscription_failed' if self.connected else 'market_data_not_connected') from None
 
     def unsubscribe(self, instrument_id: str) -> None:
         contract = self.subscriptions.get(instrument_id)

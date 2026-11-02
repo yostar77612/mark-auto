@@ -234,6 +234,10 @@ def render_chart(host, page):
         host._last_series = *key, bars
     host.chart.source_label = source_text(host._market_environment())
     host.chart.status_label = (
-        ui_text('watch.forming') if page.bars and not page.bars[-1].final else state_label(host._view(page.instrument_id).health.freshness)
+        ui_text('connection.failure.history_only')
+        if host._history_only
+        else ui_text('watch.forming')
+        if page.bars and not page.bars[-1].final
+        else state_label(host._view(page.instrument_id).health.freshness)
     )
     host.chart.update()

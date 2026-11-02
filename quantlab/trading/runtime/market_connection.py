@@ -81,6 +81,7 @@ class MarketConnection:
 
     def _transition(self, action: UiAction):
         candidate = None
+        authenticated = False
         try:
             if self.session is not None:
                 self.on_disconnected()
@@ -90,6 +91,7 @@ class MarketConnection:
                 return
             candidate = self.factory(self.settings, self.directory)
             candidate.connect()
+            authenticated = True
             with self.lock:
                 if self.closed:
                     candidate.disconnect()
@@ -109,7 +111,7 @@ class MarketConnection:
                 candidate.disconnect()
             with self.lock:
                 self.session = None
-                self.status, self.error = 'DISCONNECTED', 'market_data_login_failed'
+                self.status, self.error = 'DISCONNECTED', 'broker_initialization_failed' if authenticated else 'market_data_login_failed'
 
     def connection_status(self):
         with self.lock:

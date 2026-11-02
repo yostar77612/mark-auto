@@ -275,3 +275,17 @@
 - Reject and clear the modal before navigating, so a later connection can reopen
   with a fresh snapshot. No connection action, order or automatic retry is added.
 - Append four strings after main M4a3103; repin once in its own commit.
+
+## 2026-11-03 — B, connection failure stage copy
+
+- Start from latest main4867549 after A merged, without stacking. Append
+  phase71/orders3108–3110 in a new string file; repin once separately.
+- The requested ErrorText/mapping scope includes the existing SDK/runtime error
+  boundaries only. Track whether login returned to distinguish initialization
+  failure; preserve all connection/cleanup calls and specific error priorities.
+- Report a known connected subscription failure through the existing selection
+  completion; keep the fresh-status/generation guards and history display.
+  Do not extend DTOs or infer failure from silence, and do not change the
+  startup service's existing best-effort subscription loop.
+- Preserve legacy error table identity and desktop historical strings. No
+  connection retry, financial action or LIVE admission change is introduced.

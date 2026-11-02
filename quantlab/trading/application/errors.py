@@ -10,6 +10,9 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'broker_login_failed': ErrorText('登入失敗。', '請檢查金鑰引用與連線環境後重試。'),
+    'broker_initialization_failed': ErrorText('登入成功，但初始化失敗。', '請查看診斷後重試連線。'),
+    'market_data_subscription_failed': ErrorText('行情訂閱失敗，連線仍成功；該商品目前只能查看歷史資料。', '請查看診斷後重試該商品。'),
     'daily_not_sent_confirmation_required': ErrorText('宣告日 K 委託未送出需要擁有者確認。', '核對意圖與對帳結果後明確確認；此操作不會恢復交易或重送。'),
     'daily_not_sent_unproven': ErrorText('日誌尚不能證明這筆日 K 委託未送出。', '保留未知狀態，核對完整日誌；已持久化送單紀錄者不可宣告未送出。'),
     'daily_not_sent_order_found': ErrorText('對帳找到可能相符的券商委託。', '保留未知狀態並核對券商紀錄，不可宣告未送出。'),
@@ -86,7 +89,7 @@ V2_ERROR_TEXT = {
     'manual_quantity_amend_unsupported': ErrorText('本輪人工模擬只支援不增加風險的改價。', '數量修改尚未開放；先核對已成交及剩餘委託，必要時明確撤單。'),
     'production_orders_disabled': ErrorText('正式環境的下單、改單與撤單尚未啟用。', '此環境可查看行情與帳務；請切換至券商模擬測試委託。'),
     'market_data_not_configured': ErrorText('尚未設定行情連線。', '到設定頁填入環境與 API 金鑰引用名稱。'),
-    'market_data_login_failed': ErrorText('行情登入失敗。', '確認金鑰已用 store_sinopac_key.py 存入，並檢查網路後重試。'),
+    'market_data_login_failed': ErrorText('登入失敗。', '請檢查金鑰引用、連線環境與網路後重試。'),
     'market_sdk_missing': ErrorText('此安裝版未包含永豐元件，', '請安裝新版'),
     'market_data_not_connected': ErrorText('行情未連線。', '先連線，或改看本機已有的歷史 K 線。'),
     'history_quota_low': ErrorText('今日行情流量將滿。', '歷史更新已暫停，明日或額度恢復後再試。'),

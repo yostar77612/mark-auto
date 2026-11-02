@@ -154,18 +154,27 @@ def connect_candidate(owner, ticket):
     if not isinstance(facade, ShioajiSDKFacade) or facade.environment is not owner.configuration.environment:
         raise DomainError('capability_missing', 'factory broker environment mismatch')
     candidate, market = SharedSDKSession(facade), None
+    authenticated = False
     try:
         credentials = owner.secrets.broker_credentials(owner.configuration.key_ref)
         try:
             candidate.login(api_key=credentials.api_key, secret_key=credentials.secret_key)
+            authenticated = True
         finally:
             del credentials
         accounts = discover_accounts(facade.list_accounts(), owner.configuration.environment, alias_key=owner.preferences.alias_key)
         market = MarketSession(owner.settings, owner.secrets, facade._module, owner.clock, owner.directory)
         market.attach_authenticated(candidate.consumer('terminal'))
         accept_candidate(owner, candidate, market, accounts, ticket)
-    except Exception:
+    except Exception as error:
         discard_candidate(owner, candidate, market)
+        if authenticated and not (
+            isinstance(error, DomainError)
+            and error.code in ('api_key_expired', 'reconciliation_required')
+            or isinstance(error, SdkUnavailable)
+            or type(error).__name__ in ('AuthError', 'ShioajiPermissionError')
+        ):
+            raise DomainError('broker_initialization_failed') from None
         raise
 
 
@@ -197,6 +206,8 @@ def transition(owner, command, ticket):
             if type(error).__name__ in ('AuthError', 'ShioajiPermissionError')
             else 'reconciliation_required'
             if isinstance(error, DomainError) and error.code == 'reconciliation_required'
+            else 'broker_initialization_failed'
+            if isinstance(error, DomainError) and error.code == 'broker_initialization_failed'
             else 'account_query_failed'
             if command.action is UiAction.SELECT_SINOPAC_ACCOUNTS
             else 'certificate_failed'
