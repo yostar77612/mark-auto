@@ -860,6 +860,9 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
+| `quantlab/trading/application/account_risk.py` | 206 | application | `quantlab/trading/application/account_risk.py` | M2-5 engine: register account risk authority, immutable preflight boundary and cached Sinopac preflight composition; no layer rules or assertions changed. |
+| `quantlab/trading/application/preflight.py` | 143 | application | `quantlab/trading/application/preflight.py` | M2-5 engine: register account risk authority, immutable preflight boundary and cached Sinopac preflight composition; no layer rules or assertions changed. |
+| `quantlab/trading/runtime/preflight.py` | 87 | composition | `quantlab/trading/runtime/preflight.py` | M2-5 engine: register account risk authority, immutable preflight boundary and cached Sinopac preflight composition; no layer rules or assertions changed. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
