@@ -620,20 +620,31 @@ class WindowsRuntimeTests(unittest.TestCase):
         import ctypes
         from ctypes import wintypes
         from quantlab.desktop_runtime import WindowsAppMutex, WINDOWS_APP_MUTEX
+        from quantlab import runtime_support
+        from uuid import uuid4
 
         kernel = ctypes.WinDLL('kernel32', use_last_error=True)
         kernel.OpenMutexW.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.LPCWSTR]
         kernel.OpenMutexW.restype = wintypes.HANDLE
         kernel.CloseHandle.argtypes = [wintypes.HANDLE]
-        guard = WindowsAppMutex()
-        try:
-            handle = kernel.OpenMutexW(0x00100000, False, WINDOWS_APP_MUTEX)
-            self.assertTrue(handle)
-            if handle:
-                kernel.CloseHandle(handle)
-        finally:
-            guard.close()
-        self.assertFalse(kernel.OpenMutexW(0x00100000, False, WINDOWS_APP_MUTEX))
+        # Other applications/tests may legitimately retain the installer mutex.
+        # Exercise the real guard and API with a fixture-owned kernel object.
+        name = WINDOWS_APP_MUTEX + '-test-' + uuid4().hex
+        with patch.object(runtime_support, 'WINDOWS_APP_MUTEX', name):
+            guard = WindowsAppMutex()
+            try:
+                handle = kernel.OpenMutexW(0x00100000, False, name)
+                self.assertTrue(handle)
+                if handle:
+                    kernel.CloseHandle(handle)
+            finally:
+                guard.close()
+            handle = kernel.OpenMutexW(0x00100000, False, name)
+            try:
+                self.assertFalse(handle)
+            finally:
+                if handle:
+                    kernel.CloseHandle(handle)
 
     def test_dpapi_roundtrip_and_corrupt_blob(self):
         with tempfile.TemporaryDirectory() as temp:
