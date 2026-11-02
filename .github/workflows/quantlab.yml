@@ -145,9 +145,13 @@ jobs:
         include:
           - {python: '3.11', group: core, core_slice: desktop-trading}
           - {python: '3.11', group: core, core_slice: paper-remaining}
+          - {python: '3.11', group: core, core_slice: trading}
+          - {python: '3.11', group: core, core_slice: paper}
           - {python: '3.11', group: research}
           - {python: '3.12', group: core, core_slice: desktop-trading}
           - {python: '3.12', group: core, core_slice: paper-remaining}
+          - {python: '3.12', group: core, core_slice: trading}
+          - {python: '3.12', group: core, core_slice: paper}
           - {python: '3.12', group: research}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -305,6 +309,8 @@ jobs:
         include:
           - {group: core, core_slice: desktop-trading}
           - {group: core, core_slice: paper-remaining}
+          - {group: core, core_slice: trading}
+          - {group: core, core_slice: paper}
           - {group: research}
     env:
       QT_QPA_PLATFORM: offscreen

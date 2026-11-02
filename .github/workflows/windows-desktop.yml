@@ -1,19 +1,6 @@
 name: Windows desktop installer
 on:
   pull_request:
-    # Installer build and packaging gates run on PRs only when packaging inputs
-    # change. Every push to main, desktop tag and manual dispatch always runs.
-    paths:
-      - 'packaging/**'
-      # Native supervision protocol cases qualify installer/recovery evidence.
-      - 'tests/test_windows_recovery_feasibility.py'
-      - 'requirements*.lock'
-      - 'requirements*.txt'
-      - 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json'
-      - '*.spec'
-      - '*.iss'
-      - 'tools/make_icon.py'
-      - '.github/workflows/windows-desktop.yml'
   push:
     branches: [main]
     tags: ['desktop-v*']
@@ -27,7 +14,22 @@ concurrency:
   group: desktop-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  changes:
+    name: Detect documentation-only change
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: detect
+        run: python3 tools/ci_changes.py --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}"
   quality:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     name: Desktop static and dependency security gates
     runs-on: windows-2022
     timeout-minutes: 15

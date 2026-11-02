@@ -47,6 +47,15 @@ class DocsOnlyClassifierTests(unittest.TestCase):
             ['docs/adr/0001.md'],
             ['packaging/README.md'],
             ['docs/data.json'],
+            ['packaging/build.ps1'],
+            ['packaging/markauto.iss'],
+            ['.github/workflows/quantlab.yml'],
+            ['.github/workflows/windows-desktop.yml'],
+            ['tools/layer_map.json'],
+            ['requirements-desktop.txt'],
+            ['requirements-qt-ci.lock'],
+            ['desktop_app/shell/main_window.py'],
+            ['trading_runtime.py'],
         ):
             self.assertFalse(ci_changes.docs_only(changed, ROOT), changed)
 
@@ -65,12 +74,29 @@ class WorkflowShapeTests(unittest.TestCase):
 
     def test_installer_pr_filter_and_unfiltered_main_push(self):
         pull_request, rest = header('windows-desktop.yml').split('  push:\n', 1)
-        for required in ('packaging/**', 'requirements*.lock', 'desktop_chatgpt_dependency_manifest.json', "'*.spec'", "'*.iss'", 'tools/make_icon.py'):
-            self.assertIn(required, pull_request)
+        # Every PR reaches the classifier, including source and new installer inputs.
+        self.assertIn('  pull_request:\n', pull_request)
+        self.assertNotIn('paths:', pull_request)
+        self.assertNotIn('paths-ignore:', pull_request)
         self.assertNotIn('paths:', rest)
         self.assertIn('branches: [main]', rest)
         self.assertIn("tags: ['desktop-v*']", rest)
         self.assertIn('workflow_dispatch:', rest)
+        installer = job_blocks(text('windows-desktop.yml'))
+        for required in (
+            'name: Detect documentation-only change',
+            'fetch-depth: 0',
+            'code: ${{ steps.detect.outputs.code }}',
+            'run: python3 tools/ci_changes.py --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}"',
+        ):
+            self.assertIn(required, installer['changes'])
+            self.assertIn(required, job_blocks(text('quantlab.yml'))['changes'])
+        self.assertIn('needs: changes', installer['quality'])
+        self.assertIn("if: needs.changes.outputs.code == 'true'", installer['quality'])
+        self.assertIn('needs: quality', installer['regression'])
+        self.assertIn('needs: [quality, regression]', installer['build'])
+        self.assertIn('needs: [build, quality]', installer['release'])
+        self.assertNotIn('continue-on-error', text('windows-desktop.yml'))
 
     def test_every_heavy_job_is_gated_and_aggregate_covers_all(self):
         jobs = job_blocks(text('quantlab.yml'))
