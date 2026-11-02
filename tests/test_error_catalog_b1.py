@@ -91,6 +91,30 @@ class ErrorCatalogTests(unittest.TestCase):
 
     def test_existing_message_bytes_match_17b5b1b(self):
         payload = {code: [row.explanation, row.action, error_message(code)] for code, row in ERROR_TABLE.items()}
+        # M4a admits exactly these eighteen new boundary errors. Verify their
+        # complete rendered bytes, then keep the historical 64-entry digest.
+        m4a_additions = {
+            'update_check_failed': ('無法取得或驗證新版資訊。', '請檢查網路後重新檢查更新。'),
+            'update_metadata_missing': ('此版本的發布資訊缺少安裝檔驗證資料。', '請稍後重新檢查，或前往官方發布頁。'),
+            'update_not_installed': ('一鍵安裝僅適用已安裝的 Windows 版 MarkAuto。', '請從官方發布頁取得安裝程式。'),
+            'update_source_rejected': ('更新下載來源不在允許的官方發布來源內。', '已中止更新；請重新檢查官方發布資訊。'),
+            'update_download_failed': ('安裝檔下載不完整或無法寫入暫存資料夾。', '請檢查網路及暫存磁碟空間後重試。'),
+            'update_download_timeout': ('安裝檔下載超過等候時間。', '已清除未完成下載；請檢查網路後重試。'),
+            'update_download_cancelled': ('您已取消安裝檔下載。', '未執行安裝；可隨時重新檢查更新。'),
+            'update_too_large': ('安裝檔超過允許的下載大小。', '已中止更新；請核對官方發布內容。'),
+            'update_hash_mismatch': ('安裝檔驗證碼與發布資訊不符。', '已刪除下載檔且不會執行；請重新檢查更新。'),
+            'update_shutdown_failed': ('無法確認程式與自有引擎已正常關閉，更新已中止。', '原版已保留；請等待作業結束後重新開啟程式並重試。'),
+            'update_installer_failed': ('安裝程式回報錯誤，退出碼：{0}。', '更新未完成；請重新開啟原版並核對官方安裝說明。'),
+            'update_install_start_failed': ('無法啟動更新安裝程式。', '原版已保留；請重新開啟程式後重試。'),
+            'update_parent_timeout': ('原程式未在期限內退出，更新已中止。', '未強制結束任何程序；請正常關閉程式後重試。'),
+            'update_app_running': ('仍有 MarkAuto 程序持有安裝鎖，更新已中止。', '請正常關閉所有 MarkAuto 視窗後重試。'),
+            'update_restart_failed': ('安裝完成，但無法自動開啟新版程式。', '請使用桌面或開始功能表捷徑手動開啟 MarkAuto。'),
+            'autostart_read_failed': ('無法讀取開機自動啟動設定。', '請檢查目前 Windows 使用者的登錄權限後重試。'),
+            'autostart_write_failed': ('無法儲存開機自動啟動設定。', '原設定已保留；請檢查目前 Windows 使用者的登錄權限。'),
+            'autostart_remove_failed': ('無法移除開機自動啟動設定。', '設定可能仍啟用；請檢查目前 Windows 使用者的登錄權限後重試。'),
+        }
+        for code, (explanation, action) in m4a_additions.items():
+            self.assertEqual(payload.pop(code), [explanation, action, f'{explanation} {action}（錯誤代碼：{code}）'])
         # D6 adds a not-found message; retain every historical byte assertion.
         reference = payload.pop('agent_reference_not_found')
         self.assertEqual(
