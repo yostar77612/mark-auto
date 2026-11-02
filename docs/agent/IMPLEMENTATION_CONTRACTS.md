@@ -7646,3 +7646,16 @@ failure bound if dispatch never occurs. The real deadline check and cleanup run
 unchanged; the original under-one-second return, retiring worker, absent receipt,
 empty cache and complete missing-range assertions remain. No production behavior,
 SDK access, execution policy or acceptance score changes.
+
+## U4 desktop risk and automatic execution presentation (2026-11-02)
+
+The desktop consumes merged account risk/preflight/automatic/daily View contracts.
+Persistent Cancel-default STOP_NEW retains protective exits. Explicit accepted
+AUTO_RECONCILE for the active scope precedes separate user-confirmed AUTO_RESUME;
+no reconciliation automatically resumes. AUTO_RESUME is pinned among LIVE order
+actions and refused by controls, handler and command boundary. Settings send typed
+AccountRiskLimits through existing SAVE_ACCOUNT_RISK; edited account drafts survive
+polling. WAITING_SESSION is neutral scheduling, not a resume request. Daily signal
+target dates/windows/phases remain backend facts; UNKNOWN never resends and
+DISPATCHED never claims a fill. No new engine or IPC contract is introduced.
+Strings phase68 orders3032–3085. Evidence: docs/analysis/u4-automatic/verification.md.
