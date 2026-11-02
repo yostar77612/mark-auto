@@ -19,11 +19,13 @@ from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.models import HoldingKind, InstrumentSpec, Market, Side
-from quantlab.trading.domain.stock_history import CorporateAction, DailyStockBar, price_series
+from quantlab.trading.domain.stock_history import CashDividendAction, CorporateAction, DailyStockBar, price_series
 from quantlab.trading.domain.strategy import CompletedBar, ResearchEvidence
 from quantlab.trading.domain.validation import DomainError
 
 PRODUCER = 'markauto-official-stock-training-1'
+CASH_PRODUCER = 'markauto-official-stock-cash-training-1'
+CASH_METHOD = 'gross-issuer-cash-accrual-v1'
 MAX_BARS = 6000
 
 
@@ -54,6 +56,31 @@ class StockResearchArtifact:
     instrument: InstrumentSpec
     calendar: TradingCalendar
     profile: ProducerProfile
+
+
+@dataclass(frozen=True)
+class CashEntitlement:
+    event_index: int
+    trade_index: int
+    quantity: int
+    gross_amount: Decimal
+
+
+@dataclass(frozen=True)
+class CashEntitlementSummary:
+    """Separate gross accrual; payable is scheduled, never verified bank cash."""
+
+    as_of: date
+    entitlements: tuple[CashEntitlement, ...]
+    gross_entitlement: Decimal
+    gross_payable: Decimal
+    gross_receivable: Decimal
+    raw_net_plus_entitlement: Decimal
+
+
+@dataclass(frozen=True)
+class CashStockResearchArtifact(StockResearchArtifact):
+    cash_accounting: CashEntitlementSummary
 
 
 def artifact_material(result, metadata, events, fees, treatment, strategy, instrument, calendar, profile):
@@ -172,3 +199,4 @@ def backtest_stock(
 
 
 register(StockTaxTreatment, StockResearchArtifact, CorporateAction, DailyStockBar)
+register(CashDividendAction, CashEntitlement, CashEntitlementSummary, CashStockResearchArtifact)

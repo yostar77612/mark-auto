@@ -59,6 +59,26 @@ class CorporateAction:
 
 
 @dataclass(frozen=True)
+class CashDividendAction(CorporateAction):
+    """Explicit cash-only issuer distribution, not inferred from a price ratio.
+
+    The source adapter must establish that no share/rights component exists.
+    Payment date is a supplied schedule, not proof of net bank settlement.
+    Original CorporateAction wire fields remain unchanged for old evidence.
+    """
+
+    cash_per_share: Decimal
+    payment_date: date
+
+    def __post_init__(self):
+        super().__post_init__()
+        decimal_value(self.cash_per_share, 'gross cash per share', positive=True)
+        trading_date(self.payment_date)
+        if self.payment_date < self.ex_date:
+            raise DomainError('validation_failed', 'cash payment precedes entitlement')
+
+
+@dataclass(frozen=True)
 class StockPriceSeries:
     bars: tuple[DailyStockBar, ...]
     mode: str
