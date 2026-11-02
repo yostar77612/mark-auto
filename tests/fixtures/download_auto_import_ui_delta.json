@@ -653,26 +653,6 @@
       "added": [
         {
           "row": {
-            "file": "tests/test_r7_characterization.py",
-            "kind": "setattr",
-            "line": 74,
-            "name": "_busy",
-            "receiver": "shell"
-          },
-          "count": 1
-        },
-        {
-          "row": {
-            "file": "tests/test_r7_characterization.py",
-            "kind": "setattr",
-            "line": 74,
-            "name": "_safe",
-            "receiver": "shell"
-          },
-          "count": 1
-        },
-        {
-          "row": {
             "file": "tests/test_market_terminal_service.py",
             "kind": "assignment",
             "line": 66,
@@ -888,6 +868,26 @@
             "line": 108,
             "name": "bars",
             "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 75,
+            "name": "_busy",
+            "receiver": "shell"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_r7_characterization.py",
+            "kind": "setattr",
+            "line": 75,
+            "name": "_safe",
+            "receiver": "shell"
           },
           "count": 1
         }
