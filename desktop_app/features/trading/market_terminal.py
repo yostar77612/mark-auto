@@ -11,6 +11,7 @@ from desktop_app.features.trading.market_terminal_rows import number, price_numb
 from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
 from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiCommand, UiAction
 from quantlab.trading.domain.watch import FIXED_INDICES
+from quantlab.trading.domain.validation import DomainError
 
 
 class MarketTerminalWidget(QWidget):
@@ -83,7 +84,7 @@ class MarketTerminalWidget(QWidget):
         view = self._view(self.current_instrument)
         instrument = directory.get(self.current_instrument)
         name = instrument.code + ' ' + instrument.name if instrument is not None else self.current_instrument
-        freshness = ui_text('terminal.history_only') if self._history_only else state_label(view.health.freshness)
+        freshness = ui_text('connection.failure.history_only') if self._history_only else state_label(view.health.freshness)
         self.title.setText(
             ' '.join(
                 (
@@ -151,8 +152,14 @@ class MarketTerminalWidget(QWidget):
         key, period, generation = self.current_instrument, self.period, self._generation
 
         def operation():
-            accepted = self.facade.select_market_instrument(key, period)
-            return accepted, self.facade.snapshot(), self.facade.market_status()
+            failure = ''
+            try:
+                accepted = self.facade.select_market_instrument(key, period)
+            except DomainError as error:
+                if error.code != 'market_data_subscription_failed':
+                    raise
+                accepted, failure = False, error.code
+            return accepted, self.facade.snapshot(), self.facade.market_status(), failure
 
         def completed(value, error):
             self._selecting = False
@@ -161,9 +168,11 @@ class MarketTerminalWidget(QWidget):
                 self.select_instrument(self.current_instrument, self._occurred_at)
                 return
             if error is None and generation == self._generation:
-                accepted, state, self._terminal_status = value
+                accepted, state, self._terminal_status, failure = value
                 self._history_only = accepted is False and self._terminal_status.connected
                 self.render(state)
+                if failure:
+                    self.show_message(ui_text('connection.failure.subscription') if self._terminal_status.connected else ui_text('watch.disconnected'))
 
         self._submit(operation, completed)
 

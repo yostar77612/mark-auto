@@ -42,6 +42,7 @@ class DownloadImportContractTests(unittest.TestCase):
             'layered_paths/slice2_service_relocations.json': '84ae8661fa7c367fcf394826cf3b9eb0af64d8ace3a5a88e7a7a1f90d7425734',
             'page_services_inventory.json': '9b5ab2362ba2ea7c14ecdda986e3f79bf8a0d03dbb8bb217814cc7501da82b18',
             'r7_base.json': '4507e432e092fc2f1921468ceee4e5f2730f81aa96cf067ad3c5ce00b8c895ba',
+            'page_service_observer_symbols.json': '87dfd3bb323db0f3540f8639f948b58be38e6e96e01973d114e11ead90b97aa6',
             'ui_redesign_characterization_delta.json': 'b5fa49227f1ec94b22661aa5769e0183d84e207227f4ac90d24ac3c1e1ac96f5',
         }
         for name, sha in expected.items():

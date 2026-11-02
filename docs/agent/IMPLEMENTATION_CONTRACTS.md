@@ -7920,6 +7920,7 @@ the modal, clears its cached snapshot and navigates without a command; reopening
 uses the current snapshot. Existing form admission, creation and LIVE gates remain.
 No engine/IPC change. Strings phase70/orders3104–3107; evidence:
 docs/analysis/strategy-market-empty/verification.md.
+
 ## M2-3d CI performance correction: calculated values are not admission
 
 Native official-daily deployment and pump preparation compute immutable daily
@@ -7933,3 +7934,16 @@ Ordinary preparation exceptions return `daily_signal_source_unverified` without
 marking the financial journal failed. No new UiAction, IPC operation or error code.
 Only construction of the immutable bundled maintenance calendar is memoized;
 date-sensitive preflight and connection checks still run on every snapshot.
+
+## Connection failure stage presentation (2026-11-03)
+
+Existing error boundaries distinguish broker_login_failed/market_data_login_failed
+before login returns, broker_initialization_failed after successful login, and
+market_data_subscription_failed for a connected subscription failure. ErrorText
+and the desktop provide the corresponding next step without raw SDK details.
+Expiry/permission/reconciliation/cleanup classifications retain their precedence.
+A selection subscription failure displays history-only feedback only while the
+fresh status remains connected; connection loss retains disconnected guidance.
+No call sequence, retry, automatic execution, order action or IPC shape changes.
+Strings phase71/orders3108–3110; evidence:
+docs/analysis/connection-failures/verification.md.

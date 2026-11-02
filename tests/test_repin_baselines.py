@@ -61,20 +61,24 @@ class PureHelperTests(unittest.TestCase):
         self.assertEqual(repin.catalog_changes(old, reordered)[2], ['key_order of existing keys was reordered'])
 
     def test_observer_delta_pins_exact_moves_and_refuses_real_service_changes(self):
-        def point(line, name='x'):
-            return {'file': 'tests/t.py', 'kind': 'patch', 'line': line, 'name': name, 'receiver': 'r'}
+        def point(symbol, name='x'):
+            return {'file': 'tests/t.py', 'kind': 'patch', 'symbol': symbol, 'occurrence': 1, 'name': name, 'receiver': 'r'}
 
         alias = {'name': 'bars', 'page': 'data_page', 'attribute': 'bars', 'patch_sensitive': False}
-        pre = {'services': [], 'state_copies': [], 'aliases': [alias], 'patch_points': [point(1), point(2, 'y'), point(2, 'y')]}
-        cur = {**pre, 'aliases': [{**alias, 'patch_sensitive': True}], 'patch_points': [point(4), point(2, 'y'), point(2, 'y')]}
+        pre = {'services': [], 'state_copies': [], 'aliases': [alias], 'patch_points': [point('Case.one'), point('Case.two', 'y'), point('Case.two', 'y')]}
+        cur = {**pre, 'aliases': [{**alias, 'patch_sensitive': True}], 'patch_points': [point('Case.four'), point('Case.two', 'y'), point('Case.two', 'y')]}
         patch_points, aliases, blockers = repin.observer_delta(pre, cur, NO_PREVIOUS)
         self.assertEqual(blockers, [])
-        self.assertEqual(patch_points, {'removed': [{'row': point(1), 'count': 1}], 'added': [{'row': point(4), 'count': 1}]})
+        self.assertEqual(patch_points, {'removed': [{'row': point('Case.one'), 'count': 1}], 'added': [{'row': point('Case.four'), 'count': 1}]})
         self.assertEqual(aliases, [{'original': alias, 'current': {**alias, 'patch_sensitive': True}}])
         self.assertEqual(repin.observer_delta(pre, pre, NO_PREVIOUS)[0], {'removed': [], 'added': []})
         self.assertTrue(repin.observer_delta(pre, {**cur, 'services': [{'name': 'new'}]}, NO_PREVIOUS)[2])
-        later = repin.observer_delta(pre, {**cur, 'patch_points': [point(9), point(4), point(2, 'y'), point(2, 'y')]}, patch_points)[0]
-        self.assertEqual([item['row']['line'] for item in later['added']], [4, 9], 'existing rows keep their place, new rows are sorted after them')
+        later = repin.observer_delta(
+            pre, {**cur, 'patch_points': [point('Case.nine'), point('Case.four'), point('Case.two', 'y'), point('Case.two', 'y')]}, patch_points
+        )[0]
+        self.assertEqual(
+            [item['row']['symbol'] for item in later['added']], ['Case.four', 'Case.nine'], 'existing rows keep their place, new rows are sorted after them'
+        )
         renamed = {**cur, 'aliases': [{**alias, 'attribute': 'other', 'patch_sensitive': True}]}
         self.assertTrue(repin.observer_delta(pre, renamed, NO_PREVIOUS)[2])
 

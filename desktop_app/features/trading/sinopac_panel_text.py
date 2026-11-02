@@ -25,6 +25,7 @@ def reason_text(code):
         'broker_permission_missing': ui_text('m2.connection.permission_denied'),
         'api_key_expired': ui_text('m2.maintenance.expired'),
         'broker_login_failed': ui_text('m2.connection.login_failed'),
+        'broker_initialization_failed': ui_text('connection.failure.initialization'),
         'market_sdk_missing': market_connection_guidance('market_sdk_missing'),
         'connection_timeout': ui_text('m2.connection.timeout'),
         'session_lost': ui_text('m2.connection.session_lost'),

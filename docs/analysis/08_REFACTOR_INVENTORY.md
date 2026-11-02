@@ -943,6 +943,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/daily_execution.py` | 94 | presentation | `desktop_app/features/trading/daily_execution.py` | U4 risk, preflight and daily execution presentation |
 | `desktop_app/strings/automatic_risk.py` | 63 | shared | `desktop_app/strings/automatic_risk.py` | U4 risk, preflight and daily execution presentation |
 | `desktop_app/strings/strategy_market_empty.py` | 8 | shared | `desktop_app/strings/strategy_market_empty.py` | A strategy market empty guidance |
+| `desktop_app/strings/connection_failures.py` | 7 | shared | `desktop_app/strings/connection_failures.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

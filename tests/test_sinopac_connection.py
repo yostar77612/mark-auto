@@ -160,6 +160,7 @@ class UnifiedConnectionTests(unittest.TestCase):
         self.assertIsNone(self.owner.shared)
         self.assertIsNone(self.owner.session)
         self.assertEqual(sum(call[0] == 'logout' for call in self.api.calls), 1)
+        self.assertEqual(self.owner.snapshot().error_code, 'broker_initialization_failed')
         self.assertNotIn('PRIVATE_PERSON', repr(self.owner.snapshot()))
 
     def test_late_account_query_cannot_persist_selection(self):

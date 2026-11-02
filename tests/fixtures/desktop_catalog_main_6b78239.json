@@ -3108,7 +3108,10 @@
       "strategy.empty.disconnected": "尚未連線，無法取得可交易商品。請先到設定頁連線，或切換至本機模擬。",
       "strategy.empty.catalog": "目前環境沒有可交易商品。請到設定頁檢查連線與商品目錄，或切換至本機模擬。",
       "strategy.empty.local": "本機模擬目前沒有可交易商品。請到設定頁確認執行環境。",
-      "strategy.empty.settings": "前往設定"
+      "strategy.empty.settings": "前往設定",
+      "connection.failure.initialization": "登入成功，但初始化失敗。請查看診斷後重試連線。",
+      "connection.failure.subscription": "行情訂閱失敗。連線成功，該商品僅能看歷史資料；請查看診斷後重試。",
+      "connection.failure.history_only": "僅歷史資料"
     }
   },
   "aliases": {
@@ -7545,6 +7548,9 @@
       "strategy.empty.catalog": "目前環境沒有可交易商品。請到設定頁檢查連線與商品目錄，或切換至本機模擬。",
       "strategy.empty.local": "本機模擬目前沒有可交易商品。請到設定頁確認執行環境。",
       "strategy.empty.settings": "前往設定",
+      "connection.failure.initialization": "登入成功，但初始化失敗。請查看診斷後重試連線。",
+      "connection.failure.subscription": "行情訂閱失敗。連線成功，該商品僅能看歷史資料；請查看診斷後重試。",
+      "connection.failure.history_only": "僅歷史資料",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -11977,7 +11983,10 @@
     "strategy.empty.disconnected",
     "strategy.empty.catalog",
     "strategy.empty.local",
-    "strategy.empty.settings"
+    "strategy.empty.settings",
+    "connection.failure.initialization",
+    "connection.failure.subscription",
+    "connection.failure.history_only"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

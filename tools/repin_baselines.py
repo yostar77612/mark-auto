@@ -38,7 +38,7 @@ CATALOG_TEST = 'tests/test_desktop_catalog_split.py'
 INVENTORY_DOC = 'docs/analysis/08_REFACTOR_INVENTORY.md'
 LAYER_TEST = 'tests/test_layer_gate.py'
 APPEARANCE_TEST = 'tests/test_b4_appearance.py'
-OBSERVER_DELTA = 'tests/fixtures/download_auto_import_ui_delta.json'
+OBSERVER_DELTA = 'tests/fixtures/page_service_observer_delta.json'
 DEFAULT_NOTE = 'Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained.'
 
 
@@ -259,17 +259,18 @@ def stylesheet_plan(root: Path) -> Plan:
     return plan
 
 
-# --- observers: patch-point line/identity pins of the page service inventory ---
+# --- observers: qualified owner/occurrence pins; historical line tables stay frozen ---
 
 OBSERVER_CODE = """
 import copy, json
-from tests.page_services_inventory import ROOT, FIXTURE, inventory, reviewed_inventory
+from tests.page_services_inventory import ROOT, FIXTURE, symbolic_inventory, reviewed_symbolic_inventory
 delta = json.loads((ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))['inventory']
+delta.update(json.loads((ROOT / 'tests/fixtures/page_service_observer_delta.json').read_text(encoding='utf-8'))['inventory'])
 neutral = copy.deepcopy(delta)
-neutral['m1_patch_points'] = {'removed': [], 'added': []}
-neutral['m1_aliases'] = []
-pre = reviewed_inventory(json.loads(FIXTURE.read_text(encoding='utf-8')), neutral)
-sys.stdout.buffer.write(json.dumps({'pre': pre, 'cur': inventory()}, ensure_ascii=False).encode('utf-8'))
+neutral['symbol_patch_points'] = {'removed': [], 'added': []}
+neutral['symbol_aliases'] = []
+pre = reviewed_symbolic_inventory(json.loads(FIXTURE.read_text(encoding='utf-8')), neutral)
+sys.stdout.buffer.write(json.dumps({'pre': pre, 'cur': symbolic_inventory()}, ensure_ascii=False).encode('utf-8'))
 """
 
 
@@ -281,12 +282,14 @@ def counted(rows: Counter, previous: list[dict]) -> list[dict]:
     """Rows still present keep their committed position (minimal diffs); new rows follow in sorted order."""
     kept = [item['row'] for item in previous if row_key(item['row']) in rows]
     known = {row_key(row) for row in kept}
-    fresh = sorted((json.loads(key) for key in rows if key not in known), key=lambda r: (r['file'], r['line'], r['name'], r['kind'], r['receiver']))
+    fresh = sorted(
+        (json.loads(key) for key in rows if key not in known), key=lambda r: (r['file'], r['symbol'], r['occurrence'], r['name'], r['kind'], r['receiver'])
+    )
     return [{'row': row, 'count': rows[row_key(row)]} for row in kept + fresh]
 
 
 def observer_delta(pre: dict, cur: dict, previous: dict) -> tuple[dict, list[dict], list[str]]:
-    """The m1 sections that turn the reviewed inventory into the current one."""
+    """The symbolic sections that turn the reviewed inventory into the current one."""
     blockers = [f'{key} changed; that is a real page service change, not an observer move' for key in ('services', 'state_copies') if pre[key] != cur[key]]
     changes = []
     if len(pre['aliases']) != len(cur['aliases']):
@@ -307,10 +310,10 @@ def observer_plan(root: Path) -> Plan:
     evaluated = json.loads(run_python(root, OBSERVER_CODE))
     original = read(root, OBSERVER_DELTA)
     delta = json.loads(original)
-    committed = delta['inventory']['m1_patch_points']
+    committed = delta['inventory']['symbol_patch_points']
     patch_points, aliases, plan.blockers = observer_delta(evaluated['pre'], evaluated['cur'], committed)
-    delta['inventory']['m1_patch_points'] = patch_points
-    delta['inventory']['m1_aliases'] = aliases
+    delta['inventory']['symbol_patch_points'] = patch_points
+    delta['inventory']['symbol_aliases'] = aliases
     pins = {side: {row_key(item) for item in patch_points[side]} for side in patch_points}
     old = {side: {row_key(item) for item in committed[side]} for side in committed}
     for side in ('removed', 'added'):

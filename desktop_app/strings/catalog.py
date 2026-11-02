@@ -243,6 +243,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[69])
 # Lane A: an empty strategy market needs a next step.
 ZH_TW.update(_ZH_TW_CHUNKS[70])
 
+# Lane B: sanitized login, initialization and subscription failure copy.
+ZH_TW.update(_ZH_TW_CHUNKS[71])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.
