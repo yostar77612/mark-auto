@@ -34,6 +34,8 @@ register(HistoricalContractEvidence, MinuteResearchSettings, MinuteResearchResul
 
 
 def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
+    if strategy.parameters is not None:
+        raise DomainError('capability_missing', 'typed strategy parameters are not supported by minute research')
     if not isinstance(settings, MinuteResearchSettings) or not is_tmf_contract(spec):
         raise DomainError('capability_missing', 'minute training requires an explicit TMF contract')
     if strategy.form.instrument_id != spec.instrument_id or strategy.form.market is not spec.market:
@@ -45,8 +47,8 @@ def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
     sessions = settings.sessions(calendar)
     evidence = settings.historical_contract
     if (
-        evidence is not None and not evidence.covers(spec, sessions[0].opens_at, sessions[-1].closes_at)
-        or evidence is None and sessions[0].opens_at < spec.effective_at
+        (evidence is not None and not evidence.covers(spec, sessions[0].opens_at, sessions[-1].closes_at))
+        or (evidence is None and sessions[0].opens_at < spec.effective_at)
     ):
         raise DomainError('instrument_unresolved', 'historical contract applicability is unknown')
     return sessions

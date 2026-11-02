@@ -16,7 +16,7 @@ from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.minute_research import TAIPEI, MinuteResearchSettings, complete_minutes
 from quantlab.trading.domain.models import Environment, HoldingKind, HoldingPolicy, Side
-from quantlab.trading.domain.strategy import Rule, StrategyDefinition
+from quantlab.trading.domain.strategy import Rule, StrategyDefinition, StrategyParameters
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.build import synthetic_catalog
 from quantlab.trading.runtime.research_worker import ResearchJob, SpawnResearchRunner
@@ -92,6 +92,31 @@ class MinuteResearchTests(unittest.TestCase):
         self.assertEqual((result.trades[0].entry_index, result.trades[0].exit_index), (1, 2))
         with self.assertRaises(DomainError):
             self.bars(settings, self.rows[:-1])
+
+    def test_typed_parameters_fail_closed_for_both_minute_intervals(self):
+        for interval in ('1m', '5m'):
+            settings = replace(self.settings, interval=interval)
+            parameters = StrategyParameters(interval, Decimal('0.01'), Decimal('100000'), contracts=3)
+            definition = StrategyDefinition(
+                'minute-fixture',
+                1,
+                self.spec.market,
+                self.strategy.policy,
+                interval,
+                'LONG_ONLY',
+                (Rule('close', 'GT', Decimal('0')),),
+                (Rule('close', 'LT', Decimal('1')),),
+                self.fees.version,
+                'fixture-risk',
+            )
+            for rules in (None, definition):
+                legacy = replace(self.strategy, definition=rules)
+                with self.subTest(interval=interval, definition=rules is not None):
+                    self.assertTrue(self.run_research(settings=settings, strategy=legacy).trades)
+                    for typed in (parameters, replace(parameters, contracts=1, instrument_rule='TMF_NEAR')):
+                        with self.assertRaisesRegex(DomainError, 'typed strategy parameters') as raised:
+                            self.run_research(settings=settings, strategy=replace(legacy, parameters=typed))
+                        self.assertEqual(raised.exception.code, 'capability_missing')
 
     def test_no_current_close_leakage(self):
         rule = Rule('close', 'GT', Decimal('20005'))

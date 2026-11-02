@@ -7289,6 +7289,11 @@ payload hashes, schema, raw grid and input fingerprints. The recent in-memory
 view is bounded to32; older immutable rows remain readable by sequence. The
 storage adapter knows only bounded text; typed codecs stay in runtime/application
 so no layer exception is added.
+### M2-7：新主線 typed 參數相容性邊界（2026-11-02）
+
+`StrategyRecord.parameters` 非空時，1m／5m admission 一律以 `capability_missing` 拒絕，發生在回補、worker 與證據發布之前。現有 minute engine 尚未實作 typed stop、entry amount、contracts、近月規則，不能用 legacy 訊號／單口結果冒充；有無 legacy definition 均相同。parameters 為 None 的既有研究保持原語意與結果。
+
+
 ## M2-4 engine contract (2026-11-02)
 
 - New typed creation: `UiAction.CREATE_TYPED_STRATEGY`, `UiCommand.strategy` and
