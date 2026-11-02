@@ -51,6 +51,9 @@ class DailyAccountClose:
     source_id: str = 'APP_VERIFIED_DAY_CLOSE_V1'
     consumed_on: date | None = None
     invalidated: bool = False
+    closing_quote_refs: tuple[str, ...] = ()
+    order_digest: str = ''
+    order_count: int = 0
 
 
 def _assert_provider(engine):
@@ -99,6 +102,12 @@ def _financial_fingerprint(engine, reference, instrument_id=None):
 def _changed(engine, close):
     if close.fee_fingerprint != fee_fingerprint(engine.fees):
         return True
+    if close.order_digest:
+        from .daily_retention import order_digest
+
+        if order_digest(engine, close.account_ref, close.as_of) != (close.order_digest, close.order_count):
+            return True
+        return close.consumed_on is None and close.ledger_fingerprint != _financial_fingerprint(engine, close.account_ref)
     previous = dict(close.order_fingerprints)
     current = {order.order_id: order for order in engine.state.orders if order.plan.account_ref == close.account_ref}
     if any(order_id not in current or _order_fingerprint(engine, current[order_id]) != fingerprint for order_id, fingerprint in previous.items()):
@@ -109,12 +118,9 @@ def _changed(engine, close):
 
 
 def _invalidate(engine, keys):
-    from .automatic_state import pause
+    from .daily_retention import invalidate_daily_projection
 
-    rows = tuple(replace(row, invalidated=True) if (row.account_ref, row.trade_date) in keys else row for row in engine.state.daily_account_closes)
-    automatic = pause(engine.state.automatic, 'daily_close_unverified')
-    issues = tuple(sorted(set((*engine.state.issues, 'daily_close_unverified'))))
-    proposed = replace(engine.state, daily_account_closes=rows, automatic=automatic, stopped=True, issues=issues)
+    proposed = invalidate_daily_projection(engine.state, keys)
     if proposed != engine.state:
         engine._persist('daily_close_invalidated', proposed)
 
@@ -188,18 +194,24 @@ def _seal_account(engine, reference, day, calendar):
     pnl += sum(
         (liquidation_value(engine.catalog.resolve(lot.instrument_id), lot, quotes[lot.instrument_id], engine.fees) for lot in lots if lot.quantity), ZERO
     )
+    from .daily_retention import order_digest
+
+    digest, count = order_digest(engine, reference, session.closes_at)
     close = DailyAccountClose(
         reference,
         day,
         session.closes_at,
         now,
         pnl,
-        marks,
+        (),
         _financial_fingerprint(engine, reference),
-        tuple((order.order_id, _order_fingerprint(engine, order)) for order in orders),
+        (),
         calendar.calendar_id,
         calendar.version,
         fee_fingerprint(engine.fees),
+        closing_quote_refs=tuple(mark.quote.instrument_id for mark in marks),
+        order_digest=digest,
+        order_count=count,
     )
     engine._persist('daily_account_close_sealed', replace(engine.state, daily_account_closes=(*engine.state.daily_account_closes, close)))
 
@@ -210,9 +222,9 @@ def observe_daily_closes(engine: 'TradingEngine', bars: tuple[LiveBar, ...]) -> 
 
     with engine.lock:
         _assert_provider(engine)
-        changed = {(row.account_ref, row.trade_date) for row in engine.state.daily_account_closes if not row.invalidated and _changed(engine, row)}
-        if changed:
-            _invalidate(engine, changed)
+        from .daily_retention import compact_daily_state
+
+        compact_daily_state(engine)
         guard = getattr(engine, 'automatic_submission_guard', None)
         if not callable(guard):
             raise DomainError('capability_missing', 'current owner read guard required')

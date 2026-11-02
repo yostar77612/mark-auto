@@ -7623,8 +7623,10 @@ mutex disappearance, research QLockFile reacquisition and journal lease reopenin
 - Daily data retention uses a named conservative default of20 verified trading
   days. Consumed old closes may move to compact account audit anchors, never
   hiding old-order economic changes. New closes reference frozen quotes instead
-  of embedding copies; terminal expired signals may move to compact summaries
-  only when no unresolved/active canonical order still needs them. Full journal
+  of embedding copies; terminal expired signals leave the current projection
+  only when no unresolved/active canonical order still needs them. Retained
+  evaluation cursors, canonical orders and full journal keep their identity;
+  current state keeps one latest account audit anchor. Full journal
   history remains the audit authority; old payloads gain empty-default fields.
 - LIVE remains hard-disabled. No desktop_app/ edits or new send/resend path.
   This PR must remain open for Claude review after complete green final-head CI.

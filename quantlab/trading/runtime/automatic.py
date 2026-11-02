@@ -18,7 +18,7 @@ from .preflight import sinopac_preflight_facts
 
 MAX_QUEUED_BATCHES = 4096
 MAX_BATCH_BARS = 4096
-AUTOMATIC_ACTIONS = frozenset((UiAction.AUTO_RESUME, UiAction.AUTO_RECONCILE))
+AUTOMATIC_ACTIONS = frozenset((UiAction.AUTO_RESUME, UiAction.AUTO_RECONCILE, UiAction.DECLARE_DAILY_NOT_SENT))
 
 
 def _facts_reason(facts):
@@ -332,7 +332,12 @@ class AutomaticRuntime:
                     and command.account_ref not in engine.gateways
                 ):
                     raise DomainError('state_conflict')
-                if command.action is UiAction.AUTO_RESUME:
+                resolved_reference = ''
+                if command.action is UiAction.DECLARE_DAILY_NOT_SENT:
+                    from quantlab.trading.application.daily_resolution import declare_daily_not_sent
+
+                    resolved_reference = declare_daily_not_sent(engine, command.daily_not_sent, account_ref=command.account_ref)
+                elif command.action is UiAction.AUTO_RESUME:
                     reason = self._health_reason(engine)
                     if reason:
                         automatic.pause_automatic(engine, reason)
@@ -348,7 +353,7 @@ class AutomaticRuntime:
                     automatic.resume_automatic(engine)
                 else:
                     automatic.reconcile_automatic(engine)
-            return UiReceipt(True, 'completed', '')
+            return UiReceipt(True, 'daily_declared_not_sent' if command.action is UiAction.DECLARE_DAILY_NOT_SENT else 'completed', '', resolved_reference)
         except DomainError as error:
             return UiReceipt(False, error.code, '')
 
