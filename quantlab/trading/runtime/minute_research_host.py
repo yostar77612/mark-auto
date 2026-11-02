@@ -83,7 +83,6 @@ def run_minute_research(bundle, strategy, settings, *, calendar, deadline, cance
             bundle.minute_research_active = None
 
 
-
 def _calculate_and_publish(bundle, original, strategy, settings, calendar, deadline, budget, history, runner):
     engine, context, spec, fees, sessions, _, _ = original
     service = MinuteResearchService(bundle.kline_store, history, runner)
@@ -103,6 +102,7 @@ def _calculate_and_publish(bundle, original, strategy, settings, calendar, deadl
     receipt = MinuteResearchReceipt(result, strategy, spec, calendar, fees, profile, rows, context.clock.now())
     _publish(bundle, original, strategy, settings, calendar, budget, receipt)
     return receipt
+
 
 def _publish(bundle, original, strategy, settings, calendar, budget, receipt):
     with bundle.lock:
