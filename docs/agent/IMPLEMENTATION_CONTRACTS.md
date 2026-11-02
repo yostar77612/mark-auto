@@ -7603,6 +7603,34 @@ Existing engine stop/reconciliation semantics and LIVE prohibition are unchanged
 Real-process regressions cover active subscriptions, in-flight history, native
 mutex disappearance, research QLockFile reacquisition and journal lease reopening.
 
+## M2-3c review-fix owner operation and retention contract (2026-11-02)
+
+- `UiAction.DECLARE_DAILY_NOT_SENT` is an explicit owner operation. Append
+  `UiCommand.daily_not_sent: DailyNotSentForm | None = None`; the form contains
+  `intent_key` and `confirmed=False`. Append empty-default
+  `DailyIntentView.intent_key` for exact selection across IPC/UTC round trips.
+  No client-supplied reconciliation result, price or no-send proof is accepted.
+- Confirmation, fresh healthy same-owner complete reconciliation, and verified
+  journal proof that the dispatch key never persisted `order_submitting` are all
+  required. A matching broker tag or semantic order prohibits declaration.
+  Only a no-order CLAIMED/UNKNOWN daily intent can become KNOWN_NO_ORDER. Keep
+  the journal, reservations and all financial rows; stay stopped and paused,
+  revoke authorization, never dispatch/retry/resume. AUTO_RECONCILE retains its
+  existing behavior and never implicitly declares an unknown dispatch unsent.
+- New codes: `daily_not_sent_confirmation_required`, `daily_not_sent_unproven`,
+  `daily_not_sent_order_found`, `daily_declared_not_sent`. Existing freshness,
+  state-conflict, reconciliation and LIVE rejection codes remain authoritative.
+- Daily data retention uses a named conservative default of20 verified trading
+  days. Consumed old closes may move to compact account audit anchors, never
+  hiding old-order economic changes. New closes reference frozen quotes instead
+  of embedding copies; terminal expired signals leave the current projection
+  only when no unresolved/active canonical order still needs them. Retained
+  evaluation cursors, canonical orders and full journal keep their identity;
+  current state keeps one latest account audit anchor. Full journal
+  history remains the audit authority; old payloads gain empty-default fields.
+- LIVE remains hard-disabled. No desktop_app/ edits or new send/resend path.
+  This PR must remain open for Claude review after complete green final-head CI.
+
 ## U3 desktop typed strategy presentation (2026-11-02)
 
 The wizard selects the holding kind before market/product and consumes the merged
@@ -7655,3 +7683,47 @@ Update checks remain user triggered. A new release offers explicit download/inst
 The update handoff reuses normal close, confirms owned engines exited, releases the install guard and waits for desktop exit before running the quiet installer. Shutdown failure/timeout cancels installation; no process is forcibly terminated. Installer nonzero exit and restart failures remain explicit errors. Existing workspace/settings are never a download or cleanup destination.
 
 Autostart defaults off and only manages the current user's Run value named MarkAuto. Enabled paths repair on installed launch; disabling removes only that value. Startup does not resume trading or new entries. Sleep/shutdown cannot run trading. LIVE remains hard-disabled; G3 locked files and trading logic remain unchanged. Full CI and Windows installer validation must pass; Claude review is required before owner merge.
+
+## M3-3 application contract (2026-11-02)
+
+- Candidate intake accepts only an engine-resolved candidate reference, an E1
+  qualification supplied by CandidateCatalog, and explicit complete TRAINING E2
+  data. Statistical-edge verdict, consumed qualification, sample presence, TMF
+  daily qualification, quantity=1, no stop_ticks/target_ticks, D6 intraday TMF,
+  supported interval/sizing, window cap, ten E2 trades and account/instrument
+  uniqueness all precede the first journal write. The current production-safe
+  E1 producer is not available; no fixture asserts otherwise.
+- SignalExecutor is pure and shares M3-1 window/direction/target helpers with E2.
+  It emits absolute targets and durable per-leg keys, never submits orders.
+  Future M2 integration must gate run state/environment and close before opening
+  a reversal, preserving existing risk and unknown-outcome behavior.
+- E2 uses next-open fills, M2 fee/tick/calendar authorities, adverse stops,
+  trading-day time stops and fixed 13:35 intraday flattening. Allocation and
+  marked-equity valuation are part of behavioral evidence; source-only changes
+  alter result identity but not behavior identity. Complete E2 audit evidence
+  is retained in lifecycle events. Supplied historical interval references are
+  not source authentication. Existing worker deadlines and data refill must be
+  connected by M3-4/7 before production use.
+- Lifecycle events use the existing Journal sequence fence, with append before
+  in-memory projection. Replay restores evaluations and pauses running records.
+  Evaluation is idempotent per strategy/version/trading day; resume clears
+  eligibility and starts a new observation epoch, without reusing old eligibility.
+  Drift uses the pinned m3-thresholds-v1 exact 1.5x/floor domain rule. A changed
+  behavior pauses; source-only refresh retains the same behavior evidence.
+- No M3-3 service has broker or AI dependencies, an approval API, LIVE opt-in,
+  UI strings or engine hooks. LIVE_APPROVED does not permit new entries here.
+  Pause/retire preserve M2's protective-exit responsibility. Pure offline LOCAL
+  decisions do not produce promotion evidence. Read-only DTOs have an immutable
+  false live-availability flag and no arbitrary evidence payload for AI.
+## U4 desktop risk and automatic execution presentation (2026-11-02)
+
+The desktop consumes merged account risk/preflight/automatic/daily View contracts.
+Persistent Cancel-default STOP_NEW retains protective exits. Explicit accepted
+AUTO_RECONCILE for the active scope precedes separate user-confirmed AUTO_RESUME;
+no reconciliation automatically resumes. AUTO_RESUME is pinned among LIVE order
+actions and refused by controls, handler and command boundary. Settings send typed
+AccountRiskLimits through existing SAVE_ACCOUNT_RISK; edited account drafts survive
+polling. WAITING_SESSION is neutral scheduling, not a resume request. Daily signal
+target dates/windows/phases remain backend facts; UNKNOWN never resends and
+DISPATCHED never claims a fill. No new engine or IPC contract is introduced.
+Strings phase68 orders3032–3085. Evidence: docs/analysis/u4-automatic/verification.md.

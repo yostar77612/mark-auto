@@ -912,6 +912,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/manual_exit_preview.py` | 113 | presentation | `desktop_app/features/trading/manual_exit_preview.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/features/trading/manual_recovery.py` | 117 | presentation | `desktop_app/features/trading/manual_recovery.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/strings/manual_review.py` | 34 | shared | `desktop_app/strings/manual_review.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
+| `quantlab/trading/application/daily_resolution.py` | 126 | application | `quantlab/trading/application/daily_resolution.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/daily_retention.py` | 155 | application | `quantlab/trading/application/daily_retention.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/strategy_controls.py` | 191 | presentation | `desktop_app/features/trading/strategy_controls.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/strategy_options.py` | 176 | presentation | `desktop_app/features/trading/strategy_options.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/strings/strategy_management.py` | 46 | shared | `desktop_app/strings/strategy_management.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
@@ -922,6 +924,15 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/autostart.py` | 89 | infrastructure | `quantlab/autostart.py` | M4a manual update and optional HKCU autostart boundary |
 | `quantlab/update_download.py` | 115 | infrastructure | `quantlab/update_download.py` | M4a manual update and optional HKCU autostart boundary |
 | `quantlab/update_install.py` | 193 | infrastructure | `quantlab/update_install.py` | M4a manual update and optional HKCU autostart boundary |
+| `quantlab/trading/application/auto_strategy_views.py` | 57 | application | `quantlab/trading/application/auto_strategy_views.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/candidate_intake.py` | 151 | application | `quantlab/trading/application/candidate_intake.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/promotion_service.py` | 308 | application | `quantlab/trading/application/promotion_service.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/signal_executor.py` | 40 | application | `quantlab/trading/application/signal_executor.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/signal_research.py` | 259 | application | `quantlab/trading/application/signal_research.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `desktop_app/features/trading/account_risk_controls.py` | 94 | presentation | `desktop_app/features/trading/account_risk_controls.py` | U4 risk, preflight and daily execution presentation |
+| `desktop_app/features/trading/automatic_status.py` | 210 | presentation | `desktop_app/features/trading/automatic_status.py` | U4 risk, preflight and daily execution presentation |
+| `desktop_app/features/trading/daily_execution.py` | 94 | presentation | `desktop_app/features/trading/daily_execution.py` | U4 risk, preflight and daily execution presentation |
+| `desktop_app/strings/automatic_risk.py` | 63 | shared | `desktop_app/strings/automatic_risk.py` | U4 risk, preflight and daily execution presentation |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

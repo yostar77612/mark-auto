@@ -234,8 +234,11 @@ ZH_TW.update(_ZH_TW_CHUNKS[66])
 # Lane U3: typed strategy management.
 ZH_TW.update(_ZH_TW_CHUNKS[67])
 
-# Lane M4a: manual update and optional autostart.
+# Lane U4: account risk and explicitly resumed automatic execution.
 ZH_TW.update(_ZH_TW_CHUNKS[68])
+
+# Lane M4a: manual update and optional autostart.
+ZH_TW.update(_ZH_TW_CHUNKS[69])
 
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 

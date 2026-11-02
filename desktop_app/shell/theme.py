@@ -533,3 +533,12 @@ def style_strategy_table(window):
         set_financial_item(window.strategies, item, strategy.today_pnl)
         if strategy.today_pnl is None:
             item.setForeground(QColor(theme_colors(window.strategies)['disabled_text']))
+
+
+def style_automatic_controls(window, state):
+    controls = window.automatic_controls
+    status = 'warning' if state.automatic.state == 'PAUSED_WAITING_RESUME' else 'neutral' if state.automatic.state == 'WAITING_SESSION' else 'success'
+    set_financial_label(controls.cards[0], state.daily_pnl if state.financial_facts_verified else None)
+    set_status(controls.header, status)
+    for label, _, _, _ in controls.panels:
+        set_status(label, status)

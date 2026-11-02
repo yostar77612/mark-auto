@@ -248,3 +248,19 @@
 
 - M4a 完整 CI 基準收斂：18 個新增 ErrorText 逐項鎖完整 render，另鎖新增來源區塊雜湊，重建後保留原 64 筆／原來源雜湊；三個 widget 名稱獨立列出後仍保留歷史集合 digest。R7 僅加入四列精準增量（focus 與四種 refresh 各四列），無刪除，r7_base 未改。
 - 新核取方塊增加預設輸入數 4→5；擴充 repin_baselines 的 settings_inputs plan 以工具集中產生這個精準數據，其他頁面數量、頁高、primary 上限與未標示輸入檢查不變。autostart 只需文字狀態，改 PlainText QLabel 消除不必要的隱藏 action 重名，補上核取方塊 tooltip。20 個錯誤／歷史集合測試、16 個 R7 測試，以及完整原失敗模組 90 個測試通過；最終兩模式 native 視窗與八張截圖皆通過。
+
+## 2026-11-02 — U4 risk and automatic execution desktop
+
+- Start independent U4 from latest merged U3 main f0e974f; append phase68 orders
+  3032–3085. Use public AccountRiskLimits/DTOs/actions only; never change quantlab.
+- Keep accepted reconciliation proof scoped to context/epoch/environment/account/
+  trading day, require separate Cancel-default resume and retain backend admission.
+  Add AUTO_RESUME to exact LIVE action pin; no new automatic order policy.
+- PR147 is merged: render its daily intent phases/date/window now. Normal next-
+  session waiting is neutral and needs no resume; unknown outcomes never replay.
+- Preserve true unknown financial/position facts and actual geometry. Baselines
+  generated once at feature completion in a separate commit; full tests stay CI.
+- Native LOCAL7.816s/fake SIM6.891s pass, normal owned cleanup/no real SDK. CI green
+  and Claude review required before merge; Codex does not merge this order path.
+
+- 2026-11-03 M4a 合入最新 main d77a893：保留 M2/M3/U4 與 installer on-demand 的所有意圖；M4a 字串接在 U4 後，phase69、orders3086–3103，catalog 工具量測 +18／0刪／0改、總3104。合併後45字串測試及90相關回歸全通，native LOCAL/fake SIM與8張圖重驗全通。完整合併圖分析 CRITICAL（641 symbols、31 flows，partial=false、truncated=false），風險保留並交完整 CI；相對最新 main，M4a 不含任何交易source變更。

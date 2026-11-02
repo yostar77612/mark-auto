@@ -19,6 +19,7 @@ from .performance import VersionEquityTrack
 from .manual_book import ManualAcquisition, ManualBook, ManualReceivable, ManualRequest
 from .automatic_state import AutomaticState
 from .daily_closes import ClosingQuote, DailyAccountClose
+from .daily_retention import DailyCloseArchive
 
 
 @dataclass(frozen=True)
@@ -110,6 +111,7 @@ class AppState:
     automatic_daily_evidence: 'DailyBaselineEvidence | None' = None
     daily_closing_quotes: tuple[ClosingQuote, ...] = ()
     daily_account_closes: tuple[DailyAccountClose, ...] = ()
+    daily_close_archives: tuple[DailyCloseArchive, ...] = ()
 
 
 def replace_order(state: AppState, order: LocalOrder) -> AppState:

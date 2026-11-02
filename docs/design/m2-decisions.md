@@ -2283,3 +2283,104 @@ that close, reset budgets, send an order or resume. Any dispatcher uncertainty,
 minute claim, missing provenance or unknown manual observation remains blocked.
 This avoids turning a harmless pure-evaluation crash into a permanently
 unrecoverable pause while preserving unknown financial outcomes.
+
+### M2-3c: explicit no-send declaration and bounded daily projections
+
+2026-11-02 19:54 Taipei start, estimate150 minutes, R5 reassessment225 minutes.
+Base main c69d459 includes reviewed/merged PR147; branch
+codex/m2-3c-review-fixes is one PR directly to main. Never merge it autonomously;
+green CI precedes Claude review. Engine only, with unchanged LIVE hard guard.
+
+Choose a separate confirmed owner operation for the daily no-order crash gap.
+AUTO_RECONCILE remains read/reconcile-only; it cannot silently reinterpret UNKNOWN
+as no send. The new command carries only the exact intent key and confirmation;
+the server supplies current owner, cached reconciliation and journal proof.
+No order_submitting persistence AND no matching broker order are both necessary.
+Successful declaration settles the intent without changing money or resuming.
+
+Bound the daily projection with20 verified trading days and account audit digests;
+keep unconsumed, invalidated and unresolved/active canonical obligations. Old
+quotes/order lists stay decodable, but new closes use references/digests. Archive
+the projection, not the append-only audit journal. The250-day/30-instrument test
+must preserve late old-order fee/fill detection and unchanged reconciliation.
+
+Pre-edit graph binds this exact worktree/index c69d459. Common contract types are
+CRITICAL110 upstream, engine HIGH94, registry MEDIUM24. Snapshot/IPC/codec and
+startup callers are source-confirmed; missing bounded process flows are no
+evidence of no impact. Initial indexing refused our diagnostic-only unowned
+directory; preserve those files separately and initialize normal owned storage.
+
+### M2-3c: final recovery proof and audit findings
+
+The explicit owner declaration inspects every verified same-environment journal
+snapshot, including orders subsequently removed from current state. It requires
+one authorized READY-to-CLAIMED transition, unchanged intent identity and a full
+sequence through the current state version. Canonical submission keys compare
+UTC and historical offset timestamps semantically, including exact exit lot.
+Freshness is checked AFTER this potentially lengthy replay, inside the current
+owner guard. A clock-advance counterexample protects that ordering. No replay
+timestamp substitutes for a fresh broker observation.
+
+Without a saved yesterday plan, any uncorrelated same-instrument/same-side broker
+order remains a candidate even when price or quantity differ. Only an exact
+local-order ID, broker reference and complete plan correlation proves an order
+belongs to a different dispatch. This preserves recovery with the known canceled
+TMF diagnostic while refusing ambiguous or partially matching records. No cash,
+reservation, order or position is removed; declaration revokes authority and
+keeps stopped/paused. Explicit user resume remains a separate existing operation.
+
+Retention uses verified DAY sessions, never calendar-day age or guessed holidays.
+Validate financial evidence before pruning, including at the first startup write
+for old closed payloads. Consumed old closes become one latest account audit
+anchor; a digest of the full pre-close canonical order economics detects later
+fills, fees, deletions and backdated orders. New rows contain quote references and
+order digest/count; empty defaults keep historical nested payloads readable.
+Unconsumed, invalidated and unresolved/active obligations remain available.
+The 250-day/30-instrument regression bounds the normal consumed projection below
+2 MiB and limits final-100-day variation to under1000 bytes. This does not bound
+an indefinitely unresolved audit backlog, canonical order history or journal.
+
+S1 audit finds no verified official/adjusted historical bridge into typed broker
+automation today. Raw live-minute completeness and the13:30 call auction prevent
+claiming equivalence with official daily data. Actual6225 illiquid-day and2330
+ex-dividend public fixtures demonstrate the coverage/basis risks. Preserve strict
+incomplete-data rejection; propose a future same-source, same-basis, as-of signal
+envelope using M2-9 semantics, without silently splicing adjusted history and raw
+appends or inventing trade minutes. That integration remains outside this fix.
+
+F4 retains entry-level admission for ordinary daily exits by default. Relaxing
+to reduction-only admission improves availability but needs distinct verified
+lot/quantity, fresh scoped reconciliation and idempotency semantics, and could
+bypass a deliberate user pause. Existing protective exits remain separate.
+S3's shared APP-book next-day readiness is intentional only for an exact committed
+daily baseline with the same environment, account, dates, source and PnL. Missing
+or mismatched evidence still rejects; a pure manual book gains no bypass.
+
+F3 actual hash-chain SQLite full-state fixtures measured1000/5000 events at
+125.153/625.765 MB serialized payload. Warm uninstrumented replay plus provenance
+took4.385/23.199 seconds; traced full recovery took25.132/131.556 seconds with
+126.467/628.907 MB peak allocation. Tracing cost is not production latency.
+No claim of constant-time or bounded-memory recovery: a future streaming or
+checkpoint design must retain the complete causal no-submit proof. This PR
+changes the projection size, not the append-only audit journal or replay API.
+
+The public F1 command currently holds bundle/engine/owner locks through proof,
+so the worker cannot adopt a fresher observation mid-scan. If that proof itself
+exceeds30 seconds, repeated declaration attempts remain rejected by the existing
+freshness boundary. This is a disclosed long-journal availability limitation,
+not permission to extend freshness or infer no send from current rows. F3's
+23.199-second measurement concerns the evaluation-recovery helper, not a direct
+benchmark of F1. A staged proof/fresh-observation continuation needs a separately
+reviewed design; no such implicit authorization is introduced in this fix.
+
+### M2-3c: integrate concurrent main without crossing lanes
+
+After the first push, main advanced to f0e974f with merged M3-2 signal/catalog
+adapters, U3 strategy presentation and the minute-timeout fixture synchronization.
+Merge main with an ordinary merge commit; do not rebase or stack another PR.
+Only append sections in IMPLEMENTATION_CONTRACTS and inventory rows conflicted.
+Keep both M2-3c and main's U3/M3/minute contracts and all seven new inventory rows.
+No engine behavior conflicts or desktop edits are introduced by resolution;
+desktop/trading_runtime bytes remain exactly incoming main. Repeat relevant
+integration checks and real LOCAL/fake-SIM starts on this combined final tree,
+then require the final-head complete CI before leaving the PR for Claude.

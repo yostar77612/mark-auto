@@ -2,7 +2,7 @@ name: Windows desktop installer
 on:
   pull_request:
     # Installer build and packaging gates run on PRs only when packaging inputs
-    # change. Every push to main, desktop tag and manual dispatch always runs.
+    # change.
     paths:
       - 'packaging/**'
       # Native supervision protocol cases qualify installer/recovery evidence.
@@ -15,7 +15,22 @@ on:
       - 'tools/make_icon.py'
       - '.github/workflows/windows-desktop.yml'
   push:
+    # A main push builds the installer only when packaging inputs change. Day to
+    # day merges are covered by the Quantlab gates; run this workflow by hand
+    # (workflow_dispatch) when an installable build is needed. Desktop tags
+    # always build and publish.
     branches: [main]
+    paths:
+      - 'packaging/**'
+      # Native supervision protocol cases qualify installer/recovery evidence.
+      - 'tests/test_windows_recovery_feasibility.py'
+      - 'requirements*.lock'
+      - 'requirements*.txt'
+      - 'quantlab/assistant/adapters/chatgpt/desktop_chatgpt_dependency_manifest.json'
+      - '*.spec'
+      - '*.iss'
+      - 'tools/make_icon.py'
+      - '.github/workflows/windows-desktop.yml'
     tags: ['desktop-v*']
   workflow_dispatch:
 permissions:

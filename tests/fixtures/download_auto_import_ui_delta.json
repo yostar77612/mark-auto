@@ -870,6 +870,26 @@
             "receiver": "self.engine"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_candidate_intake.py",
+            "kind": "assignment",
+            "line": 65,
+            "name": "bars",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_prefix_consistency.py",
+            "kind": "assignment",
+            "line": 108,
+            "name": "bars",
+            "receiver": "self"
+          },
+          "count": 1
         }
       ]
     },
