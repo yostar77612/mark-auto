@@ -185,3 +185,14 @@ include differences from concurrent main deliveries and is not a lane ownership
 list. Whole-flow/candidate caps in index construction remain acknowledged:
 missing flows do not prove absence of callers. No partial/truncated change
 report is accepted. Full CI must validate the final PR head/merge candidate.
+
+PR161 was opened against the concurrently advanced main d77a893. A second normal
+merge preserves appended M3 contracts/inventory and automatically merged observer
+pins; no engine product conflict or lane policy change was needed. Incoming M3
+has no engine hooks and retains TMF-only candidate intake. Its five application
+modules and the two market-connection modules pass125/125 direct tests in3.800s.
+Daily native/actual-worker/LIVE guard integration then passes26/26 in20.161s;
+LOCAL9.176s and fake SIM6.308s real windows and cleanup pass. Ruff/Python3.11
+checks cover1229 Python files; quality and the final repin dry-run pass. These
+new source-profile inputs were validated after synchronization; no baseline was
+rewritten and original mutation source functions remain unchanged.

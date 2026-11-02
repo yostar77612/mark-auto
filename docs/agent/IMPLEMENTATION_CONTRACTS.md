@@ -7710,6 +7710,37 @@ data_fingerprint/data_policy_fingerprint defaults; old unattested rows load but
 cannot dispatch. Saved-window semantic corrections refuse at the final boundary.
 OFFICIAL_DAILY_TRAINING labels this research; legacy LOCAL retains its old label.
 
+## M3-3 application contract (2026-11-02)
+
+- Candidate intake accepts only an engine-resolved candidate reference, an E1
+  qualification supplied by CandidateCatalog, and explicit complete TRAINING E2
+  data. Statistical-edge verdict, consumed qualification, sample presence, TMF
+  daily qualification, quantity=1, no stop_ticks/target_ticks, D6 intraday TMF,
+  supported interval/sizing, window cap, ten E2 trades and account/instrument
+  uniqueness all precede the first journal write. The current production-safe
+  E1 producer is not available; no fixture asserts otherwise.
+- SignalExecutor is pure and shares M3-1 window/direction/target helpers with E2.
+  It emits absolute targets and durable per-leg keys, never submits orders.
+  Future M2 integration must gate run state/environment and close before opening
+  a reversal, preserving existing risk and unknown-outcome behavior.
+- E2 uses next-open fills, M2 fee/tick/calendar authorities, adverse stops,
+  trading-day time stops and fixed 13:35 intraday flattening. Allocation and
+  marked-equity valuation are part of behavioral evidence; source-only changes
+  alter result identity but not behavior identity. Complete E2 audit evidence
+  is retained in lifecycle events. Supplied historical interval references are
+  not source authentication. Existing worker deadlines and data refill must be
+  connected by M3-4/7 before production use.
+- Lifecycle events use the existing Journal sequence fence, with append before
+  in-memory projection. Replay restores evaluations and pauses running records.
+  Evaluation is idempotent per strategy/version/trading day; resume clears
+  eligibility and starts a new observation epoch, without reusing old eligibility.
+  Drift uses the pinned m3-thresholds-v1 exact 1.5x/floor domain rule. A changed
+  behavior pauses; source-only refresh retains the same behavior evidence.
+- No M3-3 service has broker or AI dependencies, an approval API, LIVE opt-in,
+  UI strings or engine hooks. LIVE_APPROVED does not permit new entries here.
+  Pause/retire preserve M2's protective-exit responsibility. Pure offline LOCAL
+  decisions do not produce promotion evidence. Read-only DTOs have an immutable
+  false live-availability flag and no arbitrary evidence payload for AI.
 ## U4 desktop risk and automatic execution presentation (2026-11-02)
 
 The desktop consumes merged account risk/preflight/automatic/daily View contracts.

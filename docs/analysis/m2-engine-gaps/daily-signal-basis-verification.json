@@ -5613,5 +5613,142 @@
     "affected_count": 650,
     "changed_files": 57,
     "risk_level": "critical"
-  }
+  },
+  "d77_incoming_m3_market": {
+    "modules": [
+      {
+        "module": "tests.test_m3_candidate_intake",
+        "tests": 27,
+        "failures": [],
+        "errors": [],
+        "skipped": 0
+      },
+      {
+        "module": "tests.test_m3_prefix_consistency",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skipped": 0
+      },
+      {
+        "module": "tests.test_m3_promotion_service",
+        "tests": 42,
+        "failures": [],
+        "errors": [],
+        "skipped": 0
+      },
+      {
+        "module": "tests.test_m3_signal_research",
+        "tests": 30,
+        "failures": [],
+        "errors": [],
+        "skipped": 0
+      },
+      {
+        "module": "tests.test_m3_stage_matrix",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skipped": 0
+      },
+      {
+        "module": "tests.test_market_session",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skipped": 0
+      },
+      {
+        "module": "tests.test_market_terminal_service",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skipped": 0
+      }
+    ],
+    "seconds": 3.799951900029555,
+    "tests": 125,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "d77_native": {
+    "modules": [
+      "test_m2_daily_native",
+      "test_official_daily_worker",
+      "test_live_order_guard"
+    ],
+    "tests": 26,
+    "failures": [],
+    "errors": [],
+    "seconds": 20.161393599992152
+  },
+  "d77_startup_local": {
+    "elapsed_seconds": 9.176,
+    "engine_state": "WAITING_RECONCILIATION",
+    "environment": "LOCAL",
+    "errors": [],
+    "mode": "LOCAL",
+    "owned_endpoints_removed": true,
+    "owned_engine_cleanup": [
+      {
+        "exit_code": 0,
+        "shutdown": "NORMAL"
+      }
+    ],
+    "passed": true,
+    "real_sdk_imported": false,
+    "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-gaps",
+    "research_attached": true,
+    "research_released": true,
+    "return_code": 0,
+    "widget_count": 2943,
+    "window_type": "TradingWindow",
+    "window_visible": true
+  },
+  "d77_startup_simulation": {
+    "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+    "elapsed_seconds": 6.308,
+    "engine_state": "DISCONNECTED",
+    "environment": "BROKER_SIMULATION",
+    "errors": [],
+    "fake_sdk_connected": true,
+    "fake_sdk_login_count": 1,
+    "fake_sdk_logout_count": 1,
+    "host_return_code": 0,
+    "mode": "BROKER_SIMULATION",
+    "owned_endpoints_removed": true,
+    "owned_engine_cleanup": [],
+    "passed": true,
+    "real_sdk_imported": false,
+    "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-gaps",
+    "research_attached": true,
+    "research_released": true,
+    "return_code": 0,
+    "widget_count": 2943,
+    "window_type": "TradingWindow",
+    "window_visible": true
+  },
+  "d77_file_checks": [
+    {
+      "check": "check",
+      "files": 1229,
+      "code": 0,
+      "stdout": "All checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "check": "format --check",
+      "files": 1229,
+      "code": 0,
+      "stdout": "99 files already formatted\n100 files already formatted\n100 files already formatted\n75 files already formatted\n94 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n29 files already formatted\n",
+      "stderr": ""
+    },
+    {
+      "check": "syntax including added files",
+      "files": 1229,
+      "failed": []
+    }
+  ],
+  "latest_merged_base": "d77a893"
 }

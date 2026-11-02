@@ -924,6 +924,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/domain/daily_signal_data.py` | 147 | domain | `quantlab/trading/domain/daily_signal_data.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/daily_signals.py` | 11 | application | `quantlab/trading/ports/daily_signals.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/official_daily_source.py` | 149 | composition | `quantlab/trading/runtime/official_daily_source.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/auto_strategy_views.py` | 57 | application | `quantlab/trading/application/auto_strategy_views.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/candidate_intake.py` | 151 | application | `quantlab/trading/application/candidate_intake.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/promotion_service.py` | 308 | application | `quantlab/trading/application/promotion_service.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/signal_executor.py` | 40 | application | `quantlab/trading/application/signal_executor.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
+| `quantlab/trading/application/signal_research.py` | 259 | application | `quantlab/trading/application/signal_research.py` | M3-3 signal strategy application services; existing domain and M2 interfaces unchanged |
 | `desktop_app/features/trading/account_risk_controls.py` | 94 | presentation | `desktop_app/features/trading/account_risk_controls.py` | U4 risk, preflight and daily execution presentation |
 | `desktop_app/features/trading/automatic_status.py` | 210 | presentation | `desktop_app/features/trading/automatic_status.py` | U4 risk, preflight and daily execution presentation |
 | `desktop_app/features/trading/daily_execution.py` | 94 | presentation | `desktop_app/features/trading/daily_execution.py` | U4 risk, preflight and daily execution presentation |
