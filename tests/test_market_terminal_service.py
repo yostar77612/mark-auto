@@ -88,6 +88,21 @@ class TerminalServiceTests(unittest.TestCase):
         self.assertEqual(self.session.unsubscribed, [STOCK.instrument_id])
         self.assertEqual(self.service.temporary_id, OTHER.instrument_id)
 
+    def test_unsubscribable_main_and_watched_instruments_do_not_fail_the_connection(self):
+        def refuse(item):
+            if item.instrument_id in (STOCK.instrument_id, OTHER.instrument_id):
+                raise DomainError('market_data_not_connected')
+            self.session.subscribed.append(item.instrument_id)
+
+        self.session.subscribe = refuse
+        self.service.selected = STOCK.instrument_id
+        self.service.set_watchlist((OTHER.instrument_id,))
+        self.session.connected = True
+        self.service.connected()
+        self.assertEqual(self.session.subscribed, [item.instrument_id for item in FIXED_INDICES])
+        self.assertEqual(self.service.temporary_id, '')
+        self.assertEqual(self.service.watchlist, (OTHER.instrument_id,))
+
     def test_watch_promotion_and_demotion_do_not_duplicate_subscriptions(self):
         self.connect()
         self.service.select(STOCK.instrument_id)
