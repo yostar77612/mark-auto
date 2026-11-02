@@ -8,7 +8,7 @@ from .arithmetic import decimal_operation
 from .costs import ZERO, FeeSchedule
 from .models import AccountSnapshot, CapabilitySnapshot, Environment, HoldingPolicy, InstrumentSpec, Market, OrderPlan, Quote, Reservation, RiskDecision, Side
 from .policies import check_entry_eligibility
-from .validation import DomainError, aware, decimal_value, identity, integer
+from .validation import DomainError, aware, decimal_value, identity, integer, trading_date
 
 
 @dataclass(frozen=True)
@@ -202,3 +202,35 @@ class RiskService:
             else:
                 high = middle - 1
         return low * lot_size
+
+
+@dataclass(frozen=True)
+class AccountRiskLimits:
+    account_ref: str
+    daily_loss_fraction: Decimal = Decimal('.03')
+    max_order_notional: Decimal = Decimal('1000000')
+    max_positions: int = 5
+
+    def __post_init__(self) -> None:
+        identity(self.account_ref, 'risk account')
+        decimal_value(self.daily_loss_fraction, 'account daily loss fraction', positive=True)
+        decimal_value(self.max_order_notional, 'maximum order notional', positive=True)
+        integer(self.max_positions, 'maximum simultaneous positions', 1)
+        if self.daily_loss_fraction > 1:
+            raise DomainError('validation_failed', 'account daily loss fraction exceeds one')
+
+
+@dataclass(frozen=True)
+class AccountDailyBaseline:
+    """An attested close, never a value sampled when enabling or restarting."""
+
+    account_ref: str
+    trade_date: date
+    previous_close_pnl: Decimal
+    source_id: str
+
+    def __post_init__(self) -> None:
+        identity(self.account_ref, 'baseline account')
+        trading_date(self.trade_date)
+        decimal_value(self.previous_close_pnl, 'account previous close pnl')
+        identity(self.source_id, 'account baseline source')

@@ -12,6 +12,8 @@ from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.validation import DomainError, identity, integer
 from quantlab.trading.domain.strategy import StrategyParameters
 from quantlab.trading.domain.strategy import StrategyDefaults as StrategyDefaults, strategy_defaults as strategy_defaults
+from quantlab.trading.domain.risk import AccountRiskLimits
+from .preflight import PreflightView
 from .broker_settings import BrokerReadiness, BrokerSettings
 from .market_settings import MarketDataSettings
 from .manual_contracts import (
@@ -104,6 +106,8 @@ class MarketSeriesPage:
 
 
 class UiAction(str, Enum):
+    CHECK_PREFLIGHT = 'check_preflight'
+    SAVE_ACCOUNT_RISK = 'save_account_risk'
     CREATE_TYPED_STRATEGY = 'create_typed_strategy'
     DISABLE_STRATEGY = 'disable_strategy'
     CLONE_STRATEGY = 'clone_strategy'
@@ -201,6 +205,7 @@ class UiCommand:
     # It never grants permission to execute the financial command body.
     manual_no_admission: bool = False
     strategy_parameters: StrategyParameters | None = None
+    account_risk: AccountRiskLimits | None = None
 
 
 @dataclass(frozen=True)
@@ -338,6 +343,17 @@ class ContextOption:
 
 
 @dataclass(frozen=True)
+class AccountRiskView:
+    account_ref: str
+    limits: AccountRiskLimits
+    daily_pnl: Decimal | None
+    daily_loss_limit: Decimal
+    position_count: int
+    paused: bool
+    reasons: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class StrategyProductView:
     instrument_id: str
     market: Market
@@ -392,6 +408,8 @@ class UiState:
     sinopac_connection: SinopacConnectionView = SinopacConnectionView()
     manual: ManualTradingView = ManualTradingView()
     strategy_products: tuple[StrategyProductView, ...] = ()
+    account_risks: tuple[AccountRiskView, ...] = ()
+    preflight: tuple[PreflightView, ...] = ()
 
 
 class TradingFacade(Protocol):

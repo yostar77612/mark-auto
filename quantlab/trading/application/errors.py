@@ -10,6 +10,18 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'account_daily_loss_limit': ErrorText('帳戶已達單日虧損上限，新倉停止。', '今日不能解除；核對部位並保留保護性出場。'),
+    'account_order_limit': ErrorText('委託金額超過帳戶單筆上限。', '調整策略新版本的數量或帳戶上限，再明確恢復。'),
+    'account_position_limit': ErrorText('帳戶已達最大同時持倉數。', '未成交進場單也占用名額；核對後明確恢復。'),
+    'account_daily_baseline_required': ErrorText('缺少帳戶前一交易日的可靠結算紀錄。', '新倉保持暫停；取得對應日期的結算證據後再恢復。'),
+    'preflight_blocked': ErrorText('今日開盤檢查尚未通過。', '查看檢查清單；當日失敗紀錄會保留，保護性出場不受影響。'),
+    'preflight_connection': ErrorText('開盤檢查：連線未就緒。', '確認永豐連線；今日自動新倉保持停止。'),
+    'preflight_account': ErrorText('開盤檢查：帳戶未就緒。', '確認已選帳戶及簽署狀態。'),
+    'preflight_permission': ErrorText('開盤檢查：交易權限尚未證實。', '完成目前連線的模擬下單測試；登入不代表有交易權限。'),
+    'preflight_ca': ErrorText('開盤檢查：憑證狀態未就緒。', '模擬環境不需要 CA；正式環境仍不能送單。'),
+    'preflight_market': ErrorText('開盤檢查：行情不是即時資料。', '確認目前連線的行情時間與資料完整性。'),
+    'preflight_service': ErrorText('開盤檢查：目前不在可驗證的模擬服務時段。', '核對交易日曆與券商回應。'),
+    'preflight_reconciliation': ErrorText('開盤檢查：對帳未通過。', '核對委託、成交與部位；未知結果不會自動重送。'),
     'strategy_parameters_invalid': ErrorText('策略參數不符合型態規則。', '依型態的週期、停損及口數範圍調整。'),
     'strategy_instrument_restricted': ErrorText('此型態不支援選取的商品。', '當沖選微台；短波與長波選股票或 ETF。'),
     'strategy_daytrade_confirmation_required': ErrorText('現股當沖尚未勾選並確認資格。', '確認具備現股當沖資格與額度後再建立。'),

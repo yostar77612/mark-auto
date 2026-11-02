@@ -50,6 +50,7 @@ class DailyBaselineEvidence:
     as_of: datetime
     source_id: str
     pnl_basis: str = PNL_BASIS
+    account_previous_close: tuple[tuple[str, Decimal], ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.environment, Environment) or type(self.account_refs) is not tuple or not 1 <= len(self.account_refs) <= 64:
