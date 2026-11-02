@@ -72,6 +72,8 @@ jobs:
         with:
           python-version: '3.13.16'
           architecture: x64
+      - name: Require native symlink capability on hosted Windows
+        run: python -c "from tests.native_capabilities import symlinks_available; assert symlinks_available(), 'Hosted Windows CI requires native symlink creation'"
       - run: python tools/quality_gate.py --history
       - name: Enforce repository layer boundaries
         run: python tools/check_layers.py --baseline-ref HEAD^

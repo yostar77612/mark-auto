@@ -98,6 +98,13 @@ class WorkflowShapeTests(unittest.TestCase):
         self.assertIn('needs: [build, quality]', installer['release'])
         self.assertNotIn('continue-on-error', text('windows-desktop.yml'))
 
+    def test_hosted_windows_requires_real_symlinks_instead_of_skipping_security_cases(self):
+        command = 'run: python -c "from tests.native_capabilities import symlinks_available; assert symlinks_available(), '
+        for workflow, job in (('quantlab.yml', 'offline'), ('windows-desktop.yml', 'quality')):
+            block = job_blocks(text(workflow))[job]
+            self.assertIn(command, block)
+            self.assertNotIn('continue-on-error', block)
+
     def test_every_heavy_job_is_gated_and_aggregate_covers_all(self):
         jobs = job_blocks(text('quantlab.yml'))
         always = {'changes', 'ruff', 'quality', 'gate', 'guest-execution-diagnostic'}

@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from unittest.mock import patch
 import io
 
@@ -111,6 +112,7 @@ class MarketTests(unittest.TestCase):
             with self.assertRaises(MarketValidationError):
                 load_cached('twse', root)
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_cache_rejects_symlink(self):
         with tempfile.TemporaryDirectory() as root:
             root = Path(root)

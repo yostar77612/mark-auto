@@ -4,6 +4,7 @@ from pathlib import Path
 import stat
 import tempfile
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from unittest.mock import Mock, patch
 import zipfile
 
@@ -76,10 +77,14 @@ class AutomaticBackupTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(RuntimeSafetyError):
                 self.auto.configure(enabled=True, directory=str(path))
             self.assertFalse(self.auto.path.exists())
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_symlink_destination_does_not_write_config(self):
         link = self.base / 'linked'
         link.symlink_to(self.paths.root, target_is_directory=True)
         with self.assertRaises(RuntimeSafetyError):
             self.auto.configure(enabled=True, directory=str(link / 'nested'))
+        self.assertFalse(self.auto.path.exists())
 
     def test_malformed_settings_preserved(self):
         self.enable()
@@ -198,55 +203,67 @@ class AutomaticBackupTests(unittest.TestCase):
         self.assertIsNone(self.auto.load()['last_attempt_day'])
         link.unlink()
         archive = Path(self.auto.claim_due(quiescent=True)['path'])
+        os.link(target, archive)
+        with self.assertRaisesRegex(RuntimeSafetyError, 'Hard-linked'):
+            self.auto.complete(archive=archive, status='success')
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_success_symlink_is_rejected(self):
+        self.enable()
+        target = self.base / 'target'
+        target.write_bytes(b'keep')
+        archive = Path(self.auto.claim_due(quiescent=True)['path'])
         archive.symlink_to(target)
         with self.assertRaises(RuntimeSafetyError):
             self.auto.complete(archive=archive, status='success')
         self.assertEqual(self.auto.load()['last_status'], 'attempted')
         self.assertEqual(target.read_bytes(), b'keep')
-        archive.unlink()
-        os.link(target, archive)
-        with self.assertRaisesRegex(RuntimeSafetyError, 'Hard-linked'):
-            self.auto.complete(archive=archive, status='success')
 
     def test_managed_links_rejected_despite_incomplete_directory_metadata(self):
+        self._managed_link_metadata('hardlink')
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_managed_symlinks_rejected_despite_incomplete_directory_metadata(self):
+        self._managed_link_metadata('symlink')
+
+    def _managed_link_metadata(self, kind):
         self.enable()
         self.directory.mkdir()
         target = self.base / 'target'
         target.write_bytes(b'keep')
         before = self.auto.path.read_bytes()
         for name in (f'markauto-{self.auto.workspace_id[:16]}-linked.zip', 'orphan.zip.tmp'):
-            for kind in ('hardlink', 'symlink'):
-                with self.subTest(name=name, kind=kind):
-                    link = self.directory / name
-                    if kind == 'hardlink':
-                        os.link(target, link)
-                        self.assertEqual(link.lstat().st_nlink, 2)
+            with self.subTest(name=name, kind=kind):
+                link = self.directory / name
+                if kind == 'hardlink':
+                    os.link(target, link)
+                    self.assertEqual(link.lstat().st_nlink, 2)
+                else:
+                    link.symlink_to(target)
+                try:
+                    # Windows DirEntry.stat() omits link counts. Also cover
+                    # stale regular-file metadata for a replaced symlink.
+                    cached = list(target.stat())
+                    for field in (stat.ST_INO, stat.ST_DEV, stat.ST_NLINK):
+                        cached[field] = 0
+                    entry = Mock(spec=os.DirEntry)
+                    entry.name = link.name
+                    entry.path = str(link)
+                    entry.stat.return_value = os.stat_result(cached)
+                    with patch('quantlab.automatic_backup.os.scandir') as scan:
+                        scan.return_value.__enter__.return_value = [entry]
+                        with self.assertRaisesRegex(RuntimeSafetyError, 'unsafe matching'):
+                            self.auto.claim_due(quiescent=True)
+                    self.assertEqual(self.auto.path.read_bytes(), before)
+                    self.assertIsNone(self.auto.load()['last_attempt_day'])
+                    self.assertEqual(target.read_bytes(), b'keep')
+                    self.assertEqual(link.read_bytes(), b'keep')
+                    if kind == 'symlink':
+                        self.assertTrue(link.is_symlink())
                     else:
-                        link.symlink_to(target)
-                    try:
-                        # Windows DirEntry.stat() omits link counts. Also cover
-                        # stale regular-file metadata for a replaced symlink.
-                        cached = list(target.stat())
-                        for field in (stat.ST_INO, stat.ST_DEV, stat.ST_NLINK):
-                            cached[field] = 0
-                        entry = Mock(spec=os.DirEntry)
-                        entry.name = link.name
-                        entry.path = str(link)
-                        entry.stat.return_value = os.stat_result(cached)
-                        with patch('quantlab.automatic_backup.os.scandir') as scan:
-                            scan.return_value.__enter__.return_value = [entry]
-                            with self.assertRaisesRegex(RuntimeSafetyError, 'unsafe matching'):
-                                self.auto.claim_due(quiescent=True)
-                        self.assertEqual(self.auto.path.read_bytes(), before)
-                        self.assertIsNone(self.auto.load()['last_attempt_day'])
-                        self.assertEqual(target.read_bytes(), b'keep')
-                        self.assertEqual(link.read_bytes(), b'keep')
-                        if kind == 'symlink':
-                            self.assertTrue(link.is_symlink())
-                        else:
-                            self.assertEqual(link.lstat().st_nlink, 2)
-                    finally:
-                        link.unlink()
+                        self.assertEqual(link.lstat().st_nlink, 2)
+                finally:
+                    link.unlink()
 
     def test_unavailable_old_destination_can_be_disabled_or_replaced(self):
         self.enable()

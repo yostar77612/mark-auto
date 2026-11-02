@@ -3,6 +3,7 @@ from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from quantlab.core import content_hash, ValidationError
 from quantlab.reporting import synthetic_dataset, demo_config, export_report, load_result, load_dataset, save_dataset, read_json, write_json, comparison_rows
 from quantlab.strategies import builtin_strategies
@@ -45,6 +46,7 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual(Path(paths['fills']).parent.parent.resolve(), self.root.resolve())
         self.assertFalse((self.root.parent / 'escape').exists())
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_symlink_output_refused(self):
         outside = self.root / 'outside'
         outside.mkdir()

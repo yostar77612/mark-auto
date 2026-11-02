@@ -4,6 +4,7 @@ from pathlib import Path
 import stat
 import tempfile
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from unittest.mock import patch
 import zipfile
 
@@ -122,6 +123,10 @@ class DownloadTests(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 d.refresh(tmp, transport=lambda url, _: Response(PAGE if url == d.SOURCE_URL else b'bad', url))
             self.assertEqual(latest.read_text(), 'previous')
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_atomic_write_refuses_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'target'
             target.write_text('safe')
             link = Path(tmp) / 'link'
