@@ -1,0 +1,423 @@
+{
+  "scope": "M2-4 engine only; offline fake SDK/fixtures",
+  "domain_mutations": [
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "contract_minimum",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "contract_maximum",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "stop_positive",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "stop_below_one",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "entry_amount_positive",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "parameter_interval",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "instrument_rule_enum",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 2,
+      "errors": 0,
+      "name": "confirmation_flag_types",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_parameters_validate_contract_count_stop_flags_and_interval_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 3,
+      "errors": 0,
+      "name": "holding_interval",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_type_intervals_are_enforced_independently",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 2,
+      "errors": 0,
+      "name": "swing_position_product",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_swing_and_position_reject_futures",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "tmf_product_creation",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_only_actual_tmf_contracts_are_supported",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "daytrade_checkbox",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_stock_daytrade_requires_checkbox_even_with_confirmation",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "daytrade_confirmation",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_stock_daytrade_requires_confirmation_even_with_checkbox",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "near_month_product",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_near_month_rule_rejects_stock_even_when_daytrade_confirmed",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "tmf_market_identity",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_only_actual_tmf_contracts_are_supported",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "tmf_exchange_identity",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_only_actual_tmf_contracts_are_supported",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "tmf_contract_identity",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_only_actual_tmf_contracts_are_supported",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "margin_fallback",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_tmf_missing_margin_uses_labelled_conservative_value",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "sizing_price_boundary",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_sizing_rejects_negative_price_and_available_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "available_cash_boundary",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_sizing_rejects_negative_price_and_available_at_boundary",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "stock_all_in_fees",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_stock_amount_floors_to_whole_lots_and_includes_shared_costs",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "stock_full_lots",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_stock_amount_floors_to_whole_lots_and_includes_shared_costs",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "zero_quantity_denied",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_stock_insufficient_for_one_lot_never_returns_zero_or_odd_lot",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "available_cash_denied",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_tmf_margin_and_costs_must_both_fit_available_cash",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "tmf_sizing_product",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_sizing_rejects_non_tmf_future_without_relying_on_creation",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 0,
+      "errors": 1,
+      "name": "expiry_candidates",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_expired_contract_is_not_a_near_month_candidate",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 0,
+      "errors": 1,
+      "name": "missing_contract_guard",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_missing_near_contract_does_not_select_another_product",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "settlement_guard",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_settlement_day_blocks_entries_even_with_next_month_available",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 1,
+      "errors": 0,
+      "name": "previous_trading_day_roll",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_roll_uses_prior_trading_day_across_holiday_gap",
+      "killed": true,
+      "exit_code": 1
+    },
+    {
+      "run": 1,
+      "failures": 0,
+      "errors": 1,
+      "name": "missing_successor_guard",
+      "test": "test_m2_strategy_domain.M2StrategyDomainTests.test_roll_without_next_contract_is_unresolved",
+      "killed": true,
+      "exit_code": 1
+    }
+  ],
+  "management_mutations": [
+    {
+      "name": "typed_payload",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "typed_create_required",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "research_required",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "evidence_fingerprint",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "aggregate_allocation",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "engine_revision_required",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "typed_revision_required",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "delete_fill_history",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "delete_position",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "delete_pending",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "strategy_cash_limit",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "strategy_pending_cash",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "strategy_risk_limit",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "strategy_pending_risk",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "whole_lot",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "entry_amount",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "frozen_contracts",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "delete_view_tombstone",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "strategy_loss_capital",
+      "status": "KILLED",
+      "test_count": 1
+    },
+    {
+      "name": "strategy_profit_ceiling",
+      "status": "KILLED",
+      "test_count": 1
+    }
+  ],
+  "startup": [
+    {
+      "elapsed_seconds": 7.406,
+      "engine_state": "WAITING_RECONCILIATION",
+      "environment": "LOCAL",
+      "errors": [],
+      "mode": "LOCAL",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [
+        {
+          "exit_code": 0,
+          "shutdown": "NORMAL"
+        }
+      ],
+      "passed": true,
+      "real_sdk_imported": false,
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    },
+    {
+      "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+      "elapsed_seconds": 4.812,
+      "engine_state": "DISCONNECTED",
+      "environment": "BROKER_SIMULATION",
+      "errors": [],
+      "fake_sdk_connected": true,
+      "fake_sdk_login_count": 1,
+      "fake_sdk_logout_count": 1,
+      "host_return_code": 0,
+      "mode": "BROKER_SIMULATION",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [],
+      "passed": true,
+      "real_sdk_imported": false,
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    }
+  ]
+}

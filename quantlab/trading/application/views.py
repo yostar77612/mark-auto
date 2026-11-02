@@ -4,9 +4,9 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from .contracts import AccountView, MarketView, OrderView, OverviewMarketSummary, PerformanceView, PositionView, StrategyView, UiState
+from .contracts import AccountView, MarketView, OrderView, OverviewMarketSummary, PerformanceView, PositionView, StrategyProductView, StrategyView, UiState
 from .errors import ERROR_TABLE
-from quantlab.trading.domain.models import Environment, Market, Side
+from quantlab.trading.domain.models import Environment, HoldingKind, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import holding_window
 from quantlab.trading.domain.validation import DomainError
@@ -43,11 +43,22 @@ def policy_name(policy) -> str:
 
 @decimal_operation
 def snapshot(engine: 'TradingEngine') -> UiState:
+    from quantlab.trading.domain.strategy import is_tmf, resolve_tmf_near
+
     state = engine.state
     verified = _financial_facts_current(engine)
     tracks = {(track.strategy_id, track.version): track for track in state.performance_tracks}
     market_watch = engine.live_market.views() if engine.live_market is not None else ()
     health = {view.instrument_id: view.health.freshness for view in market_watch}
+    resolved, blocked = {}, {}
+    for record in state.strategies:
+        reference = record.strategy_id, record.version
+        resolved[reference] = record.form.instrument_id
+        if record.parameters is not None and record.parameters.instrument_rule == 'TMF_NEAR':
+            try:
+                resolved[reference] = resolve_tmf_near(engine.catalog.instruments, engine.calendar, state.trading_day).instrument_id
+            except DomainError as error:
+                resolved[reference], blocked[reference] = '', error.code
     order_days = {
         order.order_id: next(
             (session.trade_date for session in engine.calendar.sessions if session.opens_at <= order.plan.decision_at <= session.closes_at), None
@@ -93,8 +104,16 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 if state.stopped or not state.reconciled or state.engine_closed
                 else 'RUNNING'
             ),
+            parameters=s.parameters,
+            recent_signal=s.recent_signal,
+            margin_source=('BROKER' if engine.catalog.resolve(s.form.instrument_id).margin is not None else 'BUILTIN_CONSERVATIVE')
+            if s.parameters is not None and s.form.market is not Market.STOCK
+            else '',
+            resolved_instrument_id=resolved[s.strategy_id, s.version],
+            entry_block_code=blocked.get((s.strategy_id, s.version), ''),
         )
         for s in state.strategies
+        if s.state != 'DELETED'
     )
     positions = []
     gross_marks: dict[str, Decimal | None] = {}
@@ -293,4 +312,14 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         unrealized_pnl=unrealized_total,
         remaining_daily_loss=daily_loss_room if verified else None,
         today_fill_count=today_fills,
+        strategy_products=tuple(
+            StrategyProductView(
+                spec.instrument_id,
+                spec.market,
+                (HoldingKind.SWING, HoldingKind.POSITION, HoldingKind.CUSTOM) if spec.market is Market.STOCK else (HoldingKind.INTRADAY, HoldingKind.CUSTOM),
+                stock_intraday_optional=spec.market is Market.STOCK,
+            )
+            for spec in engine.catalog.instruments
+            if spec.market is Market.STOCK or is_tmf(spec)
+        ),
     )

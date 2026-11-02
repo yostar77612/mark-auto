@@ -1959,3 +1959,22 @@ GitNexus pre-edit: UiAction/UiCommand/StrategyView CRITICAL (49 direct imports),
 StrategyRecord HIGH (15 direct imports); additive defaults preserve old decoding.
 Source confirms facade.snapshot despite graph UNKNOWN. No process membership was
 reported; graph receiver gaps are not a claim of no runtime effect.
+
+M2-4 chooses an all-in stock entry amount (principal plus the existing shared
+FeeSchedule costs/slippage) and a conservative missing-margin fallback of50000
+TWD/TMF contract, labelled BUILTIN_CONSERVATIVE in views/sizing. It is a local
+assumption, not a claimed current broker margin. One active owner per account
+and instrument is retained for future M3 target-position execution. Deletion is
+a hidden tombstone, not erasure of journal/audit identity. Disable does not
+transfer positions or erase their protective policy. UI remains another lane.
+
+M2-4 offline verification: domain22 and management27 new tests pass; domain
+mutants30/30 and management mutants18/18 killed in fresh subprocesses without
+rewriting product source. Existing application29, selected coordinator/LIVE/
+draft/scope/environment/valuation41 tests pass. Broader affected checks and CI
+are still pending; these local results do not claim full acceptance.
+
+M2-4 final local updates: management30 tests pass and20/20 management mutants
+killed, including cumulative losses and a no-profit-expansion allocation ceiling.
+Near-month View DTO tests cover rollover, settlement-day block and missing next
+contract. See m2-4-engine-verification.md/.json for evidence and exact limitations.

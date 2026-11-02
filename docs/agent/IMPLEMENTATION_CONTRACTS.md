@@ -7199,3 +7199,21 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
 - No new production order path, desktop source or string changes. M2-7 supplies
   evidence through the existing ResearchResult contract; FeeSchedule owns costs.
 - First contract commit defines transport only; behavior follows before PR readiness.
+
+M2-4 implementation details:
+- `UiState.strategy_products` lists StrategyProductView(instrument_id, market,
+  holding_kinds, stock_intraday_optional). Default intraday list is TMF only;
+  stock intraday is separately opt-in and requires confirmed eligibility.
+- StrategyView.entry_block_code explains unavailable near-month resolution;
+  resolved_instrument_id is empty while blocked, never a fabricated contract.
+- Missing TMF margin uses a labelled conservative TWD50000 per contract. The
+  same effective specification is used for sizing, commitment and reservations.
+- Stock per-entry amount is an all-in ceiling using FeeSchedule.entry_cash;
+  quantity is rounded down to full1000-share lots including fees/slippage.
+- Disable stops new strategy decisions; existing managed lots keep protective
+  policies. Delete retains a hidden tombstone so version identities never reset.
+- One active strategy per account/instrument remains enforced for M3 ownership.
+  Multiple distinct instruments share the account allocation ceiling; strategy
+  cash/risk commitments remain isolated across all versions of each strategy.
+- New tests: test_m2_strategy_domain.py and test_m2_strategy_management.py. No new
+  product files, no desktop edits and no layer-map changes are required.

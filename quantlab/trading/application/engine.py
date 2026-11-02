@@ -26,7 +26,7 @@ from quantlab.trading.domain.policies import ExitCoordinator, check_entry_eligib
 from quantlab.trading.domain.risk import RiskPolicy, RiskService
 from quantlab.trading.domain.validation import DomainError, decimal_value
 from quantlab.trading.domain.execution_policy import orders_enabled
-from quantlab.trading.domain.strategy import CompletedBar
+from quantlab.trading.domain.strategy import CompletedBar, StrategyParameters
 from quantlab.trading.ports.interfaces import Clock
 from quantlab.trading.ports.contracts import RemoteSnapshot
 from quantlab.trading.ports.storage import Journal
@@ -208,7 +208,9 @@ class TradingEngine:
                                 )
 
     @decimal_operation
-    def create_strategy(self, form: StrategyForm) -> str:
+    def create_strategy(self, form: StrategyForm, parameters: StrategyParameters | None = None) -> str:
+        if parameters is not None and not isinstance(parameters, StrategyParameters):
+            raise DomainError('strategy_parameters_invalid', 'typed execution parameters required')
         if (
             not isinstance(form, StrategyForm)
             or type(form.name) is not str
@@ -239,6 +241,10 @@ class TradingEngine:
         if form.risk_fraction not in (Decimal('0.02'), Decimal('0.03')) or not ZERO < form.allocation <= Decimal('100000'):
             raise DomainError('risk_rejected', 'strategy allocation/risk')
         policy = HoldingPolicy(form.holding_kind, form.min_days, form.max_days, expiry_action=form.expiry_action)
+        if parameters is not None:
+            from quantlab.trading.domain.strategy import validate_strategy_parameters
+
+            validate_strategy_parameters(policy.kind, spec, parameters)
         if spec.market is Market.STOCK and form.expiry_action != 'EXIT':
             raise DomainError('validation_failed', 'cash stocks do not roll expiry contracts')
         if form.expiry_action == 'ROLL':
@@ -273,7 +279,7 @@ class TradingEngine:
                 definition.market is not form.market
                 or definition.policy != policy
                 or definition.direction != expected_direction
-                or definition.bar_interval != '1d'
+                or definition.bar_interval != (parameters.bar_interval if parameters else '1d')
             ):
                 raise DomainError('validation_failed', 'draft does not match explicit market, policy, direction or supported interval')
             if definition.cost_version != self.fees.version or definition.risk_ref != self.risk().policy.version:
@@ -281,7 +287,7 @@ class TradingEngine:
             draft_hash = sha256(form.draft_json.encode()).hexdigest()
             definition = replace(definition, strategy_id=strategy_id, version=version)
             form = replace(form, draft_json='')
-        record = StrategyRecord(strategy_id, version, form, policy, definition=definition, draft_hash=draft_hash)
+        record = StrategyRecord(strategy_id, version, form, policy, definition=definition, draft_hash=draft_hash, parameters=parameters)
         initial_track = seed_track(strategy_id, version, self.clock.now(), self.state.trading_day)
         self._persist(
             'strategy_version_created',
@@ -310,7 +316,7 @@ class TradingEngine:
 
     def deploy(self, reference: str) -> None:
         strategy = self.strategy(reference)
-        if strategy.state != 'RESEARCHED' or not strategy.evidence_hash:
+        if strategy.state not in ('RESEARCHED', 'DISABLED') or not strategy.evidence_hash:
             raise DomainError('risk_rejected', 'research evidence required for local deployment')
         from .research import ResearchResult, research_fingerprint
 
@@ -327,6 +333,20 @@ class TradingEngine:
             or evidence.source_digest != self.profile.source_digest
         ):
             raise DomainError('strategy_evidence_stale', 'current rules, costs, instrument, calendar or producer do not match research')
+        if strategy.parameters is not None:
+            from quantlab.trading.domain.strategy import validate_strategy_parameters
+
+            validate_strategy_parameters(strategy.policy.kind, self.catalog.resolve(strategy.form.instrument_id), strategy.parameters)
+            active_cash = sum(
+                (
+                    s.form.allocation
+                    for s in self.state.strategies
+                    if s.state == 'ACTIVE' and s.form.account_ref == strategy.form.account_ref and s.strategy_id != strategy.strategy_id
+                ),
+                ZERO,
+            )
+            if active_cash + strategy.form.allocation > self.account(strategy.form.account_ref).allocated_cash:
+                raise DomainError('strategy_allocation_exceeded')
         self.validate_strategy(reference)
         for existing in self.state.strategies:
             if (
@@ -339,6 +359,58 @@ class TradingEngine:
                 self.update_strategy(replace(existing, state='RETIRED'), 'prior_deployment_retired')
         strategy = replace(strategy, state='ACTIVE')
         self.update_strategy(strategy, 'local_deployment_activated')
+
+    def disable_strategy(self, reference: str) -> None:
+        record = self.strategy(reference)
+        # Disabling affects new decisions only; existing lots retain their policy.
+        self.update_strategy(replace(record, state='DISABLED'), 'strategy_disabled')
+
+    def clone_strategy(self, reference: str, form: StrategyForm | None = None, parameters: StrategyParameters | None = None) -> str:
+        record = self.strategy(reference)
+        source = form or record.form
+        if form is not None and parameters is None and record.parameters is not None:
+            raise DomainError('strategy_parameters_invalid', 'revisions require complete execution parameters')
+        if record.definition is not None and form is None:
+            import json
+
+            definition = record.definition
+            source = replace(
+                source,
+                draft_json=json.dumps(
+                    {
+                        'schema_version': definition.schema_version,
+                        'strategy_id': definition.strategy_id,
+                        'version': definition.version,
+                        'market': definition.market.value,
+                        'holding_policy': {
+                            'kind': definition.policy.kind.value,
+                            'min_days': definition.policy.min_days,
+                            'max_days': definition.policy.max_days,
+                            'night_enabled': definition.policy.night_enabled,
+                            'expiry_action': definition.policy.expiry_action,
+                        },
+                        'bar_interval': definition.bar_interval,
+                        'direction': definition.direction,
+                        'entry': [{'field': r.field, 'operator': r.operator, 'value': str(r.value)} for r in definition.entry],
+                        'exit': [{'field': r.field, 'operator': r.operator, 'value': str(r.value)} for r in definition.exit],
+                        'cost_version': definition.cost_version,
+                        'risk_ref': definition.risk_ref,
+                    }
+                ),
+            )
+        return self.create_strategy(replace(source, parent_strategy_id=record.strategy_id), parameters if form else record.parameters)
+
+    def delete_strategy(self, reference: str) -> None:
+        record = self.strategy(reference)
+        scope = record.strategy_id, record.version
+        if any((o.plan.strategy_id, o.plan.strategy_version) == scope and o.filled for o in self.state.orders) or any(
+            (p.strategy_id, p.strategy_version) == scope for p in self.state.positions
+        ):
+            raise DomainError('strategy_has_fills')
+        if any((o.plan.strategy_id, o.plan.strategy_version) == scope and o.status in ACTIVE for o in self.state.orders):
+            raise DomainError('state_conflict', 'cancel pending entries before deleting')
+        # A tombstone preserves the monotone version identity and audit trail.
+        self.update_strategy(replace(record, state='DELETED'), 'strategy_deleted')
 
     @decimal_operation
     def submit(self, plan: OrderPlan, policy: HoldingPolicy, key: str) -> str:
@@ -388,13 +460,26 @@ class TradingEngine:
                 # original intent hash remains the retry identity.
                 plan = replace(plan, state_version=self.state.version)
             strategy = next((s for s in self.state.strategies if (s.strategy_id, s.version) == (plan.strategy_id, plan.strategy_version)), None)
+            strategy_instrument = strategy.form.instrument_id if strategy is not None else ''
+            if strategy is not None and strategy.parameters is not None and not plan.reduce_only:
+                from quantlab.trading.domain.strategy import effective_strategy_spec, resolve_tmf_near
+
+                parameters = strategy.parameters
+                if parameters.instrument_rule == 'TMF_NEAR':
+                    strategy_instrument = resolve_tmf_near(self.catalog.instruments, self.calendar, self.state.trading_day).instrument_id
+                spec = effective_strategy_spec(spec)
+                if spec.market is Market.STOCK:
+                    if plan.quantity % 1000 or self.fees.entry_cash(spec, plan.limit_price, plan.quantity, plan.side) > parameters.entry_amount:
+                        raise DomainError('strategy_size_insufficient', 'whole stock lots within the per-entry amount required')
+                elif plan.quantity != parameters.contracts:
+                    raise DomainError('strategy_size_insufficient', 'frozen contract count required')
             if (
                 not plan.reduce_only
                 and manual_request is None
                 and (
                     strategy is None
                     or strategy.state != 'ACTIVE'
-                    or strategy.form.instrument_id != plan.instrument_id
+                    or strategy_instrument != plan.instrument_id
                     or strategy.form.direction is not plan.side
                     or strategy.form.account_ref != plan.account_ref
                 )
@@ -419,13 +504,40 @@ class TradingEngine:
             strategy_cash_limit = None
             if strategy is not None:
                 risk = RiskService(replace(risk.policy, trade_fraction=min(risk.policy.trade_fraction, strategy.form.risk_fraction)), self.fees)
-                pending_cash = sum((o.reservation.cash for o in self.state.orders if o.plan.strategy_id == strategy.strategy_id), ZERO)
+                pending_cash = sum(
+                    (
+                        r.cash
+                        for r in self.reservations()
+                        if any(o.order_id == r.reservation_id and o.plan.strategy_id == strategy.strategy_id for o in self.state.orders)
+                    ),
+                    ZERO,
+                )
                 owned_cash = ZERO
                 for lot in self.state.positions:
                     if lot.strategy_id == strategy.strategy_id and lot.quantity:
                         instrument = self.catalog.resolve(lot.instrument_id)
+                        if strategy.parameters is not None:
+                            from quantlab.trading.domain.strategy import effective_strategy_spec
+
+                            instrument = effective_strategy_spec(instrument)
                         owned_cash += lot.entry_price * lot.quantity if instrument.market.value == 'STOCK' else (instrument.margin or ZERO) * lot.quantity
                 strategy_cash_limit = max(ZERO, strategy.form.allocation - owned_cash - pending_cash)
+                if strategy.parameters is not None and not plan.reduce_only:
+                    strategy_pnl = sum((track.equity for track in self.state.performance_tracks if track.strategy_id == strategy.strategy_id), ZERO)
+                    strategy_cash_limit = max(ZERO, strategy.form.allocation + min(ZERO, strategy_pnl) - owned_cash - pending_cash)
+                    owned_risk = sum(
+                        (
+                            r.risk
+                            for r in self.reservations()
+                            if any(o.order_id == r.reservation_id and o.plan.strategy_id == strategy.strategy_id for o in self.state.orders)
+                        ),
+                        ZERO,
+                    )
+                    if (
+                        owned_risk + self.fees.loss_at_stop(spec, plan.limit_price, plan.stop_price, plan.quantity, plan.side)
+                        > strategy.form.allocation * strategy.form.risk_fraction
+                    ):
+                        raise DomainError('risk_rejected', 'isolated strategy risk budget exceeded')
             decision = risk.preview(
                 plan,
                 spec,

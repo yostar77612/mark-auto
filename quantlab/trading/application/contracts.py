@@ -11,6 +11,7 @@ from quantlab.trading.domain.live_bars import DataGap, LiveBar
 from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.validation import DomainError, identity, integer
 from quantlab.trading.domain.strategy import StrategyParameters
+from quantlab.trading.domain.strategy import StrategyDefaults as StrategyDefaults, strategy_defaults as strategy_defaults
 from .broker_settings import BrokerReadiness, BrokerSettings
 from .market_settings import MarketDataSettings
 from .manual_contracts import (
@@ -234,6 +235,7 @@ class StrategyView:
     recent_signal: str = ''
     margin_source: str = ''
     resolved_instrument_id: str = ''
+    entry_block_code: str = ''
 
 
 @dataclass(frozen=True)
@@ -336,6 +338,14 @@ class ContextOption:
 
 
 @dataclass(frozen=True)
+class StrategyProductView:
+    instrument_id: str
+    market: Market
+    holding_kinds: tuple[HoldingKind, ...]
+    stock_intraday_optional: bool = False
+
+
+@dataclass(frozen=True)
 class UiState:
     environment: Environment
     account_ref: str
@@ -381,6 +391,7 @@ class UiState:
     market_data_error: str = ''
     sinopac_connection: SinopacConnectionView = SinopacConnectionView()
     manual: ManualTradingView = ManualTradingView()
+    strategy_products: tuple[StrategyProductView, ...] = ()
 
 
 class TradingFacade(Protocol):
