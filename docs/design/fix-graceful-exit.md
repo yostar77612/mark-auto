@@ -68,9 +68,9 @@ Observed with research session and lock checks enabled:
 
 | Case | `run_window` return after close | Entire GUI process exit |
 | --- | ---: | ---: |
-| LOCAL, active subscription | 0.190 s | 1.999 s |
-| BROKER_SIMULATION, active subscription | 0.133 s | 0.358 s |
-| BROKER_SIMULATION, in-flight history SDK call | 2.145 s | 2.371 s |
+| LOCAL, active subscription | 0.110 s | 1.822 s |
+| BROKER_SIMULATION, active subscription | 0.105 s | 0.325 s |
+| BROKER_SIMULATION, in-flight history SDK call | 2.178 s | 2.393 s |
 
 All retained engine exit codes were zero; endpoint files disappeared; fake SDK
 unsubscription/logout completed; real SDK was not imported; both native mutex
@@ -79,7 +79,10 @@ the real runtime builder, proving journal leases were released. Further tests
 cover multiple children with a preexisting host preserved, startup exceptions,
 and mismatched endpoint ownership refusing shutdown while retaining the handle.
 The final regression also asserts the pending call has started and has not
-finished at the moment close is requested.
+finished at the moment close is requested. The fake SDK implements the scanner
+callback registration; each case requires CONNECTED before close and rejects
+unhandled background-thread exceptions, so a partially connected fixture cannot
+pass merely because it subscribed before a later callback failed.
 
 Commands (from this worktree; UTF-8 and repo/tests on PYTHONPATH):
 
@@ -101,7 +104,7 @@ for CI; no two full suites run locally.
 The installed external processes were identified read-only as PIDs 168580 and
 286532, started at 08:31/08:32 from the installed 0.3.0 payload (commit
 `8f192ff`). They predate this task and were not touched. The new regression's
-final four tests passed in 32.744 s, including the explicit pending-call check.
+final four tests passed in 31.466 s, including CONNECTED and pending-call checks.
 Python 3.11 syntax (1,144 tracked files), Ruff lint, quality and layer gates
 passed. Pre-push exposed one existing main M3-document code-fence CRLF/LF failure;
 Ruff changed only line endings, so its text has no git diff. The repair pins that

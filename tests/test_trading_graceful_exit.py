@@ -68,6 +68,9 @@ def host(args):
     root = args.trading_engine
 
     class Api(FakeApi):
+        def set_on_scanner_callback(self, callback):
+            self.callbacks['scanner'] = callback
+
         def subscribe(self, contract, **kwargs):
             super().subscribe(contract, **kwargs)
             (root / 'subscribed').touch()
@@ -149,11 +152,13 @@ def window(args):
             try:
                 subscribed = (engine_root / 'subscribed').exists()
                 pending = (engine_root / 'history-started').exists()
-                if not subscribed or args.pending and not pending:
+                connected = facade.snapshot().market_connection == 'CONNECTED'
+                if not connected or not subscribed or args.pending and not pending:
                     assert time.monotonic() < until, 'fixture did not reach subscribed/pending state'
                     QTimer.singleShot(20, close_when_ready)
                     return
                 report['subscribed_at_close'] = subscribed
+                report['connected_at_close'] = connected
                 report['history_started_at_close'] = pending
                 report['history_pending_at_close'] = (engine_root / 'history-pending').exists() and not (engine_root / 'history-finished').exists()
                 report['mutex_present_before_close'] = mutex_exists(mutex_name)
@@ -209,6 +214,7 @@ class GracefulExitProcessTests(unittest.TestCase):
                     args.append('--pending')
                 result = subprocess.run(args, cwd=ROOT, env=source_environment(), capture_output=True, text=True, timeout=40)
                 self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn('Exception in thread', result.stderr)
                 process_exit_seconds = time.monotonic() - json.loads((Path(folder) / 'workspace' / 'close-requested.json').read_text())
                 report = json.loads(result.stdout.splitlines()[-1])
                 report['process_exit_seconds'] = process_exit_seconds
@@ -216,6 +222,7 @@ class GracefulExitProcessTests(unittest.TestCase):
                 self.assertNotIn('error', report)
                 self.assertTrue(report['visible'])
                 self.assertTrue(report['subscribed_at_close'])
+                self.assertTrue(report['connected_at_close'])
                 self.assertEqual(report['return_code'], 0)
                 self.assertLess(report['close_seconds'], 5)
                 self.assertLess(report['process_exit_seconds'], 5)
