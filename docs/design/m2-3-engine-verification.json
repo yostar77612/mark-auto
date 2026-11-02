@@ -1,0 +1,4392 @@
+{
+  "scope": "M2-3 completed1m/5m engine slice; daily next-session dispatch deferred under R5",
+  "contract_commit": "f18d4de",
+  "base_main": "2ffee2dfbd5f4215f47326b8718dc70ba8af61f0",
+  "tests": {
+    "new": {
+      "count": 354,
+      "seconds": 17.948,
+      "passed": true
+    },
+    "existing": {
+      "count": 398,
+      "seconds": 29.87,
+      "passed": true
+    },
+    "selection_tool": "tools/affected_tests.py",
+    "selected_transitive_modules": 175,
+    "full_local_discovery": false,
+    "canonical": {
+      "count": 752,
+      "seconds": 46.931,
+      "passed": true
+    },
+    "baseline_layer_tests": 21,
+    "observer_baseline_tests": 49
+  },
+  "mutations": {
+    "pure": {
+      "total": 77,
+      "killed": 77,
+      "records": [
+        {
+          "tests": 27,
+          "failures": [],
+          "errors": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_night_session_and_unsupported_interval_are_refused"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "interval_whitelist",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_night_session_and_unsupported_interval_are_refused"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "day_session_only",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_conflicting_duplicate_poisoned_minute_is_not_arbitrarily_selected"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "conflicting_duplicate",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_forming_minute_is_never_eligible_even_when_its_end_elapsed"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "final_only",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_incomplete_minute_is_never_eligible"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "incomplete_rejected",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_session_date_and_kind_cannot_be_mixed (change={'trade_date': datetime.date(2026, 11, 3)})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "date_identity",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_session_date_and_kind_cannot_be_mixed (change={'session': 'NIGHT'})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "session_identity",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_data_outside_provided_market_session_is_not_evaluated"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "session_open_bound",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_non_minute_duration_and_off_grid_start_are_not_minute_data (change={'end': datetime.datetime(2026, 11, 2, 8, 45, 30, tzinfo=zoneinfo.ZoneInfo(key='Asia/Taipei'))})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "one_minute_shape",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_fractional_session_tail_is_never_silently_rounded_into_daily_bar"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "whole_session_minutes",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_daily_requires_entire_actual_session_and_close",
+            "test_m2_auto_cycle.CompletedBucketTests.test_future_completed_flag_does_not_make_information_available"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "bucket_information_available",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_data_outside_provided_market_session_is_not_evaluated"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "bucket_close_bound",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.CompletedBucketTests.test_daily_requires_entire_actual_session_and_close",
+            "test_m2_auto_cycle.CompletedBucketTests.test_five_discontinuous_minutes_do_not_satisfy_count",
+            "test_m2_auto_cycle.CompletedBucketTests.test_instruments_cannot_fill_each_others_missing_minutes",
+            "test_m2_auto_cycle.CompletedBucketTests.test_missing_middle_minute_cannot_form_a_five_minute_bucket",
+            "test_m2_auto_cycle.CompletedBucketTests.test_non_minute_duration_and_off_grid_start_are_not_minute_data (change={'start': datetime.datetime(2026, 11, 2, 8, 45, 1, tzinfo=zoneinfo.ZoneInfo(key='Asia/Taipei')), 'end': datetime.datetime(2026, 11, 2, 8, 46, 1, tzinfo=zoneinfo.ZoneInfo(key='Asia/Taipei'))})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "all_minutes_contiguous",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.EvaluationCursorTests.test_identity_mismatch_never_reuses_another_cursor"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "cursor_identity",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.EvaluationCursorTests.test_equal_instants_in_another_timezone_do_not_replay",
+            "test_m2_auto_cycle.EvaluationCursorTests.test_only_strictly_newer_bar_is_evaluated"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "cursor_strict_newer",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [],
+          "errors": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_non_intraday_and_night_do_not_schedule_forced_day_exit"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "intraday_only",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_non_intraday_and_night_do_not_schedule_forced_day_exit"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "forced_exit_day_only",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_non_intraday_and_night_do_not_schedule_forced_day_exit"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "forced_market_restriction",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_settlement_or_short_session_caps_due_at_actual_close_minus_ten",
+            "test_m2_auto_cycle.ForceExitTimingTests.test_very_short_session_never_schedules_before_it_opens"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "early_close_cap",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_very_short_session_never_schedules_before_it_opens"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "not_before_session_open",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_forced_exit_does_not_start_before_due_time"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "forced_exit_due_guard",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_no_retry_past_actual_close_minus_two_minutes"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "forced_exit_cutoff_guard",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_retry_waits_the_full_thirty_seconds"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "thirty_second_retry",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_after_close_remainder_becomes_an_anomaly"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "remaining_position_guard",
+          "killed": true
+        },
+        {
+          "tests": 27,
+          "failures": [
+            "test_m2_auto_cycle.ForceExitTimingTests.test_after_close_remainder_becomes_an_anomaly"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.auto_cycle",
+          "guard": "post_close_only",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_additive_safe_defaults_and_codec",
+            "test_m2_automatic_state.AutomaticStateTests.test_force_claim_works_while_paused_with_stable_key"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "default_paused",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_additive_safe_defaults_and_codec"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "default_restart_reason",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_cursor_requires_automatic_resume_and_fresh_completed_time",
+            "test_m2_automatic_state.AutomaticStateTests.test_force_unknown_stops_never_retries_and_observed_only",
+            "test_m2_automatic_state.AutomaticStateTests.test_pause_retains_history_and_reasons",
+            "test_m2_automatic_state.AutomaticStateTests.test_restart_preserves_cursor_and_marks_inflight",
+            "test_m2_automatic_state.AutomaticStateTests.test_unknown_evaluation_stops_and_requires_observed_resolution"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "pause_flag",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_restart_preserves_cursor_and_marks_inflight",
+            "test_m2_automatic_state.AutomaticStateTests.test_restarted_evaluation_needs_observation_before_resume"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "restart_claim",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_restart_preserves_cursor_and_marks_inflight"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "restart_submitting_unknown",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_restart_preserves_cursor_and_marks_inflight"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "restart_cancel_unknown",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_restart_preserves_cursor_and_marks_inflight"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "restart_pauses",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_resume_requires_each_current_proof (field='user_confirmed')"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "resume_confirmation",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_resume_requires_each_current_proof (field='reconciled')"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "resume_reconciliation",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_resume_requires_each_current_proof (field='preflight_passed')"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "resume_preflight",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_resume_blocks_each_uncertain_evaluation"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "resume_pending_eval",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_resume_blocks_each_uncertain_evaluation"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "resume_unknown_eval",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_resume_blocks_each_uncertain_force_attempt"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "resume_unknown_force",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_cursor_requires_automatic_resume_and_fresh_completed_time"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "paused_claim",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_state.AutomaticStateTests.test_cursor_requires_automatic_resume_and_fresh_completed_time"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "resume_time_required",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_cursor_requires_automatic_resume_and_fresh_completed_time"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "new_after_resume",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_cursor_requires_automatic_resume_and_fresh_completed_time"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "completed_time",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_claim_is_durable_before_execution_and_not_replayed"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "unfinished_claim",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_claim_is_durable_before_execution_and_not_replayed"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "cursor_monotonic",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_evaluation_completion_matches_claim_and_order"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "evaluation_exact_cursor",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_evaluation_completion_matches_claim_and_order"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "evaluation_order_identity",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_evaluation_completion_matches_claim_and_order",
+            "test_m2_automatic_state.AutomaticStateTests.test_restarted_evaluation_needs_observation_before_resume",
+            "test_m2_automatic_state.AutomaticStateTests.test_unknown_evaluation_stops_and_requires_observed_resolution"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "evaluation_observation",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_unknown_evaluation_stops_and_requires_observed_resolution"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "unknown_observation_not_resolution",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_unknown_evaluation_stops_and_requires_observed_resolution"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "unknown_requires_known_outcome",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_unknown_evaluation_stops_and_requires_observed_resolution"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "evaluation_unknown_pause",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_claim_works_while_paused_with_stable_key",
+            "test_m2_automatic_state.AutomaticStateTests.test_force_retry_only_confirmed_terminal_miss",
+            "test_m2_automatic_state.AutomaticStateTests.test_restart_preserves_cursor_and_marks_inflight"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "force_retry_outcome",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_timing_guard"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "force_retry_timing",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_retry_only_confirmed_terminal_miss",
+            "test_m2_automatic_state.AutomaticStateTests.test_force_terminal_cannot_regress_or_take_late_callback"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "force_retry_key",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_terminal_cannot_regress_or_take_late_callback",
+            "test_m2_automatic_state.AutomaticStateTests.test_force_transitions_match_attempt_and_order"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "force_exact_attempt",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_transitions_match_attempt_and_order"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "force_order_identity",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_cancel_receipt_does_not_authorize_retry"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "cancel_confirmation",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_unknown_stops_never_retries_and_observed_only"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "unknown_resolution_proof",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_terminal_cannot_regress_or_take_late_callback",
+            "test_m2_automatic_state.AutomaticStateTests.test_force_transitions_match_attempt_and_order",
+            "test_m2_automatic_state.AutomaticStateTests.test_force_unknown_stops_never_retries_and_observed_only"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "transition_allowed",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [
+            "test_m2_automatic_state.AutomaticStateTests.test_force_unknown_stops_never_retries_and_observed_only"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "force_unknown_pause",
+          "killed": true
+        },
+        {
+          "tests": 21,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_state.AutomaticStateTests.test_trusted_terminal_cancel_need_not_invent_a_cancel_request_phase"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.application.automatic_state",
+          "guard": "observed_terminal_cancel",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_empty_or_unsupported_selection_does_not_fall_back_to_manual_calendar (instruments=(InstrumentSpec(instrument_id='TWSE:0050', market=<Market.STOCK: 'STOCK'>, currency='TWD', unit=<QuantityUnit.SHARE: 'SHARE'>, lot_size=1000, multiplier=Decimal('1'), tick_size=Decimal('0.01'), underlying='0050', version='test-v1', source='EXPLICIT_TEST_ONLY', effective_at=datetime.datetime(2026, 10, 22, 1, 0, tzinfo=datetime.timezone.utc), expiry=None, margin=None, exchange='TWSE', delivery_month=None, tick_rule_id='fixed-demo-v1', calendar_id='explicit-demo-v1', settlement_rule_id='cash-funded-v1', corporate_action_version='none-v1', schema_version=2, price_bands=()), InstrumentSpec(instrument_id='TAIFEX:FFF:202611', market=<Market.STOCK_FUTURE: 'STOCK_FUTURE'>, currency='TWD', unit=<QuantityUnit.CONTRACT: 'CONTRACT'>, lot_size=1, multiplier=Decimal('2000'), tick_size=Decimal('1'), underlying='2330', version='test-v1', source='EXPLICIT_TEST_ONLY', effective_at=datetime.datetime(2026, 10, 22, 1, 0, tzinfo=datetime.timezone.utc), expiry=datetime.date(2026, 11, 18), margin=Decimal('20000'), exchange='TAIFEX', delivery_month='202611', tick_rule_id='fixed-demo-v1', calendar_id='explicit-demo-v1', settlement_rule_id='cash-funded-v1', corporate_action_version='none-v1', schema_version=2, price_bands=())))",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_only_stocks_and_actual_tmf_contracts_receive_automatic_calendars (spec=InstrumentSpec(instrument_id='TAIFEX:FFF:202611', market=<Market.STOCK_FUTURE: 'STOCK_FUTURE'>, currency='TWD', unit=<QuantityUnit.CONTRACT: 'CONTRACT'>, lot_size=1, multiplier=Decimal('2000'), tick_size=Decimal('1'), underlying='2330', version='test-v1', source='EXPLICIT_TEST_ONLY', effective_at=datetime.datetime(2026, 10, 22, 1, 0, tzinfo=datetime.timezone.utc), expiry=datetime.date(2026, 11, 18), margin=Decimal('20000'), exchange='TAIFEX', delivery_month='202611', tick_rule_id='fixed-demo-v1', calendar_id='explicit-demo-v1', settlement_rule_id='cash-funded-v1', corporate_action_version='none-v1', schema_version=2, price_bands=()))"
+          ],
+          "errors": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_only_stocks_and_actual_tmf_contracts_receive_automatic_calendars"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "unsupported_product_guard",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_night_only_base_has_no_verified_day_coverage"
+          ],
+          "errors": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_actual_contract_expiry_day_closes_1330",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_calendar_identity_version_and_source_are_explicit_and_reproducible",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_distinct_tmf_contracts_keep_day_envelope_open_after_front_contract_expiry_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_for_next_month_does_not_shorten_front_month_settlement_date",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_uses_actual_spec_date_instead_of_third_wednesday_inference",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_ledger_envelope_never_substitutes_for_stock_order_calendar",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_selection_is_order_and_duplicate_independent",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_night_session_is_not_exposed_even_when_caller_allows_night",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_omitted_holiday_and_night_only_trade_date_are_never_fabricated",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_hours_are_product_hours_and_do_not_mutate_legacy_manual_calendar",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_only_envelope_does_not_expand_to_futures_hours",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_tmf_regular_day_opens_0845_and_closes_1345",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_utc_input_has_identical_taipei_instants_and_sessions"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "verified_day_filter",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_empty_or_unsupported_selection_does_not_fall_back_to_manual_calendar (instruments=())"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "empty_selection_guard",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_ledger_envelope_never_substitutes_for_stock_order_calendar",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_hours_are_product_hours_and_do_not_mutate_legacy_manual_calendar",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_only_envelope_does_not_expand_to_futures_hours"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "stock_open",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_actual_contract_expiry_day_closes_1330",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_uses_actual_spec_date_instead_of_third_wednesday_inference",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_hours_are_product_hours_and_do_not_mutate_legacy_manual_calendar",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_only_envelope_does_not_expand_to_futures_hours"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "stock_close",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_actual_contract_expiry_day_closes_1330",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_tmf_regular_day_opens_0845_and_closes_1345",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_utc_input_has_identical_taipei_instants_and_sessions"
+          ],
+          "errors": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_ledger_envelope_never_substitutes_for_stock_order_calendar"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "tmf_open",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_distinct_tmf_contracts_keep_day_envelope_open_after_front_contract_expiry_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_for_next_month_does_not_shorten_front_month_settlement_date",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_uses_actual_spec_date_instead_of_third_wednesday_inference",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_tmf_regular_day_opens_0845_and_closes_1345",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_utc_input_has_identical_taipei_instants_and_sessions"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "tmf_close",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_actual_contract_expiry_day_closes_1330",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_uses_actual_spec_date_instead_of_third_wednesday_inference",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "expiry_close",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_distinct_tmf_contracts_keep_day_envelope_open_after_front_contract_expiry_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_for_next_month_does_not_shorten_front_month_settlement_date",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_uses_actual_spec_date_instead_of_third_wednesday_inference"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "actual_expiry_date",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_utc_input_has_identical_taipei_instants_and_sessions"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "calendar_timezone",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close"
+          ],
+          "errors": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_ledger_envelope_never_substitutes_for_stock_order_calendar"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "ledger_earliest_open",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_distinct_tmf_contracts_keep_day_envelope_open_after_front_contract_expiry_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "ledger_latest_close",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_actual_contract_expiry_day_closes_1330",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_calendar_identity_version_and_source_are_explicit_and_reproducible",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_distinct_tmf_contracts_keep_day_envelope_open_after_front_contract_expiry_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_for_next_month_does_not_shorten_front_month_settlement_date",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_expiry_uses_actual_spec_date_instead_of_third_wednesday_inference",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_ledger_envelope_never_substitutes_for_stock_order_calendar",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_day_envelope_uses_earliest_open_and_latest_close",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_selection_is_order_and_duplicate_independent",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_night_session_is_not_exposed_even_when_caller_allows_night",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_omitted_holiday_and_night_only_trade_date_are_never_fabricated",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_hours_are_product_hours_and_do_not_mutate_legacy_manual_calendar",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_stock_only_envelope_does_not_expand_to_futures_hours",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_tmf_regular_day_opens_0845_and_closes_1345",
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_utc_input_has_identical_taipei_instants_and_sessions"
+          ],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "verified_day_coverage",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_calendar_identity_version_and_source_are_explicit_and_reproducible"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "new_calendar_identity",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_calendar_identity_version_and_source_are_explicit_and_reproducible"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "base_version_provenance",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_calendar_identity_version_and_source_are_explicit_and_reproducible"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "official_source_provenance",
+          "killed": true
+        },
+        {
+          "tests": 17,
+          "failures": [
+            "test_m2_automatic_calendar.AutomaticCalendarTests.test_mixed_selection_is_order_and_duplicate_independent"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "module": "quantlab.trading.domain.automatic_calendar",
+          "guard": "selection_canonical_identity",
+          "killed": true
+        }
+      ]
+    },
+    "capacity": {
+      "total": 79,
+      "killed": 79,
+      "records": [
+        {
+          "case": "capacity_sim_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "single_confirmed_book",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "virtual_book_source",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "all_app_ownership",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "ownership_account_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "entry_cost_account_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "closed_realized_losses",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "entry_fees_once",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_fees_not_twice",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "stock_owned_principal",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "closed_lot_margin_bypass",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_futures_fallback",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_margin_version_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "manual_margin_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "futures_held_quantity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cash_zero_floor",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "equity_zero_floor",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unrealized_equity_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "settlement_account_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "settlement_maturity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "pending_subtracted_once",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "configured_allocation_caps",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "observations_sim_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "configured_target",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "all_accounts_observed",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "generation_validator_present",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "generation_validator_called",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "normalized_observation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "observed_account_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "observed_environment",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "observation_freshness",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unmapped_orders",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "remote_unknown_orders",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconciliation_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "local_unknown_orders",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unknown_status",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "submitting_status",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cancel_pending_status",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "entry_validator_port_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "entry_validator_current_proof",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_margin_provenance_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_margin_provenance_instrument_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "engine_execution_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "plan_sim_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_parameters_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "record_identity_version",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "record_account_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "record_environment_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "current_scope_observation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "automatic_pause",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "shared_allocation_context",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "confirmed_target_book",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "day_mark_context",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "day_all_account_marks",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "day_baseline_account",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "day_baseline_date",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "day_baseline_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "subtract_previous_close",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_scope_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_cash_not_marked",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_single_account_allocation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_no_day_baseline_admission",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_current_account_observation_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_skip_unrelated_cash_margin",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_realized_equity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_reconciliation_account",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_reconciliation_instrument",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_unresolved_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_unresolved_instrument",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_duplicate_broker_positions",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_confirmed_quantity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_confirmed_unit",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_signed_quantity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_unresolved_account",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_local_quantity_account",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_local_quantity_instrument",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_managed_quantity_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_remote_quantity_instrument",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_ignore_zero_remote_positions",
+          "status": "KILLED",
+          "tests": 1
+        }
+      ]
+    },
+    "automatic": {
+      "total": 94,
+      "killed": 94,
+      "records": [
+        {
+          "case": "live_resume",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "live_pause",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "live_reconcile",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "live_bars",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "live_pump",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "live_shared_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "simulation_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "global_stop_latch",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "journal_failure",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "closed_engine",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unresolved_issue",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconciliation_difference",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "global_day_lock",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "corporate_lifecycle",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "roll_lifecycle",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "shared_allocation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "confirmed_virtual_book",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "current_ledger_day",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "all_book_baselines",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "fresh_cached_observation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "current_generation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "mandatory_current_entry_port",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "current_server_entry_proofs",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "account_loss_latch",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "daily_preflight",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "healthy_admission",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "ownership_fence",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "explicit_resume_persist",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "intraday_scope_first",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "held_disabled_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "flat_intraday_due",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cursor_version_identity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "explicit_reconcile_unknown",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "observed_evaluation_result",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "observed_terminal_cancel",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_remains_paused",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_cached_proof",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_manual_unknown",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_owned_result",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_unresolved_evaluation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_unresolved_force",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "resolved_unknown_clear",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "retain_other_issues",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_closed_fence",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "reconcile_storage_fence",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "no_mixed_timeframes",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "final_cache",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "global_stop_before_decision",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "active_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "matching_delivery",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "claim_before_decision",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "skip_consumed_cursor",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "bar_end_asof",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "evaluation_completed",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unknown_without_order",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "rejected_result_halts",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "force_pause_after_cutoff",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "overdue_anomaly",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cutoff_preserves_working_exit",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "thirty_second_retry",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cancel_not_terminal",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unknown_requires_resume",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "force_claim_before_submit",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "protective_exit",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "force_idempotency_key",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unknown_force_without_order",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "pump_closed",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "pump_journal",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "observe_account_risk",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "automatic_risk_pause",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "owned_positions_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "nonzero_positions_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "force_time_gate",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "single_force_owner",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "normal_completed_history",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "pump_no_signal_evaluation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "completed_exit_evaluates_signal",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "owned_disabled_exit",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "owned_version_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "owned_strategy_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "owned_origin_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "owned_quantity_scope",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_bar_asof",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_leg_idempotency",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exit_report_correlation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unknown_leg_selected_first",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "aggregate_unknown_priority",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "pinned_result_identity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "later_unknown_report",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "later_unknown_stop",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cancel_mandatory_owner_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cancel_owner_guard_admission",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "cancel_reduction_scope",
+          "status": "KILLED",
+          "tests": 1
+        }
+      ]
+    },
+    "runtime": {
+      "total": 90,
+      "killed": 90,
+      "records": [
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_actual_cached_collector_requires_current_generation_diagnostic_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_actual_provider_requires_current_diagnostic_and_realtime_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='connected', value=False)",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_failed_health_pauses_and_explicit_resumption_errors_are_returned",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_bundle_fake_sdk_refuses_unproven_permission_without_new_native_queries"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L31",
+          "killed": true,
+          "original": "getattr(facts, key) is not True"
+        },
+        {
+          "tests": 61,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_attach_idempotent_missing_terminal_and_empty_callback"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L51",
+          "killed": true,
+          "original": "terminal is None or terminal is self.terminal"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_attach_idempotent_missing_terminal_and_empty_callback",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_tick_rollover_enqueues_only_final_and_finalizes_without_next_tick_once",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_shared_sdk_fop_callback_drives_completed_future_bar_without_marketwatch_support"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L68",
+          "killed": true,
+          "original": "not completed"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_without_selected_subscription_connection_or_typed_strategy_never_drains"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L87",
+          "killed": true,
+          "original": "bundle.launch.environment is not Environment.BROKER_SIMULATION or engine is None or manual is None or adapter is None"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_live_all_public_routes_fail_closed"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L145",
+          "killed": true,
+          "original": "bundle.launch.environment is not Environment.BROKER_SIMULATION"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_owner_generation_revision_selection_shared_and_cache_identity"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L147",
+          "killed": true,
+          "original": "owner is None or manual is None or engine is None or manual.owner is not owner"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_protective.SubmissionGuardBoundaryTests.test_guard_environment_is_closed_before_yield_even_if_fact_port_returns_success"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L190",
+          "killed": true,
+          "original": "bundle.launch.environment is not Environment.BROKER_SIMULATION"
+        },
+        {
+          "tests": 61,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_protective.SubmissionGuardBoundaryTests.test_guard_missing_context_and_closing_context_do_not_yield"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L192",
+          "killed": true,
+          "original": "engine is None or owner is None or manual is None"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_environment_missing_owner_and_closure_guards"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L225",
+          "killed": true,
+          "original": "bundle.launch.environment is not Environment.BROKER_SIMULATION"
+        },
+        {
+          "tests": 61,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_environment_missing_owner_and_closure_guards"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L227",
+          "killed": true,
+          "original": "engine is None or owner is None or manual is None"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_boolean_version_equal_to_current_integer_and_falsy_account_still_rejected",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_deny_only_envelope_never_resumes_or_reconciles_and_requires_exact_boolean",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application (changes={'action': <UiAction.RESUME: 'resume'>})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application (changes={'action': 'auto_resume'})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L271",
+          "killed": true,
+          "original": "not self.handles(command)\n            or type(command.action) is not UiAction\n            or type(command.expected_version) is not int\n            or type(command.account_ref) is not str\n            or type(command.manual_no_admission) is not bool\n            or command.manual_no_admission"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_live_all_public_routes_fail_closed"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L280",
+          "killed": true,
+          "original": "command.environment is Environment.LIVE or bundle.launch.environment is Environment.LIVE"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_local_does_not_consume_realtime_bars_or_require_broker_health"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L282",
+          "killed": true,
+          "original": "bundle.launch.environment is Environment.LOCAL"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application (changes={'environment': <Environment.LOCAL: 'LOCAL'>})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L284",
+          "killed": true,
+          "original": "command.environment is not None and command.environment is not bundle.launch.environment"
+        },
+        {
+          "tests": 61,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_each_closure_flag_and_no_engine"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L287",
+          "killed": true,
+          "original": "engine is None"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_no_typed_strategies_retains_manual_behavior"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L324",
+          "killed": true,
+          "original": "engine is None or not any(row.parameters is not None for row in engine.state.strategies)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_pump_closure_and_storage_states_do_no_work"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L326",
+          "killed": true,
+          "original": "bundle.closing or bundle.resources_closed or bundle.control_failed or engine.state.engine_closed or engine.storage_failed"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_oversized_batch_is_a_gap",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_overflow_drops_batch_and_pauses_before_any_entry_protective_still_runs"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L74",
+          "killed": true,
+          "original": "len(self.queue) >= MAX_QUEUED_BATCHES or len(completed) > MAX_BATCH_BARS"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_callbacks_chain_after_alerts_enqueue_only_completed_and_defer_engine",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_tick_rollover_enqueues_only_final_and_finalizes_without_next_tick_once",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_healthy_recovery_does_not_resume_and_ca_is_not_required",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_overflow_drops_batch_and_pauses_before_any_entry_protective_still_runs",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_shared_sdk_fop_callback_drives_completed_future_bar_without_marketwatch_support"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated (field='engine')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated (field='owner')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated (field='stamp')"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L78",
+          "killed": true,
+          "original": "not self.overflow"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_stale_adapter_or_closing_runtime_does_not_drain",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_without_selected_subscription_connection_or_typed_strategy_never_drains"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L90",
+          "killed": true,
+          "original": "bundle.engine is not engine\n                or bundle.manual_runtime is not manual\n                or manual.adapter is not adapter\n                or bundle.closing\n                or bundle.resources_closed\n                or bundle.control_failed\n                or not any(row.parameters is not None for row in engine.state.strategies)"
+        },
+        {
+          "tests": 61,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_without_selected_subscription_connection_or_typed_strategy_never_drains"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L101",
+          "killed": true,
+          "original": "stream is None or not adapter.connected or adapter.environment is not Environment.BROKER_SIMULATION"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_without_selected_subscription_connection_or_typed_strategy_never_drains"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L104",
+          "killed": true,
+          "original": "not selected"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_adapter_generation_and_engine_reset_do_not_merge_minute_state (changed='adapter')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_adapter_generation_and_engine_reset_do_not_merge_minute_state (changed='stamp')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_adapter_generation_and_engine_reset_do_not_merge_minute_state (changed='engine')"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L107",
+          "killed": true,
+          "original": "self.future_stamp is None or self.future_stamp[0] is not adapter or self.future_stamp[1] is not engine or self.future_stamp[2] != manual.stamp"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_validate_rechecks_engine_owner_and_manual_runtime_inside_engine_lock (attribute='engine')"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_validate_rechecks_engine_owner_and_manual_runtime_inside_engine_lock (attribute='sinopac_connection')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_validate_rechecks_engine_owner_and_manual_runtime_inside_engine_lock (attribute='manual_runtime')"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L151",
+          "killed": true,
+          "original": "bundle.engine is not engine or bundle.sinopac_connection is not owner or bundle.manual_runtime is not manual"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_requires_connected_simulation_owner",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_age_and_missing_epoch_marker_cannot_borrow_scoped_cache"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L156",
+          "killed": true,
+          "original": "view.phase != 'CONNECTED'\n                or view.environment is not Environment.BROKER_SIMULATION\n                or not owner.query_ready\n                or shared is None\n                or shared.callback_errors\n                or bundle.closing\n                or bundle.resources_closed\n                or manual.error\n                and (not protective or getattr(manual, 'protective_stamp', None) != manual.stamp)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_owner_generation_revision_selection_shared_and_cache_identity"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L168",
+          "killed": true,
+          "original": "manual.stamp != (view.generation, view.revision, selected, shared) or account_ref not in selected"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_selected_account_must_be_currently_signed_without_permission_or_market_gate"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L171",
+          "killed": true,
+          "original": "account is None or account.signed is not True"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'account_ref': 'wrong'})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'environment': <Environment.LOCAL: 'LOCAL'>})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'source': 'UNVERIFIED'})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'as_of': datetime.datetime(2026, 10, 23, 1, 0, 1, tzinfo=datetime.timezone.utc)})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'as_of': datetime.datetime(2026, 10, 23, 0, 59, 29, tzinfo=datetime.timezone.utc)})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_owner_generation_revision_selection_shared_and_cache_identity",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_age_and_missing_epoch_marker_cannot_borrow_scoped_cache"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L173",
+          "killed": true,
+          "original": "not isinstance(row, ManualAccountObservation)\n                or row.account_ref != account_ref\n                or row.environment is not Environment.BROKER_SIMULATION\n                or row.source != 'SHIOAJI_SCOPED_REFRESH_HEALTHY'\n                or engine.manual_observations.get(account_ref) is not row\n                and not protective\n                or not 0 <= (engine.clock.now() - row.as_of).total_seconds() <= 30"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_protective.SubmissionGuardBoundaryTests.test_guard_missing_context_and_closing_context_do_not_yield"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L195",
+          "killed": true,
+          "original": "bundle.engine is not engine\n                or bundle.sinopac_connection is not owner\n                or bundle.manual_runtime is not manual\n                or bundle.closing\n                or bundle.resources_closed\n                or bundle.control_failed"
+        },
+        {
+          "tests": 61,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error",
+            "test_m2_automatic_protective.SubmissionGuardBoundaryTests.test_reduction_guard_uses_its_target_observation_without_entry_market_requirement"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L206",
+          "killed": true,
+          "original": "reduce_only"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_protective.SubmissionGuardBoundaryTests.test_guard_last_cas_rechecks_owner_after_fact_validation"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L212",
+          "killed": true,
+          "original": "bundle.engine is not engine\n                or bundle.sinopac_connection is not owner\n                or bundle.manual_runtime is not manual\n                or stamp != (current.environment, current.generation, current.revision, tuple(sorted(owner.selected)), owner.shared)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_environment_missing_owner_and_closure_guards"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L231",
+          "killed": true,
+          "original": "bundle.closing\n                or bundle.resources_closed\n                or bundle.control_failed\n                or bundle.engine is not engine\n                or bundle.sinopac_connection is not owner\n                or bundle.manual_runtime is not manual\n                or manual.owner is not owner"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_final_owner_generation_revision_selection_shared_and_closure_cas"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L245",
+          "killed": true,
+          "original": "bundle.closing\n                or bundle.resources_closed\n                or bundle.control_failed\n                or bundle.engine is not engine\n                or bundle.sinopac_connection is not owner\n                or bundle.manual_runtime is not manual\n                or stamp != (current.environment, current.generation, current.revision, tuple(sorted(owner.selected)), owner.shared)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_actual_provider_requires_current_diagnostic_and_realtime_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='connected', value=False)"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L256",
+          "killed": true,
+          "original": "reason"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_actual_cached_collector_requires_current_generation_diagnostic_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_failed_health_pauses_and_explicit_resumption_errors_are_returned",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_bundle_fake_sdk_refuses_unproven_permission_without_new_native_queries"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L263",
+          "killed": true,
+          "original": "reason"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_pump_rechecks_engine_and_owner_inside_composition_lock"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L329",
+          "killed": true,
+          "original": "bundle.engine is not engine or bundle.sinopac_connection is not owner"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_live_all_public_routes_fail_closed",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_local_does_not_consume_realtime_bars_or_require_broker_health"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L331",
+          "killed": true,
+          "original": "bundle.launch.environment in (Environment.LOCAL, Environment.LIVE)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_loss_marks_existing_and_incoming_minutes_incomplete_pauses_without_entry",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_oversized_batch_is_a_gap",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_overflow_drops_batch_and_pauses_before_any_entry_protective_still_runs"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L335",
+          "killed": true,
+          "original": "overflow or any(old_engine is not engine or old_owner is not owner or old_stamp != stamp for old_engine, old_owner, old_stamp, _ in batches)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_actual_cached_collector_requires_current_generation_diagnostic_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_health_collection_error_pauses_and_does_not_evaluate"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L343",
+          "killed": true,
+          "original": "reason"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_callbacks_chain_after_alerts_enqueue_only_completed_and_defer_engine",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_healthy_recovery_does_not_resume_and_ca_is_not_required"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L345",
+          "killed": true,
+          "original": "not reason and bundle.launch.environment is Environment.BROKER_SIMULATION"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_loss_unrelated_to_selected_future_is_ignored"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L112",
+          "killed": true,
+          "original": "loss.instrument_id not in selected"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_loss_invalidates_already_forming_minute_without_needing_another_tick"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L119",
+          "killed": true,
+          "original": "state is not None and first < state.bar.end and last >= state.bar.start"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_never_consumes_stock_as_automatic_futures_or_modifies_terminal_callbacks"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L125",
+          "killed": true,
+          "original": "tick.instrument_id not in selected"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_loss_before_first_tick_persists_until_last_affected_minute"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L133",
+          "killed": true,
+          "original": "loss is not None and start > loss[1]"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_tick_rollover_enqueues_only_final_and_finalizes_without_next_tick_once"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L137",
+          "killed": true,
+          "original": "final.bar.final and not state.bar.final"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_each_closure_flag_and_no_engine",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application (changes={'expected_version': -1})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application (changes={'account_ref': 'wrong'})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_rechecks_engine_owner_and_version_offset_inside_composition_lock (attribute='engine')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_rechecks_engine_owner_and_version_offset_inside_composition_lock"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_rechecks_engine_owner_and_version_offset_inside_composition_lock (attribute='sinopac_connection')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_rechecks_engine_owner_and_version_offset_inside_composition_lock (attribute='version_offset')"
+          ],
+          "exit_code": 1,
+          "guard": "if_guard_L291",
+          "killed": true,
+          "original": "bundle.closing\n                    or bundle.resources_closed\n                    or bundle.control_failed\n                    or bundle.engine is not engine\n                    or bundle.sinopac_connection is not owner\n                    or bundle.version_offset != offset\n                    or command.expected_version != engine.state.version + offset\n                    or command.account_ref\n                    and command.account_ref not in engine.gateways"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_failed_health_pauses_and_explicit_resumption_errors_are_returned",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_known_action_routes_with_cas_and_no_sdk",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_bundle_fake_sdk_refuses_unproven_permission_without_new_native_queries"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L303",
+          "killed": true,
+          "original": "command.action is UiAction.AUTO_RESUME"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_failed_health_pauses_and_explicit_resumption_errors_are_returned",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_bundle_fake_sdk_refuses_unproven_permission_without_new_native_queries"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "if_guard_L305",
+          "killed": true,
+          "original": "reason"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_attach_idempotent_missing_terminal_and_empty_callback",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_callbacks_chain_after_alerts_enqueue_only_completed_and_defer_engine"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "forming_bar",
+          "killed": true,
+          "original": "and bar.final and not bar.incomplete"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_callbacks_chain_after_alerts_enqueue_only_completed_and_defer_engine"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "incomplete_bar",
+          "killed": true,
+          "original": "and bar.final and not bar.incomplete"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_callbacks_chain_after_alerts_enqueue_only_completed_and_defer_engine"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "alerts_tick_chain",
+          "killed": true,
+          "original": "            old_tick(tick, bars)\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_callbacks_chain_after_alerts_enqueue_only_completed_and_defer_engine"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "alerts_bars_chain",
+          "killed": true,
+          "original": "            old_bars(instrument_id, bars, now, trade_date)\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_validation_from_engine_submit_never_waits_for_snapshot_composition_lock"
+          ],
+          "errors": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_age_and_missing_epoch_marker_cannot_borrow_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_empty_adopt_and_new_service_clear_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_failed_future_scope_cannot_protect_itself",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_new_non_scope_failure_cannot_inherit_previous_scope_failure_marker",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_owner_change_after_collection_clears_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scoped_observation_cannot_resume_or_admit_any_new_entry",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_sdk_failure_clears_previously_validated_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_unverified_source_and_position_mismatch_never_receive_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_failed_account_never_receives_scoped_permission",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "exit_code": 1,
+          "guard": "snapshot_lock_inversion",
+          "killed": true,
+          "original": "# submit already holds engine.lock; never acquire the outer bundle lock here.\n        with engine.lock, owner.lock:"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_validation_from_engine_submit_never_waits_for_snapshot_composition_lock"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_actual_provider_requires_current_diagnostic_and_realtime_without_sdk_or_ca",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_age_and_missing_epoch_marker_cannot_borrow_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_empty_adopt_and_new_service_clear_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_failed_future_scope_cannot_protect_itself",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_new_non_scope_failure_cannot_inherit_previous_scope_failure_marker",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_owner_change_after_collection_clears_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scoped_observation_cannot_resume_or_admit_any_new_entry",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_sdk_failure_clears_previously_validated_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_unverified_source_and_position_mismatch_never_receive_scoped_cache",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_failed_account_never_receives_scoped_permission",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "exit_code": 1,
+          "guard": "entry_snapshot_lock_inversion",
+          "killed": true,
+          "original": "# Called by submit under engine.lock; never invert through bundle.lock.\n        with engine.lock, owner.lock:"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_overflow_drops_batch_and_pauses_before_any_entry_protective_still_runs"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "queue_cap",
+          "killed": true,
+          "original": "len(self.queue) >= MAX_QUEUED_BATCHES or len(completed) > MAX_BATCH_BARS"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_oversized_batch_is_a_gap"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "batch_cap",
+          "killed": true,
+          "original": "len(self.queue) >= MAX_QUEUED_BATCHES or len(completed) > MAX_BATCH_BARS"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_owner_generation_revision_selection_shared_and_cache_identity"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "observation_current_owner",
+          "killed": true,
+          "original": " or manual.owner is not owner:"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_owner_generation_revision_selection_shared_and_cache_identity"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "observation_selected_account",
+          "killed": true,
+          "original": " or account_ref not in selected:"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'account_ref': 'wrong'})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "observation_account_scope",
+          "killed": true,
+          "original": "                or row.account_ref != account_ref\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'environment': <Environment.LOCAL: 'LOCAL'>})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "observation_environment",
+          "killed": true,
+          "original": "                or row.environment is not Environment.BROKER_SIMULATION\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'source': 'UNVERIFIED'})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "observation_source",
+          "killed": true,
+          "original": "                or row.source != 'SHIOAJI_SCOPED_REFRESH_HEALTHY'\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_owner_generation_revision_selection_shared_and_cache_identity"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "observation_cache_identity",
+          "killed": true,
+          "original": "                or engine.manual_observations.get(account_ref) is not row\n                and not protective\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'as_of': datetime.datetime(2026, 10, 23, 1, 0, 1, tzinfo=datetime.timezone.utc)})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_observation_health_and_freshness_each_fail_closed (changes={'as_of': datetime.datetime(2026, 10, 23, 0, 59, 29, tzinfo=datetime.timezone.utc)})",
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_age_and_missing_epoch_marker_cannot_borrow_scoped_cache"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "observation_freshness",
+          "killed": true,
+          "original": "                or not 0 <= (engine.clock.now() - row.as_of).total_seconds() <= 30\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_no_typed_strategies_retains_manual_behavior"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "no_typed_manual_only",
+          "killed": true,
+          "original": "if engine is None or not any(row.parameters is not None for row in engine.state.strategies):"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_actual_cached_collector_requires_current_generation_diagnostic_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_actual_provider_requires_current_diagnostic_and_realtime_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='connected', value=None)",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_failed_health_pauses_and_explicit_resumption_errors_are_returned",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_bundle_fake_sdk_refuses_unproven_permission_without_new_native_queries"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "healthy_none_fails",
+          "killed": true,
+          "original": "if getattr(facts, key) is not True:"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_boolean_version_equal_to_current_integer_and_falsy_account_still_rejected"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "explicit_version_type",
+          "killed": true,
+          "original": "            or type(command.expected_version) is not int\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application (changes={'action': 'auto_resume'})"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "explicit_action_type",
+          "killed": true,
+          "original": "            or type(command.action) is not UiAction\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_boolean_version_equal_to_current_integer_and_falsy_account_still_rejected"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "explicit_account_type",
+          "killed": true,
+          "original": "            or type(command.account_ref) is not str\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application (changes={'expected_version': -1})",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "explicit_version_cas",
+          "killed": true,
+          "original": "                    or command.expected_version != engine.state.version + offset\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_rechecks_engine_owner_and_version_offset_inside_composition_lock (attribute='version_offset')",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_rechecks_engine_owner_and_version_offset_inside_composition_lock"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "explicit_version_offset",
+          "killed": true,
+          "original": "                    or bundle.version_offset != offset\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_malformed_wrong_version_environment_or_account_never_calls_application"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "command_live_target",
+          "killed": true,
+          "original": "if command.environment is Environment.LIVE or bundle.launch.environment is Environment.LIVE:"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_live_all_public_routes_fail_closed"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "host_live_target",
+          "killed": true,
+          "original": "if command.environment is Environment.LIVE or bundle.launch.environment is Environment.LIVE:"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "queue_old_engine",
+          "killed": true,
+          "original": "old_engine is not engine or old_owner is not owner or old_stamp != stamp"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "queue_old_owner",
+          "killed": true,
+          "original": "old_engine is not engine or old_owner is not owner or old_stamp != stamp"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_queue_from_obsolete_engine_owner_or_stamp_is_never_evaluated"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "queue_old_stamp",
+          "killed": true,
+          "original": "old_engine is not engine or old_owner is not owner or old_stamp != stamp"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_deny_only_envelope_never_resumes_or_reconciles_and_requires_exact_boolean"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "deny_only_boolean_type",
+          "killed": true,
+          "original": "            or type(command.manual_no_admission) is not bool\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_deny_only_envelope_never_resumes_or_reconciles_and_requires_exact_boolean"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "deny_only_true",
+          "killed": true,
+          "original": "            or command.manual_no_admission\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_never_consumes_stock_as_automatic_futures_or_modifies_terminal_callbacks"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "future_actual_tmf_only",
+          "killed": true,
+          "original": "and is_tmf(adapter.bindings[key].spec)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_adapter_generation_and_engine_reset_do_not_merge_minute_state (changed='adapter')"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "future_adapter_identity",
+          "killed": true,
+          "original": " or self.future_stamp[0] is not adapter"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_adapter_generation_and_engine_reset_do_not_merge_minute_state (changed='engine')"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "future_engine_identity",
+          "killed": true,
+          "original": " or self.future_stamp[1] is not engine"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_adapter_generation_and_engine_reset_do_not_merge_minute_state (changed='stamp')"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "future_generation_stamp",
+          "killed": true,
+          "original": " or self.future_stamp[2] != manual.stamp"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_loss_invalidates_already_forming_minute_without_needing_another_tick"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "future_loss_incomplete",
+          "killed": true,
+          "original": "replace(state, bar=replace(state.bar, incomplete=True))"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_loss_before_first_tick_persists_until_last_affected_minute",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_futures_loss_marks_existing_and_incoming_minutes_incomplete_pauses_without_entry"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "future_incoming_loss",
+          "killed": true,
+          "original": "incomplete=incomplete)"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='connected', value=False)"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "entry_connection_fact",
+          "killed": true,
+          "original": "        ('connected', 'preflight_connection'),\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='account_ready', value=False)"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "entry_account_fact",
+          "killed": true,
+          "original": "        ('account_ready', 'preflight_account'),\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_actual_cached_collector_requires_current_generation_diagnostic_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_actual_provider_requires_current_diagnostic_and_realtime_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='permission_ready', value=False)",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_failed_health_pauses_and_explicit_resumption_errors_are_returned",
+            "test_m2_automatic_runtime.NativeAutomaticRuntimeTests.test_real_bundle_fake_sdk_refuses_unproven_permission_without_new_native_queries"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "entry_permission_fact",
+          "killed": true,
+          "original": "        ('permission_ready', 'preflight_permission'),\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_actual_provider_requires_current_diagnostic_and_realtime_without_sdk_or_ca",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='realtime', value=False)"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "entry_market_fact",
+          "killed": true,
+          "original": "        ('realtime', 'preflight_market'),\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='service_open', value=False)"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "entry_service_fact",
+          "killed": true,
+          "original": "        ('service_open', 'preflight_service'),\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_each_runtime_health_failure_stops_entries_but_not_protection",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight (key='reconciled', value=False)"
+          ],
+          "errors": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_entry_rechecks_every_current_fact_despite_old_passed_preflight"
+          ],
+          "exit_code": 1,
+          "guard": "entry_reconciliation_fact",
+          "killed": true,
+          "original": "        ('reconciled', 'preflight_reconciliation'),\n"
+        },
+        {
+          "tests": 61,
+          "failures": [
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_execute_known_action_routes_with_cas_and_no_sdk",
+            "test_m2_automatic_runtime.AutomaticRuntimeTests.test_reconcile_after_close_ignores_entry_only_service_market_permission_and_never_resumes"
+          ],
+          "errors": [],
+          "exit_code": 1,
+          "guard": "reconcile_entry_health_gate",
+          "killed": true,
+          "original": "if command.action is UiAction.AUTO_RESUME:"
+        }
+      ]
+    },
+    "protective": {
+      "total": 25,
+      "killed": 25,
+      "records": [
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future"
+          ],
+          "errors": [],
+          "guard": "scoped_positive_guard",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future"
+          ],
+          "errors": [],
+          "guard": "continue_other_accounts",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future"
+          ],
+          "errors": [],
+          "guard": "failed_batch_not_global_success",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future"
+          ],
+          "errors": [],
+          "guard": "failed_batch_clears_full_cache",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future"
+          ],
+          "errors": [],
+          "guard": "scope_failure_retains_passed_cache",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "errors": [],
+          "guard": "scope_failure_marker",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_new_non_scope_failure_cannot_inherit_previous_scope_failure_marker"
+          ],
+          "errors": [],
+          "guard": "fresh_batch_resets_failure_marker",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_new_non_scope_failure_cannot_inherit_previous_scope_failure_marker",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_empty_adopt_and_new_service_clear_scoped_cache"
+          ],
+          "errors": [],
+          "guard": "new_service_clears_scoped_cache",
+          "module": "quantlab.trading.application.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_empty_adopt_and_new_service_clear_scoped_cache",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_sdk_failure_clears_previously_validated_scoped_cache"
+          ],
+          "errors": [],
+          "guard": "failed_sdk_clears_epoch_marker",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_sdk_failure_clears_previously_validated_scoped_cache",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_sdk_failure_clears_previously_validated_scoped_cache"
+          ],
+          "errors": [],
+          "guard": "sdk_failure_clears_all_observations",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_sdk_failure_clears_previously_validated_scoped_cache",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "errors": [],
+          "guard": "worker_retains_scope_failure",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker"
+          ],
+          "errors": [],
+          "guard": "worker_scope_failure_required",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker"
+          ],
+          "errors": [],
+          "guard": "worker_connected_required",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker"
+          ],
+          "errors": [],
+          "guard": "worker_ready_required",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_preservation_requires_current_connected_ready_owner_and_scope_marker",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "errors": [],
+          "guard": "worker_adopt_marker_forwarded",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change"
+          ],
+          "errors": [],
+          "guard": "retained_margin_provenance",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change"
+          ],
+          "errors": [],
+          "guard": "margin_renewal_updates_provenance",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change"
+          ],
+          "errors": [],
+          "guard": "verified_margin_source",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change"
+          ],
+          "errors": [],
+          "guard": "fallback_margin_source",
+          "module": "quantlab.trading.runtime.manual_trading",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_margin_source_renewal_preserves_retained_contract_flags_and_changes_without_margin_value_change",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "guard": "scoped_row_identity",
+          "module": "quantlab.trading.runtime.automatic",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "guard": "scoped_error_exception",
+          "module": "quantlab.trading.runtime.automatic",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_age_and_missing_epoch_marker_cannot_borrow_scoped_cache"
+          ],
+          "errors": [],
+          "guard": "scoped_epoch_marker",
+          "module": "quantlab.trading.runtime.automatic",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_age_and_missing_epoch_marker_cannot_borrow_scoped_cache",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error"
+          ],
+          "guard": "scoped_cache_admission",
+          "module": "quantlab.trading.runtime.automatic",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_worker_retains_only_same_epoch_validated_scope_and_native_exit_survives_error",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future"
+          ],
+          "guard": "reduce_only_scoped_selection",
+          "module": "quantlab.trading.application.automatic_capacity",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+          "exit_code": 1,
+          "killed": true
+        },
+        {
+          "tests": 1,
+          "failures": [],
+          "errors": [
+            "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future"
+          ],
+          "guard": "exit_scope_scoped_selection",
+          "module": "quantlab.trading.application.automatic_capacity",
+          "test": "test_m2_automatic_protective.AutomaticProtectiveTests.test_scope_validation_continues_after_first_failed_account_and_protects_known_future",
+          "exit_code": 1,
+          "killed": true
+        }
+      ]
+    },
+    "engine": {
+      "total": 33,
+      "killed": 33,
+      "records": [
+        {
+          "case": "native_automatic_context_dispatch",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_calendar_1335",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "shared_manual_capacity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "capacity_all_account_ownership",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "native_auto_manual_margin_shared",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "stock_t_plus_two_typed_events",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "stock_t_plus_two_maturation",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "stock_daytrade_resource_truth",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "stock_daytrade_permission_expiry",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "forced_exit_key_idempotency",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "restart_auto_pause",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "current_entry_final_owner_cas",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "force_protective_scoped_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "engine_live_force_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "automatic_live_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "settings_no_financial_snapshot",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "settings_book_capital_floor",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "sizing_margin_provenance",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "stock_actual_last_minute_calendar",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "owned_unknown_issue_recovery",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "explicit_observed_evaluation_recovery",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "view_separate_automatic_pause",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "submission_guard_port_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "submission_guard_wraps_commit",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "submission_guard_holds_owner_through_sdk",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "submission_guard_revalidates_current_entry",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "research_margin_provenance_is_current",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "deploy_retains_research_authority",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "active_commit_reproves_margin_evidence",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "active_commit_reproves_fee_evidence",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "fee_values_in_fingerprint_not_version_alone",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "exact_tmf_settlement_entry_guard",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "settlement_reduction_is_exempt",
+          "status": "KILLED",
+          "tests": 1
+        }
+      ]
+    },
+    "resources": {
+      "total": 25,
+      "killed": 25,
+      "records": [
+        {
+          "case": "default_manual_one",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "explicit_include_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "futures_only_next",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "next_offset_one",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "offset_default_near",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "offset_bound",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "offset_selection",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "expiry_sort",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "stable_code_sort",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "actual_tmf_code",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "continuous_contract",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "actual_tmf_root",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "unexpired_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "taipei_expiry_date",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "settlement_date_inclusive",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "actual_exchange",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "actual_multiplier",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "per_contract_limits",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "complete_limits",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "valid_limit_range",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "limit_identity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "all_actual_bindings",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "confirmed_context_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_context_only",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "actual_auto_session",
+          "status": "KILLED",
+          "tests": 1
+        }
+      ]
+    },
+    "baseline": {
+      "total": 15,
+      "killed": 15,
+      "records": [
+        {
+          "name": "execution",
+          "test": "test_live_rejects_before_any_scope_or_financial_operation",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "environment",
+          "test": "test_local_cannot_use_the_broker_provider_boundary",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "confirmed_books",
+          "test": "test_only_confirmed_sim_books_use_this_boundary",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "session_sync",
+          "test": "test_new_calendar_day_invalidates_old_reconciliation_before_accepting_a_close",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "trusted_evidence",
+          "test": "test_trusted_source_grant_remains_required",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "rollback",
+          "test": "test_calendar_rollback_cannot_attest_against_a_later_ledger_day",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "split_required",
+          "test": "test_aggregate_multi_account_total_cannot_invent_a_split",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "current_scope",
+          "test": "test_stale_or_unknown_current_observation_cannot_attest",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "current_mark",
+          "test": "test_unknown_current_position_value_cannot_attest_a_close",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "immutable_close",
+          "test": "test_existing_same_day_closing_values_cannot_be_reset",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "prior_row_replaced",
+          "test": "test_account_history_from_prior_day_is_replaced_by_dated_evidence",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "persist_evidence",
+          "test": "test_exact_close_attribution_persists_evidence_without_financial_queries_or_resume",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "persist_stop",
+          "test": "test_exact_close_attribution_persists_evidence_without_financial_queries_or_resume",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "persist_pause_reason",
+          "test": "test_exact_close_attribution_persists_evidence_without_financial_queries_or_resume",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        },
+        {
+          "name": "preserve_other_issues",
+          "test": "test_same_day_identical_attestation_keeps_loss_latches_and_unrelated_issues",
+          "tests": 1,
+          "failures": 1,
+          "errors": 0,
+          "killed": true
+        }
+      ]
+    },
+    "daily": {
+      "total": 8,
+      "killed": 8,
+      "records": [
+        {
+          "case": "broker_daily_explicit_pending",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "local_daily_is_not_deferred",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "known_daily_reduce_is_exempt",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "minute_entry_remains_enabled",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "daily_view_block_code",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "daily_view_paused_activity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "local_daily_view_not_blocked",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "tmf_today_count_actual_calendar",
+          "status": "KILLED",
+          "tests": 1
+        }
+      ]
+    }
+  },
+  "startup": {
+    "LOCAL": {
+      "elapsed_seconds": 5.343,
+      "engine_state": "WAITING_RECONCILIATION",
+      "environment": "LOCAL",
+      "errors": [],
+      "mode": "LOCAL",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [
+        {
+          "exit_code": 0,
+          "shutdown": "NORMAL"
+        }
+      ],
+      "passed": true,
+      "real_sdk_imported": false,
+      "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2",
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    },
+    "SIM": {
+      "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+      "elapsed_seconds": 3.453,
+      "engine_state": "DISCONNECTED",
+      "environment": "BROKER_SIMULATION",
+      "errors": [],
+      "fake_sdk_connected": true,
+      "fake_sdk_login_count": 1,
+      "fake_sdk_logout_count": 1,
+      "host_return_code": 0,
+      "mode": "BROKER_SIMULATION",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [],
+      "passed": true,
+      "real_sdk_imported": false,
+      "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2",
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    }
+  },
+  "ci": "Final-head PR checks required; pending at artifact generation",
+  "limitations": [
+    "Typed BROKER_SIMULATION1d new entries explicitly blocked; next-session saved-signal execution is next-round work",
+    "Minute research uses M2-7 existing-evidence interface; synthetic test research is not minute-backtest acceptance",
+    "No real broker automatic acceptance, credentials or CA",
+    "SIM original window startup connected/unallocated; native SDK doubles test actual automatic orders separately",
+    "M2-7/9 and all desktop UI are separate lanes"
+  ],
+  "mutation_total": {
+    "total": 446,
+    "killed": 446
+  },
+  "source_profile": {
+    "profile_id": "MARKAUTO-TRADING-V2-PROFILE-1",
+    "source_digest": "0325a52e2baf1036904441ec4b55d6689a09de28095fd38ab9d990754bccad72",
+    "manifest": [
+      [
+        "quantlab/trading/adapters/shioaji/__init__.py",
+        "8afd8a70e23659905dd4baecd99f5d55bcf57d281a55ff27f5ec3723d2b2a9a6"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/account_discovery.py",
+        "06cac7e8efa6eb23ee05ee32534d00d3e98b950e3a6e986e3ca3720f2ea95fff"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/gateway.py",
+        "4be9c7854f1947b80fe217ff1a0766e10663c687e7ed22376075648d6d8422e1"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/mapping.py",
+        "450a6390550625bbb5e3e13c8ff49ebe5862704872b5652a8c05bc921c7e3a32"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/market_data.py",
+        "cb7c137bdadfec3f01cd5656f4506028ea90c336b50687f49b3734c4f116db9e"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/market_session.py",
+        "e0747d07f50aa27910eec1f1bf4662fd1c7d34ca283fd780af5abb7e3bad587a"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/scanner_stream.py",
+        "36de41f162ebab5bf818ee62fecc2da0e2fedbdd60b66106b64f62fdb539afd9"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/sdk.py",
+        "8ca5ab0a15d7bd438c3d2cbb03084c7817b1c1f2427eaf9eee430f8d7a669cdd"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/sdk_facade.py",
+        "532b09f596188d4b059c618796c8eab239ae55983406aabbb72e9f8a3d428334"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/sdk_loader.py",
+        "f0046a937408563815e14e36e489c738b5652ed38ef3f26aa2625dbaad777b24"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/secrets.py",
+        "a3c5fc705bf1132d12f3923fc2ec913505e340219c5fabb89ad24d6df3817704"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/shared_session.py",
+        "04ae3d3a6895bfbd9924c7435f792b09be629eb2ba06988d467535b8c9d239f6"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/stock_grid.py",
+        "f67c49232dae76e3eb05593087eb2f746bbfd575d335c6bb898e20dc71841254"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/symbol_directory.py",
+        "ad05bf2420361ef8a931de97f7a67fc6433d1198ae5627eb782e0e245e13c336"
+      ],
+      [
+        "quantlab/trading/adapters/shioaji/tick_stream.py",
+        "16b1a4092eff5da5d6a29e791a6b8cdc9f1b5799aa72f02691a697a289555e08"
+      ],
+      [
+        "quantlab/trading/adapters/simulated/__init__.py",
+        "342db2a6cc5c9a85869c6c49504ba4faaefd27e2a20f3eb1ce42af109322f779"
+      ],
+      [
+        "quantlab/trading/adapters/simulated/broker.py",
+        "f1e0e001b4e44849f1ec11dd0a671e1d7f255d4b906eabb464101e3fdfe2ace0"
+      ],
+      [
+        "quantlab/trading/adapters/simulated/tick_feed.py",
+        "8f58d26d27f38b816f37acf25cfbc4ad75a2928404a3a6fa09484199842181a3"
+      ],
+      [
+        "quantlab/trading/adapters/storage/__init__.py",
+        "6d14722bce16f9ed8650139d0969b4e09040a42badc0a6f9da6b2264f53b2f3e"
+      ],
+      [
+        "quantlab/trading/adapters/storage/alert_store.py",
+        "e3deea1c9a8134907f10ec79c046466a98a45894d08a9c211a6ee0143bacda0e"
+      ],
+      [
+        "quantlab/trading/adapters/storage/kline_store.py",
+        "b40c5b91ae75cf32d9a7cd515fe51f53f13dbc7f6a6117c4834d24a8761e3efb"
+      ],
+      [
+        "quantlab/trading/adapters/storage/ledger.py",
+        "4794b1f08b9c4d65977ecdfac2b4fed64c52687a7cc6d0a4dfad088766897d84"
+      ],
+      [
+        "quantlab/trading/application/__init__.py",
+        "4fba45aca0ccfd81f1ab4294e8968dd8b85a821f8d1a9fe3eb11d4fc6c7b901a"
+      ],
+      [
+        "quantlab/trading/application/account_risk.py",
+        "b3037174bafa4f907f05809efd73d068640496d5e33647db812184b7b952bd9c"
+      ],
+      [
+        "quantlab/trading/application/alert_contracts.py",
+        "c95cef56a5a7b3df5b5026a888e838c36d0638a35b8c0e675d374c8b1db43c45"
+      ],
+      [
+        "quantlab/trading/application/alert_observer.py",
+        "d50f71256c03eec86311e3f920d4f17e1a8d6845787268963acf1a687c4bfa78"
+      ],
+      [
+        "quantlab/trading/application/alert_service.py",
+        "9bc94953a3b3f394d4c79064c145c00b6f8980ab42a84248a9e18a69cd1dfbfb"
+      ],
+      [
+        "quantlab/trading/application/automatic.py",
+        "a2f5812be31407f5c751d7894b83ba048d8c42db58a418670374dabc318b7927"
+      ],
+      [
+        "quantlab/trading/application/automatic_baseline.py",
+        "09810cbb83817a6f6bf3e619e232a758fbc9cd989bfb9e3ebef136b8ebbd9910"
+      ],
+      [
+        "quantlab/trading/application/automatic_capacity.py",
+        "991c810dcc0c837f62f81b5372fb22c14b9a669c6bf0eb74175b14b973cf74ae"
+      ],
+      [
+        "quantlab/trading/application/automatic_state.py",
+        "7d361cce554c01fd74d6b6eb5bc60ba2eb2246ba87adb3a361513584f3e7ccc3"
+      ],
+      [
+        "quantlab/trading/application/broker_settings.py",
+        "ce24dd7ab8225c97be46ed7b6e14bb662888ef31f10864c5f677fce6583ad172"
+      ],
+      [
+        "quantlab/trading/application/codec.py",
+        "90b802b11bd9f9791c293a10a9ee32ed3064f967ac0fc513c2b7b95fa3d5ae84"
+      ],
+      [
+        "quantlab/trading/application/concurrency.py",
+        "4c7c353b1afea55e8b70da880b931fd5434ec5e27f82dc4419a2400734390461"
+      ],
+      [
+        "quantlab/trading/application/context.py",
+        "7a5ffd4f1951da0b5d253570f2a7e2148b672f67d60b292e20bd7784ce49160b"
+      ],
+      [
+        "quantlab/trading/application/contextnavigation.py",
+        "b27d3fbcc70a4884c1512a7678c0814a4e2ee045528fa8a594607bf3c8c41c15"
+      ],
+      [
+        "quantlab/trading/application/contracts.py",
+        "023a0f8fb0700cec4c66b993d4891f7c52cb9d6b6b7727e71bfa94d9f5666fca"
+      ],
+      [
+        "quantlab/trading/application/coordinator.py",
+        "98899745cd92c1ef231731b94ff585585082091770efeec2e000c3fd0f546982"
+      ],
+      [
+        "quantlab/trading/application/engine.py",
+        "7f1e07ae486bba60cb028ffa71b53e6f426b9a55c286a229c8048d4c11c69758"
+      ],
+      [
+        "quantlab/trading/application/errors.py",
+        "aa0ef9a188446a8a51a3496b8ba8d67943254e69de1e8035ca357f3a6269b364"
+      ],
+      [
+        "quantlab/trading/application/events.py",
+        "55c707304519fedffd9a0b5b159a96b9c0f86a2c8387e1edf441be19131fdab7"
+      ],
+      [
+        "quantlab/trading/application/execution.py",
+        "ed29269fadaf0f885b0c5bc56cf2d700b53c2ff786ae5bd652e67e068b125bcb"
+      ],
+      [
+        "quantlab/trading/application/facade.py",
+        "6e7b1b467ef3063590d6469a4fa05eaef0a8c732b7d3a997ec2059afdda95912"
+      ],
+      [
+        "quantlab/trading/application/history_sync.py",
+        "c5fb67334cf497e84c2febb40c01ac7b5a94316552d03ce9a63b06ba0b40b614"
+      ],
+      [
+        "quantlab/trading/application/lifecycle.py",
+        "dcba2232ea1c8b07d60b9b44e93e73ca59dd512b9c6f2df33b7cc190d5d915b1"
+      ],
+      [
+        "quantlab/trading/application/lifecycle_models.py",
+        "ebcdcd226293c13e7c3228c1f13048733ee50cb521a74012fd9dd950a0383538"
+      ],
+      [
+        "quantlab/trading/application/live_market.py",
+        "a0e9cd0ef3664f2213190a2816d0226af035a1fd0c63c7e95337bd35289aeb83"
+      ],
+      [
+        "quantlab/trading/application/manual_book.py",
+        "56b153bda1bb93263666c468bd44ea0e190508b8ab5c3ac97da89473b952b926"
+      ],
+      [
+        "quantlab/trading/application/manual_contracts.py",
+        "498ee6e06cb7c55aa4c1d332193bb0412d13c866900b55541638cd77a3cdad7b"
+      ],
+      [
+        "quantlab/trading/application/manual_routing.py",
+        "02310bf3689017d3b3ef25c5e18b2aebcef8b9d1e1120b9d91f23907088442db"
+      ],
+      [
+        "quantlab/trading/application/manual_trading.py",
+        "e46d9a32032a64534aa6a793f2d99d967bd2ce49b672065e830adb629929766a"
+      ],
+      [
+        "quantlab/trading/application/market_cycle.py",
+        "ab50ea6cfc5276178979cf2813d4fd037095d1b03026c1d5542931f4207d7fff"
+      ],
+      [
+        "quantlab/trading/application/market_settings.py",
+        "8612ef339f31f0990324b83bfac3f7905e9db35211c73db371f68301862d9571"
+      ],
+      [
+        "quantlab/trading/application/market_terminal_service.py",
+        "30ced48a1161fe0a72380e313d2f23cf6b29dba06b83af4544a0c89ef60b7aa8"
+      ],
+      [
+        "quantlab/trading/application/market_terminal_views.py",
+        "cc351ee288480f5d6687d9eac91c4c75ff66b84fae083df4ce2623525d2faf2b"
+      ],
+      [
+        "quantlab/trading/application/market_views.py",
+        "675cf1f897d144bbc960e61efd66c0c8fc9836dcfc19121b96b657d2eca33c02"
+      ],
+      [
+        "quantlab/trading/application/performance.py",
+        "8cc8b0f535d3cb84a06aac7f92f9eb5d033b0da139f0343c1d4f5b35c7b6932f"
+      ],
+      [
+        "quantlab/trading/application/preflight.py",
+        "baf51011d106f5cf37a05a5cc622e11f5177c7f64fb78612ef78f11efa650e35"
+      ],
+      [
+        "quantlab/trading/application/provenance.py",
+        "9c4fe0a2f2da650f4873dee06d0390764acf9687c55116445e5130bbd5f635b3"
+      ],
+      [
+        "quantlab/trading/application/readiness_session.py",
+        "3e102bf40b58ac3c35020cbc194e4ed0d000343ca853c3ed2fbe4e5563203b71"
+      ],
+      [
+        "quantlab/trading/application/reconciliation_state.py",
+        "057075d64e117239a9fe728c5b048022105e6d514ae369b2eba350db0541bd5d"
+      ],
+      [
+        "quantlab/trading/application/reconciliation_views.py",
+        "4ffabccc5334a30ab84f51df79e4eda115cd607bca159fa52cefb3dbf989db6f"
+      ],
+      [
+        "quantlab/trading/application/registry.py",
+        "467d16fcc708ba40be04d75bdad4d4b6dd6930bbe1bcc8f7187f38cb28aa93d0"
+      ],
+      [
+        "quantlab/trading/application/research.py",
+        "65328153ea5bcfbdbb45e113a6ea2adc05c0bee0507a83af04fdc90d92796621"
+      ],
+      [
+        "quantlab/trading/application/reservations.py",
+        "e319e9f7a373fa6288bd43052d5ec3dc5ed9ae54ccab2cedaf648c95ff092b85"
+      ],
+      [
+        "quantlab/trading/application/scope.py",
+        "1ae8a14fcd5d1cb020e8bcdbf7a8e06f34e6b13907871b3326fa1e8f70c62c65"
+      ],
+      [
+        "quantlab/trading/application/sessions.py",
+        "1b33df49ea41ecd4a5692955ce947532aa7d7cdab0aadea0aae54787a72b9e01"
+      ],
+      [
+        "quantlab/trading/application/sinopac_contracts.py",
+        "e309f1da095edef02749ac221344aed1a9ad3de283e6200d563e9b8cf65238cb"
+      ],
+      [
+        "quantlab/trading/application/state.py",
+        "eed6e8f76846460151ad875cecf8de5873f50810292a7cd557b2f103c705cc0a"
+      ],
+      [
+        "quantlab/trading/application/symbol_search.py",
+        "4ffd29fa3f404b45d53733fccd41e65e7c85ed016838133642c3da7cc91c86f2"
+      ],
+      [
+        "quantlab/trading/application/views.py",
+        "f2039757d2e6514626cc64451205f3b215566c650e4a60c2113dc1f8b5186919"
+      ],
+      [
+        "quantlab/trading/application/watchlist.py",
+        "4cebec66b8d25c0951d2a71dc7bcba27d0bed8bb04ffc62a5111ad308aef616e"
+      ],
+      [
+        "quantlab/trading/application/workflows.py",
+        "dbb9bbd7d24ee1cc52820423b1e24cea0f3b335c77a14b0de8ff72e0ab2a7e10"
+      ],
+      [
+        "quantlab/trading/domain/__init__.py",
+        "e3e32cafdf4756c19778da6cf486f9d0d7d2e903bae7467ecaac689de930af15"
+      ],
+      [
+        "quantlab/trading/domain/alerts.py",
+        "2eb02103cd688b316c689f3cc56b8d70603217588d879afcad863423f187c612"
+      ],
+      [
+        "quantlab/trading/domain/arithmetic.py",
+        "a5ce79b987d2cf1e534e033c11a094efbb5cb99bf2061bbc0f330604ca353287"
+      ],
+      [
+        "quantlab/trading/domain/auto_cycle.py",
+        "33544772f85d5353ab610094d3c2e9b65e1946397fa815196f69f5152945980e"
+      ],
+      [
+        "quantlab/trading/domain/automatic_calendar.py",
+        "b0a779ca524204c9196edae4e2530316d5ed56c39ce173dd36d99923f620ad1a"
+      ],
+      [
+        "quantlab/trading/domain/calendar.py",
+        "d3b8f249b67b40c6f098b301cd7a195e2eafd18a5ae45290c6a019c23aa9a93e"
+      ],
+      [
+        "quantlab/trading/domain/costs.py",
+        "b1f54cf2014b34a1d19b3a253d3ea098e69493216ee2caa5f985b3fb8050ee47"
+      ],
+      [
+        "quantlab/trading/domain/execution_policy.py",
+        "fde136330090dab64d9b2c99d222258b04d1a826aca7fb31ea275186d0f7c4c3"
+      ],
+      [
+        "quantlab/trading/domain/freshness.py",
+        "c0d173b9df430b9f24f85467e75c332c3c5c7f2d7094655a1171fcd1a9e25114"
+      ],
+      [
+        "quantlab/trading/domain/lifecycle.py",
+        "c6d9ec675db4b5528483a6800a9772ad932452aa5cd22356bbf947c97d9cbb1b"
+      ],
+      [
+        "quantlab/trading/domain/live_bars.py",
+        "bfd96f2ff9e8f335e4e87d5c860c73cddfef1f7653bac7c839a1ee4f0b2d1085"
+      ],
+      [
+        "quantlab/trading/domain/models.py",
+        "8861bb9e78f05f1beca92374591ad32f3a3058ad15f80a61137c531628f7db8a"
+      ],
+      [
+        "quantlab/trading/domain/policies.py",
+        "0248467706ab9eeaf261676e4f04d54d647ef7133a8d08ea90906d2473ba66ab"
+      ],
+      [
+        "quantlab/trading/domain/quote_stats.py",
+        "a8c9a237e49d8d283c2cf0c51ec6fd7de5d63c0c6651109a2057e201f528154a"
+      ],
+      [
+        "quantlab/trading/domain/risk.py",
+        "1e775ec4e43bf1ac00efb6876f05235722f9244429f8f8bcbdb384f7136f00d8"
+      ],
+      [
+        "quantlab/trading/domain/strategy.py",
+        "27b02873a051826bcfcf3bda4136f9ba95ae85d92e1a41af1786bdfce85acce5"
+      ],
+      [
+        "quantlab/trading/domain/ticks.py",
+        "3bc5f01473e6f22ed92ed1bf67ce8982221dee34bec73bd721979507ea09f259"
+      ],
+      [
+        "quantlab/trading/domain/validation.py",
+        "533cb12f1567a24b5ce209fff10cf665e1d9fa78ab14c799f33fa0d4118e00f2"
+      ],
+      [
+        "quantlab/trading/domain/watch.py",
+        "bc543811c0ab0d00a9c85890f3ee1fda18f8e7c9adee8f189101189ab3daa298"
+      ],
+      [
+        "quantlab/trading/ports/__init__.py",
+        "7f686ced5b60d611be4a9dc7a027a633709e15a8a06dcb095ea8f17bf18f887b"
+      ],
+      [
+        "quantlab/trading/ports/alerts.py",
+        "fcdbcf15bea1d251fa7dd3cdd92bb3cae58545b3b485d5f51b9e808307fc4b0d"
+      ],
+      [
+        "quantlab/trading/ports/contracts.py",
+        "26d32b416b20474c8d5136feb3bf9a9b1492ce1d90e352aef6852f2f35550619"
+      ],
+      [
+        "quantlab/trading/ports/history.py",
+        "d233e5addeff89029c1301c9cfd584f506d11e97e195c0d95f9da0ce0139f60d"
+      ],
+      [
+        "quantlab/trading/ports/interfaces.py",
+        "fa70c623c8cf31feb824da8957c184f32855da2e09629b9d995df032e4a6aa2c"
+      ],
+      [
+        "quantlab/trading/ports/manual.py",
+        "4dfff476b02be74edcf9edb081e6716a1e249ca1568b81d0392e26d07b2d7e5c"
+      ],
+      [
+        "quantlab/trading/ports/market_settings.py",
+        "49b5db3c0956e501f39bcfdb28698b2d79992536e1ae8fe97d172d76a4536714"
+      ],
+      [
+        "quantlab/trading/ports/storage.py",
+        "dfba08f0f09033355c89f49e42f64e3c1a39edd2539d64f1a1989ca4d84d8ab4"
+      ],
+      [
+        "quantlab/trading/ports/tick_stream.py",
+        "4fbb0de856d5160e6247097489d1e4b4ab567644eb29bc3edb580f58da25403c"
+      ],
+      [
+        "quantlab/trading/runtime/__init__.py",
+        "9ceafb813488c39c89f82dcd7f53130352b7103f285bf7aa5fe1214cf3167dd8"
+      ],
+      [
+        "quantlab/trading/runtime/automatic.py",
+        "ffc26be52f1e4380c2a7cb658d3c9d032fddbb95a91acc7c9a793845b7b9a235"
+      ],
+      [
+        "quantlab/trading/runtime/bootstrap.py",
+        "6cf2e7ac314eac04c267c022c23e6c95667078444aa8d572df589387b3f90e66"
+      ],
+      [
+        "quantlab/trading/runtime/broker.py",
+        "3c2eaa043d50ac0296f9c953660c2200984a279cfa9f174cc849870bf0fcd135"
+      ],
+      [
+        "quantlab/trading/runtime/build.py",
+        "67f9747c52f6f5e410c88c3851a0237af5e747cd8c9493223c2cbce6275b2817"
+      ],
+      [
+        "quantlab/trading/runtime/config.py",
+        "2d9ba38a1585d8fd4a5001b39f80dbddfa43062da061f455081997cec26f8f73"
+      ],
+      [
+        "quantlab/trading/runtime/context_client.py",
+        "b8080ad5a913d4f3d840ce587da35b5a048652084e40ff4f53393927b9a718ab"
+      ],
+      [
+        "quantlab/trading/runtime/control_secret.py",
+        "55edcde4a1b4b08774f1de0e6dd87bd38c25a7072d83c270ca0de136745861d9"
+      ],
+      [
+        "quantlab/trading/runtime/gateway_cache.py",
+        "c830d5fca1a907b8d997054086e6ae5ffa7164b07aed38a9127e7fda71e4e033"
+      ],
+      [
+        "quantlab/trading/runtime/ipc.py",
+        "915d0dad3e3f1d676eb50991dc8f2f9e797f00a5cadad255ea9729a4402789b7"
+      ],
+      [
+        "quantlab/trading/runtime/live_market.py",
+        "99c8068ed3f0bdcefd7355ab8e49b6123f65f2440cbdefdc9fb2bc63522c12cb"
+      ],
+      [
+        "quantlab/trading/runtime/manual_resources.py",
+        "f8d5843fca1ed65ca761b3042020021bed1bc73a0b61e53a8a5414819b51402e"
+      ],
+      [
+        "quantlab/trading/runtime/manual_trading.py",
+        "7846de06656db7e77490e940a9805674f3a70c057a7901c00b99c84ee9cf7b3e"
+      ],
+      [
+        "quantlab/trading/runtime/market_alerts.py",
+        "03e8169f7cf649ae25d5e56c6f67f397cfbc854ad9e6685767a955d1ffeee415"
+      ],
+      [
+        "quantlab/trading/runtime/market_connection.py",
+        "95ccbfd1fd331fac9f163ef9b1175aa180bf38d7490c44acca68f47ad00913c9"
+      ],
+      [
+        "quantlab/trading/runtime/market_terminal.py",
+        "594cb06280fc43be8cebcbc8bfa94e50862e10c65b9a6d8ab1f18b18844cf253"
+      ],
+      [
+        "quantlab/trading/runtime/market_terminal_settings.py",
+        "00358bf0831fe8f867a594f8024099d334aaa013b706e9cb528044730afbc729"
+      ],
+      [
+        "quantlab/trading/runtime/preflight.py",
+        "d64f4e6aaf8174fcaaaa186b08fa1e3d91e1b460df8b3b87a498a916dca5896a"
+      ],
+      [
+        "quantlab/trading/runtime/protocol.py",
+        "458d68c46153fee77abe3f9c4c5242b49a6e0f01d66f4e9cef53fdad14450c75"
+      ],
+      [
+        "quantlab/trading/runtime/provenance.py",
+        "ecd364c17c336f0455be83c2ef08a89f66bed95d85727d49260ea1ab64250271"
+      ],
+      [
+        "quantlab/trading/runtime/research_worker.py",
+        "4677845d3496b12b5cab17ec54147e9373df243e51d373343935e0ae0df8fffa"
+      ],
+      [
+        "quantlab/trading/runtime/server.py",
+        "c9b5b7e89dd5d86cbf691dd657efeefd4b1e26401f3d0dc294d6821b3df87b83"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_calendar.py",
+        "6a3007a83aefc3f910083bdca35cd7bfe918d5085b879d880e380c617ead1df4"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_certificate.py",
+        "eefea03fb5091e8297c82535950ba37e3154b5b966d6af958a858c8780418f3b"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_classification.py",
+        "8577975a6b1a29931787212debf1ea9ff6210fc3dec266f0dc1be9d3dac765ff"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_connection.py",
+        "3952f061da586c2e3cfac946b69db0e35188c7a8f6a6b5c0997d992eb0640687"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_legacy.py",
+        "e1c200871070619c427508bbad4bffabfcf9d0b3f39eae7f5695dfa24fd426db"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_resources.py",
+        "b0b0e1ad17017fa0ca46c7ec829b09b0da284692de8435bc385183d4b2caf5cf"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_settings.py",
+        "825aecb0c9c9b3187054da3eac1c700b91a4f224a110016074def266e2eba9d8"
+      ],
+      [
+        "quantlab/trading/runtime/sinopac_transition.py",
+        "5ccbe7dcbd898b50796ae4859d396a0a46ffc1563b772f44e04fa4148a47111f"
+      ],
+      [
+        "quantlab/trading/runtime/unix_socket.py",
+        "febb33bda6a3c96cb3e4c70659fd2eba4e8eecabc3fa47464b39d26c6f3c33c7"
+      ],
+      [
+        "quantlab/trading/runtime/watchlist_settings.py",
+        "07ce943b168ef3b08b8525e8f1ed3f8bee15d763ed25ccfd337c8af0af5f4655"
+      ]
+    ]
+  },
+  "changed_product_sha256": {
+    "quantlab/trading/application/automatic.py": "a2f5812be31407f5c751d7894b83ba048d8c42db58a418670374dabc318b7927",
+    "quantlab/trading/application/automatic_baseline.py": "09810cbb83817a6f6bf3e619e232a758fbc9cd989bfb9e3ebef136b8ebbd9910",
+    "quantlab/trading/application/automatic_capacity.py": "991c810dcc0c837f62f81b5372fb22c14b9a669c6bf0eb74175b14b973cf74ae",
+    "quantlab/trading/application/automatic_state.py": "7d361cce554c01fd74d6b6eb5bc60ba2eb2246ba87adb3a361513584f3e7ccc3",
+    "quantlab/trading/application/contracts.py": "023a0f8fb0700cec4c66b993d4891f7c52cb9d6b6b7727e71bfa94d9f5666fca",
+    "quantlab/trading/application/coordinator.py": "98899745cd92c1ef231731b94ff585585082091770efeec2e000c3fd0f546982",
+    "quantlab/trading/application/engine.py": "7f1e07ae486bba60cb028ffa71b53e6f426b9a55c286a229c8048d4c11c69758",
+    "quantlab/trading/application/errors.py": "aa0ef9a188446a8a51a3496b8ba8d67943254e69de1e8035ca357f3a6269b364",
+    "quantlab/trading/application/events.py": "55c707304519fedffd9a0b5b159a96b9c0f86a2c8387e1edf441be19131fdab7",
+    "quantlab/trading/application/facade.py": "6e7b1b467ef3063590d6469a4fa05eaef0a8c732b7d3a997ec2059afdda95912",
+    "quantlab/trading/application/manual_book.py": "56b153bda1bb93263666c468bd44ea0e190508b8ab5c3ac97da89473b952b926",
+    "quantlab/trading/application/manual_trading.py": "e46d9a32032a64534aa6a793f2d99d967bd2ce49b672065e830adb629929766a",
+    "quantlab/trading/application/preflight.py": "baf51011d106f5cf37a05a5cc622e11f5177c7f64fb78612ef78f11efa650e35",
+    "quantlab/trading/application/registry.py": "467d16fcc708ba40be04d75bdad4d4b6dd6930bbe1bcc8f7187f38cb28aa93d0",
+    "quantlab/trading/application/sessions.py": "1b33df49ea41ecd4a5692955ce947532aa7d7cdab0aadea0aae54787a72b9e01",
+    "quantlab/trading/application/state.py": "eed6e8f76846460151ad875cecf8de5873f50810292a7cd557b2f103c705cc0a",
+    "quantlab/trading/application/views.py": "f2039757d2e6514626cc64451205f3b215566c650e4a60c2113dc1f8b5186919",
+    "quantlab/trading/application/workflows.py": "dbb9bbd7d24ee1cc52820423b1e24cea0f3b335c77a14b0de8ff72e0ab2a7e10",
+    "quantlab/trading/domain/auto_cycle.py": "33544772f85d5353ab610094d3c2e9b65e1946397fa815196f69f5152945980e",
+    "quantlab/trading/domain/automatic_calendar.py": "b0a779ca524204c9196edae4e2530316d5ed56c39ce173dd36d99923f620ad1a",
+    "quantlab/trading/runtime/automatic.py": "ffc26be52f1e4380c2a7cb658d3c9d032fddbb95a91acc7c9a793845b7b9a235",
+    "quantlab/trading/runtime/bootstrap.py": "6cf2e7ac314eac04c267c022c23e6c95667078444aa8d572df589387b3f90e66",
+    "quantlab/trading/runtime/live_market.py": "99c8068ed3f0bdcefd7355ab8e49b6123f65f2440cbdefdc9fb2bc63522c12cb",
+    "quantlab/trading/runtime/manual_trading.py": "7846de06656db7e77490e940a9805674f3a70c057a7901c00b99c84ee9cf7b3e",
+    "quantlab/trading/runtime/sinopac_resources.py": "b0b0e1ad17017fa0ca46c7ec829b09b0da284692de8435bc385183d4b2caf5cf"
+  },
+  "restricted_paths_unchanged": true,
+  "graph": {
+    "summary": {
+      "changed_count": 38,
+      "affected_count": 654,
+      "changed_files": 39,
+      "risk_level": "critical"
+    },
+    "partial": false,
+    "truncated": false,
+    "index_nodes": 22297,
+    "index_edges": 88301,
+    "index_flows": 674,
+    "fts": "degraded; no repair/download"
+  },
+  "static": {
+    "ruff_lint": true,
+    "changed_python_format": true,
+    "python_311_syntax_files": 1130,
+    "syntax_failures": 0,
+    "quality_findings": 0,
+    "layer_findings": 0,
+    "compileall": true,
+    "prepush_exit": 1,
+    "prepush_only_failure": "unchanged main M3 doc code-fence CRLF formatting at line155",
+    "m3_document_blob": "d2888a735e2528fdc4984f5b34f29fa1abd4e5bf"
+  }
+}

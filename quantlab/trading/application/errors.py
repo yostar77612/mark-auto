@@ -11,7 +11,9 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 V2_ERROR_TEXT = {
     'automatic_paused': ErrorText('自動交易已暫停，等待恢復。', '先核對暫停原因、完成對帳，再由使用者恢復。'),
-    'automatic_daily_execution_pending': ErrorText('日 K 自動送單尚待下一交易時段執行支援。', '目前可使用已完成驗證的分鐘策略；日 K 研究與本機交易日推進仍可使用。'),
+    'automatic_daily_execution_pending': ErrorText(
+        '日 K 自動送單尚待下一交易時段執行支援。', '目前可使用已完成驗證的分鐘策略；日 K 研究與本機交易日推進仍可使用。'
+    ),
     'program_restarted': ErrorText('程式重新啟動，自動新倉保持停止。', '先完成對帳及檢查，再由使用者恢復。'),
     'order_result_unknown': ErrorText('自動委託結果未知。', '保留資金與委託紀錄；對帳確認前不會重送。'),
     'automatic_overdue_position': ErrorText('收盤後仍有當沖部位待處理。', '核對券商回報與剩餘部位，保持停止新倉。'),

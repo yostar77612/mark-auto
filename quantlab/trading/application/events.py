@@ -141,7 +141,7 @@ def apply_event(engine: 'TradingEngine', event: OrderEvent, *, reconciled: bool 
         event_hashes=(*state.event_hashes, (event_key, sha256(dumps(event).encode()).hexdigest())),
     )
     state = with_cursor(state, account, max(previous, event.sequence))
-    if delta and spec.market is Market.STOCK and any(book.book_id == order.plan.strategy_id for book in state.manual_books):
+    if delta and spec.market is Market.STOCK and any(book.account_ref == order.plan.account_ref for book in state.manual_books):
         from .manual_book import ManualAcquisition, ManualReceivable
         from .sessions import resolve_session
 

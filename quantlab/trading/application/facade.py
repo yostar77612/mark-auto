@@ -58,6 +58,10 @@ class LocalFacade:
 
     def _execute(self, command: UiCommand) -> str:
         engine, action = self.engine, command.action
+        if action in (UiAction.AUTO_RESUME, UiAction.AUTO_RECONCILE):
+            if engine.configuration.environment is Environment.LIVE:
+                raise DomainError('production_orders_disabled')
+            raise DomainError('capability_missing', 'automatic actions require the accepted broker runtime')
         if action is UiAction.CHECK_PREFLIGHT:
             from .preflight import engine_preflight_facts, record_preflight
 
@@ -112,6 +116,8 @@ class LocalFacade:
         elif action is UiAction.RESUME:
             resume(engine)
         elif action is UiAction.STOP_NEW:
+            from .automatic_state import pause
+
             books = tuple(replace(book, halted=True, reasons=tuple(sorted(set((*book.reasons, 'risk_rejected'))))) for book in engine.state.manual_books)
             engine._persist(
                 'new_entries_stopped',
@@ -120,6 +126,7 @@ class LocalFacade:
                     stopped=True,
                     manual_books=books,
                     manual_stopped=engine.state.manual_stopped or engine.configuration.environment is Environment.BROKER_SIMULATION,
+                    automatic=pause(engine.state.automatic, 'automatic_paused'),
                 ),
             )
             if not engine.configuration.read_only and orders_enabled(engine.configuration.environment):
@@ -158,6 +165,17 @@ class LocalFacade:
             ):
                 if ref not in engine.gateways:
                     continue
+                if engine.configuration.environment is Environment.BROKER_SIMULATION and hasattr(engine, 'manual_observations'):
+                    from .account_risk import m2_account_refs
+
+                    book = next((row for row in engine.state.manual_books if row.account_ref == ref), None)
+                    if book is not None and allocated < book.capital and ref in m2_account_refs(engine):
+                        raise DomainError('risk_rejected', 'allocation cannot abandon confirmed virtual capital')
+                    if book is None and (
+                        any(lot.account_ref == ref for lot in engine.state.positions) or any(order.plan.account_ref == ref for order in engine.state.orders)
+                    ):
+                        raise DomainError('manual_book_not_enabled', 'owned commitments require confirmed virtual capacity')
+                    continue  # Internal allocation only; SIM financial snapshots remain unavailable.
                 broker = engine.gateways[ref].snapshot(ref)
                 reserved = sum((r.cash for r in engine.reservations() if r.account_ref == ref), Decimal('0'))
                 used = broker.margin_used + reserved + max(Decimal('0'), broker.equity - broker.settled_cash)

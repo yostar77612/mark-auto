@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from .contracts import (
+    AutomaticView,
     AccountRiskView,
     AccountView,
     MarketView,
@@ -52,6 +53,14 @@ def policy_name(policy) -> str:
     return f'{policy.kind.value}:{policy.min_days}-{policy.max_days}'
 
 
+def _order_trading_day(engine: 'TradingEngine', order):
+    record = next((row for row in engine.state.strategies if (row.strategy_id, row.version) == (order.plan.strategy_id, order.plan.strategy_version)), None)
+    calendar = engine.calendar
+    if record is not None and record.parameters is not None and engine.configuration.environment is Environment.BROKER_SIMULATION:
+        calendar = engine._strategy_calendar(record, order.plan.instrument_id)
+    return next((session.trade_date for session in calendar.sessions if session.opens_at <= order.plan.decision_at <= session.closes_at), None)
+
+
 @decimal_operation
 def snapshot(engine: 'TradingEngine') -> UiState:
     from quantlab.trading.domain.strategy import is_tmf, resolve_tmf_near
@@ -72,12 +81,9 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 resolved[reference] = resolve_tmf_near(engine.catalog.instruments, engine.calendar, state.trading_day).instrument_id
             except DomainError as error:
                 resolved[reference], blocked[reference] = '', error.code
-    order_days = {
-        order.order_id: next(
-            (session.trade_date for session in engine.calendar.sessions if session.opens_at <= order.plan.decision_at <= session.closes_at), None
-        )
-        for order in state.orders
-    }
+        if record.parameters is not None and record.parameters.bar_interval == '1d' and state.environment is Environment.BROKER_SIMULATION:
+            blocked.setdefault(reference, 'automatic_daily_execution_pending')
+    order_days = {order.order_id: _order_trading_day(engine, order) for order in state.orders}
     strategies = tuple(
         StrategyView(
             s.strategy_id,
@@ -114,13 +120,22 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 else 'RISK_STOPPED'
                 if state.trading_day in state.daily_locks
                 else 'PAUSED'
-                if state.stopped or not state.reconciled or state.engine_closed
+                if state.stopped
+                or not state.reconciled
+                or state.engine_closed
+                or (s.parameters is not None and state.environment is Environment.BROKER_SIMULATION and state.automatic.auto_paused)
+                or (s.strategy_id, s.version) in blocked
                 else 'RUNNING'
             ),
             parameters=s.parameters,
             recent_signal=s.recent_signal,
             margin_source=(
-                ('BROKER' if engine.catalog.resolve(resolved[s.strategy_id, s.version]).margin is not None else 'BUILTIN_CONSERVATIVE')
+                (
+                    'BROKER'
+                    if engine.catalog.resolve(resolved[s.strategy_id, s.version]).margin is not None
+                    and resolved[s.strategy_id, s.version] not in getattr(engine, 'unverified_automatic_margins', ())
+                    else 'BUILTIN_CONSERVATIVE'
+                )
                 if resolved[s.strategy_id, s.version]
                 else 'UNKNOWN'
             )
@@ -365,6 +380,11 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         today_fill_count=today_fills,
         account_risks=tuple(account_risks),
         preflight=state.preflight,
+        automatic=AutomaticView(
+            'PAUSED_WAITING_RESUME' if state.automatic.auto_paused else 'RUNNING',
+            state.automatic.reasons,
+            state.automatic.evaluations,
+        ),
         strategy_products=tuple(
             StrategyProductView(
                 spec.instrument_id,

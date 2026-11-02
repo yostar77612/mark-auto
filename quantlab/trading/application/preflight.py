@@ -100,9 +100,18 @@ def engine_preflight_facts(engine: 'TradingEngine', account_ref: str, *, quote_s
     current = capability.checked_at <= now < capability.expires_at
     selected = capability.account_ref == account_ref and capability.environment is engine.configuration.environment
     instruments = {lot.instrument_id for lot in engine.state.positions if lot.account_ref == account_ref and lot.quantity}
-    instruments.update(
-        row.form.instrument_id for row in engine.state.strategies if row.form.account_ref == account_ref and row.state not in ('DELETED', 'RETIRED', 'DISABLED')
-    )
+    typed = False
+    for row in engine.state.strategies:
+        if row.form.account_ref != account_ref or row.state in ('DELETED', 'RETIRED', 'DISABLED'):
+            continue
+        instrument = row.form.instrument_id
+        if row.parameters is not None:
+            typed = True
+            if row.parameters.instrument_rule == 'TMF_NEAR':
+                from quantlab.trading.domain.strategy import resolve_tmf_near
+
+                instrument = resolve_tmf_near(engine.catalog.instruments, engine.calendar, engine.state.trading_day).instrument_id
+        instruments.add(instrument)
     if not instruments:
         first = next(
             (
@@ -124,8 +133,15 @@ def engine_preflight_facts(engine: 'TradingEngine', account_ref: str, *, quote_s
         for instrument in instruments
     )
     try:
-        session = engine.calendar.session_at(now)
-        service = session.kind == 'DAY'
+        if typed and engine.configuration.environment is Environment.BROKER_SIMULATION:
+            from quantlab.trading.domain.automatic_calendar import calendar_for_instrument
+
+            service = bool(instruments) and all(
+                calendar_for_instrument(engine.calendar, engine.catalog.resolve(instrument)).session_at(now).kind == 'DAY' for instrument in instruments
+            )
+        else:
+            session = engine.calendar.session_at(now)
+            service = session.kind == 'DAY'
     except DomainError as error:
         if error.code not in ('session_closed', 'calendar_missing'):
             raise
