@@ -7215,3 +7215,54 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `MANUAL_MAX_PRICE_DEVIATION` (1%) beyond the opposite quote is refused with
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
+
+## M2-9 continuation: executable stock training and pre-open checklist
+
+`runtime.stock_research.run_stock_research` now composes the M1 daily store,
+complete five-year calendar admission, the shared immutable FeeSchedule, an
+additive stock backtest and a dedicated append-only SQLite evidence journal.
+The job accepts TRAINING only, at most 6000 observations/events and a deadline
+no greater than 15 minutes; cancellation/deadline/source-change/storage failures
+publish no new artifact. The runner owns no broker, execution port or child
+process and does not acquire a trading writer lock. Existing daily research,
+its results, serialized fee fields and historical producer identities are not
+rewritten. The unchanged generic ResearchResult and ResearchEvidence are stored
+with frozen strategy/instrument/calendar/profile, event/source/method metadata,
+full fee snapshot and explicit STOCK/ETF/day-trade treatment. Replay verifies the
+sidecar and its training/backtest identity; it cannot relabel a research result
+as activation permission. No strategy is automatically enabled by this service.
+
+Only already completed bars/events enter point-in-time adjusted signals; the
+next bar opens at raw price plus the configured tick slippage. Day trades close
+at that daily bar's raw close; this is the existing daily model, not the separate
+M2-7 intraday minute execution model. Fees and raw-price PnL are Decimal. Reduced
+day-trade tax requires explicit eligibility and an intraday policy. A combined
+ex-right/dividend reference ratio is NOT a cash/share entitlement: any held
+position crossing such an event refuses the entire result with
+`stock_entitlement_unknown`, rather than invent a distribution or report a
+fictitious loss. Flat-before-event and same-day positions may still be studied.
+
+The existing Sinopac connection snapshot now carries PreOpenMaintenance, including
+remaining key days, future-session coverage, issues and reminders. Its existing
+readiness group presents a minimal pre-open checklist with 14-day renewal and
+December annual reminders. A dirty settings draft or unavailable snapshot shows
+unknown instead of an old healthy checklist. The four original readiness facts,
+manual/protective exits and all production-order refusals remain unchanged.
+
+Tests use synthetic, explicitly labelled official-shaped documents. Recorded
+TWSE/TPEx compatibility is still unverified; no live downloads or credentials
+were used. The source-only recycled Linux environment lacks Qt/Ruff. Catalog
+baseline generation is separated from verification; dependency-complete Qt,
+formatter and Windows checks remain required in CI, with no test skips added.
+
+The concrete application entry is `RuntimeBundle.research_stocks(reference,
+start,end,stock_kind=...,day_trade=...)`. It snapshots the host's selected
+strategy, catalog spec and calendar, and uses that same host's M1 KlineStore
+and workspace cost preferences; it does not create a disconnected test-only
+research universe. Computation runs outside bundle/engine locks and cancels
+when the host closes. Integration tests build the real RuntimeBundle, import
+synthetic official data into its owned store, create/validate the strategy,
+and prove that research preserves the engine state and has no download calls.
+Sizing is one instrument lot only when the shared FeeSchedule's raw-price entry
+cash estimate fits the strategy allocation; adjusted prices cannot make an
+unaffordable raw lot appear affordable.

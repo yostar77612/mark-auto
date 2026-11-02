@@ -1976,3 +1976,31 @@ not run online; no future holidays or expiries are synthesized. December reminde
 are exposed by the rules/data interface; calendar reminder UI remains pending.
 AGENTS.md, CLAUDE.md and GitNexus launcher were absent in this checkout. Impact
 analysis uses grep, affected_tests import graph and check_layers instead.
+
+## 2026-11-02 — M2-9 continuation under owner request to complete remaining work
+
+Close the earlier stock-job gap with an additive bounded service and public
+`run_stock_research` composition entry point, not edits to the legacy daily
+algorithm or M2-7's independent worker. Durable evidence uses existing result/
+evidence DTOs plus an immutable provenance sidecar. Explicit stock tax treatment
+flows through actual job settings, fees, calculations and persisted evidence;
+no ticker-based ETF/day-trade eligibility inference is allowed.
+
+Do not infer dividend cash or new-share quantities from the combined reference
+ratio. Refuse evidence for any position crossing an event without authoritative
+economic entitlement facts. This deliberately rejects unsupported corporate
+cashflow modeling rather than silently publishing incorrect total returns.
+The 100-to-90 synthetic event is tested both as a forbidden holding crossing and
+as a valid flat/point-in-time signal adjustment with raw day-trade fills.
+
+Expose the existing PreOpenMaintenance rule output in SinopacConnectionView and
+the existing readiness panel's minimal pre-open checklist. This closes the
+renewal/annual-reminder presentation gap without broad UI or new activation
+flows. Chart_prices already supplies the requested minimal raw/adjusted data
+switch; a larger chart redesign is not a prerequisite of this task.
+
+Recycled cloud environment has no Qt/Ruff and no verified offline package source;
+network package-install denial is respected. Run available core/profile/static
+checks, generate only reviewed additive catalog pins with explicit verification
+limits, and require unchanged CI tests/formatter/Windows jobs before delivery.
+No assertion or skip is changed to compensate for missing local dependencies.

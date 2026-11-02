@@ -204,3 +204,24 @@ class ExpiryConnectionTests(unittest.TestCase):
         view = self.owner.snapshot()
         self.assertEqual((view.api_key_remaining_days, view.api_key_expiry_state), (14, 'DUE'))
         self.assertEqual(view.phase, 'CONNECTED')
+
+    def test_pre_open_snapshot_carries_renewal_and_december_reminder(self):
+        from quantlab.trading.application.codec import loads
+        from quantlab.trading.application.registry import initialize
+
+        initialize()
+        self.clock.now = lambda: datetime(2026, 12, 1, tzinfo=timezone.utc)
+        unknown = self.owner.snapshot()
+        self.assertIsNone(unknown.pre_open.key.remaining_days)
+        self.assertIn('api_key_expiry_unknown', unknown.pre_open.issues)
+        self.assertEqual(self.creations, [])
+        settings = SinopacConnectionSettings(api_key_expires_on=date(2026, 12, 15))
+        self.owner.execute(self.command(UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=settings))
+        self.owner.worker.join(2)
+        view = self.owner.snapshot()
+        self.assertEqual(view.pre_open.key.remaining_days, 14)
+        self.assertIn('api_key_renewal_due', view.pre_open.reminders)
+        self.assertIn('calendar_annual_update_due', view.pre_open.reminders)
+        self.assertIn('calendar_coverage_missing', view.pre_open.issues)
+        self.assertFalse(view.pre_open.can_open_new)
+        self.assertEqual(loads(dumps(view)), view)

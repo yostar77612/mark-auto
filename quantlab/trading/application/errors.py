@@ -10,6 +10,8 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'research_cancelled': ErrorText('研究已取消，未發布新的證據。', '既有研究結果保留；需要時可重新執行。'),
+    'stock_entitlement_unknown': ErrorText('研究持倉跨越尚未確認經濟權益的除權息事件，未產生證據。', '補齊可驗證的現金或股票權益資訊；不得由參考價比率猜測損益。'),
     'official_stock_invalid': ErrorText('官方股票資料未通過驗證，原資料已保留。', '核對上市／上櫃來源格式與日期後重新匯入。'),
     'official_stock_consent_required': ErrorText('尚未同意下載官方股票資料。', '確認來源及日期後明確執行下載。'),
     'official_stock_coverage_missing': ErrorText('股票日線尚未完整涵蓋研究區間。', '補齊至少五年的官方日線與除權息資料，不使用不完整資料產生證據。'),

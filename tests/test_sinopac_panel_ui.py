@@ -83,6 +83,42 @@ class SinopacPanelUiTests(unittest.TestCase):
         self.assertEqual(emitted.count(), 1)
         self.assertEqual((emitted.at(0)[0].minimum_fee, emitted.at(0)[0].tmf_fee_per_contract), (Decimal('10'), Decimal('25')))
 
+    def test_pre_open_checklist_is_rendered_and_never_reuses_stale_healthy_state(self):
+        from datetime import datetime, timedelta, timezone
+        from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
+        from quantlab.trading.domain.maintenance import maintenance_check
+
+        days = tuple(date(2026, 12, 1) + timedelta(days=i) for i in range(40))
+        sessions = tuple(
+            TradingSession(
+                day,
+                datetime.combine(day, datetime.min.time(), timezone.utc),
+                datetime.combine(day, datetime.min.time(), timezone.utc) + timedelta(hours=6),
+            )
+            for day in days
+        )
+        check = maintenance_check(
+            TradingCalendar('fake', 'synthetic-v1', 'test-only', sessions),
+            days[0],
+            expires_on=date(2026, 12, 15),
+            expiries=None,
+            futures_required=False,
+        )
+        view = replace(connected_view(), pre_open=check, api_key_remaining_days=14, api_key_expiry_state='DUE')
+        self.panel.apply(view)
+        self.assertIn(ui_text('m2.maintenance.annual_reminder'), self.panel.maintenance_checklist.text())
+        self.assertIn(ui_text('m2.maintenance.expiry_due').format(14), self.panel.maintenance_checklist.text())
+        bad = replace(check, issues=('calendar_coverage_missing',), future_trading_days=12, through=None)
+        self.panel.apply(replace(view, revision=2, pre_open=bad))
+        self.assertIn(ui_text('m2.maintenance.calendar_missing'), self.panel.maintenance_checklist.text())
+        self.assertNotIn(ui_text('m2.maintenance.ready'), self.panel.maintenance_checklist.text())
+        self.panel.key_ref.setFocus()
+        self.panel.key_ref.selectAll()
+        QTest.keyClicks(self.panel.key_ref, 'MarkAuto/v2/broker/new')
+        self.assertEqual(self.panel.maintenance_checklist.text(), ui_text('m2.maintenance.unknown'))
+        self.panel.unavailable()
+        self.assertEqual(self.panel.maintenance_checklist.text(), ui_text('m2.maintenance.unknown'))
+
     def test_invalid_expiry_emits_no_save_and_blank_remains_unknown(self):
         emitted = QSignalSpy(self.panel.save_connect_requested)
         for value in ('2026-02-30', '20261115'):

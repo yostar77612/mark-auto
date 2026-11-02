@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 import ntpath
 
+from quantlab.trading.domain.maintenance import PreOpenMaintenance
 from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError, decimal_value, identity, integer
 from .broker_settings import _secret_reference
@@ -98,6 +99,7 @@ class SinopacConnectionView:
     error_code: str = ''
     api_key_remaining_days: int | None = None
     api_key_expiry_state: str = 'UNKNOWN'
+    pre_open: PreOpenMaintenance | None = None
 
     def __post_init__(self) -> None:
         integer(self.revision, 'connection revision')
@@ -123,6 +125,8 @@ class SinopacConnectionView:
             raise DomainError('validation_failed', 'API key remaining days')
         if self.api_key_expiry_state not in ('UNKNOWN', 'VALID', 'DUE', 'EXPIRED'):
             raise DomainError('validation_failed', 'API key expiry state')
+        if self.pre_open is not None and not isinstance(self.pre_open, PreOpenMaintenance):
+            raise DomainError('validation_failed', 'typed pre-open maintenance required')
         days = self.api_key_remaining_days
         expected_state = 'UNKNOWN' if days is None else 'EXPIRED' if days <= 0 else 'DUE' if days <= 14 else 'VALID'
         if self.api_key_expiry_state != expected_state:

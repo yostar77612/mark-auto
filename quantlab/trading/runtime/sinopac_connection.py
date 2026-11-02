@@ -6,8 +6,6 @@ from time import monotonic
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from quantlab.trading.domain.maintenance import key_expiry_status
-
 from quantlab.trading.adapters.shioaji.symbol_directory import SymbolDirectory
 from quantlab.trading.application.contracts import UiAction, UiReceipt
 from quantlab.trading.application.market_settings import MarketDataSettings
@@ -15,6 +13,7 @@ from quantlab.trading.application.sinopac_contracts import SinopacAccountView, S
 from quantlab.trading.domain.models import Environment, Market
 from quantlab.trading.domain.validation import DomainError
 from .sinopac_settings import SinopacSettingsStore
+from .sinopac_calendar import built_in_calendar
 from .sinopac_transition import transition
 
 SINOPAC_ACTIONS = frozenset((UiAction.SAVE_AND_CONNECT_SINOPAC, UiAction.SELECT_SINOPAC_ACCOUNTS, UiAction.ACTIVATE_SINOPAC_CA, UiAction.DISCONNECT_SINOPAC))
@@ -91,8 +90,10 @@ class SinopacConnection:
 
     def snapshot(self):
         with self.lock:
-            expiry = key_expiry_status(self.configuration.api_key_expires_on, self.clock.now().astimezone(ZoneInfo('Asia/Taipei')).date())
-            self.publish(api_key_remaining_days=expiry.remaining_days, api_key_expiry_state=expiry.state)
+            today = self.clock.now().astimezone(ZoneInfo('Asia/Taipei')).date()
+            futures_required = not self.selected or any(account.market is not Market.STOCK for account in self.accounts if account.alias in self.selected)
+            maintenance = self.maintenance.pre_open(built_in_calendar(), today, self.configuration.key_ref, futures_required=futures_required)
+            self.publish(api_key_remaining_days=maintenance.key.remaining_days, api_key_expiry_state=maintenance.key.state, pre_open=maintenance)
             if not self.closed and self.worker is not None and self.worker.is_alive() and monotonic() >= self.deadline:
                 from .sinopac_transition import readiness
 

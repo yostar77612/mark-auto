@@ -1,13 +1,13 @@
 """Explicit official-history refresh; all-or-nothing daily/event publication."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from hashlib import sha256
 import json
 
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.costs import FeeSchedule
-from quantlab.trading.domain.stock_history import StockPriceSeries, price_series
+from quantlab.trading.domain.stock_history import ADJUSTMENT_METHOD, StockPriceSeries, price_series
 from quantlab.trading.domain.validation import DomainError, trading_date
 from quantlab.trading.ports.stock_history import DailyStockStore, OfficialStockBatch, OfficialStockSource
 
@@ -108,7 +108,8 @@ class StockResearchInputs:
         return price_series(self.batch.bars, self.batch.events, as_of=closed_date)
 
     def evidence(self) -> tuple[tuple[str, str], ...]:
-        series = price_series(self.batch.bars, self.batch.events)
+        # Metadata needs raw/event digests, not a full quadratic price rebuild.
+        series = replace(price_series(self.batch.bars, self.batch.events, adjusted=False), mode='ADJUSTED', adjustment_method=ADJUSTMENT_METHOD)
         sources = json.dumps(sorted((p.source_url, p.digest) for p in self.batch.payloads), separators=(',', ':'))
         return (
             *series.evidence(),

@@ -63,6 +63,9 @@ class BrokerPanel(QWidget):
         for code, widget in self.readiness_labels.items():
             widget.setObjectName('sinopac_readiness_' + code)
             form.addWidget(widget)
+        self.maintenance_checklist = self._label('')
+        self.maintenance_checklist.setObjectName('sinopac_pre_open_checklist')
+        form.addWidget(self.maintenance_checklist)
         self._layout.addWidget(ready)
         self.apply(self.view)
 
@@ -212,6 +215,7 @@ class BrokerPanel(QWidget):
         if not self._loading:
             self._connection_dirty, self._failure = True, ''
             self.key_expiry_status.setText(ui_text('m2.maintenance.expiry_unknown'))
+            self.maintenance_checklist.setText(text.maintenance_text(self.view, reachable=False))
             self._enabled()
 
     def _certificate_changed(self):
@@ -282,6 +286,7 @@ class BrokerPanel(QWidget):
             self.certificate_path.setText(view.settings.certificate_path)
             self.certificate_secret_ref.setText(view.settings.certificate_secret_ref)
         self.key_expiry_status.setText(ui_text('m2.maintenance.expiry_unknown') if self._connection_dirty else text.expiry_text(view))
+        self.maintenance_checklist.setText(text.maintenance_text(view, reachable=not self._connection_dirty))
         self._loading, self._initialized = False, True
         self._update_accounts()
         for item in view.readiness:
@@ -296,6 +301,7 @@ class BrokerPanel(QWidget):
                 self.readiness_labels[item.code], text.readiness_text(item, reachable=False), 'BLOCKED' if item.code == 'production_orders' else 'UNKNOWN'
             )
         self.key_expiry_status.setText(ui_text('m2.maintenance.expiry_unknown'))
+        self.maintenance_checklist.setText(text.maintenance_text(self.view, reachable=False))
         self._paint(self.certificate_status, ui_text('m2.connection.unknown'), 'UNKNOWN')
         self._enabled()
 
