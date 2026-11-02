@@ -1,5 +1,6 @@
 """One reference-only Sinopac form; accepted facts remain backend-owned."""
 
+from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from PySide6.QtCore import QSignalBlocker, Qt, Signal
@@ -11,6 +12,7 @@ from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from desktop_app.features.trading import sinopac_panel_text as text
 from desktop_app.features.trading.page_help import HelpText
+from desktop_app.features.trading.readiness_guidance import ReadinessGuidance, account_guidance, readiness_steps
 from desktop_app.features.trading.widgets import button
 
 
@@ -47,6 +49,7 @@ class BrokerPanel(QWidget):
         self._connection_dirty, self._certificate_dirty, self._failure = False, False, ''
         self._available = True
         self.account_boxes = {}
+        self.account_guidance = {}
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.addWidget(self._label(ui_text('m2.connection.title')))
@@ -58,10 +61,17 @@ class BrokerPanel(QWidget):
         self._fee_fields()
         ready = QGroupBox(ui_text('m2.connection.readiness'), self)
         form = QVBoxLayout(ready)
-        self.readiness_labels = {code: self._label('') for code in ('market', 'accounts', 'simulation_orders', 'production_orders')}
-        for code, widget in self.readiness_labels.items():
-            widget.setObjectName('sinopac_readiness_' + code)
-            form.addWidget(widget)
+        self.readiness_labels = {}
+        self.readiness_guidance = {}
+        for code in ('market', 'accounts', 'simulation_orders', 'production_orders'):
+            guidance = ReadinessGuidance('', readiness_steps(code), 'sinopac_readiness_' + code, ready)
+            guidance.summary.setObjectName('sinopac_readiness_' + code)
+            self.readiness_labels[code] = guidance.summary
+            self.readiness_guidance[code] = guidance
+            form.addWidget(guidance)
+        self.maintenance_checklist = self._label('')
+        self.maintenance_checklist.setObjectName('sinopac_pre_open_checklist')
+        form.addWidget(self.maintenance_checklist)
         self._layout.addWidget(ready)
         self.apply(self.view)
 
@@ -88,6 +98,15 @@ class BrokerPanel(QWidget):
         self.key_ref.setMaxLength(120)
         self.key_ref.textEdited.connect(self._changed)
         form.addRow(ui_text('m2.connection.key'), self.key_ref)
+        self.key_expiry = QLineEdit(group)
+        self.key_expiry.setObjectName('sinopac_key_expiry')
+        self.key_expiry.setMaxLength(10)
+        self.key_expiry.setPlaceholderText(ui_text('m2.maintenance.expiry_hint'))
+        self.key_expiry.setAccessibleName(ui_text('m2.maintenance.expiry'))
+        self.key_expiry.textEdited.connect(self._changed)
+        form.addRow(ui_text('m2.maintenance.expiry'), self.key_expiry)
+        self.key_expiry_status = self._label('')
+        form.addRow(self.key_expiry_status)
         controls = QHBoxLayout()
         self.save_connect = button('m2.connection.save', 'sinopac_save_connect', role='primary')
         self.save_connect.clicked.connect(self._save)
@@ -122,8 +141,9 @@ class BrokerPanel(QWidget):
         self.certificate_group.setCheckable(True)
         self.certificate_group.setChecked(False)
         layout = QVBoxLayout(self.certificate_group)
-        self.certificate_status = self._label('')
-        layout.addWidget(self.certificate_status)
+        self.certificate_guidance = ReadinessGuidance('', ui_text('u1.readiness.ca_steps'), 'sinopac_ca', self)
+        self.certificate_status = self.certificate_guidance.summary
+        self._layout.addWidget(self.certificate_guidance)
         self._certificate_container = QWidget(self.certificate_group)
         form = QFormLayout(self._certificate_container)
         self.certificate_path = QLineEdit(self._certificate_container)
@@ -160,6 +180,22 @@ class BrokerPanel(QWidget):
         layout.addWidget(self.fee_discount)
         self.fee_discount.hide()
         self.fee_group.toggled.connect(self.fee_discount.setVisible)
+        self.minimum_fee = QLineEdit(self.fee_group)
+        self.minimum_fee.setAccessibleName(ui_text('m2.maintenance.minimum_fee'))
+        self.minimum_fee.setToolTip(ui_text('m2.maintenance.minimum_fee'))
+        self.tmf_fee = QLineEdit(self.fee_group)
+        self.tmf_fee.setAccessibleName(ui_text('m2.maintenance.tmf_fee'))
+        self.tmf_fee.setToolTip(ui_text('m2.maintenance.tmf_fee'))
+        for widget in (self.minimum_fee, self.tmf_fee):
+            widget.setMaxLength(30)
+            widget.textEdited.connect(self._changed)
+            label = self._label(widget.accessibleName())
+            layout.addWidget(label)
+            label.hide()
+            self.fee_group.toggled.connect(label.setVisible)
+            layout.addWidget(widget)
+            widget.hide()
+            self.fee_group.toggled.connect(widget.setVisible)
         self._layout.addWidget(self.fee_group)
 
     @property
@@ -167,17 +203,26 @@ class BrokerPanel(QWidget):
         return self._connection_dirty or self._certificate_dirty
 
     def settings(self):
+        text = self.key_expiry.text().strip()
+        expires_on = date.fromisoformat(text) if text else None
+        if expires_on is not None and expires_on.isoformat() != text:
+            raise ValueError('ISO expiry date required')
         return SinopacConnectionSettings(
             Environment(self.environment.currentData()),
             self.key_ref.text().strip(),
             self.certificate_path.text().strip(),
             self.certificate_secret_ref.text().strip(),
             Decimal(self.fee_discount.text().strip()),
+            expires_on,
+            Decimal(self.minimum_fee.text().strip()),
+            Decimal(self.tmf_fee.text().strip()),
         )
 
     def _changed(self):
         if not self._loading:
             self._connection_dirty, self._failure = True, ''
+            self.key_expiry_status.setText(ui_text('m2.maintenance.expiry_unknown'))
+            self.maintenance_checklist.setText(text.maintenance_text(self.view, reachable=False))
             self._enabled()
 
     def _certificate_changed(self):
@@ -240,10 +285,15 @@ class BrokerPanel(QWidget):
         if not self._connection_dirty:
             self.environment.setCurrentIndex(self.environment.findData(view.settings.environment))
             self.key_ref.setText(view.settings.key_ref)
+            self.key_expiry.setText(view.settings.api_key_expires_on.isoformat() if view.settings.api_key_expires_on else '')
             self.fee_discount.setText(str(view.settings.fee_discount))
+            self.minimum_fee.setText(str(view.settings.minimum_fee))
+            self.tmf_fee.setText(str(view.settings.tmf_fee_per_contract))
         if not self._certificate_dirty:
             self.certificate_path.setText(view.settings.certificate_path)
             self.certificate_secret_ref.setText(view.settings.certificate_secret_ref)
+        self.key_expiry_status.setText(ui_text('m2.maintenance.expiry_unknown') if self._connection_dirty else text.expiry_text(view))
+        self.maintenance_checklist.setText(text.maintenance_text(view, reachable=not self._connection_dirty))
         self._loading, self._initialized = False, True
         self._update_accounts()
         for item in view.readiness:
@@ -257,6 +307,8 @@ class BrokerPanel(QWidget):
             self._paint(
                 self.readiness_labels[item.code], text.readiness_text(item, reachable=False), 'BLOCKED' if item.code == 'production_orders' else 'UNKNOWN'
             )
+        self.key_expiry_status.setText(ui_text('m2.maintenance.expiry_unknown'))
+        self.maintenance_checklist.setText(text.maintenance_text(self.view, reachable=False))
         self._paint(self.certificate_status, ui_text('m2.connection.unknown'), 'UNKNOWN')
         self._enabled()
 
@@ -264,6 +316,7 @@ class BrokerPanel(QWidget):
         aliases = {item.alias for item in self.view.accounts}
         for alias in self.account_boxes.keys() - aliases:
             self.account_boxes.pop(alias).deleteLater()
+            self.account_guidance.pop(alias).deleteLater()
         for item in self.view.accounts:
             widget = self.account_boxes.get(item.alias)
             if widget is None:
@@ -271,6 +324,7 @@ class BrokerPanel(QWidget):
                 widget.setObjectName('sinopac_account_' + item.alias)
                 widget.toggled.connect(self._select_accounts)
                 self.account_boxes[item.alias] = widget
+                self.account_guidance[item.alias] = ReadinessGuidance('', '', 'sinopac_account_' + item.alias, self.account_container)
             with QSignalBlocker(widget):
                 widget.setChecked(item.selected)
             widget.setText(text.account_text(item))
@@ -278,6 +332,10 @@ class BrokerPanel(QWidget):
             widget.setToolTip(text.reason_text(item.reason))
             self._accounts_layout.removeWidget(widget)
             self._accounts_layout.addWidget(widget)
+            guidance = self.account_guidance[item.alias]
+            guidance.set_content(*account_guidance(item.signed))
+            self._accounts_layout.removeWidget(guidance)
+            self._accounts_layout.addWidget(guidance)
         self.account_empty.setVisible(not self.view.accounts)
         self.account_next.setVisible(not self.view.accounts)
 
@@ -305,7 +363,7 @@ class BrokerPanel(QWidget):
     def _enabled(self):
         busy = self._busy or self.view.phase in ('CONNECTING', 'DISCONNECTING')
         connected = self._available and self.view.phase == 'CONNECTED' and not self._connection_dirty and not busy
-        for widget in (self.environment, self.key_ref, self.fee_discount, self.save_connect):
+        for widget in (self.environment, self.key_ref, self.key_expiry, self.fee_discount, self.minimum_fee, self.tmf_fee, self.save_connect):
             widget.setEnabled(not busy)
         self.disconnect_button.setEnabled(not self._busy and self.view.phase in ('CONNECTED', 'CONNECTING'))
         _certificate_controls(self, connected)

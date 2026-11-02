@@ -13,7 +13,7 @@ import unittest
 from unittest.mock import patch
 
 import test_trading_adapters as fixtures
-from test_trading_execution_environments import LocalEnvironmentPort
+from test_trading_execution_environments import LocalEnvironmentPort, _test_maintenance
 from quantlab.trading.adapters.simulated import FaultPlan, SimulatedBroker
 from quantlab.trading.adapters.storage.ledger import Ledger
 from quantlab.trading.application.context import Catalog, ExecutionConfiguration
@@ -67,6 +67,7 @@ def laboratory(*, kind=HoldingKind.SWING, readonly=False, baseline=True, environ
             source_profile=compute_profile(),
             fees=FeeSchedule(),
             historical_bars=history,
+            automatic_entry_check=lambda: _test_maintenance(calendar, clock),
         )
         try:
             for item in catalog.instruments:
@@ -138,6 +139,15 @@ def attest(engine):
 
 
 class SharedCoordinatorTests(unittest.TestCase):
+    def test_fixture_maintenance_uses_real_coverage_rule_and_expires_with_calendar(self):
+        with laboratory() as (engine, broker, port, spec, history):
+            engine.automatic_entry_check()
+            engine.clock.value = engine.calendar.day_session(engine.calendar.days[-3]).opens_at
+            with self.assertRaises(DomainError) as caught:
+                engine.automatic_entry_check()
+            self.assertEqual(caught.exception.code, 'calendar_coverage_missing')
+            self.assertEqual(port.received, [])
+
     def test_readonly_default_never_submits_or_fills(self):
         with laboratory(readonly=True) as (engine, broker, port, spec, history):
             with self.assertRaises(DomainError):

@@ -54,12 +54,14 @@ class TradingEngine:
         fees: FeeSchedule | None = None,
         historical_bars: dict[str, tuple[CompletedBar, ...]] | None = None,
         live_market: LiveMarketService | None = None,
+        automatic_entry_check: Callable[[], None] | None = None,
     ):
         initialize()
         self.journal, self.clock, self.calendar, self.catalog = journal, clock, calendar, catalog
         self.gateways, self.simulation, self.ownership_clock = gateways, simulation, ownership_clock
         self.configuration = configuration or ExecutionConfiguration()
         self.live_market = live_market
+        self.automatic_entry_check = automatic_entry_check
         if historical_bars is not None and (type(historical_bars) is not dict or len(historical_bars) > len(catalog.instruments)):
             raise DomainError('validation_failed', 'bounded typed market history mapping required')
         self.history: dict[str, tuple[CompletedBar, ...]] = {}
@@ -524,6 +526,11 @@ class TradingEngine:
 
             manual_request = manual_plan_request(self, plan, key)
             synchronize_session(self)
+            if not plan.reduce_only and manual_request is None:
+                if self.configuration.environment is not Environment.LOCAL:
+                    if self.automatic_entry_check is None:
+                        raise DomainError('calendar_coverage_missing', 'automatic entry maintenance has not been configured')
+                    self.automatic_entry_check()
             if not plan.reduce_only and manual_request is None and not automatic:
                 assert_daily_baseline(self)
             from .scope import refresh_scope

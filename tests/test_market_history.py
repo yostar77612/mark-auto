@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 import csv, io, json, tempfile, unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from unittest.mock import patch
 from quantlab.market import InstrumentRef, MarketValidationError
 from quantlab.research_core.domain.market_sessions import MarketSession, PRODUCT_SOURCES, session_from_dict
@@ -158,12 +159,16 @@ class HistoryTests(unittest.TestCase):
             import_history(root / 'input.csv', root / 'cache', sessions=(session(),), storage=create_history_storage())
         with self.assertRaises(MarketValidationError):
             load_history(root / 'cache', '../escape')
+        with self.assertRaises(MarketValidationError):
+            replace(session(), source='https://evil.test')
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_import_rejects_symlink(self):
+        _, root = self.run_import([row()])
         link = root / 'link'
         link.symlink_to(root / 'input.csv')
         with self.assertRaises(MarketValidationError):
             import_history(link, root / 'other', sessions=(session(),), storage=create_history_storage())
-        with self.assertRaises(MarketValidationError):
-            replace(session(), source='https://evil.test')
 
     def test_normal_session_dict(self):
         s = session_from_dict(
