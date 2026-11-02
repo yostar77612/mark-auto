@@ -1945,6 +1945,40 @@ and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
 
+## 2026-11-02 — Account alias hardening (independent work B)
+
+- Decision: HMAC a domain-separated legacy identity digest with a random local
+  32-byte key. This permits exact migration without recovering account numbers;
+  both displayed aliases and persisted identity values change together.
+- Key loss/replacement: clear remembered selection and require reselection.
+  Do not match masked labels or account tails. Corrupt/inaccessible key files
+  preserve settings and fail closed. The key never belongs in git or settings.
+- Historical manual ledger: retain every byte and block nonempty selection with
+  the existing reconciliation-required error. Automatically renaming financial
+  journal identities or treating a new alias as an empty account is outside this
+  narrow security fix. This conservative gate needs separate controlled
+  reconciliation for such existing workspaces; no automatic reset is offered.
+- No new UI strings; reuse the existing reconciliation error. Linux fake tests
+  cover migration, key continuity/loss, native alias privacy and retained pending
+  obligations. Windows ACLs, installed-client upgrade and native SDK behavior
+  remain explicitly unverified. GitNexus/root AGENTS.md/CLAUDE.md are absent in
+  this checkout; grep callers and `tools/affected_tests.py` import graph replace
+  impact/detect-changes for this work.
+
+### 2026-11-02 continuation — stale selections and empty-ledger boundary
+
+- Revalidate cached aliases at the existing manual readiness/admission boundary
+  against fresh keyed settings. A second runtime observing key loss must not
+  leave a first runtime able to materialize or submit under stale aliases.
+- Retain the existing-ledger reconciliation gate, even for a verified empty
+  schema-v2 ledger. SQLite inspection ownership ends before a stale runtime's
+  lazy lease acquisition; no root-wide settings/ledger ownership fence exists.
+  Automatic exemption is blocked on safe shared ownership or verified
+  quiescence, not on an inability to recognize the empty schema.
+- The added deny-only check covers current-version runtimes at their admission
+  boundary; it is not retroactive protection for old running binaries or a
+  replacement for an atomic cross-process ownership protocol.
+
 ## 2026-11-02 — M2-9 isolated data/cost/maintenance slice
 
 Use additive M1 daily/event tables and retain original official response bytes
@@ -2219,6 +2253,16 @@ explicit trusted reconciliation clears the issue; it never resumes, resends or
 releases a reservation. GitNexus reconcile_automatic impact:294 upstream,
 166 processes,20 modules,CRITICAL. Regression tests use the actual fake SDK;
 independent guard mutations accompany the correction.
+
+### 2026-11-02 — Alias integration with updated automatic SIM main
+
+The M2-3 engine uses manual materialization but separate automatic entry and
+protective observation admission. Preserve upstream execution behavior and add
+only fresh alias-selection rejection to those existing boundaries. The
+preflight collector also supplies automatic resume/completed-bar health; it
+still performs no SDK queries. Empty-ledger automatic exemption remains blocked
+on ownership/quiescence; this sync introduces neither journal migration nor
+new execution capability.
 
 ### M2-3 next round: daily signal contract and execution window
 

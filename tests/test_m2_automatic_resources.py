@@ -29,7 +29,7 @@ class AutomaticResourcesTests(unittest.TestCase):
             contracts=SimpleNamespace(get=Mock(side_effect=lambda code: self.metadata[code]), info=Mock(side_effect=lambda row: self.metadata[row.code])),
         )
         raw = SimpleNamespace(account_type='F', broker_id='F002000', account_id='1234567', signed=True)
-        accounts = discover_accounts([raw], Environment.BROKER_SIMULATION)
+        accounts = discover_accounts([raw], Environment.BROKER_SIMULATION, alias_key=b'fake-account-alias-key-for-tests!')
         self.owner = SimpleNamespace(
             accounts=accounts,
             configuration=SinopacConnectionSettings(),
@@ -196,7 +196,7 @@ class AutomaticResourcesTests(unittest.TestCase):
         stock = SimpleNamespace(code='2330', exchange='TSE', currency='TWD', trading_suspended=False, unit=1000, limit_down=90, limit_up=110)
         self.metadata['2330'] = stock
         raw = SimpleNamespace(account_type='S', broker_id='F002000', account_id='1234567', signed=True)
-        self.owner.accounts = discover_accounts([raw], Environment.BROKER_SIMULATION)
+        self.owner.accounts = discover_accounts([raw], Environment.BROKER_SIMULATION, alias_key=b'fake-account-alias-key-for-tests!')
         self.reference = self.owner.accounts[0].alias
         self.facade.execution_contracts.side_effect = AssertionError('stock request cannot expand to futures')
         evidence = StockGridEvidence(

@@ -90,6 +90,7 @@ def dispose(owner):
 
 
 def select_accounts(owner, aliases, ticket):
+    owner.preferences.check_selection(aliases)
     if type(aliases) is not tuple or len(set(aliases)) != len(aliases) or not set(aliases) <= {account.alias for account in owner.accounts}:
         raise DomainError('validation_failed', 'explicit discovered account selection required')
     for account in owner.accounts:
@@ -159,7 +160,7 @@ def connect_candidate(owner, ticket):
             candidate.login(api_key=credentials.api_key, secret_key=credentials.secret_key)
         finally:
             del credentials
-        accounts = discover_accounts(facade.list_accounts(), owner.configuration.environment)
+        accounts = discover_accounts(facade.list_accounts(), owner.configuration.environment, alias_key=owner.preferences.alias_key)
         market = MarketSession(owner.settings, owner.secrets, facade._module, owner.clock, owner.directory)
         market.attach_authenticated(candidate.consumer('terminal'))
         accept_candidate(owner, candidate, market, accounts, ticket)
@@ -194,6 +195,8 @@ def transition(owner, command, ticket):
             if isinstance(error, SdkUnavailable)
             else 'broker_permission_missing'
             if type(error).__name__ in ('AuthError', 'ShioajiPermissionError')
+            else 'reconciliation_required'
+            if isinstance(error, DomainError) and error.code == 'reconciliation_required'
             else 'account_query_failed'
             if command.action is UiAction.SELECT_SINOPAC_ACCOUNTS
             else 'certificate_failed'

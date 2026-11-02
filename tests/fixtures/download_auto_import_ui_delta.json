@@ -823,16 +823,6 @@
         },
         {
           "row": {
-            "file": "tests/test_minute_research_host.py",
-            "kind": "assignment",
-            "line": 34,
-            "name": "contract",
-            "receiver": "self"
-          },
-          "count": 1
-        },
-        {
-          "row": {
             "file": "tests/test_m2_automatic.py",
             "kind": "assignment",
             "line": 541,
@@ -846,16 +836,6 @@
             "file": "tests/test_m2_daily_recovery.py",
             "kind": "assignment",
             "line": 60,
-            "name": "history",
-            "receiver": "self.engine"
-          },
-          "count": 1
-        },
-        {
-          "row": {
-            "file": "tests/test_m2_automatic_engine.py",
-            "kind": "assignment",
-            "line": 517,
             "name": "history",
             "receiver": "self.engine"
           },
@@ -1057,6 +1037,26 @@
             "kind": "assignment",
             "line": 108,
             "name": "bars",
+            "receiver": "self"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m2_automatic_engine.py",
+            "kind": "assignment",
+            "line": 524,
+            "name": "history",
+            "receiver": "self.engine"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_minute_research_host.py",
+            "kind": "assignment",
+            "line": 35,
+            "name": "contract",
             "receiver": "self"
           },
           "count": 1
