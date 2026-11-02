@@ -362,3 +362,47 @@ class OfficialStockResearchTests(StockResearchFixture, unittest.TestCase):
             self.assertEqual(artifact.result.trades[0].entry_index, 10)
             self.assertTrue(all(trade.entry_index >= 10 for trade in artifact.result.trades))
             self.assertTrue(all(trade.quantity == 1000 for trade in artifact.result.trades))
+
+
+class StockPublicationCheckpointTests(StockResearchFixture, unittest.TestCase):
+    def test_cancel_during_matching_profile_read_preserves_prior_artifact(self):
+        fees = FeeSchedule.taiwan()
+        cancelled = False
+        with closing(Ledger(self.root / 'research.sqlite', 'stock-test', self.clock.now())) as journal:
+            service = self.service(journal)
+            first = service.run(self.strategy(), self.spec, START, END, fees, StockTaxTreatment('STOCK'))
+            original = journal.replay()
+
+            def read_profile():
+                nonlocal cancelled
+                cancelled = True
+                return service.profile
+
+            service.profile_reader = read_profile
+            with self.assertRaises(DomainError) as failure:
+                service.run(self.strategy(), self.spec, START, END, fees, StockTaxTreatment('STOCK'), cancelled=lambda: cancelled)
+            self.assertTrue(cancelled)
+            self.assertEqual(failure.exception.code, 'research_cancelled')
+            self.assertEqual(journal.replay(), original)
+            self.assertEqual(service.history(), (first,))
+
+    def test_deadline_during_matching_profile_read_preserves_prior_artifact(self):
+        fees = FeeSchedule.taiwan()
+        elapsed = 0
+        with closing(Ledger(self.root / 'research.sqlite', 'stock-test', self.clock.now())) as journal:
+            service = self.service(journal, timer=lambda: elapsed)
+            first = service.run(self.strategy(), self.spec, START, END, fees, StockTaxTreatment('STOCK'))
+            original = journal.replay()
+
+            def read_profile():
+                nonlocal elapsed
+                elapsed = 901
+                return service.profile
+
+            service.profile_reader = read_profile
+            with self.assertRaises(DomainError) as failure:
+                service.run(self.strategy(), self.spec, START, END, fees, StockTaxTreatment('STOCK'), max_seconds=900)
+            self.assertEqual(elapsed, 901)
+            self.assertEqual(failure.exception.code, 'research_timeout')
+            self.assertEqual(journal.replay(), original)
+            self.assertEqual(service.history(), (first,))
