@@ -5480,5 +5480,138 @@
     "affected_count": 652,
     "changed_files": 36,
     "risk_level": "critical"
+  },
+  "merged_direct": {
+    "modules": [
+      "test_m2_daily_commit",
+      "test_m2_daily_native",
+      "test_m2_daily_runtime",
+      "test_daily_signal_data",
+      "test_daily_signal_source_refresh",
+      "test_official_daily_admission",
+      "test_official_daily_research",
+      "test_official_daily_source",
+      "test_official_daily_worker"
+    ],
+    "tests": 181,
+    "failures": [],
+    "errors": [],
+    "seconds": 42.837724299984984
+  },
+  "merged_incoming_155": {
+    "modules": [
+      "test_m2_daily_not_sent",
+      "test_m2_daily_retention",
+      "test_m2_daily_review_guards",
+      "test_m2_daily_price_basis"
+    ],
+    "tests": 77,
+    "failures": [],
+    "errors": [],
+    "skipped": 0,
+    "seconds": 35.180161500000395
+  },
+  "merged_incoming_assertions": {
+    "tests\\test_m2_daily_not_sent.py": {
+      "before": 75,
+      "after": 75,
+      "missing": {}
+    },
+    "tests\\test_m2_daily_retention.py": {
+      "before": 126,
+      "after": 126,
+      "missing": {}
+    },
+    "tests\\test_m2_daily_review_guards.py": {
+      "before": 55,
+      "after": 55,
+      "missing": {}
+    },
+    "tests\\test_m2_daily_price_basis.py": {
+      "before": 27,
+      "after": 27,
+      "missing": {}
+    }
+  },
+  "merged_startup_local": {
+    "elapsed_seconds": 8.348,
+    "engine_state": "WAITING_RECONCILIATION",
+    "environment": "LOCAL",
+    "errors": [],
+    "mode": "LOCAL",
+    "owned_endpoints_removed": true,
+    "owned_engine_cleanup": [
+      {
+        "exit_code": 0,
+        "shutdown": "NORMAL"
+      }
+    ],
+    "passed": true,
+    "real_sdk_imported": false,
+    "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-gaps",
+    "research_attached": true,
+    "research_released": true,
+    "return_code": 0,
+    "widget_count": 2943,
+    "window_type": "TradingWindow",
+    "window_visible": true
+  },
+  "merged_startup_simulation": {
+    "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+    "elapsed_seconds": 5.072,
+    "engine_state": "DISCONNECTED",
+    "environment": "BROKER_SIMULATION",
+    "errors": [],
+    "fake_sdk_connected": true,
+    "fake_sdk_login_count": 1,
+    "fake_sdk_logout_count": 1,
+    "host_return_code": 0,
+    "mode": "BROKER_SIMULATION",
+    "owned_endpoints_removed": true,
+    "owned_engine_cleanup": [],
+    "passed": true,
+    "real_sdk_imported": false,
+    "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-gaps",
+    "research_attached": true,
+    "research_released": true,
+    "return_code": 0,
+    "widget_count": 2943,
+    "window_type": "TradingWindow",
+    "window_visible": true
+  },
+  "merged_file_checks": [
+    {
+      "check": "check",
+      "files": 1219,
+      "code": 0,
+      "stdout": "All checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\nAll checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "check": "format --check",
+      "files": 1219,
+      "code": 0,
+      "stdout": "99 files already formatted\n100 files already formatted\n100 files already formatted\n75 files already formatted\n94 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n100 files already formatted\n19 files already formatted\n",
+      "stderr": ""
+    },
+    {
+      "check": "syntax including added files",
+      "files": 1219,
+      "failed": []
+    }
+  ],
+  "merged_base": "66f8b7f",
+  "tested_product_tree": "0dcedbd",
+  "graph_compare_fixed_base": {
+    "changed_count": 101,
+    "affected_count": 650,
+    "changed_files": 40,
+    "risk_level": "critical"
+  },
+  "graph_compare_current_origin_main": {
+    "changed_count": 107,
+    "affected_count": 650,
+    "changed_files": 57,
+    "risk_level": "critical"
   }
 }

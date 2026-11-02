@@ -162,3 +162,26 @@ recorded before commit. The complete all-scope check reports52 changed symbols,
 652 affected flows and CRITICAL risk, with no partial/truncated result. The
 repin tool changes only five module registrations and mechanical observer pins;
 its own verification passes. This report does not claim CI or Claude review passed.
+
+## Main synchronization
+
+Normal merge `0dcedbd` incorporates main66f8b7f, including PR155 recovery/retention
+and PR156 presentation. Conflicts preserve both appended contracts/decisions,
+inventory sets, and registry modules. Relative to that main, desktop_app/,
+workflow, costs, SDK pin, PROJECT_STATE and layer rules have no lane changes.
+The main workflow update is incoming PR157, not an engine-lane workflow edit.
+
+Merged source:181/181 direct daily/source/research/worker tests pass42.838s;
+77/77 incoming PR155 tests pass35.180s. The latter retain every old assertion;
+only the review-guard fixture is given explicit official input and saved hashes.
+The initial four fixture failures are preserved in local evidence. Real merged
+LOCAL8.348s and fake SIM5.072s windows are visible, return0, release research and
+remove owned resources. Ruff and Python3.11 syntax cover1219 Python files, with
+no findings; layers/quality pass and repin dry-run is entirely up to date.
+
+The graph is refreshed on this tree. Complete compare reports are saved both
+against fixed merged main66f8b7f and the advancing origin/main; the latter can
+include differences from concurrent main deliveries and is not a lane ownership
+list. Whole-flow/candidate caps in index construction remain acknowledged:
+missing flows do not prove absence of callers. No partial/truncated change
+report is accepted. Full CI must validate the final PR head/merge candidate.
