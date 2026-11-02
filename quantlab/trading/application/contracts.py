@@ -403,6 +403,8 @@ class DailySignalDataView:
     available_at: datetime | None = None
     source_digest: str = ''
     reason: str = 'daily_signal_source_unverified'
+    verified_at: datetime | None = None
+    expires_at: datetime | None = None
 
 
 @dataclass(frozen=True)
