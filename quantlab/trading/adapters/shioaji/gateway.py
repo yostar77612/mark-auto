@@ -24,7 +24,7 @@ from quantlab.trading.ports.contracts import (
 )
 from quantlab.trading.ports.interfaces import Clock
 from quantlab.trading.ports.tick_stream import TickLoss
-from quantlab.trading.ports.manual import ManualAccountObservation
+from quantlab.trading.ports.manual import ManualAccountObservation, UnmappedBrokerOrder
 from . import market_data
 from .sdk_facade import ShioajiSDKFacade
 from .tick_stream import ShioajiTickStream
@@ -42,6 +42,14 @@ from .sdk import (
     sdk_text,
     sdk_value,
 )
+
+
+PENDING_PREFIX = 'pending-'
+
+
+def order_tag(local_order_id: str) -> str:
+    """Short SDK custom_field that lets an unknown submission be found again."""
+    return local_order_id[:6]
 
 
 class ShioajiAdapter:
@@ -295,23 +303,63 @@ class ShioajiAdapter:
         return account
 
     def submit(self, plan: OrderPlan, local_order_id: str) -> SubmissionReceipt:
+        """DomainError means nothing was sent; any uncertainty after the SDK call is an UNKNOWN receipt."""
         identity(local_order_id)
         account = self._execution(plan)
         if local_order_id in self.orders:
             raise DomainError('state_conflict', 'adapter must not resubmit an existing local command')
         binding = self.bindings[plan.instrument_id]
         fields = sdk_order_fields(plan, binding, account, odd_lot=self.capabilities[plan.account_ref].odd_lot)
-        order = self.client.Order(**fields)
-        pending = BrokerOrder(local_order_id, plan, 0, Decimal('0'), OrderStatus.UNKNOWN, f'pending-{local_order_id}', self.clock.now())
+        fields['custom_field'] = order_tag(local_order_id)
+        try:
+            order = self.client.Order(**fields)
+        except Exception:
+            raise DomainError('validation_failed', 'broker order construction rejected') from None
+        contract = self.client.contracts.get(binding.sdk_code)
+        pending = BrokerOrder(local_order_id, plan, 0, Decimal('0'), OrderStatus.UNKNOWN, PENDING_PREFIX + local_order_id, self.clock.now())
         self.orders[local_order_id] = pending
         try:
-            trade = self.client.place_order(self.client.contracts.get(binding.sdk_code), order)
+            trade = self.client.place_order(contract, order)
+        except DomainError:
+            # The facade refuses before it reaches the native SDK.
+            del self.orders[local_order_id]
+            raise
+        except Exception:
+            return SubmissionReceipt(local_order_id, None, OrderStatus.UNKNOWN, self.clock.now(), False, 'outcome_unknown')
+        try:
             normalized = order_from_sdk(trade, local_order_id, plan, binding, self.clock.now())
             self.trades[local_order_id], self.orders[local_order_id] = trade, normalized
             self._record(normalized)
         except Exception:
             return SubmissionReceipt(local_order_id, None, OrderStatus.UNKNOWN, self.clock.now(), False, 'outcome_unknown')
         return SubmissionReceipt(local_order_id, normalized.broker_order_ref, normalized.status, self.clock.now())
+
+    def adopt_order(self, local_order_id: str, broker_order_ref: str) -> None:
+        """Bind an observed broker order to an unknown local intent. Never sends anything."""
+        pending = self.orders.get(local_order_id)
+        if pending is None or pending.broker_order_ref != PENDING_PREFIX + local_order_id:
+            raise DomainError('state_conflict', 'only an unknown local submission can adopt a broker order')
+        self.orders[local_order_id] = replace(pending, broker_order_ref=broker_order_ref)
+
+    def release_unsent(self, local_order_id: str) -> None:
+        """Forget an unknown submission the owner declared never sent. Never sends anything."""
+        self.orders.pop(local_order_id, None)
+
+    def _economics_match(self, pending: BrokerOrder, trade: object) -> bool:
+        binding = self.bindings[pending.plan.instrument_id]
+        raw_order = sdk_value(trade, 'order')
+        quantity, _ = stock_sdk_quantity(pending.plan, binding, odd_lot=self.capabilities[pending.plan.account_ref].odd_lot)
+        return (
+            sdk_text(sdk_value(sdk_value(trade, 'contract'), 'code')) == binding.sdk_code
+            and sdk_text(sdk_value(raw_order, 'action')) == ('Buy' if pending.plan.side.value == 'BUY' else 'Sell')
+            and sdk_value(raw_order, 'quantity') == quantity
+            and sdk_decimal(sdk_value(raw_order, 'price'), 'order price') == pending.plan.limit_price
+        )
+
+    def _unknown_submissions(self, account_ref: str) -> tuple[BrokerOrder, ...]:
+        return tuple(
+            order for order in self.orders.values() if order.plan.account_ref == account_ref and order.broker_order_ref == PENDING_PREFIX + order.local_order_id
+        )
 
     @decimal_operation
     def _record(self, order: BrokerOrder, previous: BrokerOrder | None = None) -> None:
@@ -348,6 +396,7 @@ class ShioajiAdapter:
         self._execution(replace(previous.plan, decision_at=now, deadline=now + timedelta(seconds=30)))
         if previous.status not in (OrderStatus.ACCEPTED, OrderStatus.PARTIALLY_FILLED):
             raise DomainError('state_conflict', 'order not active')
+        status, unknown = previous.status, False
         try:
             if price is None:
                 self.client.cancel_order(self.trades[local_order_id])
@@ -366,20 +415,22 @@ class ShioajiAdapter:
                         changed_plan, self.bindings[spec.instrument_id], odd_lot=self.capabilities[changed_plan.account_ref].odd_lot
                     )
                     self.client.update_order(self.trades[local_order_id], price=sdk_price(price), qty=sdk_quantity)
-                status = previous.status
         except DomainError:
             raise
         except Exception:
+            unknown = True
+        # An unknown amendment leaves the order itself working; only an unknown cancel makes the order state unknown.
+        if unknown and price is None:
             status = OrderStatus.UNKNOWN
         # Neither SDK command return implies a terminal exchange result.
         self.orders[local_order_id] = replace(previous, status=status, updated_at=self.clock.now())
         return CommandReceipt(
             f'change-{local_order_id}-{self.sequence}',
             True,
-            status,
+            OrderStatus.UNKNOWN if unknown else status,
             local_order_id,
             self.clock.now(),
-            'outcome_unknown' if status is OrderStatus.UNKNOWN else '',
+            'outcome_unknown' if unknown else '',
         )
 
     def cancel(self, local_order_id: str) -> CommandReceipt:
@@ -388,7 +439,7 @@ class ShioajiAdapter:
     def amend(self, local_order_id: str, price: Decimal, quantity: int | None = None) -> CommandReceipt:
         return self._change(local_order_id, price, quantity)
 
-    def _refresh_orders(self, account_ref: str, *, require_healthy: bool = False) -> tuple[BrokerOrder, ...]:
+    def _refresh_orders(self, account_ref: str, *, require_healthy: bool = False) -> tuple[tuple[BrokerOrder, ...], tuple[UnmappedBrokerOrder, ...]]:
         account = self._account(account_ref)
         try:
             updated = self.client.update_status(account=account)
@@ -401,15 +452,25 @@ class ShioajiAdapter:
         except Exception as exc:
             raise query_error(exc, 'order query unavailable; no retry submission') from None
         expected = self._account_identity(account)
-        observed = []
+        observed, unmapped = [], []
         for trade in trades:
             raw_order = sdk_value(trade, 'order')
             if self._account_identity(sdk_value(raw_order, 'account')) != expected:
                 continue
             raw_id = str(sdk_value(raw_order, 'id'))
             matches = [order for order in self.orders.values() if order.broker_order_ref == raw_id]
-            if len(matches) != 1:
-                raise DomainError('reconciliation_required', 'unmapped external/unknown broker order requires explicit adoption')
+            if len(matches) > 1:
+                raise DomainError('reconciliation_required', 'ambiguous broker order reference')
+            if not matches:
+                # The manual book finds a submission of unknown outcome again by its own tag plus identical economics.
+                # The generic refresh keeps quarantining every unmapped broker order.
+                candidates = [order for order in self._unknown_submissions(account_ref) if self._economics_match(order, trade)]
+                tagged = [order for order in candidates if require_healthy and getattr(raw_order, 'custom_field', '') == order_tag(order.local_order_id)]
+                if len(tagged) != 1:
+                    unmapped.append(UnmappedBrokerOrder(raw_id, tuple(order.local_order_id for order in candidates)))
+                    continue
+                matches = [replace(tagged[0], broker_order_ref=raw_id)]
+                self.orders[tagged[0].local_order_id] = matches[0]
             previous = matches[0]
             if require_healthy:
                 binding = self.bindings[previous.plan.instrument_id]
@@ -428,10 +489,12 @@ class ShioajiAdapter:
                 self._record(normalized, previous)
             self.trades[previous.local_order_id], self.orders[previous.local_order_id] = trade, normalized
             observed.append(normalized)
-        return tuple(observed)
+        return tuple(observed), tuple(unmapped)
 
     def refresh(self, account_ref: str) -> RemoteSnapshot:
-        self._refresh_orders(account_ref)
+        _, unmapped = self._refresh_orders(account_ref)
+        if unmapped:
+            raise DomainError('reconciliation_required', 'unmapped external/unknown broker order requires explicit adoption')
         orders = tuple(order for order in self.orders.values() if order.plan.account_ref == account_ref)
         return RemoteSnapshot(self.snapshot(account_ref), orders, self.list(account_ref), self.account_sequences[account_ref], self.clock.now())
 
@@ -442,7 +505,7 @@ class ShioajiAdapter:
         requested here. A missing working order remains missing for the caller.
         """
         integer(after_sequence, 'event cursor')
-        orders = self._refresh_orders(account_ref, require_healthy=True)
+        orders, unmapped = self._refresh_orders(account_ref, require_healthy=True)
         positions = self.list(account_ref, manual=True)
         own = {order.local_order_id for order in self.orders.values() if order.plan.account_ref == account_ref}
         events = tuple(event for event in self.event_log if event.sequence > after_sequence and event.local_order_id in own)
@@ -456,7 +519,9 @@ class ShioajiAdapter:
                 price = sdk_decimal(raw, 'observed modified price')
                 if price > 0:
                     amended.append((order.local_order_id, price))
-        return ManualAccountObservation(account_ref, self.environment, orders, positions, events, self.clock.now(), amended_prices=tuple(amended))
+        return ManualAccountObservation(
+            account_ref, self.environment, orders, positions, events, self.clock.now(), amended_prices=tuple(amended), unmapped=unmapped
+        )
 
     def events(self, account_ref: str, after_sequence: int = 0) -> tuple[OrderEvent, ...]:
         integer(after_sequence, 'event cursor')

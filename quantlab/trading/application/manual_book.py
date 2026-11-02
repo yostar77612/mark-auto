@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 ZERO = Decimal('0')
 MANUAL_PREFIX = 'manual-sim-'
 CAPACITY_SOURCE = 'APP_VIRTUAL_SIMULATION'
+# A marketable manual limit may not sit further than this fraction beyond the opposite quote.
+MANUAL_MAX_PRICE_DEVIATION = Decimal('0.01')
 
 
 @dataclass(frozen=True)

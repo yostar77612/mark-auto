@@ -107,6 +107,8 @@ class UiAction(str, Enum):
     SUBMIT_MANUAL = 'submit_manual'
     CANCEL_MANUAL = 'cancel_manual'
     AMEND_MANUAL = 'amend_manual'
+    ADOPT_MANUAL_ORDER = 'adopt_manual_order'
+    DECLARE_MANUAL_NOT_SENT = 'declare_manual_not_sent'
     TEST_SIM_ORDER = 'test_sim_order'
     CREATE_STRATEGY = 'create_strategy'
     VALIDATE = 'validate'

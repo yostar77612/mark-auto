@@ -139,6 +139,8 @@ class ManualPreviewView:
     protection: str = 'UNPROTECTED'
     quantity_unit: QuantityUnit | None = None
     lot_size: int = 1
+    bid: Decimal | None = None
+    ask: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -151,6 +153,7 @@ class ManualPendingView:
     status: str = 'PENDING'
     outcome_known: bool = False
     reason: str = ''
+    candidates: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
