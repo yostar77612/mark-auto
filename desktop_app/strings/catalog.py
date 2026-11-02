@@ -234,6 +234,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[66])
 # Lane U3: typed strategy management.
 ZH_TW.update(_ZH_TW_CHUNKS[67])
 
+# Lane M4a: manual update and optional autostart.
+ZH_TW.update(_ZH_TW_CHUNKS[68])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

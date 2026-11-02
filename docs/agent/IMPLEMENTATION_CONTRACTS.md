@@ -7646,3 +7646,12 @@ failure bound if dispatch never occurs. The real deadline check and cleanup run
 unchanged; the original under-one-second return, retiring worker, absent receipt,
 empty cache and complete missing-range assertions remain. No production behavior,
 SDK access, execution policy or acceptance score changes.
+
+
+### M4a — Explicit update and optional current-user startup (2026-11-02)
+
+Update checks remain user triggered. A new release offers explicit download/install confirmation with source, version, digest prefix and the trading-stop notice; Cancel is the default. Only bounded, cancellable HTTPS downloads from the named repository release source (and its narrow GitHub asset CDN redirect) are accepted. SHA256 must match byte-for-byte before any execution; partial downloads are discarded. Unsigned installers provide consistency plus HTTPS origin trust, not publisher authentication.
+
+The update handoff reuses normal close, confirms owned engines exited, releases the install guard and waits for desktop exit before running the quiet installer. Shutdown failure/timeout cancels installation; no process is forcibly terminated. Installer nonzero exit and restart failures remain explicit errors. Existing workspace/settings are never a download or cleanup destination.
+
+Autostart defaults off and only manages the current user's Run value named MarkAuto. Enabled paths repair on installed launch; disabling removes only that value. Startup does not resume trading or new entries. Sleep/shutdown cannot run trading. LIVE remains hard-disabled; G3 locked files and trading logic remain unchanged. Full CI and Windows installer validation must pass; Claude review is required before owner merge.

@@ -83,7 +83,10 @@ from .unified import ENTRIES as _part_unified
 from .watch import ENTRIES as _part_watch
 from .dashboard import ENTRIES as _part_dashboard
 
+from .m4a_maintenance import ENTRIES as _part_m4a_maintenance
+
 PARTS = (
+    _part_m4a_maintenance,
     _part_strategy_management,
     _part_manual_review,
     _part_account_readiness,

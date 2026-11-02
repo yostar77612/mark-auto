@@ -172,6 +172,37 @@ ERROR_TABLE.update(
         ),
     }
 )
+# Explicit update/startup boundary failures; no raw network/OS diagnostics in UI.
+ERROR_TABLE.update(
+    {
+        'update_check_failed': ErrorText('無法取得或驗證新版資訊。', '請檢查網路後重新檢查更新。'),
+        'update_metadata_missing': ErrorText('此版本的發布資訊缺少安裝檔驗證資料。', '請稍後重新檢查，或前往官方發布頁。'),
+        'update_not_installed': ErrorText('一鍵安裝僅適用已安裝的 Windows 版 MarkAuto。', '請從官方發布頁取得安裝程式。'),
+        'update_source_rejected': ErrorText('更新下載來源不在允許的官方發布來源內。', '已中止更新；請重新檢查官方發布資訊。'),
+        'update_download_failed': ErrorText('安裝檔下載不完整或無法寫入暫存資料夾。', '請檢查網路及暫存磁碟空間後重試。'),
+        'update_download_timeout': ErrorText('安裝檔下載超過等候時間。', '已清除未完成下載；請檢查網路後重試。'),
+        'update_download_cancelled': ErrorText('您已取消安裝檔下載。', '未執行安裝；可隨時重新檢查更新。'),
+        'update_too_large': ErrorText('安裝檔超過允許的下載大小。', '已中止更新；請核對官方發布內容。'),
+        'update_hash_mismatch': ErrorText('安裝檔驗證碼與發布資訊不符。', '已刪除下載檔且不會執行；請重新檢查更新。'),
+        'update_shutdown_failed': ErrorText('無法確認程式與自有引擎已正常關閉，更新已中止。', '原版已保留；請等待作業結束後重新開啟程式並重試。'),
+        'update_installer_failed': ErrorText('安裝程式回報錯誤，退出碼：{0}。', '更新未完成；請重新開啟原版並核對官方安裝說明。'),
+        'update_install_start_failed': ErrorText('無法啟動更新安裝程式。', '原版已保留；請重新開啟程式後重試。'),
+        'update_parent_timeout': ErrorText('原程式未在期限內退出，更新已中止。', '未強制結束任何程序；請正常關閉程式後重試。'),
+        'update_app_running': ErrorText('仍有 MarkAuto 程序持有安裝鎖，更新已中止。', '請正常關閉所有 MarkAuto 視窗後重試。'),
+        'update_restart_failed': ErrorText('安裝完成，但無法自動開啟新版程式。', '請使用桌面或開始功能表捷徑手動開啟 MarkAuto。'),
+        'autostart_read_failed': ErrorText('無法讀取開機自動啟動設定。', '請檢查目前 Windows 使用者的登錄權限後重試。'),
+        'autostart_write_failed': ErrorText('無法儲存開機自動啟動設定。', '原設定已保留；請檢查目前 Windows 使用者的登錄權限。'),
+        'autostart_remove_failed': ErrorText('無法移除開機自動啟動設定。', '設定可能仍啟用；請檢查目前 Windows 使用者的登錄權限後重試。'),
+    }
+)
+
+
+class AutostartError(RuntimeError):
+    def __init__(self, code: str):
+        self.code = code
+        super().__init__(code)
+
+
 ERROR_LABELS = {code: text.explanation for code, text in ERROR_TABLE.items()}
 
 

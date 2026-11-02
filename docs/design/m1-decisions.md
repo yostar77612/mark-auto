@@ -228,3 +228,13 @@
   Fix the old context test's ordinal4 selection to HoldingKind.CUSTOM and explicitly
   provide its stop while retaining every original financial/isolation assertion.
   No new strings/modules or changed style hashes; do not rerun baseline generation.
+
+
+## 2026-11-02 M4a：一鍵更新與選用開機啟動
+
+- 工作目錄從 `origin/main`（f0e974f）建立 `codex/m4a-update-autostart`；直接對 main 開 PR，不堆疊、不自行合併。僅相關模組與實際視窗檢查在本機執行，完整回歸與 Windows 安裝驗證交 CI（依本次擁有者指令）。
+- 安裝接棒使用 Windows 內建 PowerShell，沿用既有 Inno 安裝程式的 `MARKAUTO_PAYLOAD_VERIFIED=` 日誌確認新 payload，不另造 stable launcher。先等自有引擎乾淨退出、安裝 mutex 釋放、原桌面 PID 結束，才啟動安裝；絕不強制終止程序。更新失敗不寫工作區或設定。
+- 初始資產 URL 僅接受具名 GitHub repository release HTTPS 前綴。GitHub 正常下載必須轉址至 `release-assets.githubusercontent.com/github-production-release-asset/`，只允許這個明確 CDN 路徑的 HTTPS 轉址；逐跳驗證並驗證最終 URL。禁止任意主機、降級、帳密、非標準連接埠。
+- manifest 新增 aware `published_at`、`signature_verified: false`、`installer: {url, sha256}`；舊 manifest 僅能檢查版本，無完整安裝資訊時拒絕安裝。發布固定指標引用同次不可變版本 release 的資產雜湊，避免指標更新競態。
+- 現有安裝採版本化 payload 路徑，HKCU Run 值指向目前 frozen `MarkAuto.exe`。只有已啟用時在新版啟動修正路徑；原本關閉不建立機碼。只啟動視窗，不接觸交易恢復流程。
+- ChatGPT visible delegation 使用既有設定對話，遇到輸入框 selector deadline/no_matches，未送出 prompt，停止此委派並由本地並行審查承接；未繞過登入或 UI 權限。

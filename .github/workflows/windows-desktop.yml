@@ -261,7 +261,27 @@ jobs:
           gh release create "$tag" "${assets[@]}" --target "$SOURCE_SHA" --prerelease --title "Mark Auto Windows preview $tag" --notes-file release-notes.txt
           # The in-app update check reads this fixed pointer; releases/latest skips prereleases.
           version=$(sed -n 's/^__version__ = "\([0-9.]*\)"$/\1/p' quantlab/__init__.py)
-          printf '{"version": "%s", "commit": "%s"}\n' "$version" "$SOURCE_SHA" > release-manifest.json
+          published_at=$(gh release view "$tag" --json publishedAt --jq '.publishedAt')
+          TAG="$tag" VERSION="$version" PUBLISHED_AT="$published_at" python - <<'PY'
+          from hashlib import sha256
+          import json
+          import os
+          from pathlib import Path
+
+          version = os.environ['VERSION']
+          installer = Path('release/installers') / f'MarkAuto-{version}-windows-x64-setup.exe'
+          manifest = {
+              'version': version,
+              'commit': os.environ['SOURCE_SHA'],
+              'published_at': os.environ['PUBLISHED_AT'],
+              'installer': {
+                  'url': f"https://github.com/yostar77612/mark-auto/releases/download/{os.environ['TAG']}/{installer.name}",
+                  'sha256': sha256(installer.read_bytes()).hexdigest(),
+              },
+              'signature_verified': False,
+          }
+          Path('release-manifest.json').write_text(json.dumps(manifest) + '\n', encoding='utf-8')
+          PY
           printf '%s  release-manifest.json\n' "$(sha256sum release-manifest.json | cut -d' ' -f1)" > release-manifest.json.sha256
           gh release view desktop-preview-latest >/dev/null 2>&1 || gh release create desktop-preview-latest --target "$SOURCE_SHA" --prerelease \
             --title 'Mark Auto latest preview pointer' --notes 'Machine-readable pointer for the in-app update check. Download installers from the dated preview releases.'
