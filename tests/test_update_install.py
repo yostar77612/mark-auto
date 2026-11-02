@@ -82,6 +82,7 @@ class InstallHandoffTests(unittest.TestCase):
             patch.object(trading_runtime, '_run_window', return_value=0),
             patch.object(trading_runtime, '_close_window_engines', side_effect=lambda previous: events.append('children-exited')),
             patch.object(install, 'launch_pending_install', side_effect=lambda launch: (events.append('helper-launched'), launch(['powershell']))),
+            patch.object(trading_runtime.subprocess, 'CREATE_NO_WINDOW', 0x08000000, create=True),
             patch.object(trading_runtime.subprocess, 'Popen') as started,
         ):
             self.assertEqual(trading_runtime.run_window(), 0)
@@ -91,7 +92,7 @@ class InstallHandoffTests(unittest.TestCase):
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NO_WINDOW,
+            creationflags=0x08000000,
             close_fds=True,
         )
 
