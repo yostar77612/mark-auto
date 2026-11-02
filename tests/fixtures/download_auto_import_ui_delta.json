@@ -865,7 +865,7 @@
           "row": {
             "file": "tests/test_m2_automatic_engine.py",
             "kind": "assignment",
-            "line": 517,
+            "line": 524,
             "name": "history",
             "receiver": "self.engine"
           },
