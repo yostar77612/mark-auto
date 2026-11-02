@@ -299,7 +299,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/trading/runtime/live_market.py` | 106 | composition | `quantlab/trading/runtime/live_market.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`CalendarResolver`，`quantlab/trading/runtime/live_market.py:15` |
 | `quantlab/trading/runtime/protocol.py` | 69 | composition | `quantlab/trading/runtime/protocol.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`Operation`，`quantlab/trading/runtime/protocol.py:14` |
 | `quantlab/trading/runtime/provenance.py` | 20 | composition | `quantlab/trading/runtime/provenance.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`compute_profile`，`quantlab/trading/runtime/provenance.py:11` |
-| `quantlab/trading/runtime/research_worker.py` | 381 | composition | `quantlab/trading/runtime/research_worker.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WorkerFault`，`quantlab/trading/runtime/research_worker.py:39` |
+| `quantlab/trading/runtime/research_worker.py` | 399 | composition | `quantlab/trading/runtime/research_worker.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WorkerFault`，`quantlab/trading/runtime/research_worker.py:41` |
 | `quantlab/trading/runtime/server.py` | 288 | composition | `quantlab/trading/runtime/server.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`_metrics`，`quantlab/trading/runtime/server.py:25` |
 | `quantlab/trading/runtime/unix_socket.py` | 108 | composition | `quantlab/trading/runtime/unix_socket.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`_prefix`，`quantlab/trading/runtime/unix_socket.py:19` |
 | `quantlab/trading/runtime/watchlist_settings.py` | 39 | composition | `quantlab/trading/runtime/watchlist_settings.py` | 既有 runtime 組裝與 process/IPC 支援邊界；保留路徑；`WatchlistSettings`，`quantlab/trading/runtime/watchlist_settings.py:14` |
@@ -722,7 +722,7 @@ PR E4 market/history owners (content-only):
 | `quantlab/trading/application/market_terminal_service.py` | 326 | application | `quantlab/trading/application/market_terminal_service.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/market_terminal_views.py` | 57 | application | `quantlab/trading/application/market_terminal_views.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/watch.py` | 41 | domain | `quantlab/trading/domain/watch.py` | M1: reviewed new module; existing rows and layer rules retained. |
-| `quantlab/trading/ports/history.py` | 49 | application | `quantlab/trading/ports/history.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `quantlab/trading/ports/history.py` | 54 | application | `quantlab/trading/ports/history.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/market_settings.py` | 11 | application | `quantlab/trading/ports/market_settings.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_connection.py` | 129 | composition | `quantlab/trading/runtime/market_connection.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_terminal.py` | 72 | composition | `quantlab/trading/runtime/market_terminal.py` | M1: reviewed new module; existing rows and layer rules retained. |
@@ -860,6 +860,13 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
+| `quantlab/trading/adapters/shioaji/minute_history.py` | 79 | infrastructure | `quantlab/trading/adapters/shioaji/minute_history.py` | M2-7: read-only resolved TMF history binding; fake SDK time/identity/quota tests; no login or order API. |
+| `quantlab/trading/application/minute_research.py` | 147 | application | `quantlab/trading/application/minute_research.py` | M2-7: deterministic completed-signal/next-open minute engine and research-only evidence; daily activation unchanged. |
+| `quantlab/trading/domain/minute_research.py` | 118 | domain | `quantlab/trading/domain/minute_research.py` | M2-7: TRAINING settings, explicit complete session grid and 1m/5m aggregation; no missing-bar fabrication. |
+| `quantlab/trading/runtime/minute_research.py` | 53 | composition | `quantlab/trading/runtime/minute_research.py` | M2-7: M1 cache/refill plus bounded worker composition and selected snapshot admission. |
+
+| `tests/test_minute_research.py` | 286 | tooling | `tests/test_minute_research.py` | M2-7: synthetic next-open/holding/cost/cutoff/grid/evidence tests and real bounded spawn. |
+| `tests/test_minute_research_history.py` | 208 | tooling | `tests/test_minute_research_history.py` | M2-7: real SQLite/HistorySync with fake SDK; completeness, exact contract identity, timestamp, quota and revision tests. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

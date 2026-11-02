@@ -790,6 +790,16 @@
             "receiver": "window"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_minute_research_history.py",
+            "kind": "assignment",
+            "line": 55,
+            "name": "history",
+            "receiver": "self"
+          },
+          "count": 1
         }
       ]
     },
