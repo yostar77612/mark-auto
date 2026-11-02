@@ -1,6 +1,11 @@
 """Offline regressions for the PR-stage CI slimming (docs-only skip, filters, concurrency)."""
 
 import tempfile
+import json
+import os
+import subprocess
+import sys
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -65,6 +70,32 @@ class DocsOnlyClassifierTests(unittest.TestCase):
 
 
 class WorkflowShapeTests(unittest.TestCase):
+    def test_actual_quantlab_aggregate_accepts_only_applicable_success(self):
+        gate = job_blocks(text('quantlab.yml'))['gate']
+        names = gate.split('needs: [', 1)[1].split(']', 1)[0].split(', ')
+        script = textwrap.dedent(gate.split('        run: |\n', 1)[1])
+        self.assertTrue(script.startswith("python3 - <<'PY'\n"))
+        program = script.split('\n', 1)[1].rsplit('\nPY', 1)[0]
+        for docs_only, changed_result, expected in (
+            (True, None, 0),
+            (False, None, 0),
+            (True, ('ruff', 'failure'), 1),
+            (True, ('changes', 'failure'), 1),
+            (True, ('offline', 'failure'), 1),
+            (True, ('offline', 'cancelled'), 1),
+            (False, ('offline', 'skipped'), 1),
+            (False, ('ui', 'failure'), 1),
+        ):
+            needs = {name: {'result': 'skipped' if docs_only and name not in ('changes', 'ruff', 'quality') else 'success'} for name in names}
+            needs['changes']['outputs'] = {'code': 'false' if docs_only else 'true'}
+            if changed_result is not None:
+                needs[changed_result[0]]['result'] = changed_result[1]
+            with self.subTest(docs_only=docs_only, changed_result=changed_result):
+                result = subprocess.run(
+                    [sys.executable, '-c', program], env={**os.environ, 'NEEDS': json.dumps(needs)}, capture_output=True, text=True, timeout=10
+                )
+                self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+
     def test_concurrency_cancels_only_pull_requests(self):
         for name in ('quantlab.yml', 'windows-desktop.yml'):
             head = header(name)
