@@ -16,6 +16,7 @@ from .execution import ExecutionService
 from .manual_book import (
     CAPACITY_SOURCE,
     MANUAL_PREFIX,
+    MANUAL_MAX_PRICE_DEVIATION,
     ManualBook,
     ManualRequest,
     book_for,
@@ -40,13 +41,21 @@ from .manual_contracts import (
     ManualScope,
     ManualTradingView,
 )
-from .state import ACTIVE
+from .state import ACTIVE, replace_order
 from quantlab.trading.domain.models import Environment, Market, OrderPlan, OrderStatus, Side
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.manual import ManualAccountObservation, ManualPriceLimit
 
 ZERO = Decimal('0')
 TERMINAL = frozenset((OrderStatus.CANCELED, OrderStatus.FILLED, OrderStatus.REJECTED))
+OPERATIONS = {
+    UiAction.SUBMIT_MANUAL: 'SUBMIT',
+    UiAction.TEST_SIM_ORDER: 'SUBMIT',
+    UiAction.CANCEL_MANUAL: 'CANCEL',
+    UiAction.AMEND_MANUAL: 'AMEND',
+    UiAction.ADOPT_MANUAL_ORDER: 'ADOPT',
+    UiAction.DECLARE_MANUAL_NOT_SENT: 'NOT_SENT',
+}
 
 
 class ManualTradingService:
@@ -58,7 +67,9 @@ class ManualTradingService:
         limits: tuple[ManualPriceLimit, ...],
         cost_source: str,
         margin_source: str,
+        max_price_deviation: Decimal = MANUAL_MAX_PRICE_DEVIATION,
     ):
+        self.max_price_deviation = max_price_deviation
         self.engine, self.validate_scope = engine, validate_scope
         self.limits = {row.instrument_id: row for row in limits}
         self.cost_source, self.margin_source = cost_source, margin_source
@@ -66,6 +77,8 @@ class ManualTradingService:
         self.diagnostics: dict[str, ManualOrderForm] = {}
         engine.manual_scope_validator = validate_scope
         engine.manual_observations = {}
+        engine.manual_protective_observations = {}
+        self.protective_batch_failed = False
         engine.manual_markets = {account: manual_market(engine, account) for account in engine.gateways}
         with engine.lock:
             if engine.state.manual_books:
@@ -119,12 +132,15 @@ class ManualTradingService:
         self.validate_scope(scope)
         return scope
 
-    def _fresh(self) -> None:
+    def _observed(self) -> None:
         engine = self.engine
         rows = engine.manual_observations
         if set(rows) != set(engine.gateways) or any(not 0 <= (engine.clock.now() - row.as_of).total_seconds() <= 30 for row in rows.values()):
             raise DomainError('manual_account_observation_required')
-        if not engine.state.reconciled:
+
+    def _fresh(self) -> None:
+        self._observed()
+        if not self.engine.state.reconciled:
             raise DomainError('reconciliation_required')
 
     def _record_request(self, request: ManualRequest) -> None:
@@ -202,6 +218,9 @@ class ManualTradingService:
         if not isinstance(form, ManualBookForm) or not form.confirmed:
             raise DomainError('manual_confirmation_required')
         self._fresh()
+        from .account_risk import assert_account_resume
+
+        assert_account_resume(self.engine, form.scope.account_ref)
         book = self._book(form.scope.account_ref)
         if form.capital != book.capital:
             raise DomainError('state_conflict', 'manual capital and loss history cannot be reset')
@@ -222,9 +241,10 @@ class ManualTradingService:
         if passed or any(not row.outcome_known for row in self.engine.state.manual_requests):
             raise DomainError('state_conflict' if passed else 'manual_test_pending')
         specs = [spec for spec in self.engine.catalog.instruments if spec.market is Market.INDEX_FUTURE and spec.underlying == 'TMF']
-        if len(specs) != 1 or manual_market(self.engine, scope.account_ref) is not Market.INDEX_FUTURE:
-            raise DomainError('instrument_unresolved', 'one actual TMF account/contract required')
-        spec = specs[0]
+        eligible = sorted((spec for spec in specs if spec.expiry is not None and spec.expiry >= self.engine.state.trading_day), key=lambda spec: spec.expiry)
+        if not eligible or manual_market(self.engine, scope.account_ref) is not Market.INDEX_FUTURE:
+            raise DomainError('instrument_unresolved', 'actual unexpired TMF account/contract required')
+        spec = eligible[0]
         bounds = self.limits.get(spec.instrument_id)
         quote = self.engine.quotes.get(spec.instrument_id)
         if bounds is None or quote is None or bounds.observed_at.date() != self.engine.clock.now().date():
@@ -303,7 +323,11 @@ class ManualTradingService:
             allocations=allocations,
             policy=request.policy,
         )
-        allowed = decision.allowed and decision.quantity == form.quantity
+        sized = decision.allowed and decision.quantity == form.quantity
+        # Only the marketable side can give money away; a distant resting limit is harmless.
+        reference = quote.ask if form.side is Side.BUY else quote.bid
+        deviation = (form.limit_price - reference) / reference if form.side is Side.BUY else (reference - form.limit_price) / reference
+        allowed = sized and deviation <= self.max_price_deviation
         available = max(
             ZERO,
             min(account.allocated_cash, account.settled_cash, account.broker_limit)
@@ -330,9 +354,11 @@ class ManualTradingService:
             self.cost_source,
             quote.source_at,
             plan.deadline,
-            () if allowed else (decision.code,),
+            () if allowed else ('price_deviation',) if sized else (decision.code,),
             quantity_unit=spec.unit,
             lot_size=spec.lot_size,
+            bid=quote.bid,
+            ask=quote.ask,
         )
         self.previews[preview.preview_id] = (replace(form, confirmed=False, preview_id=''), preview)
         # Only a bounded transient UI preparation cache; durable admitted intents
@@ -396,16 +422,18 @@ class ManualTradingService:
         except DomainError as error:
             order = next((row for row in engine.state.orders if row.key == form.request_id), None)
             if not engine.storage_failed:
+                # No order, or one the execution service sealed as REJECTED, proves the SDK was never invoked.
+                refused = order is None or order.status is OrderStatus.REJECTED
                 self._record_request(
                     replace(
                         request,
                         order_id=order.order_id if order else '',
-                        status='UNKNOWN' if order else 'REJECTED',
-                        outcome_known=order is None,
-                        reason=error.code if order is None else 'outcome_unknown',
+                        status='REJECTED' if refused else 'UNKNOWN',
+                        outcome_known=refused,
+                        reason=error.code if refused else 'outcome_unknown',
                     )
                 )
-                if order is not None:
+                if not refused:
                     self._halt('outcome_unknown')
             raise
         order = next(row for row in engine.state.orders if row.order_id == order_id)
@@ -452,7 +480,11 @@ class ManualTradingService:
             raise DomainError('manual_quantity_amend_unsupported')
         if order.status not in (OrderStatus.ACCEPTED, OrderStatus.PARTIALLY_FILLED):
             raise DomainError('reconciliation_required')
-        if any(not row.outcome_known and row.order_id == order.order_id for row in engine.state.manual_requests):
+        # Cancelling only reduces risk, so an unresolved amendment never blocks it.
+        if any(
+            not row.outcome_known and row.order_id == order.order_id and (operation == 'AMEND' or row.operation != 'AMEND')
+            for row in engine.state.manual_requests
+        ):
             raise DomainError('outcome_unknown')
         if operation == 'AMEND':
             self._fresh()
@@ -473,10 +505,19 @@ class ManualTradingService:
                 raise DomainError('instrument_unresolved')
             # Price-only reductions retain the original conservative reservation
             # until terminal evidence. Increasing cash or stop risk is refused.
-            if (order.plan.side is Side.BUY and not order.plan.stop_price < form.price <= order.plan.limit_price) or (
-                order.plan.side is Side.SELL and not order.plan.limit_price <= form.price < order.plan.stop_price
+            # An exit reserves no cash and carries no stop, so any legal price may chase the market.
+            if not order.plan.reduce_only and (
+                (order.plan.side is Side.BUY and not order.plan.stop_price < form.price <= order.plan.limit_price)
+                or (order.plan.side is Side.SELL and not order.plan.limit_price <= form.price < order.plan.stop_price)
             ):
                 raise DomainError('risk_rejected', 'amendment would increase risk')
+            from .account_risk import account_entry_rejection, halt_account_risk
+
+            amended_plan = replace(order.plan, limit_price=form.price)
+            code = account_entry_rejection(engine, amended_plan, allocated_cash=book.capital)
+            if code:
+                halt_account_risk(engine, amended_plan, code)
+                raise DomainError(code)
         request = ManualRequest(form.scope, form.request_id, operation, sha256(dumps(form).encode()).hexdigest(), order_id=order.order_id, price=form.price)
         self._record_request(request)
         engine.fence()
@@ -487,10 +528,59 @@ class ManualTradingService:
                 receipt = engine.gateways[form.scope.account_ref].amend(order.order_id, form.price, None)
                 if receipt.status is OrderStatus.UNKNOWN:
                     raise DomainError('outcome_unknown')
-        except Exception:
+        except Exception as error:
+            if isinstance(error, DomainError) and error.code != 'outcome_unknown':
+                # A DomainError means the SDK was never invoked; the working order is unchanged.
+                self._record_request(replace(request, status='REJECTED', outcome_known=True, reason=error.code))
+                raise
             self._record_request(replace(request, status='UNKNOWN', reason='outcome_unknown'))
             self._halt('outcome_unknown')
             raise DomainError('outcome_unknown') from None
+        return order.order_id
+
+    def _resolve(self, form: ManualMutationForm, operation: str, broker_order_ref: str) -> str:
+        """Owner-confirmed settlement of an unknown submission from a fresh observation. Never sends an order."""
+        if not isinstance(form, ManualMutationForm) or not form.confirmed:
+            raise DomainError('manual_confirmation_required')
+        engine, book = self.engine, self._book(form.scope.account_ref)
+        self._observed()
+        order = next((row for row in engine.state.orders if row.order_id == form.order_id), None)
+        pending = next(
+            (row for row in engine.state.manual_requests if row.order_id == form.order_id and row.operation == 'SUBMIT' and not row.outcome_known), None
+        )
+        if (
+            order is None
+            or pending is None
+            or order.plan.account_ref != form.scope.account_ref
+            or order.plan.strategy_id != book.book_id
+            or order.status is not OrderStatus.UNKNOWN
+            or order.broker_ref
+        ):
+            raise DomainError('state_conflict', 'an unknown manual submission of this book is required')
+        candidates = tuple(
+            row.broker_order_ref for row in engine.manual_observations[form.scope.account_ref].unmapped if order.order_id in row.candidate_order_ids
+        )
+        gateway = engine.gateways[form.scope.account_ref]
+        if operation == 'ADOPT':
+            reference = broker_order_ref or (candidates[0] if len(candidates) == 1 else '')
+            if reference not in candidates:
+                raise DomainError('reconciliation_required', 'one observed broker order matching the unknown submission must be chosen')
+            engine.fence()
+            gateway.adopt_order(order.order_id, reference)
+            settled, closed = replace(order, broker_ref=reference), pending
+        else:
+            if candidates:
+                raise DomainError('state_conflict', 'a matching broker order exists; adopt it instead')
+            engine.fence()
+            gateway.release_unsent(order.order_id)
+            released = replace(order.reservation, cash=ZERO, risk=ZERO, quantity=0, status=OrderStatus.REJECTED)
+            settled = replace(order, status=OrderStatus.REJECTED, reservation=released)
+            closed = replace(pending, status='REJECTED', outcome_known=True, reason='manual_declared_not_sent')
+        request = ManualRequest(
+            form.scope, form.request_id, operation, sha256(dumps(form).encode()).hexdigest(), order_id=order.order_id, status='RESOLVED', outcome_known=True
+        )
+        requests = tuple(closed if row.request_id == pending.request_id else row for row in engine.state.manual_requests)
+        engine._persist('manual_' + operation.lower(), replace(replace_order(engine.state, settled), manual_requests=(*requests, request)))
         return order.order_id
 
     def _halt(self, reason: str) -> None:
@@ -501,8 +591,20 @@ class ManualTradingService:
             engine._persist('manual_new_risk_halted', proposed)
 
     def _result(self, request: ManualRequest) -> ManualPendingView:
+        remote = self.engine.manual_observations.get(request.scope.account_ref)
+        candidates = (
+            tuple(row.broker_order_ref for row in remote.unmapped if request.order_id in row.candidate_order_ids) if remote and request.order_id else ()
+        )
         return ManualPendingView(
-            request.scope, request.request_id, request.operation, request.purpose, request.order_id, request.status, request.outcome_known, request.reason
+            request.scope,
+            request.request_id,
+            request.operation,
+            request.purpose,
+            request.order_id,
+            request.status,
+            request.outcome_known,
+            request.reason,
+            candidates,
         )
 
     def _flatten(self, command: UiCommand, scope: ManualScope) -> str:
@@ -535,14 +637,8 @@ class ManualTradingService:
             try:
                 form = command.manual_book or command.manual_order or command.manual_mutation
                 scope = self._scope(command, form)
-                operation = (
-                    'SUBMIT'
-                    if command.action in (UiAction.SUBMIT_MANUAL, UiAction.TEST_SIM_ORDER)
-                    else 'CANCEL'
-                    if command.action is UiAction.CANCEL_MANUAL
-                    else 'AMEND'
-                )
-                if command.action in (UiAction.SUBMIT_MANUAL, UiAction.CANCEL_MANUAL, UiAction.AMEND_MANUAL, UiAction.TEST_SIM_ORDER) and form is not None:
+                operation = OPERATIONS.get(command.action, '')
+                if operation and form is not None:
                     if not isinstance(form, (ManualOrderForm, ManualMutationForm)):
                         raise DomainError('validation_failed')
                     replay = self._replay(form, operation)
@@ -586,6 +682,9 @@ class ManualTradingService:
                     reference = self._submit(command.manual_order)
                 elif command.action in (UiAction.CANCEL_MANUAL, UiAction.AMEND_MANUAL):
                     reference = self._mutate(command.manual_mutation, operation)
+                elif command.action in (UiAction.ADOPT_MANUAL_ORDER, UiAction.DECLARE_MANUAL_NOT_SENT):
+                    # target_id optionally names the observed broker order to adopt.
+                    reference = self._resolve(command.manual_mutation, operation, command.target_id)
                 else:
                     raise DomainError('capability_missing')
                 request = request_for(self.engine, form.request_id)
@@ -609,13 +708,29 @@ class ManualTradingService:
             if observed is None:
                 continue
             terminal = observed.status in TERMINAL
-            amended = request.operation == 'AMEND' and dict(remote.amended_prices).get(request.order_id) == request.price
+            price = dict(remote.amended_prices).get(request.order_id)
+            amended = request.operation == 'AMEND' and price == request.price
+            # A healthy observation that still shows the old price, or a still working order, proves an
+            # uncertain amendment or cancel did not take effect. Retrying a cancel is harmless.
+            unapplied = (
+                request.status == 'UNKNOWN'
+                and not terminal
+                and (
+                    request.operation == 'AMEND'
+                    and price is not None
+                    and price != request.price
+                    or request.operation == 'CANCEL'
+                    and observed.status in (OrderStatus.ACCEPTED, OrderStatus.PARTIALLY_FILLED)
+                )
+            )
             submitted = (
                 request.operation == 'SUBMIT'
                 and request.purpose is not ManualPurpose.DIAGNOSTIC_TMF
                 and observed.status not in (OrderStatus.UNKNOWN, OrderStatus.SUBMITTING)
             )
-            if terminal or amended or submitted:
+            if unapplied:
+                self._record_request(replace(request, status='REJECTED', outcome_known=True, reason='manual_' + request.operation.lower() + '_not_applied'))
+            elif terminal or amended or submitted:
                 reason = 'broker_rejected' if observed.status is OrderStatus.REJECTED else ''
                 self._record_request(replace(request, status=observed.status.value if not amended else 'AMENDED', outcome_known=True, reason=reason))
                 if request.purpose is ManualPurpose.DIAGNOSTIC_TMF:
@@ -628,64 +743,97 @@ class ManualTradingService:
                     )
                     self.engine._persist('manual_diagnostic_observed', replace(self.engine.state, manual_books=books))
 
+    def _adopt_account(self, account, remote) -> set[str]:
+        """The single account report/position validation authority."""
+        engine = self.engine
+        if (
+            remote.environment is not Environment.BROKER_SIMULATION
+            or remote.source != 'SHIOAJI_SCOPED_REFRESH_HEALTHY'
+            or not 0 <= (engine.clock.now() - remote.as_of).total_seconds() <= 30
+        ):
+            raise DomainError('manual_account_observation_required')
+        for event in remote.events:
+            local = next((order for order in engine.state.orders if order.order_id == event.local_order_id), None)
+            if local is None or local.plan.account_ref != account:
+                raise DomainError('reconciliation_required')
+            apply_event(engine, event, reconciled=True)
+        expected = {}
+        for lot in engine.state.positions:
+            if lot.account_ref == account and lot.quantity:
+                expected[lot.instrument_id] = expected.get(lot.instrument_id, 0) + lot.quantity * (1 if lot.direction is Side.BUY else -1)
+        owned = {order.order_id: order for order in engine.state.orders if order.plan.account_ref == account}
+        seen = {order.local_order_id for order in remote.orders}
+        open_submits = {row.order_id for row in engine.state.manual_requests if row.operation == 'SUBMIT' and not row.outcome_known}
+        # A submission whose outcome is unknown and that no broker order claims yet waits for explicit adoption.
+        awaiting = {
+            order_id
+            for order_id, order in owned.items()
+            if order.status is OrderStatus.UNKNOWN and not order.broker_ref and order_id in open_submits and order_id not in seen
+        }
+        actual = {position.instrument_id: position.quantity for position in remote.positions if position.quantity}
+        if any(
+            engine.catalog.resolve(position.instrument_id).market is Market.STOCK and position.source != 'SHIOAJI_OBSERVED_UNFINANCED_CASH_LONG'
+            for position in remote.positions
+            if position.quantity
+        ):
+            raise DomainError('reconciliation_required', 'cash-long stock observation required')
+        # Positions cannot be verified while an unknown submission may already have filled.
+        if not awaiting and (len(actual) != sum(bool(position.quantity) for position in remote.positions) or expected != actual):
+            raise DomainError('reconciliation_required')
+        if any(order.status in ACTIVE and order.order_id not in seen and order.order_id not in awaiting for order in owned.values()):
+            raise DomainError('outcome_unknown')
+        if any(not awaiting.intersection(row.candidate_order_ids) for row in remote.unmapped):
+            raise DomainError('reconciliation_required', 'unmapped external broker order')
+        for order in remote.orders:
+            if (
+                order.local_order_id not in owned
+                or owned[order.local_order_id].plan != order.plan
+                or order.status in (OrderStatus.UNKNOWN, OrderStatus.SUBMITTING)
+            ):
+                raise DomainError('reconciliation_required')
+        for order_id, price in remote.amended_prices:
+            local = owned.get(order_id)
+            if local is None:
+                raise DomainError('reconciliation_required')
+            approved = {request.price for request in engine.state.manual_requests if request.operation == 'AMEND' and request.order_id == order_id}
+            if price != local.plan.limit_price and price not in approved:
+                raise DomainError('reconciliation_required', 'unowned order price modification')
+        return awaiting
+
     def adopt(self, observations: tuple[ManualAccountObservation, ...]) -> None:
         with self.engine.lock:
             engine = self.engine
+            engine.manual_protective_observations = {}
+            self.protective_batch_failed = False
             rows = {row.account_ref: row for row in observations}
+            unresolved: set[str] = set()
             try:
                 from .sessions import synchronize_session
 
                 synchronize_session(engine)
                 if len(rows) != len(observations) or set(rows) != set(engine.gateways):
                     raise DomainError('manual_account_observation_required')
+                failures = []
                 for account, remote in rows.items():
-                    if (
-                        remote.environment is not Environment.BROKER_SIMULATION
-                        or remote.source != 'SHIOAJI_SCOPED_REFRESH_HEALTHY'
-                        or not 0 <= (engine.clock.now() - remote.as_of).total_seconds() <= 30
-                    ):
-                        raise DomainError('manual_account_observation_required')
-                    for event in remote.events:
-                        local = next((order for order in engine.state.orders if order.order_id == event.local_order_id), None)
-                        if local is None or local.plan.account_ref != account:
-                            raise DomainError('reconciliation_required')
-                        apply_event(engine, event, reconciled=True)
-                    expected = {}
-                    for lot in engine.state.positions:
-                        if lot.account_ref == account and lot.quantity:
-                            expected[lot.instrument_id] = expected.get(lot.instrument_id, 0) + lot.quantity * (1 if lot.direction is Side.BUY else -1)
-                    actual = {position.instrument_id: position.quantity for position in remote.positions if position.quantity}
-                    if any(
-                        engine.catalog.resolve(position.instrument_id).market is Market.STOCK and position.source != 'SHIOAJI_OBSERVED_UNFINANCED_CASH_LONG'
-                        for position in remote.positions
-                        if position.quantity
-                    ):
-                        raise DomainError('reconciliation_required', 'cash-long stock observation required')
-                    if len(actual) != sum(bool(position.quantity) for position in remote.positions) or expected != actual:
-                        raise DomainError('reconciliation_required')
-                    owned = {order.order_id: order for order in engine.state.orders if order.plan.account_ref == account}
-                    seen = {order.local_order_id for order in remote.orders}
-                    if any(order.status in ACTIVE and order.order_id not in seen for order in owned.values()):
-                        raise DomainError('outcome_unknown')
-                    for order in remote.orders:
+                    try:
+                        awaiting = self._adopt_account(account, remote)
+                        unresolved |= awaiting
                         if (
-                            order.local_order_id not in owned
-                            or owned[order.local_order_id].plan != order.plan
-                            or order.status in (OrderStatus.UNKNOWN, OrderStatus.SUBMITTING)
+                            not awaiting
+                            and not remote.unmapped
+                            and not any(order.status in (OrderStatus.UNKNOWN, OrderStatus.SUBMITTING, OrderStatus.CANCEL_PENDING) for order in remote.orders)
                         ):
-                            raise DomainError('reconciliation_required')
-                    for order_id, price in remote.amended_prices:
-                        local = owned.get(order_id)
-                        if local is None:
-                            raise DomainError('reconciliation_required')
-                        approved = {request.price for request in engine.state.manual_requests if request.operation == 'AMEND' and request.order_id == order_id}
-                        if price != local.plan.limit_price and price not in approved:
-                            raise DomainError('reconciliation_required', 'unowned order price modification')
+                            engine.manual_protective_observations[account] = remote
+                    except DomainError as error:
+                        failures.append(error)
+                if failures:
+                    self.protective_batch_failed = True
+                    raise failures[0]
                 engine.manual_observations = rows
                 available = manual_stock_availability(engine)
                 if available != engine.state.positions:
                     engine._persist('manual_owned_availability_observed', replace(engine.state, positions=available))
-                if not engine.state.reconciled:
+                if not engine.state.reconciled and not unresolved:
                     engine._persist('manual_account_observed', replace(engine.state, reconciled=True))
                 if (
                     engine.state.manual_books
@@ -704,6 +852,8 @@ class ManualTradingService:
                     if proposed != engine.state:
                         engine._persist('manual_empty_genesis_session', proposed)
                 self._complete_requests(rows)
+                if unresolved:
+                    self._halt('outcome_unknown')
                 for book in engine.state.manual_books:
                     if any(lot.quantity and lot.strategy_id == book.book_id for lot in engine.state.positions):
                         self._halt('manual_unprotected_position')
@@ -716,6 +866,8 @@ class ManualTradingService:
                     self._halt('risk_rejected')
             except DomainError as error:
                 engine.manual_observations = {}
+                if not self.protective_batch_failed:
+                    engine.manual_protective_observations = {}
                 self._halt(error.code)
                 if engine.state.reconciled:
                     engine._persist('manual_observation_unresolved', replace(engine.state, reconciled=False))

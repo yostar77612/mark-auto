@@ -20,6 +20,11 @@ def current_reservations(engine: 'TradingEngine') -> tuple[Reservation, ...]:
         if order.plan.reduce_only:
             continue
         spec = engine.catalog.resolve(order.plan.instrument_id)
+        record = next((s for s in engine.state.strategies if (s.strategy_id, s.version) == (order.plan.strategy_id, order.plan.strategy_version)), None)
+        if record is not None and record.parameters is not None:
+            from quantlab.trading.domain.strategy import effective_strategy_spec
+
+            spec = effective_strategy_spec(spec)
         owned = tuple(p for p in engine.state.positions if p.lot_id == order.order_id and p.quantity)
         pending = max(0, order.plan.quantity - order.filled) if order.status in ACTIVE else 0
         risk = sum(

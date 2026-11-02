@@ -212,3 +212,62 @@ program integration with the packaging implementation. GitNexus checks are
 complete and LOW risk. The live PR Checks links above are the final delivery
 gate for the resulting documentation heads; earlier literal head hashes remain
 historical snapshots. Verify main and each stacked base for merge conflicts.
+
+## 第二輪引擎車道交付（2026-11-02，R5 收斂範圍）
+
+擁有者在本輪指令回報：已通過永豐官方模擬下單測試，模擬不需 CA，金鑰有交易權限。
+這是開始第二輪的授權與背景，不是本代理使用真實金鑰或完成自動交易實測的宣告。
+本車道全程使用 fake SDK／錄製 fixture，沒有修改 desktop_app、G3、SDK pin、
+PROJECT_STATE、costs.py、workflow 或安裝程式。
+
+| 工作 | PR／來源 | CI 與交付狀態 |
+|---|---|---|
+| M2-4 四型態與策略管理 | [PR143](https://github.com/yostar77612/mark-auto/pull/143)，head4350f05 | [run41371054724](https://github.com/yostar77612/mark-auto/actions/runs/41371054724)35項全綠；已合併6d50129 |
+| M2-5 帳戶風控與開盤前檢查 | [PR145](https://github.com/yostar77612/mark-auto/pull/145)，head2ae7d37 | [run41375019550](https://github.com/yostar77612/mark-auto/actions/runs/41375019550)35項全綠；已合併2ffee2d |
+| M2-3 完成分鐘 K 的自動執行與復原 | [PR146](https://github.com/yostar77612/mark-auto/pull/146)，基於已合併main | 本機相關驗證通過；完整 CI 以[目前 PR head Checks](https://github.com/yostar77612/mark-auto/pull/146/checks)為準，寫入時尚待完成，不列為全功能驗收 |
+
+三個 PR 皆直接對 main，前一個合併後才建立下一個分支／PR；各自第一個小 commit
+先定 DTO、UiAction 與錯誤碼契約。機械基準另立 commit，沒有弱化原斷言。
+
+M2-4 提供四種型態預設、商品限制、版本管理、策略資金／風險隔離、研究門檻、
+整張／口數大小與近月／結算日規則。M2-5 提供每帳戶預設3%虧損、單筆金額與
+持倉數限制、同日不可清除的停機、可信開盤前檢查與原一鍵全停語意；獨立審查
+補上手動 SELL 改價超過帳戶委託上限的實際漏洞。
+
+M2-3 本輪完成1m／5m已完成 K 棒的單次進出場評估、持久化游標、共享手動／
+自動資金、明確自動對帳與恢復、重啟保持暫停、當沖強平／已確認取消後30秒重送、
+收盤後異常、斷線／行情停機與當前連線世代送單邊界。實際 fake SDK 審查補上
+風控後到 SDK 前的連線競態、另一帳戶異常清掉可獨立證明的保護出場，以及
+一般出場訊號被每次 timer 重評的問題。未知結果保留保留金與身分，不自動重送。
+
+首次完整 CI 前的來源通過752項相關測試（354新測試、398既有測試，46.931秒），
+另21項分層基準及49項觀察／工具驗證通過。446/446個獨立刪除／替換守衛變異被殺死。
+原始 trading_runtime._run_window 真實視窗啟動：LOCAL5.343秒、fake-SIM3.453秒，
+皆返回0，研究頁正確釋放，自有 host 正常退出、端點移除。SIM 啟動驗證為已連線／
+未配置交易資金；實際策略委託另由 native SDK double 測試，不把啟動畫面當策略驗收。
+本機沒有跑完整 discover，完整測試交給 CI；CI 不綠不得作完成交付。
+
+首次完整 CI 找到既有唯一 execution.commit 入口斷言；已改回單一呼叫點，
+保留自動送單期間的擁有權鎖。延伸 native fake SDK 複核另補上較舊自動單在
+最新游標已推進後的明確對帳復原，仍由原觀察權威拒絕任何未知單，不重送、不釋放
+保留金。修正後107項執行測試與123項自動／native測試通過（兩組重疊）；
+33個引擎及94個自動週期變異重跑全過，新增12個歷史復原變異全過，累計458/458。
+最終原始視窗啟動 LOCAL4.833秒／fake-SIM2.916秒通過；基準 dry-run 全部一致，
+未再修改基準。舊752項時間對應 c9de56d，最終來源與後續完整 CI 以 PR146 為準。
+
+R5：M2-3 首份草稿09:13:15，到10:36:06累計82分51秒，超過預估55分鐘的1.5倍
+（82分30秒）。因此保留已驗證的分鐘範圍可合併；**日 K 收盤訊號保存並延至下一個
+可信交易時段執行尚未完成，移下一輪**，估計另需2–3小時與完整驗證。券商模擬1d
+新倉現在明確回傳 automatic_daily_execution_pending，View DTO 顯示暫停與原因；
+LOCAL 日 K 研究／推進與合法保護減倉保留。不將收盤後 session_closed 當成送單成功。
+這份交付不是 M2-3 全項或第二輪全產品驗收完成。
+
+下一輪日 K 方案需保存 SignalIntent 而非昨日 OrderPlan／價格／數量；完成 K 只評估
+一次，下一個明確交易日以當前報價、資金、風控、對帳、世代與使用者恢復重新核准。
+未知委託不重送，沒有日曆不猜日，過下一時段不執行陳舊訊號。分鐘回測仍須由
+M2-7提供通過的既有相容證據；本輪 synthetic research fixture 不是分鐘回測驗收。
+M2-9多年股價／成本、畫面接線與真實券商自動交易均由相應車道／擁有者另行驗證。
+
+詳細證據：[M2-4](m2-4-engine-verification.md)、[M2-5](m2-5-engine-verification.md)、
+[M2-3](m2-3-engine-verification.md)與相鄰JSON；[決策](m2-decisions.md)、
+[行為契約](../agent/IMPLEMENTATION_CONTRACTS.md)。

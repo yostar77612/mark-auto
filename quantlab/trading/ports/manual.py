@@ -28,6 +28,19 @@ class ManualPriceLimit:
 
 
 @dataclass(frozen=True)
+class UnmappedBrokerOrder:
+    """A broker order no local intent claims. Candidates are unknown local intents with identical economics."""
+
+    broker_order_ref: str
+    candidate_order_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        identity(self.broker_order_ref)
+        for order_id in self.candidate_order_ids:
+            identity(order_id)
+
+
+@dataclass(frozen=True)
 class ManualAccountObservation:
     account_ref: str
     environment: Environment
@@ -37,6 +50,7 @@ class ManualAccountObservation:
     as_of: datetime
     source: str = 'SHIOAJI_SCOPED_REFRESH_HEALTHY'
     amended_prices: tuple[tuple[str, Decimal], ...] = ()
+    unmapped: tuple[UnmappedBrokerOrder, ...] = ()
 
     def __post_init__(self) -> None:
         identity(self.account_ref)
@@ -50,6 +64,8 @@ class ManualAccountObservation:
             raise DomainError('reconciliation_required', 'observation position scope')
         if any(not isinstance(row, OrderEvent) for row in self.events):
             raise DomainError('validation_failed', 'typed order events required')
+        if type(self.unmapped) is not tuple or any(not isinstance(row, UnmappedBrokerOrder) for row in self.unmapped):
+            raise DomainError('validation_failed', 'typed unmapped broker orders required')
         if type(self.amended_prices) is not tuple:
             raise DomainError('validation_failed', 'typed amended prices required')
         for order_id, price in self.amended_prices:

@@ -165,6 +165,8 @@ class CompositeFacade:
                     UiAction.TEST_SIM_ORDER,
                     UiAction.CANCEL_MANUAL,
                     UiAction.AMEND_MANUAL,
+                    UiAction.ADOPT_MANUAL_ORDER,
+                    UiAction.DECLARE_MANUAL_NOT_SENT,
                 ) or (command.action in (UiAction.RESUME, UiAction.FLATTEN) and facade.snapshot().manual.scope is not None):
                     accepted = self.snapshot().manual.scope
                     form = command.manual_book or command.manual_order or command.manual_mutation

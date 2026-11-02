@@ -4,9 +4,21 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from .contracts import AccountView, MarketView, OrderView, OverviewMarketSummary, PerformanceView, PositionView, StrategyView, UiState
+from .contracts import (
+    AutomaticView,
+    AccountRiskView,
+    AccountView,
+    MarketView,
+    OrderView,
+    OverviewMarketSummary,
+    PerformanceView,
+    PositionView,
+    StrategyProductView,
+    StrategyView,
+    UiState,
+)
 from .errors import ERROR_TABLE
-from quantlab.trading.domain.models import Environment, Market, Side
+from quantlab.trading.domain.models import Environment, HoldingKind, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import holding_window
 from quantlab.trading.domain.validation import DomainError
@@ -41,19 +53,37 @@ def policy_name(policy) -> str:
     return f'{policy.kind.value}:{policy.min_days}-{policy.max_days}'
 
 
+def _order_trading_day(engine: 'TradingEngine', order):
+    record = next((row for row in engine.state.strategies if (row.strategy_id, row.version) == (order.plan.strategy_id, order.plan.strategy_version)), None)
+    calendar = engine.calendar
+    if record is not None and record.parameters is not None and engine.configuration.environment is Environment.BROKER_SIMULATION:
+        calendar = engine._strategy_calendar(record, order.plan.instrument_id)
+    return next((session.trade_date for session in calendar.sessions if session.opens_at <= order.plan.decision_at <= session.closes_at), None)
+
+
 @decimal_operation
 def snapshot(engine: 'TradingEngine') -> UiState:
+    from quantlab.trading.domain.strategy import is_tmf, resolve_tmf_near
+    from quantlab.trading.domain.risk import AccountRiskLimits
+    from .account_risk import account_net_mark, account_position_count, m2_account_refs
+
     state = engine.state
     verified = _financial_facts_current(engine)
     tracks = {(track.strategy_id, track.version): track for track in state.performance_tracks}
     market_watch = engine.live_market.views() if engine.live_market is not None else ()
     health = {view.instrument_id: view.health.freshness for view in market_watch}
-    order_days = {
-        order.order_id: next(
-            (session.trade_date for session in engine.calendar.sessions if session.opens_at <= order.plan.decision_at <= session.closes_at), None
-        )
-        for order in state.orders
-    }
+    resolved, blocked = {}, {}
+    for record in state.strategies:
+        reference = record.strategy_id, record.version
+        resolved[reference] = record.form.instrument_id
+        if record.parameters is not None and record.parameters.instrument_rule == 'TMF_NEAR':
+            try:
+                resolved[reference] = resolve_tmf_near(engine.catalog.instruments, engine.calendar, state.trading_day).instrument_id
+            except DomainError as error:
+                resolved[reference], blocked[reference] = '', error.code
+        if record.parameters is not None and record.parameters.bar_interval == '1d' and state.environment is Environment.BROKER_SIMULATION:
+            blocked.setdefault(reference, 'automatic_daily_execution_pending')
+    order_days = {order.order_id: _order_trading_day(engine, order) for order in state.orders}
     strategies = tuple(
         StrategyView(
             s.strategy_id,
@@ -90,11 +120,32 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 else 'RISK_STOPPED'
                 if state.trading_day in state.daily_locks
                 else 'PAUSED'
-                if state.stopped or not state.reconciled or state.engine_closed
+                if state.stopped
+                or not state.reconciled
+                or state.engine_closed
+                or (s.parameters is not None and state.environment is Environment.BROKER_SIMULATION and state.automatic.auto_paused)
+                or (s.strategy_id, s.version) in blocked
                 else 'RUNNING'
             ),
+            parameters=s.parameters,
+            recent_signal=s.recent_signal,
+            margin_source=(
+                (
+                    'BROKER'
+                    if engine.catalog.resolve(resolved[s.strategy_id, s.version]).margin is not None
+                    and resolved[s.strategy_id, s.version] not in getattr(engine, 'unverified_automatic_margins', ())
+                    else 'BUILTIN_CONSERVATIVE'
+                )
+                if resolved[s.strategy_id, s.version]
+                else 'UNKNOWN'
+            )
+            if s.parameters is not None and s.form.market is not Market.STOCK
+            else '',
+            resolved_instrument_id=resolved[s.strategy_id, s.version],
+            entry_block_code=blocked.get((s.strategy_id, s.version), ''),
         )
         for s in state.strategies
+        if s.state != 'DELETED'
     )
     positions = []
     gross_marks: dict[str, Decimal | None] = {}
@@ -253,6 +304,40 @@ def snapshot(engine: 'TradingEngine') -> UiState:
     unrealized_total = None if not verified or any(p.unrealized_pnl is None for p in positions) else sum((p.unrealized_pnl for p in positions), ZERO)
     fills = [o for o in state.orders if o.filled and (o.fill_count_day is None or o.fill_count_day == state.trading_day)]
     today_fills = None if any(o.daily_fill_count is None for o in fills) else sum(o.daily_fill_count for o in fills)
+    account_risks = []
+    for reference in sorted(m2_account_refs(engine)):
+        limits = next((row for row in state.account_risk_limits if row.account_ref == reference), AccountRiskLimits(reference))
+        book = next((row for row in state.manual_books if row.account_ref == reference), None)
+        allocation = (
+            book.capital
+            if book is not None
+            else state.settings.stock_allocation
+            if reference == engine.configuration.stock_account_ref
+            else state.settings.futures_allocation
+        )
+        baseline = next((row for row in state.account_daily_baselines if row.account_ref == reference and row.trade_date == state.trading_day), None)
+        reasons = []
+        pnl = None
+        if baseline is None:
+            reasons.append('account_daily_baseline_required')
+        else:
+            try:
+                pnl = account_net_mark(engine, reference) - baseline.previous_close_pnl
+            except DomainError as error:
+                reasons.append(error.code)
+        if (reference, state.trading_day) in state.account_daily_locks:
+            reasons.append('account_daily_loss_limit')
+        account_risks.append(
+            AccountRiskView(
+                reference,
+                limits,
+                pnl,
+                allocation * limits.daily_loss_fraction,
+                account_position_count(engine, reference),
+                state.stopped or bool(reasons),
+                tuple(reasons),
+            )
+        )
     return UiState(
         environment=state.environment,
         account_ref=state.account_ref,
@@ -293,4 +378,21 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         unrealized_pnl=unrealized_total,
         remaining_daily_loss=daily_loss_room if verified else None,
         today_fill_count=today_fills,
+        account_risks=tuple(account_risks),
+        preflight=state.preflight,
+        automatic=AutomaticView(
+            'PAUSED_WAITING_RESUME' if state.automatic.auto_paused else 'RUNNING',
+            state.automatic.reasons,
+            state.automatic.evaluations,
+        ),
+        strategy_products=tuple(
+            StrategyProductView(
+                spec.instrument_id,
+                spec.market,
+                (HoldingKind.SWING, HoldingKind.POSITION, HoldingKind.CUSTOM) if spec.market is Market.STOCK else (HoldingKind.INTRADAY, HoldingKind.CUSTOM),
+                stock_intraday_optional=spec.market is Market.STOCK,
+            )
+            for spec in engine.catalog.instruments
+            if spec.market is Market.STOCK or is_tmf(spec)
+        ),
     )
