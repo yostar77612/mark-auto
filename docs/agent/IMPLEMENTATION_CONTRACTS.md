@@ -7668,3 +7668,16 @@ SDK access, execution policy or acceptance score changes.
 - Engine lane only; desktop_app/, LIVE hard guard, G3, SDK pin, PROJECT_STATE,
   costs and workflow/layer rules are unchanged. Order-path PRs require green
   complete CI and Claude review; this agent does not merge them.
+
+Daily source implementation detail: typed STOCK1d BROKER_SIMULATION RESEARCH
+requires a server-owned OfficialDailySignalSource and immutable OfficialDailyHistory;
+generic engine history cannot substitute. ResearchResult.daily_basis is a new
+keyword-only field. Its absent value is omitted only for the two exact research
+wire types, preserving legacy minute receipt/result bytes; populated provenance
+is always encoded. Historical fees/fills use RAW bars, decisions rebuild the
+whole at-most20-row adjusted window through each completed day. Runtime cache
+reads require a prior Taipei civil date and complete verified raw/action ranges.
+No download or client-supplied source is introduced. DailyIntent appends
+data_fingerprint/data_policy_fingerprint defaults; old unattested rows load but
+cannot dispatch. Saved-window semantic corrections refuse at the final boundary.
+OFFICIAL_DAILY_TRAINING labels this research; legacy LOCAL retains its old label.

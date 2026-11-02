@@ -6,27 +6,44 @@ import unittest
 from unittest.mock import patch
 
 import test_m2_automatic as fixtures
+from official_daily_fixtures import fake_official_history, official_intent_fixture, official_research_fixture
 from quantlab.trading.application.daily_execution import assert_daily_dispatch, dispatch_daily
 from quantlab.trading.application.daily_state import DailyState, create_intent
 from quantlab.trading.domain.auto_cycle import EvaluationCursor
 from quantlab.trading.domain.automatic_calendar import calendar_for_instrument
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
+from quantlab.trading.domain.strategy import CompletedBar
 
 
 class DailyCommitTests(unittest.TestCase):
     def setUp(self):
         self.engine = fixtures.MemoryEngine()
         self.record = replace(self.engine.record, parameters=replace(self.engine.record.parameters, bar_interval='1d'), evidence_hash='a' * 64)
-        self.engine.record = self.record
-        self.engine.state = replace(self.engine.state, strategies=(self.record,))
         calendar = calendar_for_instrument(self.engine.calendar, self.engine.catalog.resolve(self.record.form.instrument_id))
         target = calendar.day_session(self.engine.state.trading_day)
         origin = tuple(row for row in calendar.sessions if row.trade_date < target.trade_date)[-1]
+        sessions = tuple(row for row in calendar.sessions if row.kind == 'DAY' and row.trade_date <= origin.trade_date)[-25:]
+        bars = tuple(
+            CompletedBar(
+                row.opens_at,
+                row.closes_at,
+                row.closes_at,
+                self.engine.quotes[self.record.form.instrument_id].last,
+                self.engine.quotes[self.record.form.instrument_id].last,
+                1000,
+            )
+            for row in sessions
+        )
+        history = fake_official_history(self.record.form.instrument_id, bars, origin.closes_at)
+        self.record, _ = official_research_fixture(self.engine, self.record, history)
+        self.engine.record = self.record
+        self.engine.state = replace(self.engine.state, strategies=(self.record,))
         cursor = EvaluationCursor(self.record.strategy_id, self.record.version, self.record.form.instrument_id, '1d', origin.closes_at)
         self.intent = replace(
             create_intent(cursor, 'test-stock', 'ENTRY', cursor.instrument_id, '', self.record.evidence_hash, calendar, origin.closes_at), phase='CLAIMED'
         )
+        self.intent = official_intent_fixture(self.engine, self.record, self.intent)
         self.engine.clock.value = target.opens_at
         self.plan = self.engine.order('fixture').plan
         self.grant = DailyState((self.intent,), 'run', 'verified-fake-owner')

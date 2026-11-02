@@ -16,12 +16,14 @@ import os
 from threading import Event, Lock, Thread
 from time import monotonic, sleep
 from uuid import uuid4
+from typing import TYPE_CHECKING
+from hashlib import sha256
 
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads, register
 from quantlab.trading.application.contracts import StrategyForm
 from quantlab.trading.application.provenance import ProducerProfile
 from quantlab.trading.application.registry import initialize
-from quantlab.trading.application.research import ResearchResult, research
+from quantlab.trading.application.research import ResearchResult, _official_daily_inputs, research, research_fingerprint
 from quantlab.trading.application.minute_research import MinuteResearchResult, research_minutes
 from quantlab.trading.domain.minute_research import MinuteResearchSettings
 from quantlab.trading.application.state import StrategyRecord
@@ -32,9 +34,24 @@ from quantlab.trading.domain.strategy import CompletedBar
 from quantlab.trading.domain.validation import DomainError, aware, decimal_value, identity, integer
 from quantlab.trading.ports.interfaces import Clock
 
+if TYPE_CHECKING:
+    from quantlab.trading.domain.daily_signal_data import OfficialDailyHistory
+
 MAX_SECONDS = 15 * 60
 ERROR_CODES = frozenset(
-    ('validation_failed', 'risk_rejected', 'calendar_missing', 'capability_missing', 'source_invalid_evidence', 'research_worker_failed', 'research_timeout')
+    (
+        'validation_failed',
+        'risk_rejected',
+        'calendar_missing',
+        'capability_missing',
+        'source_invalid_evidence',
+        'research_worker_failed',
+        'research_timeout',
+        'daily_signal_source_unverified',
+        'daily_signal_basis_mismatch',
+        'daily_signal_not_available',
+        'stock_entitlement_unknown',
+    )
 )
 
 
@@ -58,6 +75,7 @@ class ResearchJob:
     source_profile: ProducerProfile | None = None
     partition: str = 'TRAINING'
     minute_settings: MinuteResearchSettings | None = None
+    daily_history: 'OfficialDailyHistory | None' = None
 
     def __post_init__(self) -> None:
         if type(self.request_id) is not str or len(self.request_id) != 32 or any(c not in '0123456789abcdef' for c in self.request_id):
@@ -102,6 +120,9 @@ class ResearchJob:
             raise DomainError('validation_failed', 'validated strategy and instrument identity required')
         if (record.policy.kind, record.policy.min_days, record.policy.max_days) != (record.form.holding_kind, record.form.min_days, record.form.max_days):
             raise DomainError('validation_failed', 'strategy policy identity mismatch')
+        if self.daily_history is not None and self.minute_settings is not None:
+            raise DomainError('validation_failed', 'daily and minute research inputs are distinct')
+        _official_daily_inputs(record, self.spec, self.calendar, self.bars, self.daily_history)
 
 
 @dataclass(frozen=True)
@@ -132,7 +153,21 @@ class ResearchStarted:
 
 def _initialize_types() -> None:
     initialize()
-    register(FeeSchedule, ProducerProfile, ResearchJob, ResearchReply, ResearchStarted)
+    from quantlab.trading.domain.daily_signal_data import DailyResearchBasis, DailySignalPolicy, OfficialDailyHistory
+    from quantlab.trading.domain.stock_history import CorporateAction, DailyStockBar
+
+    register(
+        FeeSchedule,
+        ProducerProfile,
+        ResearchJob,
+        ResearchReply,
+        ResearchStarted,
+        DailyResearchBasis,
+        DailySignalPolicy,
+        OfficialDailyHistory,
+        CorporateAction,
+        DailyStockBar,
+    )
 
 
 def _owner_guard(finished: Event, absolute_deadline: str) -> None:
@@ -175,7 +210,7 @@ def _research_child(channel: Connection, diagnostic_fault: str, absolute_deadlin
         if fault is WorkerFault.STALL_AFTER_DECODE:
             sleep(MAX_SECONDS + 1)  # owned diagnostic child is terminated by its parent deadline
         if job.minute_settings is None:
-            result = research(job.strategy, job.spec, job.calendar, job.bars, job.fees, source_profile=job.source_profile)
+            result = research(job.strategy, job.spec, job.calendar, job.bars, job.fees, source_profile=job.source_profile, daily_history=job.daily_history)
         else:
             result = research_minutes(job.strategy, job.spec, job.calendar, job.bars, job.fees, settings=job.minute_settings, source_profile=job.source_profile)
         reply = ResearchReply(request_id, os.getpid(), result)
@@ -240,6 +275,7 @@ class SpawnResearchRunner:
         deadline: datetime,
         source_profile: ProducerProfile | None = None,
         minute_settings: MinuteResearchSettings | None = None,
+        daily_history: 'OfficialDailyHistory | None' = None,
         cancel_event: Event | None = None,
     ) -> ResearchResult:
         if self._closed.is_set() or cancel_event is not None and cancel_event.is_set():
@@ -255,17 +291,17 @@ class SpawnResearchRunner:
         try:
             if self._closed.is_set() or cancel_event is not None and cancel_event.is_set():
                 raise DomainError('research_worker_failed', 'training runner closed while queued')
-            return self._run(strategy, spec, calendar, bars, fees, deadline, source_profile, started + seconds, minute_settings, cancel_event)
+            return self._run(strategy, spec, calendar, bars, fees, deadline, source_profile, started + seconds, minute_settings, cancel_event, daily_history)
         finally:
             self._lock.release()
 
     def _run(
-        self, strategy, spec, calendar, bars, fees, deadline, source_profile, monotonic_deadline, minute_settings=None, cancel_event=None
+        self, strategy, spec, calendar, bars, fees, deadline, source_profile, monotonic_deadline, minute_settings=None, cancel_event=None, daily_history=None
     ) -> ResearchResult:
         self.last_child_pid, self.last_cleanup_verified = None, True
         self.last_child_ready = False
         _initialize_types()
-        job = ResearchJob(uuid4().hex, strategy, spec, calendar, bars, fees, source_profile, minute_settings=minute_settings)
+        job = ResearchJob(uuid4().hex, strategy, spec, calendar, bars, fees, source_profile, minute_settings=minute_settings, daily_history=daily_history)
         payload = dumps(job).encode('utf-8')
         if monotonic() >= monotonic_deadline or aware(self.clock.now()) >= deadline:
             raise DomainError('research_timeout', 'training deadline expired during admission')
@@ -376,6 +412,17 @@ class SpawnResearchRunner:
             'TRAINING',
         ):
             raise DomainError('research_worker_failed', 'training result scope mismatch')
+        expected_basis = _official_daily_inputs(job.strategy, job.spec, job.calendar, job.bars, job.daily_history)
+        if result.daily_basis != expected_basis:
+            raise DomainError('research_worker_failed', 'daily result basis does not match the parent job')
+        if expected_basis is not None and result.fingerprint != research_fingerprint(
+            job.strategy, job.spec, job.calendar, job.fees, result.dataset_id, job.source_profile
+        ):
+            raise DomainError('research_worker_failed', 'daily result fingerprint does not match the parent job')
+        if job.minute_settings is None:
+            expected_dataset = sha256(dumps((job.bars, expected_basis) if expected_basis is not None else job.bars).encode()).hexdigest()
+            if result.dataset_id != expected_dataset:
+                raise DomainError('research_worker_failed', 'daily result dataset does not match the parent job')
         if job.minute_settings is not None and (
             not isinstance(result, MinuteResearchResult)
             or result.minute_settings != job.minute_settings

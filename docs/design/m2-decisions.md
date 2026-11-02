@@ -2306,3 +2306,34 @@ Visible Chat delegation failed before sending: ExistingTabSelectionError,
 existing_tab_not_found, diagnostic conversation_id_mismatch. Do not resubmit or
 create a replacement chat; reuse the already recorded public S1 fixtures and
 verify implementation invariants locally. No credentials or OOS data were sent.
+
+### Daily source implementation: official, point in time, no late catch-up
+
+Use the official exchange-reported daily volume/session scope for typed stock
+1d BROKER_SIMULATION research and signals. Rebuild the20-row signal window with
+the existing backward adjustment through each completed decision's ex-date;
+historical/real execution prices remain RAW with existing FeeSchedule. A held
+position crossing an unimplemented entitlement still refuses research PnL.
+
+The runtime provider reads only existing immutable cache payloads and requires
+the completed date to precede the current Taipei civil date. Official product
+publication times do not prove monthly-endpoint finality. Unknown raw/day/action
+coverage refuses new signals; valid sparse official days no longer depend on a
+full minute grid. The existing legacy downloader is not a new TWT49U producer.
+The recorded TWT49U global schema receives its own parser, including validated
+negative coverage, without changing legacy raw payloads or fields.
+
+Bind research to canonical semantic raw/action facts, tolerating transport-only
+refreshes. Also bind each intent to the complete saved signal window and policy,
+then recheck at final dispatch/commit; corrections after training cannot bypass
+admission. No old signal is silently upgraded or late signal caught up. Rendering
+uses cached status only. Existing LIVE guards and protective exits stay intact.
+
+Related regression exposed a changed minute result/receipt wire hash from the
+new empty daily_basis. Preserve the original asserted bytes by omitting only
+that empty field on the two exact research wire types; populated basis and all
+other null fields remain encoded. GitNexus codec impact is CRITICAL251, including
+164 direct callers and34 affected processes, so original byte-hash assertions
+and explicit new wire-contract tests both remain mandatory. See
+docs/analysis/m2-engine-gaps/daily-signal-basis-verification.md for fixtures,
+guard-deletion results, provenance limits and verification.
