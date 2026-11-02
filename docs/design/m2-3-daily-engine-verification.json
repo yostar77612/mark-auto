@@ -5,8 +5,8 @@
   "first_contract_commit": "3b67a1079680b0bd34aa40f3052dac339b4a4654",
   "merge_gate": "Leave open for Claude review after complete green CI. No automatic merge.",
   "mutations": {
-    "total": 346,
-    "killed": 346,
+    "total": 347,
+    "killed": 347,
     "groups": {
       "daily_state": {
         "total": 91,
@@ -39,16 +39,16 @@
         "raw_sha256": "c33a144288a6292e9e0673db2416d3fe2868d27d5b7a539d3e403248e148051f"
       },
       "daily_commit_admission": {
-        "total": 25,
-        "killed": 25,
+        "total": 26,
+        "killed": 26,
         "raw_evidence": ".gitnexus/verification/daily-commit-mutation-results.json",
-        "raw_sha256": "87f696274392f7cd0af3511a5c7d8019bdec38ae792ea5533f54f9342bbd28ea"
+        "raw_sha256": "cfe304b710dddbd1d932f1f36133b517f83a5fd3811576bb1779b100ab728707"
       }
     }
   },
   "startups": {
     "LOCAL": {
-      "elapsed_seconds": 5.432,
+      "elapsed_seconds": 6.155,
       "engine_state": "WAITING_RECONCILIATION",
       "environment": "LOCAL",
       "errors": [],
@@ -72,7 +72,7 @@
     },
     "BROKER_SIMULATION": {
       "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
-      "elapsed_seconds": 3.03,
+      "elapsed_seconds": 3.648,
       "engine_state": "DISCONNECTED",
       "environment": "BROKER_SIMULATION",
       "errors": [],
@@ -121,7 +121,7 @@
     },
     {
       "path": "quantlab/trading/application/daily_execution.py",
-      "sha256": "eccd1ee800df777983abfb6def3989162d074ef8bcc62ec45403e77ce1a0a441"
+      "sha256": "97e06a340b8b4e4d1afc0faaf8c52f59a249d5fb952b3865c7a256838e9700c2"
     },
     {
       "path": "quantlab/trading/application/daily_recovery.py",
@@ -168,7 +168,31 @@
       "sha256": "c5526d0b3d87d4cd92bcc9edfc49da2fa263b27b755a882e7516d2a1c0f4c50f"
     }
   ],
-  "local_related_tests": "Final result recorded in adjacent Markdown and local daily-related-final.log; full discover reserved for CI.",
+  "local_related_tests": {
+    "r8_modules": 189,
+    "combined_tests": 2346,
+    "combined_failures": 5,
+    "combined_errors": 22,
+    "combined_skipped": 9,
+    "runtime_fixture_rerun": {
+      "tests": 44,
+      "passed": true
+    },
+    "ci_hook_related_rerun": {
+      "tests": 98,
+      "passed": true
+    },
+    "final_unknown_native_runtime_commit_rerun": {
+      "tests": 54,
+      "passed": true
+    },
+    "isolated_tools_worker_rerun": {
+      "tests": 47,
+      "passed": true
+    },
+    "remaining_host_conditions": "Three installer/app-lifetime assertions see a preexisting native app. User app was not closed, tests were not weakened. Full isolated CI required."
+  },
   "ci": "Complete final-head checks are authoritative on PR147; CI is required before Claude review.",
-  "owner_acceptance": "Real broker automation and UI rendering remain separate owner/desktop-lane acceptance."
+  "owner_acceptance": "Real broker automation and UI rendering remain separate owner/desktop-lane acceptance.",
+  "unknown_without_local_order": "Bare outcome_unknown is UNKNOWN, never KNOWN_NO_ORDER; claim remains unresolved and explicit resume is blocked."
 }

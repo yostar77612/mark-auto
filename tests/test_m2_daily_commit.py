@@ -164,6 +164,20 @@ class DailyCommitTests(unittest.TestCase):
         self.assertEqual(self.engine.state.automatic.daily.intents[0].phase, 'INVALIDATED')
         self.assertFalse(self.engine.state.automatic.auto_paused)
 
+    def test_unknown_exception_without_a_canonical_order_keeps_claim_unresolved(self):
+        self.ready()
+        with (
+            patch('quantlab.trading.application.automatic._entry_proofs'),
+            patch('quantlab.trading.application.coordinator._entry_decision', side_effect=DomainError('outcome_unknown')) as planner,
+        ):
+            dispatch_daily(self.engine)
+            dispatch_daily(self.engine)
+        self.assertEqual(planner.call_count, 1)
+        self.assertEqual(self.engine.state.orders, ())
+        self.assertEqual(self.engine.state.automatic.daily.intents[0].phase, 'UNKNOWN')
+        self.assertTrue(self.engine.state.automatic.auto_paused)
+        self.assertFalse(self.engine.state.automatic.daily.authorized_run)
+
 
 if __name__ == '__main__':
     unittest.main()

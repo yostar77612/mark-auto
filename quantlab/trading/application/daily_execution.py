@@ -310,7 +310,11 @@ def dispatch_daily(engine):
             except DomainError as error:
                 code = error.code
             order = next((row for row in engine.state.orders if row.key == intent.key), None)
-            unknown = engine.storage_failed or (order is not None and order.status in (OrderStatus.SUBMITTING, OrderStatus.UNKNOWN, OrderStatus.CANCEL_PENDING))
+            unknown = (
+                code == 'outcome_unknown'
+                or engine.storage_failed
+                or (order is not None and order.status in (OrderStatus.SUBMITTING, OrderStatus.UNKNOWN, OrderStatus.CANCEL_PENDING))
+            )
             _store(
                 engine,
                 'daily_dispatch_result',

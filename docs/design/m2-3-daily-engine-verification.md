@@ -55,12 +55,12 @@ the local .gitnexus/verification directory; the adjacent JSON summarizes evidenc
 The related modules are selected with tools/affected_tests.py; full discovery is
 reserved for CI. Generated inventory/observer baselines form one separate commit.
 
-The seven dedicated new test modules contain195 focused tests. Independent guard
-mutations total346/346: daily state91, closing valuation70, manual/day monitors52,
-pure-evaluation recovery35, runtime/native daily exits73 and final commitment25.
+The seven dedicated new test modules contain196 focused tests. Independent guard
+mutations total347/347: daily state91, closing valuation70, manual/day monitors52,
+pure-evaluation recovery35, runtime/native daily exits73 and final commitment26.
 The runtime73 includes its earlier25 stable owner/engine cases only once. Final
 formatted source mutations were rerun; exact hashes are in the adjacent JSON.
-Original window startups return0: LOCAL5.432s and fake-SIM3.030s, each2784 widgets,
+Original window startups return0: LOCAL6.155s and fake-SIM3.648s, each2784 widgets,
 research attached/released, no real SDK import and owned endpoints removed.
 Offline pre-push lint/format, tracked Python syntax and credential gate pass.
 The final R8-related result and complete final-head CI are recorded on PR147;
@@ -96,3 +96,23 @@ verified above. Combined-suite subprocess/fake-root effects and installer mutex
 checks against a preexisting app are preserved as local failures, not claimed
 green or hidden by changing assertions. Full isolated Windows/Linux CI is still
 required. No user app was closed to make a local installer lifetime test pass.
+
+## Final unknown-without-order classification
+
+An independent review reproduced a bare outcome_unknown exception without a
+canonical LocalOrder. The controller previously classified it KNOWN_NO_ORDER,
+which could permit later resume despite the unknown financial result. Treat the
+explicit unknown code as UNKNOWN regardless of whether a local row is available.
+Do not fabricate a reservation or a no-send result, reset the claim or resend.
+The new regression fails before this correction and passes afterwards; deleting
+this predicate alone kills the test. Final commitment mutations increase to26
+and the total to347; the seven dedicated modules contain196 tests.
+
+The final source passes54 native/runtime/commit tests, including this case and
+actual saved EXIT. All73 runtime/native mutations are rerun against matching
+final source hashes. The original windows are also rerun: LOCAL6.155s and fake
+SIM3.648s, both return0 with normal cleanup. All generated baselines remain
+current on dry-run. The three combined-harness tool/worker modules pass47 tests
+from a spawn-safe UTF-8 script with the configured child interpreter; this does
+not change product code or any assertion. Remaining local app-lifetime checks
+are isolated-host acceptance in CI, not a reason to close a user's running app.
