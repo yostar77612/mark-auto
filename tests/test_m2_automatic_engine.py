@@ -537,6 +537,133 @@ class AutomaticEngineTests(unittest.TestCase):
         self.assertEqual(rejected.exception.code, 'preflight_permission')
         self.assertEqual(len(self.case.native._seen), before)
 
+    def test_known_historical_order_can_reconcile_after_later_cursor_has_no_order(self):
+        self.deploy()
+        self.start()
+        self.at(9, 1)
+        automatic.on_completed_bars(self.engine, (self.bar(),))
+        order = self.engine.state.orders[-1]
+        self.at(9, 2)
+        automatic.on_completed_bars(self.engine, (self.bar(),))
+        latest = self.engine.state.automatic.evaluations[0]
+        self.assertIsNone(latest.order_result)
+        self.assertNotEqual(automatic._decision_key(latest.cursor), order.key)
+        before, cash = self.placed(), order.reservation.cash
+        self.case.native.cancel_mode = 'TIMEOUT'
+        with self.assertRaises(DomainError) as unknown:
+            automatic._cancel_exit(self.engine, order)
+        self.assertEqual(unknown.exception.code, 'outcome_unknown')
+        self.assertEqual(self.engine.state.orders[-1].status, OrderStatus.UNKNOWN)
+        with self.assertRaises(DomainError):
+            automatic.reconcile_automatic(self.engine)
+        self.assertIn('outcome_unknown', self.engine.state.issues)
+        self.refresh()
+        self.assertEqual(self.engine.state.orders[-1].status, OrderStatus.ACCEPTED)
+        self.assertTrue(self.engine.state.reconciled)
+        automatic.reconcile_automatic(self.engine)
+        self.assertNotIn('outcome_unknown', self.engine.state.issues)
+        self.assertTrue(self.engine.state.stopped)
+        self.assertTrue(self.engine.state.automatic.auto_paused)
+        self.assertEqual(self.engine.state.orders[-1].reservation.cash, cash)
+        self.assertEqual(self.engine.state.automatic.evaluations[0].cursor, latest.cursor)
+        automatic.resume_automatic(self.engine)
+        self.assertFalse(self.engine.state.automatic.auto_paused)
+        self.assertEqual(self.placed(), before)
+
+    def test_known_owned_history_cannot_clear_another_unresolved_local_order(self):
+        self.deploy()
+        self.start()
+        self.at(9, 1)
+        automatic.on_completed_bars(self.engine, (self.bar(),))
+        self.at(9, 2)
+        automatic.on_completed_bars(self.engine, (self.bar(),))
+        diagnostic = self.engine.state.orders[0]
+        current = self.engine.state.orders[-1]
+        self.engine._persist(
+            'other_unknown_scope_fixture',
+            replace(
+                self.engine.state,
+                orders=tuple(replace(row, status=OrderStatus.UNKNOWN) if row.order_id == diagnostic.order_id else row for row in self.engine.state.orders),
+                stopped=True,
+                issues=(*self.engine.state.issues, 'outcome_unknown'),
+            ),
+        )
+        before = tuple(self.case.native._seen)
+        with self.assertRaises(DomainError):
+            automatic.reconcile_automatic(self.engine)
+        self.assertIn('outcome_unknown', self.engine.state.issues)
+        self.assertEqual(self.engine.state.orders[-1].reservation, current.reservation)
+        self.assertEqual(tuple(self.case.native._seen), before)
+
+    def test_historical_owned_order_metadata_and_generated_namespace_are_required(self):
+        record = self.deploy()
+        self.start()
+        self.at(9, 1)
+        automatic.on_completed_bars(self.engine, (self.bar(),))
+        original = self.engine.state.orders[-1]
+        self.at(9, 2)
+        automatic.on_completed_bars(self.engine, (self.bar(),))
+        base = replace(self.engine.state, stopped=True, issues=(*self.engine.state.issues, 'outcome_unknown'))
+        for changes in (
+            {'strategy_id': 'other'},
+            {'strategy_version': record.version + 1},
+            {'account_ref': 'other'},
+            {'instrument_id': 'TMF:209912'},
+            {'environment': Environment.LOCAL},
+        ):
+            plan = replace(original.plan, **changes)
+            key = f'auto:{plan.strategy_id}:{plan.strategy_version}:{plan.instrument_id}:{record.parameters.bar_interval}:historical'
+            altered = replace(original, plan=plan, key=key)
+            self.engine.state = replace(base, orders=tuple(altered if row.order_id == original.order_id else row for row in base.orders))
+            with self.subTest(changes=changes), self.assertRaises(DomainError):
+                automatic.reconcile_automatic(self.engine)
+            self.assertIn('outcome_unknown', self.engine.state.issues)
+        for key in ('manual-order', 'auto:other:1:TMF:202611:1m:historical', original.key.replace(':1m:', ':5m:')):
+            altered = replace(original, key=key)
+            self.engine.state = replace(base, orders=tuple(altered if row.order_id == original.order_id else row for row in base.orders))
+            with self.subTest(key=key), self.assertRaises(DomainError):
+                automatic.reconcile_automatic(self.engine)
+            self.assertIn('outcome_unknown', self.engine.state.issues)
+        self.engine.state = base
+
+    def test_historical_ownership_requires_typed_sim_record_and_actual_near_contract(self):
+        self.use_stock_fixture()
+        record = self.deploy()
+        self.start()
+        self.at(9, 1)
+        automatic.on_completed_bars(self.engine, (self.bar(),))
+        order = self.engine.state.orders[-1]
+        records, catalog = self.engine.state.strategies, self.engine.catalog
+        before = tuple(self.case.native._seen)
+        for form_environment, plan_environment in ((Environment.LOCAL, SIM), (Environment.LOCAL, Environment.LOCAL)):
+            changed = replace(record, form=replace(record.form, environment=form_environment))
+            self.engine.state = replace(self.engine.state, strategies=(changed,))
+            with self.subTest(form_environment=form_environment, plan_environment=plan_environment):
+                self.assertFalse(automatic._owned_automatic_order(self.engine, replace(order, plan=replace(order.plan, environment=plan_environment)), set()))
+        self.engine.state = replace(self.engine.state, strategies=(replace(record, parameters=None),))
+        self.assertFalse(automatic._owned_automatic_order(self.engine, order, set()))
+        later = replace(self.case.spec, instrument_id='TMF:202612', delivery_month='202612', expiry=self.case.spec.expiry.replace(month=12, day=16))
+        self.engine.catalog = Catalog((*catalog.instruments, later))
+        self.engine.state = replace(self.engine.state, strategies=records)
+        plan = replace(order.plan, instrument_id=later.instrument_id)
+        later_order = replace(
+            order, plan=plan, key=f'auto:{plan.strategy_id}:{plan.strategy_version}:{plan.instrument_id}:{record.parameters.bar_interval}:history'
+        )
+        self.assertFalse(automatic._owned_automatic_order(self.engine, later_order, set()))
+        near = replace(record, parameters=replace(record.parameters, instrument_rule='TMF_NEAR'))
+        self.engine.state = replace(self.engine.state, strategies=(near,))
+        self.assertTrue(automatic._owned_automatic_order(self.engine, later_order, set()))
+        stock_plan = replace(order.plan, instrument_id=self.stock.instrument_id)
+        stock_order = replace(
+            order,
+            plan=stock_plan,
+            key=f'auto:{stock_plan.strategy_id}:{stock_plan.strategy_version}:{stock_plan.instrument_id}:{record.parameters.bar_interval}:history',
+        )
+        self.assertFalse(automatic._owned_automatic_order(self.engine, stock_order, set()))
+        self.assertEqual(tuple(self.case.native._seen), before)
+        self.engine.state = replace(self.engine.state, strategies=records)
+        self.engine.catalog = catalog
+
     def test_direct_entry_rejects_owner_revision_changed_after_current_proof_was_collected(self):
         record = self.deploy()
         self.start()

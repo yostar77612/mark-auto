@@ -7294,3 +7294,9 @@ is UNKNOWN when resolution is blocked.
   preflight pass. Protective reductions validate their own account/instrument
   scope independently. AUTO_RECONCILE can consume fresh cached proof after
   service close; it grants no new exposure and never implies AUTO_RESUME.
+- A later completed-bar cursor cannot erase the durable ownership of an earlier
+  automatic order. Explicit AUTO_RECONCILE may confirm its known correlated
+  report using the local order's automatic namespace and typed strategy scope.
+  Any remaining uncertain order, claim or manual operation keeps recovery
+  blocked. This transition changes neither reservations nor submission count
+  and keeps automatic execution paused until separate AUTO_RESUME.

@@ -6,12 +6,14 @@
     "new": {
       "count": 354,
       "seconds": 17.948,
-      "passed": true
+      "passed": true,
+      "source_scope": "c9de56db0e612d5efb493e7bfcf1312cdcd2e4d8 before the unique-commit and historical-recovery corrections; fresh correction verification is separate"
     },
     "existing": {
       "count": 398,
       "seconds": 29.87,
-      "passed": true
+      "passed": true,
+      "source_scope": "c9de56db0e612d5efb493e7bfcf1312cdcd2e4d8 before the unique-commit and historical-recovery corrections; fresh correction verification is separate"
     },
     "selection_tool": "tools/affected_tests.py",
     "selected_transitive_modules": 175,
@@ -19,7 +21,9 @@
     "canonical": {
       "count": 752,
       "seconds": 46.931,
-      "passed": true
+      "passed": true,
+      "source_scope": "c9de56db0e612d5efb493e7bfcf1312cdcd2e4d8 before the unique-commit and historical-recovery corrections; fresh correction verification is separate",
+      "final_source": false
     },
     "baseline_layer_tests": 21,
     "observer_baseline_tests": 49
@@ -3735,11 +3739,77 @@
           "tests": 1
         }
       ]
+    },
+    "historical_reconciliation": {
+      "total": 12,
+      "killed": 12,
+      "records": [
+        {
+          "case": "history_independent_of_latest_cursor",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_strategy_identity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_version_identity",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "matching_record_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "typed_parameters_required",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "same_account",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "matching_environment",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "broker_simulation_environment",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "generated_namespace",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "actual_instrument",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "near_rule_required_for_other_contract",
+          "status": "KILLED",
+          "tests": 1
+        },
+        {
+          "case": "actual_tmf_required_for_near",
+          "status": "KILLED",
+          "tests": 1
+        }
+      ]
     }
   },
   "startup": {
     "LOCAL": {
-      "elapsed_seconds": 5.343,
+      "elapsed_seconds": 4.833,
       "engine_state": "WAITING_RECONCILIATION",
       "environment": "LOCAL",
       "errors": [],
@@ -3763,7 +3833,7 @@
     },
     "SIM": {
       "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
-      "elapsed_seconds": 3.453,
+      "elapsed_seconds": 2.916,
       "engine_state": "DISCONNECTED",
       "environment": "BROKER_SIMULATION",
       "errors": [],
@@ -3794,12 +3864,12 @@
     "M2-7/9 and all desktop UI are separate lanes"
   ],
   "mutation_total": {
-    "total": 446,
-    "killed": 446
+    "total": 458,
+    "killed": 458
   },
   "source_profile": {
     "profile_id": "MARKAUTO-TRADING-V2-PROFILE-1",
-    "source_digest": "0325a52e2baf1036904441ec4b55d6689a09de28095fd38ab9d990754bccad72",
+    "source_digest": "70253436709d0723d4c333d439de8f94d8e709324f5544574ccb1933bfd1607a",
     "manifest": [
       [
         "quantlab/trading/adapters/shioaji/__init__.py",
@@ -3911,7 +3981,7 @@
       ],
       [
         "quantlab/trading/application/automatic.py",
-        "a2f5812be31407f5c751d7894b83ba048d8c42db58a418670374dabc318b7927"
+        "e8d1c921df514619369f9ce441048237da3bcabd3ea1733e69441b79db027ce0"
       ],
       [
         "quantlab/trading/application/automatic_baseline.py",
@@ -3955,7 +4025,7 @@
       ],
       [
         "quantlab/trading/application/engine.py",
-        "7f1e07ae486bba60cb028ffa71b53e6f426b9a55c286a229c8048d4c11c69758"
+        "57625e346aa3e8970ab3809b86fbb6da36c59e73e843497a73eac3a338388e11"
       ],
       [
         "quantlab/trading/application/errors.py",
@@ -4336,13 +4406,13 @@
     ]
   },
   "changed_product_sha256": {
-    "quantlab/trading/application/automatic.py": "a2f5812be31407f5c751d7894b83ba048d8c42db58a418670374dabc318b7927",
+    "quantlab/trading/application/automatic.py": "e8d1c921df514619369f9ce441048237da3bcabd3ea1733e69441b79db027ce0",
     "quantlab/trading/application/automatic_baseline.py": "09810cbb83817a6f6bf3e619e232a758fbc9cd989bfb9e3ebef136b8ebbd9910",
     "quantlab/trading/application/automatic_capacity.py": "991c810dcc0c837f62f81b5372fb22c14b9a669c6bf0eb74175b14b973cf74ae",
     "quantlab/trading/application/automatic_state.py": "7d361cce554c01fd74d6b6eb5bc60ba2eb2246ba87adb3a361513584f3e7ccc3",
     "quantlab/trading/application/contracts.py": "023a0f8fb0700cec4c66b993d4891f7c52cb9d6b6b7727e71bfa94d9f5666fca",
     "quantlab/trading/application/coordinator.py": "98899745cd92c1ef231731b94ff585585082091770efeec2e000c3fd0f546982",
-    "quantlab/trading/application/engine.py": "7f1e07ae486bba60cb028ffa71b53e6f426b9a55c286a229c8048d4c11c69758",
+    "quantlab/trading/application/engine.py": "57625e346aa3e8970ab3809b86fbb6da36c59e73e843497a73eac3a338388e11",
     "quantlab/trading/application/errors.py": "aa0ef9a188446a8a51a3496b8ba8d67943254e69de1e8035ca357f3a6269b364",
     "quantlab/trading/application/events.py": "55c707304519fedffd9a0b5b159a96b9c0f86a2c8387e1edf441be19131fdab7",
     "quantlab/trading/application/facade.py": "6e7b1b467ef3063590d6469a4fa05eaef0a8c732b7d3a997ec2059afdda95912",
@@ -4363,30 +4433,56 @@
     "quantlab/trading/runtime/sinopac_resources.py": "b0b0e1ad17017fa0ca46c7ec829b09b0da284692de8435bc385183d4b2caf5cf"
   },
   "restricted_paths_unchanged": true,
-  "graph": {
-    "summary": {
-      "changed_count": 38,
-      "affected_count": 654,
-      "changed_files": 39,
-      "risk_level": "critical"
+  "post_ci_corrections": {
+    "trigger_run": "41379340519",
+    "trigger": "Existing unique execution.commit AST safety assertion failed; follow-up native review found historical-order recovery blocked after cursor advance",
+    "unique_commit_tests": {
+      "count": 107,
+      "seconds": 91.254,
+      "passed": true,
+      "modules": [
+        "test_paper_lock_b2",
+        "test_live_order_guard",
+        "test_m2_automatic_engine",
+        "test_m2_automatic_protective",
+        "test_trading_application"
+      ]
     },
-    "partial": false,
-    "truncated": false,
-    "index_nodes": 22297,
-    "index_edges": 88301,
-    "index_flows": 674,
-    "fts": "degraded; no repair/download"
-  },
-  "static": {
-    "ruff_lint": true,
-    "changed_python_format": true,
-    "python_311_syntax_files": 1130,
-    "syntax_failures": 0,
-    "quality_findings": 0,
-    "layer_findings": 0,
-    "compileall": true,
-    "prepush_exit": 1,
-    "prepush_only_failure": "unchanged main M3 doc code-fence CRLF formatting at line155",
-    "m3_document_blob": "d2888a735e2528fdc4984f5b34f29fa1abd4e5bf"
+    "automatic_and_native_tests": {
+      "count": 123,
+      "seconds": 11.728,
+      "passed": true
+    },
+    "counts_overlap": true,
+    "engine_mutants_retested": {
+      "total": 33,
+      "killed": 33
+    },
+    "automatic_mutants_retested": {
+      "total": 94,
+      "killed": 94
+    },
+    "additional_mutants": [
+      {
+        "name": "historical_reconciliation",
+        "path": ".gitnexus/verification/historical-reconcile-mutation-results.json"
+      }
+    ],
+    "baselines": "tools/repin_baselines.py dry-run: all up-to-date; no further baseline edits",
+    "static": "Ruff lint/format, trading compileall, layers zero, quality zero",
+    "graph": "TradingEngine:83 upstream/166 processes/20 modules CRITICAL; reconcile_automatic:294 upstream/166 processes/20 modules CRITICAL. Final full all/compare results retained locally; zero-symbol incremental analysis is not treated as no impact.",
+    "remaining_scope": "Daily saved signal and next-session dispatch remain explicitly deferred under R5; no M3 ownership support is claimed",
+    "graph_all": {
+      "changed_count": 6,
+      "affected_count": 0,
+      "changed_files": 8,
+      "risk_level": "low"
+    },
+    "graph_compare_actual_main_base": {
+      "changed_count": 69,
+      "affected_count": 654,
+      "changed_files": 44,
+      "risk_level": "critical"
+    }
   }
 }

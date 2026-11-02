@@ -181,6 +181,21 @@ def _sync_results(engine, *, observed: bool = False) -> None:
         )
 
 
+def _owned_automatic_order(engine, order, force_keys) -> bool:
+    plan = order.plan
+    record = next((row for row in engine.state.strategies if (row.strategy_id, row.version) == (plan.strategy_id, plan.strategy_version)), None)
+    if record is None or record.parameters is None or record.form.account_ref != plan.account_ref:
+        return False
+    if record.form.environment is not plan.environment or plan.environment is not Environment.BROKER_SIMULATION:
+        return False
+    prefix = f'auto:{plan.strategy_id}:{plan.strategy_version}:{plan.instrument_id}:{record.parameters.bar_interval}:'
+    if not (order.key.startswith(prefix) or order.key in force_keys):
+        return False
+    return plan.instrument_id == record.form.instrument_id or (
+        record.parameters.instrument_rule == 'TMF_NEAR' and is_tmf(engine.catalog.resolve(plan.instrument_id))
+    )
+
+
 def reconcile_automatic(engine: 'TradingEngine') -> None:
     """Use the runtime worker's accepted cache; reconciliation never resumes trading."""
     with engine.lock:
@@ -192,9 +207,7 @@ def reconcile_automatic(engine: 'TradingEngine') -> None:
         if any(not row.outcome_known for row in engine.state.manual_requests):
             raise DomainError('reconciliation_required', 'a manual operation still has an unresolved outcome')
         force_keys = {row.key for row in engine.state.automatic.forced_attempts}
-        owned_result = any(_cursor_orders(engine, row.cursor) for row in engine.state.automatic.evaluations) or any(
-            row.key in force_keys for row in engine.state.orders
-        )
+        owned_result = any(_owned_automatic_order(engine, row, force_keys) for row in engine.state.orders)
         _sync_results(engine, observed=True)
         unresolved = any(row.phase != 'COMPLETED' or row.order_result in UNCERTAIN for row in engine.state.automatic.evaluations)
         unresolved = unresolved or any(row.status in UNCERTAIN for row in engine.state.automatic.forced_attempts)

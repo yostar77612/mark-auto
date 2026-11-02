@@ -2062,3 +2062,29 @@ Final relevant local tests354+398 pass and original LOCAL/fake-SIM windows retur
 with owned cleanup. Mutation evidence and final graph/static/CI status are in
 m2-3-engine-verification.md/.json and the PR checks. No complete acceptance is
 claimed for the deferred daily path, UI, M2-7/9 or real broker automation.
+
+### M2-3 CI review: preserve the unique execution commit
+
+The first full CI found the existing test_paper_lock_b2 AST safety assertion:
+automatic/manual branches had two execution.commit call sites. Keep the
+assertion unchanged. Select the mandatory automatic owner context or the
+ordinary nullcontext, then enter that context around the one existing commit.
+Risk preview, durable intent, reservation and fence ordering remain unchanged;
+the automatic owner lock still spans the actual SDK call. GitNexus reports
+83 upstream dependencies,166 affected processes and20 modules: CRITICAL risk.
+Relevant execution tests, engine mutants and both original window startups are
+revalidated; no baseline changes are needed (repin dry-run all up-to-date).
+
+### M2-3 historical automatic order recovery
+
+An additional native fake SDK reproduction submits bar1, advances the latest
+cursor to bar2 without a new order, then times out cancellation of bar1. After
+the worker adopts its correlated known report, reconciliation still cannot
+clear outcome_unknown because only the latest cursor is searched. Recover
+from the durable local order's automatic namespace and typed strategy ownership,
+independent of the latest display cursor. Every remaining uncertain local order
+still blocks recovery, as do unresolved claims and manual operations. Only an
+explicit trusted reconciliation clears the issue; it never resumes, resends or
+releases a reservation. GitNexus reconcile_automatic impact:294 upstream,
+166 processes,20 modules,CRITICAL. Regression tests use the actual fake SDK;
+independent guard mutations accompany the correction.

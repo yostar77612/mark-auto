@@ -92,7 +92,7 @@ owner close evidence and M2-7/9 data remain external dependencies.
 
 ## Validation and delivery limit
 
-Final frozen-source relevant tests:354 new and398 existing pass; the final
+Pre-CI frozen-source relevant tests:354 new and398 existing pass; the
 canonical-format combined run is752/752 in46.931s. affected_tests.py
 selected175 transitive modules; only relevant modules run locally, with full
 discovery delegated to final-head CI. Original _run_window LOCAL5.343s and
@@ -129,3 +129,37 @@ LIVE stays hard-disabled at every entry, cycle, force and retry path. No real
 SDK import, credentials, CA activation, G3, SDK pin, PROJECT_STATE, costs.py or
 desktop source changes. UI and M2-7/9 are separate lanes; real broker automatic
 acceptance remains an owner task after those dependencies are ready.
+
+## Full-CI unique-commit correction
+
+Run41379340519 found the unchanged test_paper_lock_b2 unique execution.commit
+assertion: the automatic/manual branches contained two call sites. The source
+now selects a mandatory owner context for automatic orders or nullcontext for
+ordinary orders and uses one commit inside it. Existing AST assertions and
+runtime owner-lock tests remain intact. This is a source correction, not an
+intermittent CI rerun or a baseline adjustment. The earlier752-test result above
+identifies the pre-correction source; fresh targeted verification and final
+source identity are recorded in the adjacent JSON. Both original _run_window
+checks rerun successfully after both corrections: LOCAL4.833s/fake-SIM2.916s. repin_baselines.py dry-run
+reports every baseline up-to-date. Exact TradingEngine impact is CRITICAL:
+83 upstream dependencies,166 processes and20 modules. Final-head complete CI
+must pass before merging.
+
+The follow-up native SDK regression submits bar1, advances to a later cursor
+with no order, times out bar1 cancellation and then adopts its known broker
+report. Explicit reconciliation now recognizes that historical automatic order
+by its durable namespace and typed strategy/version/account/environment and
+instrument ownership. Another uncertain local order continues to block under
+the existing observation authority; its guard is reused rather than duplicated.
+Recovery keeps the current cursor, reservation, submission count and pause;
+only a separate explicit resume permits new risk. Manual keys and mismatched
+ownership do not count as automatic evidence. M3's future SignalExecutor
+namespace is outside this M2 ownership predicate.
+
+Fresh correction checks:107 existing/execution tests pass91.254s and123
+automatic/native tests pass11.728s (overlapping sets). All33 native engine and94
+automatic decision mutants were rerun and killed. The12 additional independent
+historical-reconciliation mutants are killed, bringing the total to458/458.
+Final startup reports and source manifest are in JSON; earlier752-test timing
+belongs to c9de56d before these corrections. The existing safety assertions are
+unchanged. No additional baseline edits were produced.

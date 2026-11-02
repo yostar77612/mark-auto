@@ -1,6 +1,7 @@
 """Fenced execution orchestration independent of Qt, SQLite and vendor SDK."""
 
 from collections import deque
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -679,13 +680,14 @@ class TradingEngine:
             execution = ExecutionService(
                 gateway, self._persist, self.fence, self.clock.now, self.simulation.persist_remote if self.simulation else lambda: None
             )
+            submission = nullcontext()
             if automatic:
                 guard = getattr(self, 'automatic_submission_guard', None)
                 if not callable(guard):
                     raise DomainError('capability_missing', 'current owner submission boundary required')
-                with guard(plan.account_ref, reduce_only=plan.reduce_only):
-                    return execution.commit(self.state, plan, policy, reservation, key, lambda: self.fence(), request_hash=digest)
-            return execution.commit(self.state, plan, policy, reservation, key, lambda: self.fence(), request_hash=digest)
+                submission = guard(plan.account_ref, reduce_only=plan.reduce_only)
+            with submission:
+                return execution.commit(self.state, plan, policy, reservation, key, lambda: self.fence(), request_hash=digest)
 
     def _check_exit(self, plan: OrderPlan) -> None:
         if any(row.account_ref == plan.account_ref and row.instrument_id == plan.instrument_id for row in self.state.reconciliation):
