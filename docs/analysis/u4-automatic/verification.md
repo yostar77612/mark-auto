@@ -102,3 +102,14 @@ status includes text and reasons, normal waiting is neutral. LIVE behavior is te
 without broker I/O. Performance aggregate and editable-strategy DTO gaps remain
 the separate existing engine requests. CI and Claude review remain required before
 merging this PR, which includes an automatic-order authorization path.
+
+## First CI correction
+
+Whole CI41451553874 found a U4 centralized-text violation: the header used a literal
+full-width comma to shorten a reason. It now displays the first backend explanation
+line with full details in the tooltip. No checker/assertion/string/module/baseline
+changes. The original no-hardcoded-text/B4 appearance/U4/LIVE modules pass51 tests
+in8.918s;13-file lint/format/Python3.11 pass, architecture0. Actual two-size native
+captures remain42px/zero commands. The full workflow is rerun through the corrected
+source push. Pre-edit render impact is UNKNOWN (dynamic receiver); window.apply_state
+and direct UI-test callers were confirmed in source, not treated as unused.

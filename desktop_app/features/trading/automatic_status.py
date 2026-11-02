@@ -149,7 +149,7 @@ class AutomaticControls:
         status = ui_text('u4.paused') if paused else ui_text('u4.waiting_session') if state.automatic.state == 'WAITING_SESSION' else ui_text('u4.running')
         reasons = '\n'.join(error_next(code, self.window) for code in state.automatic.reasons)
         explanation = self.window.strategy_error_texts.get(state.automatic.reasons[0], (ui_text('watch.unknown'), ''))[0] if state.automatic.reasons else ''
-        self.header.setText(status + ('\n' + explanation.partition('，')[0] if explanation else ''))
+        self.header.setText(status + ('\n' + explanation.splitlines()[0] if explanation else ''))
         self.header.setToolTip(reasons)
         self.header.setAccessibleName(status + ' ' + reasons)
         self.stop.setText(ui_text('m2t.live_stop') if state.environment is Environment.LIVE else ui_text('u4.stop_all'))
