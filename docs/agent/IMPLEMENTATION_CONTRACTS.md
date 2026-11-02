@@ -7603,6 +7603,34 @@ Existing engine stop/reconciliation semantics and LIVE prohibition are unchanged
 Real-process regressions cover active subscriptions, in-flight history, native
 mutex disappearance, research QLockFile reacquisition and journal lease reopening.
 
+## M2-3c review-fix owner operation and retention contract (2026-11-02)
+
+- `UiAction.DECLARE_DAILY_NOT_SENT` is an explicit owner operation. Append
+  `UiCommand.daily_not_sent: DailyNotSentForm | None = None`; the form contains
+  `intent_key` and `confirmed=False`. Append empty-default
+  `DailyIntentView.intent_key` for exact selection across IPC/UTC round trips.
+  No client-supplied reconciliation result, price or no-send proof is accepted.
+- Confirmation, fresh healthy same-owner complete reconciliation, and verified
+  journal proof that the dispatch key never persisted `order_submitting` are all
+  required. A matching broker tag or semantic order prohibits declaration.
+  Only a no-order CLAIMED/UNKNOWN daily intent can become KNOWN_NO_ORDER. Keep
+  the journal, reservations and all financial rows; stay stopped and paused,
+  revoke authorization, never dispatch/retry/resume. AUTO_RECONCILE retains its
+  existing behavior and never implicitly declares an unknown dispatch unsent.
+- New codes: `daily_not_sent_confirmation_required`, `daily_not_sent_unproven`,
+  `daily_not_sent_order_found`, `daily_declared_not_sent`. Existing freshness,
+  state-conflict, reconciliation and LIVE rejection codes remain authoritative.
+- Daily data retention uses a named conservative default of20 verified trading
+  days. Consumed old closes may move to compact account audit anchors, never
+  hiding old-order economic changes. New closes reference frozen quotes instead
+  of embedding copies; terminal expired signals leave the current projection
+  only when no unresolved/active canonical order still needs them. Retained
+  evaluation cursors, canonical orders and full journal keep their identity;
+  current state keeps one latest account audit anchor. Full journal
+  history remains the audit authority; old payloads gain empty-default fields.
+- LIVE remains hard-disabled. No desktop_app/ edits or new send/resend path.
+  This PR must remain open for Claude review after complete green final-head CI.
+
 ## U3 desktop typed strategy presentation (2026-11-02)
 
 The wizard selects the holding kind before market/product and consumes the merged
