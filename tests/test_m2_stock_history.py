@@ -1,5 +1,6 @@
 """Offline synthetic native-schema fixtures; no live exchange provenance claimed."""
 
+from contextlib import closing
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal as D
@@ -95,9 +96,11 @@ class OfficialStockTests(unittest.TestCase):
         self.assertEqual(set(stored.payloads), set(batch.payloads))
         self.assertTrue(self.store.daily_coverage(ID, START, END))
         self.assertFalse(self.store.daily_coverage(ID, START, date(2020, 3, 1)))
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             self.assertEqual(db.execute('SELECT source FROM bars_1d').fetchall(), [('OFFICIAL',)])
             self.assertEqual(db.execute("SELECT value FROM meta WHERE key='schema_version'").fetchall(), [('1',)])
+        with self.assertRaises(sqlite3.ProgrammingError):
+            db.execute('SELECT 1')
         self.store.close()
         self.store = KlineStore(self.path)
         self.assertEqual(set(self.store.daily_history(ID, START, END).payloads), set(batch.payloads))
@@ -152,8 +155,10 @@ class OfficialStockTests(unittest.TestCase):
         sync = StockHistorySync(self.store, self.source())
         sync.refresh(ID, START, END, today=END, consent=True)
         before = self.store.daily_history(ID, START, END)
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute("CREATE TRIGGER reject_daily BEFORE INSERT ON bars_1d BEGIN SELECT RAISE(ABORT, 'fixture failure'); END")
+        with self.assertRaises(sqlite3.ProgrammingError):
+            db.execute('SELECT 1')
         with self.assertRaises(DomainError):
             StockHistorySync(self.store, self.source(daily=native(prices=('200', '202', '198', '200')))).refresh(ID, START, END, today=END, consent=True)
         self.assertEqual(self.store.daily_history(ID, START, END), before)
@@ -202,8 +207,10 @@ class OfficialStockTests(unittest.TestCase):
         self.assertIn(('cost_version', fees.version), evidence)
         self.assertEqual(len(inputs.signals_at(date(2020, 1, 2)).bars), 1)
         self.assertEqual(sync.chart_prices(ID, START, end, adjusted=False).bars, inputs.batch.bars)
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db, db:
             db.execute('DELETE FROM bars_1d WHERE trade_date=?', ('2020-01-02',))
+        with self.assertRaises(sqlite3.ProgrammingError):
+            db.execute('SELECT 1')
         with self.assertRaises(DomainError) as missing:
             sync.research_inputs(ID, START, end, calendar, fees)
         self.assertEqual(missing.exception.code, 'official_stock_coverage_missing')
