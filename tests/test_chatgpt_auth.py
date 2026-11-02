@@ -14,6 +14,7 @@ import pickle
 import threading
 import time
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from contextlib import contextmanager
 from urllib.parse import parse_qs, urlencode, urlsplit
 from unittest.mock import patch
@@ -375,6 +376,9 @@ class AuthTests(unittest.TestCase):
                 target.write_bytes(b'fixture')
                 with self.assertRaisesRegex(_auth_auth_protocol.AuthError, 'explicit_host_recovery_required'):
                     vault.assert_first_use()
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_first_use_guard_rejects_dangling_host_marker(self):
         with tempfile.TemporaryDirectory() as tmp:
             vault = _auth_vault.DPAPIVault(str(Path(tmp)))
             vault.host_marker.symlink_to(Path(tmp) / 'missing')
@@ -854,21 +858,22 @@ class AuthTests(unittest.TestCase):
         self.assertEqual(self.vault.record['registrations'], {})
 
     def test_dpapi_rejects_dangling_links_and_junction_lstat_attributes(self):
-        import tempfile
-        from pathlib import Path
         from types import SimpleNamespace
         from unittest.mock import MagicMock
 
-        with tempfile.TemporaryDirectory() as temporary:
-            dangling = Path(temporary) / 'dangling'
-            dangling.symlink_to(Path(temporary) / 'missing', target_is_directory=True)
-            with self.assertRaises(_auth_auth_protocol.AuthError):
-                _auth_vault.DPAPIVault._check_path(dangling)
         junction = MagicMock()
         junction.lstat.return_value = SimpleNamespace(st_mode=0o40700, st_file_attributes=0x400)
         with self.assertRaises(_auth_auth_protocol.AuthError):
             _auth_vault.DPAPIVault._check_path(junction)
         junction.stat.assert_not_called()
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_dpapi_rejects_dangling_directory_link(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            dangling = Path(temporary) / 'dangling'
+            dangling.symlink_to(Path(temporary) / 'missing', target_is_directory=True)
+            with self.assertRaises(_auth_auth_protocol.AuthError):
+                _auth_vault.DPAPIVault._check_path(dangling)
 
     def test_absolute_deadline_watchdog_interrupts_header_read(self):
         from unittest.mock import MagicMock

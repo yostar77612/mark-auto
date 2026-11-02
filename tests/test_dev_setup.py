@@ -11,11 +11,30 @@ import unittest
 from unittest.mock import patch
 import zipfile
 
+from tests import native_capabilities
+
 from tools import install_sqlite_runtime as installer
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / 'tools/dev_setup.ps1'
 POWERSHELL = shutil.which('powershell.exe') or shutil.which('pwsh')
+
+
+class NativeCapabilityTests(unittest.TestCase):
+    def test_only_missing_symlink_privilege_is_inapplicable(self):
+        probe = native_capabilities.symlinks_available.__wrapped__
+        denied = OSError('synthetic missing symlink privilege')
+        denied.winerror = 1314
+        unexpected = OSError('synthetic filesystem failure')
+        unexpected.winerror = 5
+        with patch.object(native_capabilities.sys, 'platform', 'win32'):
+            with patch.object(Path, 'symlink_to', side_effect=denied):
+                self.assertFalse(probe())
+            with patch.object(Path, 'symlink_to', side_effect=unexpected), self.assertRaises(OSError):
+                probe()
+        with patch.object(Path, 'symlink_to') as create:
+            self.assertTrue(probe())
+            create.assert_called_once()
 
 
 class DevSetupTests(unittest.TestCase):
