@@ -1409,10 +1409,10 @@ class CoreShardWorkflowTests(unittest.TestCase):
         self.assertIn("${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}", offline)
         linux, coverage = self.job('linux-tests'), self.job('linux-coverage')
         linux_rows = re.findall(r"^          - \{python: '([^']+)', group: ([^,}]+)(?:, core_slice: ([^}]+))?\}$", linux, re.MULTILINE)
-        linux_expected = [(version, 'core', name) for version in ('3.11', '3.12') for name in ('desktop-trading', 'paper-remaining', 'trading', 'paper')]
+        linux_expected = [(version, 'core', name) for version in ('3.11', '3.12') for name in ('desktop-trading', 'paper-remaining')]
         linux_expected += [(version, 'research', '') for version in ('3.11', '3.12')]
         self.assertCountEqual(linux_rows, linux_expected)
-        self.assertEqual(len(linux_rows), 10)
+        self.assertEqual(len(linux_rows), 6)
         self.assertIn("format('--core-slice {0}', matrix.core_slice)", linux)
         self.assertIn('timeout-minutes: 15', linux)
         self.assertIn('fail-fast: false', linux)

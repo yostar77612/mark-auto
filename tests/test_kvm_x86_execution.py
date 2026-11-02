@@ -626,8 +626,8 @@ class KvmExecutionWorkflowContractTests(unittest.TestCase):
         ui_producers = re.search(r'(?ms)^  ui-tests:\n(.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)', other_jobs).group(0)
         ui_aggregate = re.search(r'(?ms)^  ui:\n(.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)', other_jobs).group(0)
         roles = re.findall(r'^          - \{group: ([^,}]+)(?:, core_slice: ([^}]+))?\}$', ui_producers, re.MULTILINE)
-        self.assertCountEqual(roles, [('core', 'desktop-trading'), ('core', 'paper-remaining'), ('core', 'trading'), ('core', 'paper'), ('research', '')])
-        self.assertEqual(len(roles), 5)
+        self.assertCountEqual(roles, [('core', 'desktop-trading'), ('core', 'paper-remaining'), ('research', '')])
+        self.assertEqual(len(roles), 3)
         self.assertIn('timeout-minutes: 15', ui_producers)
         self.assertIn(
             "run: python tools/ui_test_gate.py --group ${{ matrix.group }} ${{ matrix.core_slice && format('--core-slice {0}', matrix.core_slice) || '' }} --manifest dist/validation/ui-test-inventory.json",

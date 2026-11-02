@@ -105,25 +105,26 @@ class WorkflowShapeTests(unittest.TestCase):
 
     def test_installer_pr_filter_and_unfiltered_main_push(self):
         pull_request, rest = header('windows-desktop.yml').split('  push:\n', 1)
-        # Every PR reaches the classifier, including source and new installer inputs.
-        self.assertIn('  pull_request:\n', pull_request)
-        self.assertNotIn('paths:', pull_request)
-        self.assertNotIn('paths-ignore:', pull_request)
+        for required in (
+            'packaging/**',
+            'tests/test_windows_recovery_feasibility.py',
+            'requirements*.lock',
+            'requirements*.txt',
+            'desktop_chatgpt_dependency_manifest.json',
+            "'*.spec'",
+            "'*.iss'",
+            'tools/make_icon.py',
+            '.github/workflows/windows-desktop.yml',
+        ):
+            self.assertIn(required, pull_request)
         self.assertNotIn('paths:', rest)
         self.assertIn('branches: [main]', rest)
         self.assertIn("tags: ['desktop-v*']", rest)
         self.assertIn('workflow_dispatch:', rest)
         installer = job_blocks(text('windows-desktop.yml'))
-        for required in (
-            'name: Detect documentation-only change',
-            'fetch-depth: 0',
-            'code: ${{ steps.detect.outputs.code }}',
-            'run: python3 tools/ci_changes.py --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}"',
-        ):
-            self.assertIn(required, installer['changes'])
-            self.assertIn(required, job_blocks(text('quantlab.yml'))['changes'])
-        self.assertIn('needs: changes', installer['quality'])
-        self.assertIn("if: needs.changes.outputs.code == 'true'", installer['quality'])
+        self.assertNotIn('changes', installer)
+        self.assertNotIn('needs:', installer['quality'])
+        self.assertFalse(any(line.startswith('    if:') for line in installer['quality'].splitlines()))
         self.assertIn('needs: quality', installer['regression'])
         self.assertIn('needs: [quality, regression]', installer['build'])
         self.assertIn('needs: [build, quality]', installer['release'])

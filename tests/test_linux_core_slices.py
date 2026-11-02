@@ -45,19 +45,17 @@ class LinuxCoreSliceTests(unittest.TestCase):
             core_fixture.CoreShardRunnerTests().write_suite(root)
             reports = []
             for name, modules in (
-                ('desktop-trading', ('test_desktop_synthetic',)),
-                ('paper-remaining', ('test_future_synthetic',)),
-                ('trading', ('test_trading_synthetic',)),
-                ('paper', ('test_paper',)),
+                ('desktop-trading', ('test_desktop_synthetic', 'test_trading_synthetic')),
+                ('paper-remaining', ('test_future_synthetic', 'test_paper')),
             ):
                 result, report = self.run_slice(root, name)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 expected = [module + '.Fixture.' + method for module in modules for method in ('test_a', 'test_b')]
                 for key in ('selected_ids', 'started_ids', 'stopped_ids'):
                     self.assertEqual(report[key], expected)
-                self.assertEqual(report['tests_run'], 2)
+                self.assertEqual(report['tests_run'], 4)
                 self.assertTrue(report['run_completed'])
-                self.assertEqual(report['core_slice_plan'], 'linux-core-whole-modules-v2')
+                self.assertEqual(report['core_slice_plan'], 'linux-core-whole-modules-v1')
                 self.assertEqual(report['local_identity_before'], report['local_identity_after'])
                 self.assertEqual(report['source_sha256_after'], report['core_slice_context']['source_sha256'])
                 self.assertEqual(report['core_slice_context']['run_attempt'], '2')
@@ -66,13 +64,11 @@ class LinuxCoreSliceTests(unittest.TestCase):
                         self.assertEqual(result.stdout.count(marker + module), 1)
                 self.assertNotIn('test_research', result.stdout)
                 reports.append(report)
-            selected = [test_id for report in reports for test_id in report['started_ids']]
-            self.assertEqual(len(selected), 8)
+            selected = reports[0]['started_ids'] + reports[1]['started_ids']
             self.assertEqual(len(selected), len(set(selected)))
             self.assertEqual(set(selected), set(reports[0]['partitions']['core']))
-            for report in reports[1:]:
-                self.assertEqual(reports[0]['core_slice_assignments'], report['core_slice_assignments'])
-                self.assertEqual(reports[0]['core_slice_context'], report['core_slice_context'])
+            self.assertEqual(reports[0]['core_slice_assignments'], reports[1]['core_slice_assignments'])
+            self.assertEqual(reports[0]['core_slice_context'], reports[1]['core_slice_context'])
 
     def test_actual_failure_and_skip_remain_owned_by_unmodified_result(self):
         for outcome, code, field in (("self.fail('synthetic failure')", 1, 'failures'), ("self.skipTest('synthetic skip')", 0, 'skipped')):
@@ -81,8 +77,8 @@ class LinuxCoreSliceTests(unittest.TestCase):
                 core_fixture.CoreShardRunnerTests().write_suite(root, outcome=outcome)
                 result, report = self.run_slice(root, 'desktop-trading')
                 self.assertEqual(result.returncode, code, result.stderr)
-                self.assertEqual(report['tests_run'], 2)
-                self.assertEqual(len(report[field]), 1)
+                self.assertEqual(report['tests_run'], 4)
+                self.assertEqual(len(report[field]), 2)
                 self.assertEqual(report['errors'], [])
                 self.assertEqual(report['started_ids'], report['selected_ids'])
                 self.assertEqual(report['stopped_ids'], report['selected_ids'])
