@@ -2283,3 +2283,29 @@ that close, reset budgets, send an order or resume. Any dispatcher uncertainty,
 minute claim, missing provenance or unknown manual observation remains blocked.
 This avoids turning a harmless pure-evaluation crash into a permanently
 unrecoverable pause while preserving unknown financial outcomes.
+
+### M2-3c: explicit no-send declaration and bounded daily projections
+
+2026-11-02 19:54 Taipei start, estimate150 minutes, R5 reassessment225 minutes.
+Base main c69d459 includes reviewed/merged PR147; branch
+codex/m2-3c-review-fixes is one PR directly to main. Never merge it autonomously;
+green CI precedes Claude review. Engine only, with unchanged LIVE hard guard.
+
+Choose a separate confirmed owner operation for the daily no-order crash gap.
+AUTO_RECONCILE remains read/reconcile-only; it cannot silently reinterpret UNKNOWN
+as no send. The new command carries only the exact intent key and confirmation;
+the server supplies current owner, cached reconciliation and journal proof.
+No order_submitting persistence AND no matching broker order are both necessary.
+Successful declaration settles the intent without changing money or resuming.
+
+Bound the daily projection with20 verified trading days and account audit digests;
+keep unconsumed, invalidated and unresolved/active canonical obligations. Old
+quotes/order lists stay decodable, but new closes use references/digests. Archive
+the projection, not the append-only audit journal. The250-day/30-instrument test
+must preserve late old-order fee/fill detection and unchanged reconciliation.
+
+Pre-edit graph binds this exact worktree/index c69d459. Common contract types are
+CRITICAL110 upstream, engine HIGH94, registry MEDIUM24. Snapshot/IPC/codec and
+startup callers are source-confirmed; missing bounded process flows are no
+evidence of no impact. Initial indexing refused our diagnostic-only unowned
+directory; preserve those files separately and initialize normal owned storage.
