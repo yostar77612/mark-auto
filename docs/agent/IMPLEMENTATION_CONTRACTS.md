@@ -7056,6 +7056,18 @@ estimate; UNPROTECTED does not assert a broker stop order or clear existing
 protection locks. Pending/last-result projections retain exact request identity;
 missing cached data cannot discharge UNKNOWN or authorize a new-key retry.
 
+## U2 manual review presentation (2026-11-02)
+
+Unknown SUBMIT recovery uses the accepted ManualPendingView candidates and
+confirmed ADOPT_MANUAL_ORDER / DECLARE_MANUAL_NOT_SENT. Both are LIVE-disabled,
+Cancel-default and never resend. The UI retains an original local unknown until
+matching resolved backend evidence proves it closed; empty snapshots do not.
+Manual exits use PREVIEW_MANUAL(exit_lot_id) then confirm and SUBMIT_MANUAL with
+the identical request/preview identity, quantity and limit. Bid/ask and the 1%
+price_deviation refusal are displayed. No backend/IPC field or safety gate changes.
+Native fake-only evidence and the partial-exit quantity contract request are in
+`docs/analysis/u2-manual/verification.md`.
+
 ## M2-2 manual simulation presentation contract
 
 The Trading page exposes manual intents only for the accepted broker-simulation

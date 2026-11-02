@@ -285,6 +285,8 @@ class TradingWindow(QMainWindow):
         self.apply_state(state)
         if receipt is not None:
             message = receipt.message or ui_text('v2.completed' if receipt.accepted else 'v2.connection_failed')
+            if action in MANUAL_ACTIONS and not receipt.accepted and receipt.code == 'price_deviation':
+                message = ui_text('u2.price_deviation')
             if not receipt.accepted and receipt.code == 'state_conflict':
                 message = receipt.message or ui_text('v2.state_conflict')
                 if action is UiAction.CREATE_STRATEGY and self._pending_wizard is not None:

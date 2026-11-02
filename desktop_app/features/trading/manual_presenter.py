@@ -19,17 +19,21 @@ def clock(value):
     return value.astimezone(ZoneInfo('Asia/Taipei')).strftime('%m/%d %H:%M:%S') if value and value.tzinfo else ui_text('watch.unknown')
 
 
-def preview_text(preview):
+def quantity_text(preview):
     if preview.quantity_unit is QuantityUnit.SHARE:
         quantity = f'{Decimal(preview.quantity) / preview.lot_size:,.3f}'.rstrip('0').rstrip('.') + ' ' + ui_text('m2t.lots')
     elif preview.quantity_unit is QuantityUnit.CONTRACT:
         quantity = f'{preview.quantity:,} ' + ui_text('v2.contracts')
     else:
         quantity = ui_text('watch.unknown')
+    return quantity
+
+
+def preview_text(preview):
     values = ui_text('m2m.preview_details').format(
         preview.instrument_id,
         ui_text('m2m.buy') if preview.side is Side.BUY else ui_text('m2m.sell'),
-        quantity,
+        quantity_text(preview),
         preview.limit_price,
         preview.stop_price,
         money(preview.total_cash),
@@ -45,6 +49,12 @@ def preview_text(preview):
         + ui_text('m2m.sources').format(
             ui_text('m2m.virtual_source') if preview.funds_source == 'APP_VIRTUAL_SIMULATION' else ui_text('watch.unknown'),
             ui_text('m2m.cost_estimate') if preview.cost_source else ui_text('watch.unknown'),
+        )
+        + '\n'
+        + ui_text('u2.quotes').format(
+            preview.bid if preview.bid is not None else ui_text('watch.unknown'),
+            preview.ask if preview.ask is not None else ui_text('watch.unknown'),
+            clock(preview.quote_at),
         )
     )
 
@@ -77,6 +87,9 @@ def reason_text(code):
         'ownership_conflict': ui_text('m2m.ownership_conflict'),
         'broker_rejected': ui_text('m2m.broker_rejected'),
         'journal_failed': ui_text('m2m.journal_failed'),
+        'price_deviation': ui_text('u2.price_deviation'),
+        'exit_unavailable': ui_text('u2.exit_unavailable'),
+        'exit_already_pending': ui_text('u2.exit_unavailable'),
     }
     return reasons.get(code, ui_text('m2m.not_ready'))
 

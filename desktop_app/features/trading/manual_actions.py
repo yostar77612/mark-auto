@@ -7,6 +7,8 @@ from uuid import uuid4
 from PySide6.QtWidgets import QHBoxLayout, QInputDialog
 
 from desktop_app.features.trading.manual_form import ManualForm
+from desktop_app.features.trading.manual_exit_preview import ManualExitPreview
+from desktop_app.features.trading.manual_recovery import ManualRecovery, RESOLUTION_ACTIONS
 from desktop_app.features.trading.manual_intents import ManualIntents, scope_matches
 from desktop_app.features.trading.manual_presenter import preview_text, render_manual
 from desktop_app.features.trading.widgets import button, selected_id
@@ -22,6 +24,7 @@ class ManualActions:
         self.window = window
         self.form = ManualForm(window, header=window.page_headers['trading'])
         self.intents = ManualIntents()
+        self.exit_preview = ManualExitPreview(self)
         self.scope, self.instruments = None, ()
         self._reviewed_inputs = None
         layout.insertWidget(4, self.form)
@@ -31,6 +34,7 @@ class ManualActions:
         row.addWidget(self.cancel)
         row.addWidget(self.amend)
         row.addStretch()
+        self.recovery = ManualRecovery(self, row)
         layout.addLayout(row)
         self.form.prepare.clicked.connect(self._prepare)
         self.form.preview_button.clicked.connect(self._preview)
@@ -81,7 +85,9 @@ class ManualActions:
         self.render(self.window.state)
 
     def render(self, state):
+        self.recovery.render(state)
         render_manual(self, state)
+        self.exit_preview.render(state)
 
     def preview(self, state):
         preview = state.manual.preview
@@ -96,6 +102,9 @@ class ManualActions:
         return None
 
     def received(self, command, state, receipt):
+        self.recovery.received(command, receipt)
+        if self.exit_preview.received(command, state, receipt):
+            return
         if command is not None and command.action is UiAction.PREVIEW_MANUAL and self._inputs() != self._reviewed_inputs:
             return
         self.intents.received(command, state, receipt)
@@ -145,7 +154,7 @@ class ManualActions:
         operation = self.window._operation
         if operation is not None and operation.command is not None and operation.command.action is action:
             intent = mutation or order
-            if intent is not None and intent.confirmed:
+            if intent is not None and intent.confirmed and action not in RESOLUTION_ACTIONS:
                 self.intents.pending[intent.request_id] = intent.scope
         self.render(state)
 
@@ -269,17 +278,4 @@ class ManualActions:
                 self._send(UiAction.RESUME, book=book)
 
     def flatten(self, position, summary):
-        state, manual = self.window.state, self.window.state.manual
-        if (
-            not self._ready('can_mutate')
-            or not manual.confirmed
-            or manual.capital is None
-            or (position.account_ref, position.strategy_id) != (state.account_ref, manual.book_id)
-        ):
-            return
-        book = ManualBookForm(manual.scope, manual.capital, True)
-        if self._confirm(summary + '\n' + ui_text('m2m.exit_source')) and self._ready('can_mutate'):
-            if selected_id(self.window.positions) != position.lot_id or self.window.state.manual.capital != book.capital:
-                self.window._feedback(ui_text('v2.state_conflict'))
-                return
-            self._send(UiAction.FLATTEN, book=book, target_id=position.lot_id)
+        self.exit_preview.start(position)
