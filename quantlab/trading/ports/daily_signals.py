@@ -8,4 +8,6 @@ from quantlab.trading.domain.daily_signal_data import OfficialDailyHistory
 
 
 class OfficialDailySignalSource(Protocol):
-    def history(self, instrument_id: str, calendar: TradingCalendar, *, through: date, start: date | None = None) -> OfficialDailyHistory: ...
+    def history(
+        self, instrument_id: str, calendar: TradingCalendar, *, through: date, start: date | None = None, cached_only: bool = False
+    ) -> OfficialDailyHistory: ...

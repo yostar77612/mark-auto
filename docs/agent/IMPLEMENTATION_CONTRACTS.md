@@ -7866,3 +7866,47 @@ polling. WAITING_SESSION is neutral scheduling, not a resume request. Daily sign
 target dates/windows/phases remain backend facts; UNKNOWN never resends and
 DISPATCHED never claims a fill. No new engine or IPC contract is introduced.
 Strings phase68 orders3032–3085. Evidence: docs/analysis/u4-automatic/verification.md.
+
+## M2-3d official daily review-fix contract (2026-11-03)
+
+- `DailySignalDataView` appends `verified_at` / `expires_at`, both optional
+  datetime values with empty defaults. A snapshot reads cached rows only and
+  changes an expired VERIFIED presentation to UNVERIFIED. A refused saved-signal
+  revalidation invalidates its view immediately. `available_at` is the actual
+  persisted arrival of required official payloads; it is never refreshed by a
+  read clock. Arrival does not certify an exchange endpoint's finality.
+- No new UiAction, IPC operation or error code. Existing daily source/basis/
+  availability refusal codes remain authoritative. Ordinary source IO/parser
+  exceptions become typed refusals, without permanently poisoning journal health.
+- Durable cursor and intent checks precede daily source reconstruction. Native
+  cold verification runs outside bundle/engine/owner locks. Locked source reads
+  require a warmed same-revision immutable history, with no cold fallback.
+  Revision change requires full byte/schema/provenance verification again.
+- Official imports are explicit operations. Recorded public-response manifests
+  are usable offline; downloads need per-call consent. The producer includes
+  global TWT49U responses proving both positive actions and complete negative
+  event coverage. Automatic execution and view projection never download.
+- Fully superseded active manifests may be compacted; immutable payload archives
+  and complete manifest-row archives remain available for old evidence. Every
+  replaced legacy row is archived before deletion in the same transaction.
+  `DailyStockStore.official_manifest_archive(source_digest)` returns immutable
+  `OfficialStockManifest` metadata for individual source sets; it never guesses
+  a historical union from an opaque history digest. Bounded source/byte selection refuses
+  excessive active input before loading blobs. Unknown old arrival metadata
+  cannot be upgraded to a verified runtime signal merely by reading it.
+- Official actions that adjust earlier rows must agree with the immediately
+  preceding verified raw DAY close, within half a cent. Raw execution prices,
+  account valuation and all existing entitlement-unknown refusals remain.
+- Typed BROKER_SIMULATION submissions use the automatic admission authority even
+  when no manual book exists. Missing books/owner proofs refuse rather than
+  selecting legacy account admission. LOCAL behavior and the LIVE hard guard
+  retain their existing semantics. No automatic resend or resume is introduced.
+  RuntimeBundle's legacy SIM cycle always disables new entries when no
+  ManualRuntime owner authority is present, while continuing protective work.
+  Existing direct generic-engine fixtures keep their prior admission semantics.
+- Real native composition exposed an unrelated connection display/control seam:
+  key remaining-day countdown and a rolling pre-open display horizon update the
+  view without replacing the authenticated control revision. Every expiry
+  date/state, calendar/expiry version, coverage count, issue and reminder still
+  replaces it. Connection/selection/generation CAS, fresh observation and entry
+  maintenance checks remain mandatory; restart never resumes automatically.

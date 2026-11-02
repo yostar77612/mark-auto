@@ -65,6 +65,7 @@ class TradingEngine:
         self.live_market = live_market
         self.automatic_entry_check = automatic_entry_check
         self.daily_signal_source = daily_signal_source
+        self.daily_signal_cached_only = False
         if historical_bars is not None and (type(historical_bars) is not dict or len(historical_bars) > len(catalog.instruments)):
             raise DomainError('validation_failed', 'bounded typed market history mapping required')
         self.history: dict[str, tuple[CompletedBar, ...]] = {}
@@ -509,12 +510,7 @@ class TradingEngine:
             if gateway is None or plan.environment is not self.configuration.environment:
                 raise DomainError('capability_missing', 'execution environment not enabled')
             strategy = next((s for s in self.state.strategies if (s.strategy_id, s.version) == (plan.strategy_id, plan.strategy_version)), None)
-            automatic = (
-                self.configuration.environment is Environment.BROKER_SIMULATION
-                and strategy is not None
-                and strategy.parameters is not None
-                and any(book.account_ref == plan.account_ref for book in self.state.manual_books)
-            )
+            automatic = self.configuration.environment is Environment.BROKER_SIMULATION and strategy is not None and strategy.parameters is not None
             session = self._strategy_calendar(strategy, plan.instrument_id).session_at(self.clock.now(), allow_night=policy.night_enabled)
             if quote.trade_date != session.trade_date or quote.session != session.kind:
                 raise DomainError('session_closed', 'quote/calendar session mismatch')

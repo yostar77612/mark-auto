@@ -4,6 +4,7 @@ Construction is offline. Call StockHistorySync.refresh only after its per-call
 consent check; tests inject bytes and never invoke this network transport.
 """
 
+from datetime import timedelta
 import re
 import time
 from urllib.parse import parse_qsl, urlsplit
@@ -11,6 +12,7 @@ from urllib.request import Request, build_opener, ProxyHandler
 
 from quantlab.market_providers import _DeadlineHTTPSHandler, _NoRedirect
 from quantlab.trading.adapters.official.stock_data import MAX_BYTES, StockDataSource
+from quantlab.trading.adapters.official.daily_signal_events import daily_event_scope
 from quantlab.trading.application.stock_history import StockHistorySync
 from quantlab.trading.domain.validation import DomainError
 
@@ -31,6 +33,15 @@ def validate_stock_url(url: str) -> str:
     if not isinstance(url, str) or len(url) > 512:
         raise DomainError('official_stock_invalid', 'bounded official URL required')
     parts = urlsplit(url)
+    if parts.path in ('/rwd/zh/exRight/TWT49U', '/exchangeReport/TWT49U'):
+        try:
+            first, end = daily_event_scope(url)
+        except DomainError:
+            raise DomainError('official_stock_invalid', 'official event request refused') from None
+        canonical = f'https://www.twse.com.tw{parts.path}?startDate={first:%Y%m%d}&endDate={end - timedelta(days=1):%Y%m%d}&response=json'
+        if url != canonical:
+            raise DomainError('official_stock_invalid', 'canonical official event request required')
+        return url
     patterns = _ENDPOINTS.get((parts.netloc, parts.path))
     pairs = parse_qsl(parts.query, keep_blank_values=True)
     params = dict(pairs)

@@ -7,9 +7,29 @@ from hashlib import sha256
 import json
 
 from .calendar import TradingCalendar
+from .arithmetic import decimal_operation
 from .stock_history import ADJUSTMENT_METHOD, CorporateAction, DailyStockBar, price_series, valid_digest
 from .strategy import CompletedBar
 from .validation import DomainError, aware, identity, trading_date
+
+
+PREVIOUS_CLOSE_TOLERANCE = Decimal('0.005')
+
+
+@decimal_operation
+def _validate_previous_closes(calendar, bars, events, *, first, through):
+    applicable = tuple(event for event in events if first < event.ex_date <= through)
+    if not applicable:
+        return
+    days = tuple(session.trade_date for session in calendar.sessions if session.kind == 'DAY')
+    predecessors = dict(zip(days[1:], days))
+    raw = {bar.trade_date: bar for bar in bars}
+    for event in applicable:
+        previous = raw.get(predecessors.get(event.ex_date))
+        if previous is None:
+            raise DomainError('daily_signal_not_available', 'actual previous verified DAY close required for adjustment')
+        if abs(previous.close - event.previous_close) > PREVIOUS_CLOSE_TOLERANCE:
+            raise DomainError('daily_signal_source_unverified', 'corporate-action previous close differs from actual previous DAY')
 
 
 def _signal_digest(rows) -> str:
@@ -122,6 +142,10 @@ class OfficialDailyHistory:
         window = available[-self.policy.window_bars :]
         adjusted = price_series(window, self.events, as_of=through)
         return _completed_daily(calendar, adjusted.bars)
+
+    def validate_previous_closes(self, calendar: TradingCalendar) -> None:
+        """Verify only actions that can adjust an earlier row in this snapshot."""
+        _validate_previous_closes(calendar, self.bars, self.events, first=self.bars[0].trade_date, through=self.bars[-1].trade_date)
 
     def trim(self, start: date, end: date) -> 'OfficialDailyHistory':
         trading_date(start)

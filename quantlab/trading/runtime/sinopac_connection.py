@@ -88,12 +88,25 @@ class SinopacConnection:
         if proposed != self._view:
             self._view = replace(proposed, revision=self.preferences.advance_revision())
 
+    def _publish_maintenance(self, maintenance):
+        previous = self._view.pre_open
+        changes = dict(api_key_remaining_days=maintenance.key.remaining_days, api_key_expiry_state=maintenance.key.state, pre_open=maintenance)
+        if previous is not None:
+            # Day countdown and the rolling display horizon are derived views,
+            # not mutations of the authenticated owner/control context. Every
+            # expiry date/state, coverage/version, issue and reminder still CASes.
+            authority = replace(maintenance, key=replace(maintenance.key, remaining_days=previous.key.remaining_days), through=previous.through)
+            if authority == previous:
+                self._view = replace(self._view, **changes)
+                return
+        self.publish(**changes)
+
     def snapshot(self):
         with self.lock:
             today = self.clock.now().astimezone(ZoneInfo('Asia/Taipei')).date()
             futures_required = not self.selected or any(account.market is not Market.STOCK for account in self.accounts if account.alias in self.selected)
             maintenance = self.maintenance.pre_open(built_in_calendar(), today, self.configuration.key_ref, futures_required=futures_required)
-            self.publish(api_key_remaining_days=maintenance.key.remaining_days, api_key_expiry_state=maintenance.key.state, pre_open=maintenance)
+            self._publish_maintenance(maintenance)
             if not self.closed and self.worker is not None and self.worker.is_alive() and monotonic() >= self.deadline:
                 from .sinopac_transition import readiness
 

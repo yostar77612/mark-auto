@@ -41,7 +41,7 @@ class FakeOfficialDailySource:
     def publish(self, history):
         self.histories[history.instrument_id] = history
 
-    def history(self, instrument_id, calendar, *, through, start=None):
+    def history(self, instrument_id, calendar, *, through, start=None, cached_only=False):
         self.requests.append((instrument_id, through, start))
         history = self.histories.get(instrument_id)
         if history is None:

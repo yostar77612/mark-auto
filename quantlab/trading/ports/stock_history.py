@@ -1,7 +1,7 @@
 """Downloaded observations cross the port as validated immutable values."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Protocol
 
 from quantlab.trading.domain.stock_history import CorporateAction, DailyStockBar
@@ -22,6 +22,18 @@ class OfficialStockBatch:
     bars: tuple[DailyStockBar, ...]
     events: tuple[CorporateAction, ...]
     payloads: tuple[OfficialPayload, ...]
+    arrived_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class OfficialStockManifest:
+    archive_id: str
+    instrument_id: str
+    start: date
+    end: date
+    sources: tuple[tuple[str, str], ...]
+    arrived_at: datetime | None
+    source_digest: str
 
 
 class OfficialStockSource(Protocol):
@@ -30,6 +42,12 @@ class OfficialStockSource(Protocol):
 
 
 class DailyStockStore(Protocol):
+    @property
+    def revision(self) -> int: ...
+    @property
+    def verification_revision(self) -> int: ...
+    def official_payload_arrival(self, source_url: str, digest: str) -> datetime | None: ...
+    def official_manifest_archive(self, source_digest: str) -> tuple[OfficialStockManifest, ...]: ...
     def official_payload(self, source_url: str, digest: str) -> OfficialPayload: ...
     def import_daily(self, batch: OfficialStockBatch) -> None: ...
     def daily_history(self, instrument_id: str, start: date, end: date) -> OfficialStockBatch: ...
