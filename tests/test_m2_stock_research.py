@@ -78,9 +78,7 @@ class StockResearchFixture:
     def strategy(self, *, intraday=False, rule='BUY_AND_HOLD', side=Side.BUY):
         kind = HoldingKind.INTRADAY if intraday else HoldingKind.SWING
         low, high = (0, 0) if intraday else (3, 5)
-        form = StrategyForm(
-            'stock training', Market.STOCK, kind, low, high, side, ID, 'test-stock', Environment.LOCAL, D('1000000'), D('.02'), rule
-        )
+        form = StrategyForm('stock training', Market.STOCK, kind, low, high, side, ID, 'test-stock', Environment.LOCAL, D('1000000'), D('.02'), rule)
         return StrategyRecord('stock-training', 1, form, HoldingPolicy(kind, low, high), 'RULE_VALID')
 
     def service(self, journal, **kwargs):
