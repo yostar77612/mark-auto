@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import StrategyForm, UiState
 from quantlab.trading.domain.models import HoldingKind, Market, Side
+from quantlab.trading.domain.validation import DomainError
+from desktop_app.features.trading.strategy_options import StrategyOptions
 
 from desktop_app.features.trading.labels import state_label
 from desktop_app.features.trading.widgets import combo, fit_available_screen, label
@@ -32,7 +34,6 @@ MARKETS = (('v2.stock', Market.STOCK), ('v2.index_future', Market.INDEX_FUTURE),
 POLICIES = (
     ('v2.swing', HoldingKind.SWING),
     ('v2.intraday', HoldingKind.INTRADAY),
-    ('v2.week', HoldingKind.CUSTOM),
     ('v2.position', HoldingKind.POSITION),
     ('v2.custom', HoldingKind.CUSTOM),
 )
@@ -47,6 +48,7 @@ class StrategyWizard(QWizard):
         self.setFont(font)
         self.state = state
         self.parent_strategy_id = parent_strategy_id
+        self.accepted_form = self.accepted_parameters = None
         self._screen_hooked = False
         self.setObjectName('trading_strategy_wizard')
         self.setWindowTitle(ui_text('v2.wizard_title'))
@@ -58,6 +60,7 @@ class StrategyWizard(QWizard):
         self.setButtonText(QWizard.WizardButton.CancelButton, ui_text('v2.cancel'))
         self._build_choices(state)
         self._build_expiry()
+        self.options = StrategyOptions(self, state)
         self._build_pages()
         self._bind()
 
@@ -66,7 +69,7 @@ class StrategyWizard(QWizard):
         if not self._screen_hooked and self.windowHandle() is not None:
             self.windowHandle().screenChanged.connect(lambda _screen: fit_available_screen(self))
             self._screen_hooked = True
-        QTimer.singleShot(0, lambda: fit_available_screen(self))
+        QTimer.singleShot(0, self, lambda: fit_available_screen(self))
 
     def _build_choices(self, state: UiState) -> None:
         self.market = combo(MARKETS, 'market')
@@ -131,22 +134,32 @@ class StrategyWizard(QWizard):
         self.error.setTextFormat(Qt.TextFormat.PlainText)
         self.error.setWordWrap(True)
         self.error.setObjectName('wizard_error')
-        self._page('v2.step_market', ((ui_text('v2.market'), self.market),), 'v2.market_hint')
         self._page(
-            'v2.step_policy',
+            'u3.step_kind',
             (
                 (ui_text('v2.policy'), self.policy),
                 (ui_text('v2.minimum_days'), self.minimum),
                 (ui_text('v2.maximum_days'), self.maximum),
-                ('', self.expiry_group),
+                ('', self.options.stock_intraday),
             ),
-            'v2.policy_hint',
+            'u3.kind_hint',
         )
+        self._page('u3.step_market', ((ui_text('v2.market'), self.market), ('', self.expiry_group)), 'v2.market_hint')
         self._page('v2.step_direction', ((ui_text('v2.direction'), self.direction),), 'v2.direction_hint')
         self._page('v2.step_instrument', ((ui_text('v2.instrument'), self.instrument),), 'v2.instrument_hint')
         self._page(
             'v2.step_budget',
-            ((ui_text('v2.account'), self.account), (ui_text('v2.allocation'), self.allocation), (ui_text('v2.risk'), self.risk)),
+            (
+                (ui_text('v2.account'), self.account),
+                (ui_text('v2.allocation'), self.allocation),
+                (ui_text('v2.risk'), self.risk),
+                (ui_text('u3.interval'), self.options.interval),
+                (ui_text('u3.stop'), self.options.stop),
+                (ui_text('u3.entry_amount'), self.options.entry_amount),
+                (ui_text('u3.contracts'), self.options.contracts),
+                (ui_text('u3.instrument_rule'), self.options.instrument_rule),
+                ('', self.options.size_hint),
+            ),
             'v2.budget_hint',
         )
         self._page(
@@ -170,8 +183,8 @@ class StrategyWizard(QWizard):
         self.instrument.currentIndexChanged.connect(self._roll_targets)
         self.expiry_action.currentIndexChanged.connect(self._expiry_changed)
         self.currentIdChanged.connect(self._summary)
-        self.currentIdChanged.connect(lambda _page: QTimer.singleShot(0, lambda: fit_available_screen(self)))
-        self._candidates()
+        self.currentIdChanged.connect(lambda _page: QTimer.singleShot(0, self, lambda: fit_available_screen(self)))
+        self._policy_changed()
         self._rules_changed()
         self._roll_targets()
 
@@ -192,27 +205,10 @@ class StrategyWizard(QWizard):
         self.addPage(page)
 
     def _candidates(self) -> None:
-        self.instrument.clear()
-        self.account.clear()
-        market = self.market.currentData()
-        for instrument in self.state.markets:
-            if instrument.market == market:
-                self.instrument.addItem(instrument.instrument_id, instrument.instrument_id)
-        for account in self.state.accounts:
-            if account.environment == self.state.environment and (account.market == market or market != Market.STOCK and account.market != Market.STOCK):
-                self.account.addItem(account.account_ref + ' · ' + state_label(account.readiness), account.account_ref)
-                if account.account_ref == self.state.account_ref:
-                    self.account.setCurrentIndex(self.account.count() - 1)
+        self.options.candidates()
 
     def _policy_changed(self) -> None:
-        policy = self.policy.currentData()
-        default = (
-            (0, 0) if policy == HoldingKind.INTRADAY else (20, 250) if policy == HoldingKind.POSITION else (5, 5) if self.policy.currentIndex() == 2 else (3, 5)
-        )
-        self.minimum.setValue(default[0])
-        self.maximum.setValue(default[1])
-        self.minimum.setEnabled(policy != HoldingKind.INTRADAY)
-        self.maximum.setEnabled(policy != HoldingKind.INTRADAY)
+        self.options.policy_changed()
 
     def _account_selected(self) -> None:
         account = next((item for item in self.state.accounts if item.account_ref == self.account.currentData()), None)
@@ -255,7 +251,7 @@ class StrategyWizard(QWizard):
                             'night_enabled': False,
                             'expiry_action': self.expiry_action.currentData(),
                         },
-                        'bar_interval': '1d',
+                        'bar_interval': self.options.interval.currentData(),
                         'direction': 'LONG_ONLY' if self.direction.currentData() == Side.BUY else 'SHORT_ONLY',
                         'entry': [{'field': 'close', 'operator': 'GT', 'value': '0'}],
                         'exit': [{'field': 'close', 'operator': 'LT', 'value': '0'}],
@@ -269,7 +265,14 @@ class StrategyWizard(QWizard):
 
     def form(self) -> StrategyForm:
         amount = Decimal(self.allocation.text())
-        if not amount.is_finite() or amount <= 0 or not self.name.text().strip() or not self.instrument.currentData() or not self.account.currentData():
+        if (
+            not amount.is_finite()
+            or amount <= 0
+            or not self.name.text().strip()
+            or not self.instrument.currentData()
+            or not self.account.currentData()
+            or self.rules.currentData() is None
+        ):
             raise ValueError('invalid strategy form')
         draft_json = self.draft.toPlainText() if self.rules.currentData() == 'STRUCTURED_JSON' else ''
         if self.rules.currentData() == 'STRUCTURED_JSON' and (not draft_json or len(draft_json.encode('utf-8')) > 65536):
@@ -318,8 +321,9 @@ class StrategyWizard(QWizard):
 
     def accept(self) -> None:
         try:
-            self.form()
-        except (InvalidOperation, ValueError):
+            self.accepted_form = self.form()
+            self.accepted_parameters = self.options.parameters()
+        except (DomainError, InvalidOperation, ValueError):
             self.error.setText(ui_text('v2.form_invalid'))
             return
         super().accept()

@@ -7603,6 +7603,27 @@ Existing engine stop/reconciliation semantics and LIVE prohibition are unchanged
 Real-process regressions cover active subscriptions, in-flight history, native
 mutex disappearance, research QLockFile reacquisition and journal lease reopening.
 
+## U3 desktop typed strategy presentation (2026-11-02)
+
+The wizard selects the holding kind before market/product and consumes the merged
+strategy_defaults and strategy_products contracts. Stock intraday requires an
+explicit Cancel-default qualification confirmation; swing/position products are
+the accepted stock/ETF catalogue. CREATE_TYPED_STRATEGY and REVISE_STRATEGY send
+one frozen form/parameter pair. Only metadata receives the existing one-retry CAS
+handling for a known refusal; unknown results and order commands never replay.
+Management targets exact versions; disable/delete/activation confirmations default
+to Cancel. LIVE activation stays disabled and the command boundary refuses it.
+Missing evidence remains disabled after unchanged polling and links to research.
+Sizing is labelled informational; backend costs/margin/admission remain authority.
+Absent original-form/direction/rule and complete-fill/can_delete DTO facts are
+explicit limitations; revision asks for missing choices and backend deletion
+refusals are retained. No new engine or IPC contract is introduced. Verification:
+docs/analysis/u3-strategies/verification.md. Strings phase67, orders2990–3031.
+
+U3 presentation dependency correction: the desktop composition supplies error-copy
+pairs and a theme table-styling callback to TradingWindow. Trading presentation
+does not import the application's error implementation, domain strategy internals
+or shell theme. Public commands/DTOs and the architecture gate remain unchanged.
 ## M3-2 v1 信號橋接與候選摘要邊界（2026-11-02）
 
 - `V1SignalSource` 使用原 `research.validate_dsl` AST 准入、`candidate_fingerprint` 與

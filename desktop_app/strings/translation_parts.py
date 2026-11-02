@@ -7,6 +7,7 @@ from .sinopac_connection import ENTRIES as _part_sinopac_connection
 from .m2_manual import ENTRIES as _part_m2_manual
 from .account_readiness import ENTRIES as _part_account_readiness
 from .manual_review import ENTRIES as _part_manual_review
+from .strategy_management import ENTRIES as _part_strategy_management
 from .assistant import ENTRIES as _part_assistant
 from .terminal import ENTRIES as _part_terminal
 from .marketdata import ENTRIES as _part_marketdata
@@ -83,6 +84,7 @@ from .watch import ENTRIES as _part_watch
 from .dashboard import ENTRIES as _part_dashboard
 
 PARTS = (
+    _part_strategy_management,
     _part_manual_review,
     _part_account_readiness,
     _part_m2_maintenance,

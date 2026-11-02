@@ -15,7 +15,7 @@ import unittest
 from unittest.mock import patch
 
 from PySide6.QtCore import QCoreApplication, QEvent, QTimer, Qt
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 from shiboken6 import isValid
 
 from desktop_app.strings.catalog import ui_text
@@ -194,11 +194,28 @@ class TradingUiIntegrationTests(unittest.TestCase):
         self.assertEqual(handled, [True], 'the visible modal must be exercised exactly once')
         self.drain()
 
+    def check_preflight(self):
+        for account in {record.form.account_ref for record in self.engine.state.strategies if record.parameters is not None}:
+            self.window.command(UiAction.CHECK_PREFLIGHT, account_ref=account)
+            self.drain()
+            view = next(row for row in self.window.state.preflight if row.account_ref == account)
+            self.assertFalse(view.blocked_today, view)
+
     def make_strategy(self, *, intraday=False, structured=False):
         def accept_wizard(wizard):
             wizard.name.setText('UI-created-stock')
+            # Keep this lifecycle fixture's original 3–5-day holding policy;
+            # the new 2–10-day product default is covered separately.
+            wizard.minimum.setValue(3)
+            wizard.maximum.setValue(5)
+            wizard.options.entry_amount.setText('15000')
+            wizard.options.stop.setText('0.5')
             if intraday:
-                wizard.policy.setCurrentIndex(1)
+                wizard.policy.setCurrentIndex(wizard.policy.findData(HoldingKind.INTRADAY))
+                with patch.object(QMessageBox, 'exec', return_value=QMessageBox.StandardButton.Yes):
+                    wizard.options.stock_intraday.setChecked(True)
+                wizard.market.setCurrentIndex(wizard.market.findData(Market.STOCK))
+                self.assertEqual(wizard.market.currentData(), Market.STOCK)
             if structured:
                 wizard.rules.setCurrentIndex(wizard.rules.findData('STRUCTURED_JSON'))
 
@@ -221,6 +238,7 @@ class TradingUiIntegrationTests(unittest.TestCase):
         self.assertEqual(self.engine.state.strategies[0].state, 'ACTIVE')
         self.window.reconcile_button.click()
         self.drain()
+        self.check_preflight()
         self.window.resume_button.click()
         self.drain()
         self.assertFalse(self.engine.state.stopped)
@@ -279,6 +297,8 @@ class TradingUiIntegrationTests(unittest.TestCase):
             self.window.deploy_button.click()
         self.drain()
         for widget in (self.window.reconcile_button, self.window.resume_button, self.window.overview_step, self.window.overview_step):
+            if widget is self.window.resume_button:
+                self.check_preflight()
             widget.click()
             self.drain()
         self.assertEqual(len(self.window.state.positions), 1)
@@ -306,6 +326,8 @@ class TradingUiIntegrationTests(unittest.TestCase):
             (after.lot_id, after.held_days, after.policy_label, after.entry_day), (before.lot_id, before.held_days, before.policy_label, before.entry_day)
         )
         for widget in (self.window.reconcile_button, self.window.resume_button):
+            if widget is self.window.resume_button:
+                self.check_preflight()
             widget.click()
             self.drain()
         for _ in range(5):
@@ -365,8 +387,11 @@ class TradingUiIntegrationTests(unittest.TestCase):
 
     def test_explicit_future_roll_wizard_produces_two_filled_legs_and_new_strategy_version(self):
         def accept_roll(wizard):
-            wizard.market.setCurrentIndex(1)
-            wizard.policy.setCurrentIndex(3)
+            wizard.policy.setCurrentIndex(wizard.policy.findData(HoldingKind.CUSTOM))
+            wizard.market.setCurrentIndex(wizard.market.findData(Market.INDEX_FUTURE))
+            self.assertEqual(wizard.market.currentData(), Market.INDEX_FUTURE)
+            wizard.options.stop.setText('0.05')
+            wizard.options.instrument_rule.setCurrentIndex(wizard.options.instrument_rule.findData('EXACT'))
             wizard.maximum.setValue(100)
             wizard.expiry_action.setCurrentIndex(wizard.expiry_action.findData('ROLL'))
             wizard.rules.setCurrentIndex(wizard.rules.findData('STRUCTURED_JSON'))
@@ -382,6 +407,8 @@ class TradingUiIntegrationTests(unittest.TestCase):
             self.window.deploy_button.click()
         self.drain()
         for widget in (self.window.reconcile_button, self.window.resume_button):
+            if widget is self.window.resume_button:
+                self.check_preflight()
             widget.click()
             self.drain()
         steps = 0
@@ -452,7 +479,12 @@ class TradingUiIntegrationTests(unittest.TestCase):
 
     def test_mobile_direction_flip_cannot_turn_managed_flatten_into_new_short_exposure(self):
         def accept_future(wizard):
-            wizard.market.setCurrentIndex(1)
+            wizard.policy.setCurrentIndex(wizard.policy.findData(HoldingKind.CUSTOM))
+            wizard.maximum.setValue(5)
+            wizard.market.setCurrentIndex(wizard.market.findData(Market.INDEX_FUTURE))
+            self.assertEqual(wizard.market.currentData(), Market.INDEX_FUTURE)
+            wizard.options.stop.setText('0.05')
+            wizard.options.instrument_rule.setCurrentIndex(wizard.options.instrument_rule.findData('EXACT'))
             wizard.rules.setCurrentIndex(wizard.rules.findData('STRUCTURED_JSON'))
 
         self.open_wizard(accept_future)
@@ -464,6 +496,8 @@ class TradingUiIntegrationTests(unittest.TestCase):
             self.window.deploy_button.click()
         self.drain()
         for widget in (self.window.reconcile_button, self.window.resume_button, self.window.overview_step):
+            if widget is self.window.resume_button:
+                self.check_preflight()
             widget.click()
             self.drain()
         lot = next(p for p in self.engine.state.positions if p.quantity)

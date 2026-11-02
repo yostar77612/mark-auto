@@ -58,7 +58,7 @@ class _Operation(QThread):
             else:
                 receipt = (
                     self._save_draft()
-                    if self.command is not None and self.command.action is UiAction.CREATE_STRATEGY
+                    if self.command is not None and self.command.action in (UiAction.CREATE_STRATEGY, UiAction.CREATE_TYPED_STRATEGY, UiAction.REVISE_STRATEGY)
                     else (self.facade.execute(self.command) if self.command is not None else None)
                 )
             state = self.facade.snapshot()
@@ -105,6 +105,10 @@ class TradingWindow(QMainWindow):
         save_position_columns=None,
         order_columns=None,
         save_order_columns=None,
+        strategy_columns=None,
+        save_strategy_columns=None,
+        strategy_error_texts=None,
+        style_strategy_table=None,
     ):
         super().__init__(parent)
         self.facade = facade
@@ -112,6 +116,9 @@ class TradingWindow(QMainWindow):
         self.market_watch = market_watch
         self._position_columns, self._save_position_columns = position_columns, save_position_columns
         self._order_columns, self._save_order_columns = order_columns, save_order_columns
+        self._strategy_columns, self._save_strategy_columns = strategy_columns, save_strategy_columns
+        self.strategy_error_texts = strategy_error_texts or {}
+        self.style_strategy_table = style_strategy_table
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
@@ -181,6 +188,7 @@ class TradingWindow(QMainWindow):
         sinopac_accounts=None,
         connection_revision=None,
         connection_generation='',
+        strategy_parameters=None,
     ) -> None:
         if self.state.environment is Environment.LIVE and action in LIVE_ORDER_ACTIONS:
             self._feedback(ui_text('m2t.orders_disabled'))
@@ -210,6 +218,7 @@ class TradingWindow(QMainWindow):
                 sinopac_accounts=sinopac_accounts,
                 connection_revision=connection_revision,
                 connection_generation=connection_generation,
+                strategy_parameters=strategy_parameters,
             )
         )
 
@@ -274,6 +283,7 @@ class TradingWindow(QMainWindow):
             return
         operation = self._operation if action is not UiAction.STOP_NEW else self._priority_operation
         self.manual_controls.received(operation.command if operation is not None else None, state, receipt)
+        self.strategy_controls.received(operation.command if operation is not None else None, state, receipt)
         if self._stamp(state) < self._stamp(self.state):
             return
         self._engine_reachable = True
@@ -289,9 +299,9 @@ class TradingWindow(QMainWindow):
                 message = ui_text('u2.price_deviation')
             if not receipt.accepted and receipt.code == 'state_conflict':
                 message = receipt.message or ui_text('v2.state_conflict')
-                if action is UiAction.CREATE_STRATEGY and self._pending_wizard is not None:
+                if action in (UiAction.CREATE_STRATEGY, UiAction.CREATE_TYPED_STRATEGY, UiAction.REVISE_STRATEGY) and self._pending_wizard is not None:
                     message += ' ' + ui_text('v2.draft_retained')
-            if receipt.accepted and action in (UiAction.CREATE_STRATEGY, UiAction.SWITCH_CONTEXT):
+            if receipt.accepted and action in (UiAction.CREATE_STRATEGY, UiAction.CREATE_TYPED_STRATEGY, UiAction.REVISE_STRATEGY, UiAction.SWITCH_CONTEXT):
                 self._clear_pending_wizard()
             if receipt.accepted and receipt.code == 'connection_pending':
                 self._connecting_request = state.engine_state == 'CONNECTING'
@@ -327,21 +337,33 @@ class TradingWindow(QMainWindow):
         identity = selected_id(self.strategies)
         strategy = next((item for item in self.state.strategies if f'{item.strategy_id}:{item.version}' == identity), None)
         if strategy is not None:
-            self._wizard(strategy.strategy_id)
+            self._wizard(strategy.strategy_id, revision=strategy)
         else:
             self._feedback(ui_text('v2.select_strategy'))
 
-    def _wizard(self, parent_strategy_id: str) -> None:
+    def _wizard(self, parent_strategy_id: str, *, revision=None) -> None:
         if self._operation is not None or self._priority_operation is not None:
             self._feedback(ui_text('v2.busy'))
             return
-        context = (self.state.context_id, self.state.context_epoch, self.state.environment, self.state.account_ref, parent_strategy_id)
+        scope = (self.state.context_id, self.state.context_epoch, self.state.environment, self.state.account_ref)
+        context = (*scope, parent_strategy_id, f'{revision.strategy_id}:{revision.version}' if revision else '')
         if self._pending_wizard is None or self._pending_wizard[0] != context:
             self._clear_pending_wizard()
             self._pending_wizard = (context, StrategyWizard(self.state, self, parent_strategy_id=parent_strategy_id))
+            if revision is not None:
+                self.strategy_controls.restore(self._pending_wizard[1], revision)
         wizard = self._pending_wizard[1]
         if wizard.exec() == StrategyWizard.DialogCode.Accepted:
-            self.command(UiAction.CREATE_STRATEGY, strategy=wizard.form())
+            current = (self.state.context_id, self.state.context_epoch, self.state.environment, self.state.account_ref)
+            if current != scope:
+                self._feedback(ui_text('v2.state_conflict'))
+                return
+            self.command(
+                UiAction.REVISE_STRATEGY if revision else UiAction.CREATE_TYPED_STRATEGY,
+                f'{revision.strategy_id}:{revision.version}' if revision else '',
+                strategy=wizard.accepted_form,
+                strategy_parameters=wizard.accepted_parameters,
+            )
         else:
             self._clear_pending_wizard()
 
@@ -366,29 +388,7 @@ class TradingWindow(QMainWindow):
         return box.exec() == QMessageBox.StandardButton.Yes
 
     def deploy_selected(self) -> None:
-        identity = selected_id(self.strategies)
-        strategy = next((item for item in self.state.strategies if f'{item.strategy_id}:{item.version}' == identity), None)
-        if strategy is None:
-            self._feedback(ui_text('v2.select_strategy'))
-            return
-        if strategy.allocation <= 0:
-            self._feedback(ui_text('v2.strategy_config_missing'))
-            return
-        summary = ui_text('v2.deploy_summary').format(
-            strategy.name,
-            strategy.version,
-            self._environment_label(strategy.environment),
-            strategy.account_ref,
-            strategy.instrument_id,
-            policy_label(strategy.policy_label),
-            strategy.allocation,
-            strategy.risk_fraction * 100,
-        )
-        summary += '\n' + ui_text('v2.expiry_summary').format(
-            ui_text('v2.expiry_roll' if strategy.expiry_action == 'ROLL' else 'v2.expiry_exit'), strategy.roll_contract_id or ui_text('v2.no_roll_target')
-        )
-        if self._confirm(summary):
-            self.command(UiAction.DEPLOY, identity)
+        self.strategy_controls.activate()
 
     def flatten_selected(self) -> None:
         if self.reconciliation.selectedItems():
@@ -599,10 +599,12 @@ class TradingWindow(QMainWindow):
         self.add_context_button.setVisible(bool(state.contexts))
         render_version = self._stamp(state)
         if self._rendered_version == render_version and not freshness_changed:
+            self.strategy_controls.render(state)
             return
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
         render_tables(self, state, state_changed=state_changed)
+        self.strategy_controls.render(state)
         self.manual_controls.render(state)
         self.positions_empty.setVisible(not state.positions)
         self.orders_empty.setVisible(not state.orders)

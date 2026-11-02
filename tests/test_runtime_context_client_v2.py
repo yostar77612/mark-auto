@@ -24,7 +24,7 @@ from desktop_app.features.trading import TradingWindow
 from desktop_app.features.trading.wizard import StrategyWizard
 from quantlab.trading.application.contextnavigation import CompositeFacade
 from quantlab.trading.application.contracts import UiAction, UiCommand, UiReceipt
-from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.models import Environment, HoldingKind
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.config import RuntimeLaunch, load_profile
 from quantlab.trading.runtime.context_client import ContextIpcFacade, RuntimeContextManager, ensure_engine
@@ -252,9 +252,10 @@ class RuntimeContextClientTests(unittest.TestCase):
                 self.assertIs(wizard.parentWidget(), self.window)
                 wizard.name.setText(name)
                 if one_day:
-                    wizard.policy.setCurrentIndex(4)
+                    wizard.policy.setCurrentIndex(wizard.policy.findData(HoldingKind.CUSTOM))
                     wizard.minimum.setValue(1)
                     wizard.maximum.setValue(1)
+                    wizard.options.stop.setText('3')
                 wizard.accept()
                 self.assertEqual(wizard.result(), StrategyWizard.DialogCode.Accepted)
             except BaseException as exc:

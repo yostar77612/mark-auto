@@ -1,0 +1,920 @@
+{
+  "summary": {
+    "changed_count": 100,
+    "affected_count": 15,
+    "changed_files": 19,
+    "risk_level": "high"
+  },
+  "changed_symbols": [
+    {
+      "id": "Variable:desktop_app/features/trading/labels.py:STATE_KEYS",
+      "name": "STATE_KEYS",
+      "type": "Variable",
+      "filePath": "desktop_app/features/trading/labels.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/rendering.py:_render_strategies",
+      "name": "_render_strategies",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/rendering.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/strategy_controls.py:recent_signal_text",
+      "name": "recent_signal_text",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/strategy_controls.py:strategy_block_reason",
+      "name": "strategy_block_reason",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/strategy_controls.py:StrategyControls",
+      "name": "StrategyControls",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.__init__#3",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.selected#1",
+      "name": "selected",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.stamp#1",
+      "name": "stamp",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.render#1",
+      "name": "render",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.research#0",
+      "name": "research",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.manage#1",
+      "name": "manage",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.activate#0",
+      "name": "activate",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.received#3",
+      "name": "received",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_controls.py:StrategyControls.restore#2",
+      "name": "restore",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_controls.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/strategy_options.py:StrategyOptions",
+      "name": "StrategyOptions",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.__init__#2",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.products#0",
+      "name": "products",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.policy_changed#0",
+      "name": "policy_changed",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.stock_changed#1",
+      "name": "stock_changed",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.refresh_markets#0",
+      "name": "refresh_markets",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.candidates#0",
+      "name": "candidates",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.parameters#0",
+      "name": "parameters",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.refresh_size#0",
+      "name": "refresh_size",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/window.py:_Operation",
+      "name": "_Operation",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:_Operation.run#0",
+      "name": "run",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/window.py:TradingWindow",
+      "name": "TradingWindow",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.__init__#10",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.command#19",
+      "name": "command",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow._result#3",
+      "name": "_result",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.new_version#0",
+      "name": "new_version",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow._wizard#2",
+      "name": "_wizard",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.deploy_selected#0",
+      "name": "deploy_selected",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow.apply_state#1",
+      "name": "apply_state",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/features/trading/wizard.py:POLICIES",
+      "name": "POLICIES",
+      "type": "Variable",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/wizard.py:StrategyWizard",
+      "name": "StrategyWizard",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard.__init__#3",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard.showEvent#1",
+      "name": "showEvent",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._build_pages#0",
+      "name": "_build_pages",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._bind#0",
+      "name": "_bind",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._candidates#0",
+      "name": "_candidates",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._policy_changed#0",
+      "name": "_policy_changed",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._rules_changed#0",
+      "name": "_rules_changed",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard.form#0",
+      "name": "form",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard.accept#0",
+      "name": "accept",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:desktop_app/features/trading/workspaces.py:_strategy_page",
+      "name": "_strategy_page",
+      "type": "Function",
+      "filePath": "desktop_app/features/trading/workspaces.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/strategy_management.py:ENTRIES",
+      "name": "ENTRIES",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/strategy_management.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/translation_parts.py:PARTS",
+      "name": "PARTS",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/translation_parts.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L1:分層式重構盤點報告（R0）",
+      "name": "分層式重構盤點報告（R0）",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L27:2 逐檔分層與目標路徑",
+      "name": "2 逐檔分層與目標路徑",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L582:2.2 PR C slice 2 added responsibilities",
+      "name": "2.2 PR C slice 2 added responsibilities",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L1:M1 自主決策紀錄",
+      "name": "M1 自主決策紀錄",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L196:2026-11-02 15:00 Asia/Taipei — graceful exit",
+      "name": "2026-11-02 15:00 Asia/Taipei — graceful exit",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L209:2026-11-02 19:35 Asia/Taipei — U3 strategy presentation",
+      "name": "2026-11-02 19:35 Asia/Taipei — U3 strategy presentation",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_desktop_catalog_split.py:CatalogSplitTests",
+      "name": "CatalogSplitTests",
+      "type": "Class",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_desktop_catalog_split.py:CatalogSplitTests.test_all_feature_records_are_literal_and_keep_unique_phase_keys#0",
+      "name": "test_all_feature_records_are_literal_and_keep_unique_phase_keys",
+      "type": "Method",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_trading_ui.py:state_fixture",
+      "name": "state_fixture",
+      "type": "Function",
+      "filePath": "tests/test_trading_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_trading_ui.py:TradingUiTests",
+      "name": "TradingUiTests",
+      "type": "Class",
+      "filePath": "tests/test_trading_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui.py:TradingUiTests.test_six_step_wizard_keeps_intraday_choice_and_decimal_form#0",
+      "name": "test_six_step_wizard_keeps_intraday_choice_and_decimal_form",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui.py:TradingUiTests.test_roll_requires_explicit_later_month_with_matching_underlying#0",
+      "name": "test_roll_requires_explicit_later_month_with_matching_underlying",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui.py:TradingUiTests.test_roll_without_resolved_metadata_does_not_guess_near_month#0",
+      "name": "test_roll_without_resolved_metadata_does_not_guess_near_month",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_trading_ui_integration.py:TradingUiIntegrationTests",
+      "name": "TradingUiIntegrationTests",
+      "type": "Class",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.check_preflight#0",
+      "name": "check_preflight",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.make_strategy#2",
+      "name": "make_strategy",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.make_strategy.accept_wizard@204:8#1",
+      "name": "accept_wizard",
+      "type": "Function",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.test_stock_wizard_to_research_deployment_holding_exit_and_performance#0",
+      "name": "test_stock_wizard_to_research_deployment_holding_exit_and_performance",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.test_structured_draft_runs_research_and_preserves_held_policy_across_restart#0",
+      "name": "test_structured_draft_runs_research_and_preserves_held_policy_across_restart",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.test_explicit_future_roll_wizard_produces_two_filled_legs_and_new_strategy_version#0",
+      "name": "test_explicit_future_roll_wizard_produces_two_filled_legs_and_new_strategy_version",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.test_explicit_future_roll_wizard_produces_two_filled_legs_and_new_strategy_version.accept_roll@388:8#1",
+      "name": "accept_roll",
+      "type": "Function",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.test_mobile_direction_flip_cannot_turn_managed_flatten_into_new_short_exposure#0",
+      "name": "test_mobile_direction_flip_cannot_turn_managed_flatten_into_new_short_exposure",
+      "type": "Method",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_trading_ui_integration.py:TradingUiIntegrationTests.test_mobile_direction_flip_cannot_turn_managed_flatten_into_new_short_exposure.accept_future@480:8#1",
+      "name": "accept_future",
+      "type": "Function",
+      "filePath": "tests/test_trading_ui_integration.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests",
+      "name": "TypedStrategyWizardTests",
+      "type": "Class",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.setUpClass#0",
+      "name": "setUpClass",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.setUp#0",
+      "name": "setUp",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.tearDown#0",
+      "name": "tearDown",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.select_kind#1",
+      "name": "select_kind",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_first_step_four_kinds_and_authoritative_defaults#0",
+      "name": "test_first_step_four_kinds_and_authoritative_defaults",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_d6_intraday_default_is_only_tmf_swing_position_only_stocks#0",
+      "name": "test_d6_intraday_default_is_only_tmf_swing_position_only_stocks",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_stock_daytrade_needs_cancel_default_then_explicit_confirmation#0",
+      "name": "test_stock_daytrade_needs_cancel_default_then_explicit_confirmation",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_stock_daytrade_needs_cancel_default_then_explicit_confirmation.cancel@65:8#1",
+      "name": "cancel",
+      "type": "Function",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_no_authoritative_products_does_not_invent_candidates#0",
+      "name": "test_no_authoritative_products_does_not_invent_candidates",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_stock_sizing_is_labelled_estimate_and_rejects_fractional_lot_expectation#0",
+      "name": "test_stock_sizing_is_labelled_estimate_and_rejects_fractional_lot_expectation",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_tmf_contracts_near_month_and_conservative_margin_are_explicit#0",
+      "name": "test_tmf_contracts_near_month_and_conservative_margin_are_explicit",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:TypedStrategyWizardTests.test_accept_freezes_validated_form_and_parameters#0",
+      "name": "test_accept_freezes_validated_form_and_parameters",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_u3_strategy_ui.py:StrategyManagementUiTests",
+      "name": "StrategyManagementUiTests",
+      "type": "Class",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_u3_strategy_ui.py:setUpClass",
+      "name": "setUpClass",
+      "type": "Variable",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_u3_strategy_ui.py:setUp",
+      "name": "setUp",
+      "type": "Variable",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_u3_strategy_ui.py:tearDown",
+      "name": "tearDown",
+      "type": "Variable",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_u3_strategy_ui.py:drain",
+      "name": "drain",
+      "type": "Variable",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.select",
+      "name": "select",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_missing_research_shows_next_step_and_opens_relevant_research_tab#0",
+      "name": "test_missing_research_shows_next_step_and_opens_relevant_research_tab",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_unchanged_poll_keeps_missing_evidence_and_empty_selection_disabled#0",
+      "name": "test_unchanged_poll_keeps_missing_evidence_and_empty_selection_disabled",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_disable_and_delete_cancel_default_and_cancel_sends_nothing#0",
+      "name": "test_disable_and_delete_cancel_default_and_cancel_sends_nothing",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_disable_and_delete_cancel_default_and_cancel_sends_nothing.cancel@150:8#1",
+      "name": "cancel",
+      "type": "Function",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_clone_uses_exact_version_and_no_deployment_action#0",
+      "name": "test_clone_uses_exact_version_and_no_deployment_action",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_delete_fill_refusal_disables_delete_and_keeps_disable_available#0",
+      "name": "test_delete_fill_refusal_disables_delete_and_keeps_disable_available",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_revise_restores_known_parameters_and_requires_explicit_direction_and_rules#0",
+      "name": "test_revise_restores_known_parameters_and_requires_explicit_direction_and_rules",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_live_and_nested_context_change_cannot_deploy#0",
+      "name": "test_live_and_nested_context_change_cannot_deploy",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_live_and_nested_context_change_cannot_deploy.changed@202:8#1",
+      "name": "changed",
+      "type": "Function",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_u3_strategy_ui.py:StrategyManagementUiTests.test_six_default_columns_keep_environment_pnl_and_optional_recent_signal#0",
+      "name": "test_six_default_columns_keep_environment_pnl_and_optional_recent_signal",
+      "type": "Method",
+      "filePath": "tests/test_u3_strategy_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:trading_runtime.py:_presentation_options",
+      "name": "_presentation_options",
+      "type": "Function",
+      "filePath": "trading_runtime.py",
+      "change_type": "touched"
+    }
+  ],
+  "affected_processes": [
+    {
+      "id": "proc_47_new_version",
+      "name": "New_version → _feedback",
+      "process_type": "intra_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "_wizard",
+          "step": 2
+        },
+        {
+          "symbol": "new_version",
+          "step": 1
+        },
+        {
+          "symbol": "command",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_223_new_version",
+      "name": "New_version → _clear_pending_wizard",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "_wizard",
+          "step": 2
+        },
+        {
+          "symbol": "new_version",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_224_run",
+      "name": "Run → Execute",
+      "process_type": "intra_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "run",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_225_run",
+      "name": "Run → Snapshot",
+      "process_type": "intra_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "run",
+          "step": 1
+        }
+      ]
+    },
+    {
+      "id": "proc_296_add_context",
+      "name": "Add_context → _feedback",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_392_save_settings",
+      "name": "Save_settings → _feedback",
+      "process_type": "intra_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_406_activate",
+      "name": "Activate → Selected_id",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "activate",
+          "step": 1
+        },
+        {
+          "symbol": "selected",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_445_shutdown_engine",
+      "name": "Shutdown_engine → _feedback",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_454_manage",
+      "name": "Manage → Selected_id",
+      "process_type": "cross_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "manage",
+          "step": 1
+        },
+        {
+          "symbol": "selected",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_478_transfer_selected",
+      "name": "Transfer_selected → _feedback",
+      "process_type": "intra_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_564_new_version",
+      "name": "New_version → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "_wizard",
+          "step": 2
+        },
+        {
+          "symbol": "new_version",
+          "step": 1
+        },
+        {
+          "symbol": "command",
+          "step": 3
+        }
+      ]
+    },
+    {
+      "id": "proc_588_add_context",
+      "name": "Add_context → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_592_save_settings",
+      "name": "Save_settings → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_596_shutdown_engine",
+      "name": "Shutdown_engine → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_600_transfer_selected",
+      "name": "Transfer_selected → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 5,
+      "changed_steps": [
+        {
+          "symbol": "command",
+          "step": 2
+        }
+      ]
+    }
+  ]
+}

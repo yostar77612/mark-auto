@@ -912,6 +912,9 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/manual_exit_preview.py` | 113 | presentation | `desktop_app/features/trading/manual_exit_preview.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/features/trading/manual_recovery.py` | 117 | presentation | `desktop_app/features/trading/manual_recovery.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
 | `desktop_app/strings/manual_review.py` | 34 | shared | `desktop_app/strings/manual_review.py` | U2 confirmed manual recovery and exact exit preview UI; financial authority remains in the existing backend. |
+| `desktop_app/features/trading/strategy_controls.py` | 191 | presentation | `desktop_app/features/trading/strategy_controls.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/strategy_options.py` | 176 | presentation | `desktop_app/features/trading/strategy_options.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/strings/strategy_management.py` | 46 | shared | `desktop_app/strings/strategy_management.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/candidate_catalog.py` | 78 | composition | `quantlab/trading/runtime/candidate_catalog.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
 | `quantlab/trading/runtime/v1_signal_source.py` | 62 | composition | `quantlab/trading/runtime/v1_signal_source.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
 
