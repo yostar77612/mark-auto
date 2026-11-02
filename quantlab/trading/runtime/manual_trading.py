@@ -11,7 +11,7 @@ from threading import Lock
 from time import monotonic
 import sqlite3
 
-from quantlab.trading.adapters.shioaji.gateway import ShioajiAdapter
+from quantlab.trading.adapters.shioaji.gateway import PENDING_PREFIX, ShioajiAdapter
 from quantlab.trading.adapters.shioaji.sdk import SDK_VERSION
 from quantlab.trading.adapters.storage.ledger import Ledger
 from quantlab.trading.application.context import Catalog, ExecutionConfiguration
@@ -20,13 +20,22 @@ from quantlab.trading.application.engine import TradingEngine
 from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.application.manual_contracts import ManualScope, ManualTradingView
 from quantlab.trading.application.manual_routing import refusal_command
-from quantlab.trading.domain.models import Environment, Market
+from quantlab.trading.domain.models import Environment, Market, OrderStatus
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.contracts import BrokerOrder
 from .manual_resources import ManualResourceStore
 
 MANUAL_ACTIONS = frozenset(
-    (UiAction.ENABLE_MANUAL_BOOK, UiAction.PREVIEW_MANUAL, UiAction.SUBMIT_MANUAL, UiAction.TEST_SIM_ORDER, UiAction.CANCEL_MANUAL, UiAction.AMEND_MANUAL)
+    (
+        UiAction.ENABLE_MANUAL_BOOK,
+        UiAction.PREVIEW_MANUAL,
+        UiAction.SUBMIT_MANUAL,
+        UiAction.TEST_SIM_ORDER,
+        UiAction.CANCEL_MANUAL,
+        UiAction.AMEND_MANUAL,
+        UiAction.ADOPT_MANUAL_ORDER,
+        UiAction.DECLARE_MANUAL_NOT_SENT,
+    )
 )
 ATTEMPT_SOURCE = 'APP_CONFIRMED_SIM_MANUAL_ATTEMPT_KEY_PERMISSION_UNVERIFIED'
 
@@ -51,6 +60,14 @@ class ManualExecutionGateway:
     def amend(self, local_order_id, price, quantity=None):
         with self.lock:
             return self.adapter.amend(local_order_id, price, quantity)
+
+    def adopt_order(self, local_order_id, broker_order_ref):
+        with self.lock:
+            self.adapter.adopt_order(local_order_id, broker_order_ref)
+
+    def release_unsent(self, local_order_id):
+        with self.lock:
+            self.adapter.release_unsent(local_order_id)
 
     def snapshot(self, account_ref):
         raise DomainError('manual_account_observation_required', 'simulation financial facts remain unavailable')
@@ -253,9 +270,11 @@ class ManualRuntime:
             adapter.session_resolver = CalendarResolver(engine)
             adapter.account_sequences.update({row.account_ref: row.sequence for row in engine.state.cursors if row.account_ref in accounts})
             for order in engine.state.orders:
-                if order.broker_ref:
+                # An unknown submission keeps its placeholder so a later observation can still find it.
+                reference = order.broker_ref or (PENDING_PREFIX + order.order_id if order.status is OrderStatus.UNKNOWN else '')
+                if reference:
                     adapter.orders[order.order_id] = BrokerOrder(
-                        order.order_id, order.plan, order.filled, order.average_price, order.status, order.broker_ref, self.owner.clock.now()
+                        order.order_id, order.plan, order.filled, order.average_price, order.status, reference, self.owner.clock.now()
                     )
             limits = tuple(
                 ManualPriceLimit(row.instrument_id, row.lower, row.upper, row.observed_at, row.source) for resource in resources for row in resource.limits
