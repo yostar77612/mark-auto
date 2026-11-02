@@ -64,7 +64,11 @@ class AutomaticEngineTests(unittest.TestCase):
         selected = tuple(sorted(self.engine.gateways))
         owner = SimpleNamespace(
             preferences=SimpleNamespace(check_selection=lambda selected: None),
-            lock=RLock(), snapshot=lambda: self.owner_view, selected=selected, shared=case.owner, query_ready=True,
+            lock=RLock(),
+            snapshot=lambda: self.owner_view,
+            selected=selected,
+            shared=case.owner,
+            query_ready=True,
         )
         runtime = SimpleNamespace(owner=owner, stamp=(self.owner_view.generation, 3, selected, case.owner), error='')
         self.bundle = SimpleNamespace(

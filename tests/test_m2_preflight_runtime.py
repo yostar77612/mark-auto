@@ -83,7 +83,10 @@ class RuntimePreflightTests(unittest.TestCase):
         self.shared = SimpleNamespace(callback_errors=0, activate_ca=Mock(side_effect=AssertionError('preflight never activates CA')))
         self.owner = SimpleNamespace(
             preferences=SimpleNamespace(check_selection=Mock()),
-            snapshot=Mock(return_value=self.view), selected=('stock', 'futures'), shared=self.shared, query_ready=True
+            snapshot=Mock(return_value=self.view),
+            selected=('stock', 'futures'),
+            shared=self.shared,
+            query_ready=True,
         )
         self.manual = SimpleNamespace(stamp=(self.view.generation, self.view.revision, ('futures', 'stock'), self.shared), error='')
         self.bundle = SimpleNamespace(
@@ -494,7 +497,9 @@ class PreflightDispatchTests(unittest.TestCase):
         self.owner = SimpleNamespace(
             preferences=SimpleNamespace(check_selection=Mock()),
             lock=RLock(),
-            snapshot=Mock(return_value=self.owner_view), selected=('stock',), shared=object()
+            snapshot=Mock(return_value=self.owner_view),
+            selected=('stock',),
+            shared=object(),
         )
         self.bundle = SimpleNamespace(
             lock=RLock(),

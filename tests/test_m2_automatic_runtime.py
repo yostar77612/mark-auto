@@ -45,7 +45,10 @@ class AutomaticRuntimeTests(unittest.TestCase):
         self.owner = SimpleNamespace(
             preferences=SimpleNamespace(check_selection=Mock()),
             lock=RLock(),
-            snapshot=Mock(side_effect=lambda: self.view), selected=('account',), shared=self.shared, query_ready=True
+            snapshot=Mock(side_effect=lambda: self.view),
+            selected=('account',),
+            shared=self.shared,
+            query_ready=True,
         )
         self.observation = ManualAccountObservation('account', SIM, (), (), (), self.clock.now())
         typed = SimpleNamespace(parameters=object(), form=SimpleNamespace(account_ref='account'))
