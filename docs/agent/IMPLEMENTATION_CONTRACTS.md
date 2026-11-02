@@ -7602,3 +7602,13 @@ or search by process name. The UI installation guard covers this shutdown wait.
 Existing engine stop/reconciliation semantics and LIVE prohibition are unchanged.
 Real-process regressions cover active subscriptions, in-flight history, native
 mutex disappearance, research QLockFile reacquisition and journal lease reopening.
+
+## Minute host timeout regression synchronization (2026-11-02)
+
+The late-refill timeout regression waits at most one second for the fake SDK's
+query-started event before joining its query thread. Test-only budget clocks
+advance to the original 0.1-second deadline after dispatch, with a real-time
+failure bound if dispatch never occurs. The real deadline check and cleanup run
+unchanged; the original under-one-second return, retiring worker, absent receipt,
+empty cache and complete missing-range assertions remain. No production behavior,
+SDK access, execution policy or acceptance score changes.
