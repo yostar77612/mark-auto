@@ -210,6 +210,7 @@ class AutomaticBackupTests(unittest.TestCase):
     @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_success_symlink_is_rejected(self):
         self.enable()
+        self.directory.mkdir()
         target = self.base / 'target'
         target.write_bytes(b'keep')
         archive = Path(self.auto.claim_due(quiescent=True)['path'])
