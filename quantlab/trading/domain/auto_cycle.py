@@ -1,7 +1,7 @@
 """Pure completed-bar and forced-exit timing rules; no SDK, I/O or calendar inference."""
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.calendar import TradingSession
@@ -24,6 +24,24 @@ class EvaluationCursor:
     instrument_id: str
     interval: str
     bar_end: datetime
+
+
+def evaluation_key(cursor: EvaluationCursor) -> str:
+    """Canonical UTC identity survives the wire codec's datetime normalization."""
+    return f'auto:{cursor.strategy_id}:{cursor.version}:{cursor.instrument_id}:{cursor.interval}:{cursor.bar_end.astimezone(timezone.utc).isoformat()}'
+
+
+def evaluation_key_matches(key: str, cursor: EvaluationCursor) -> bool:
+    """Read historical timezone keys without rewriting durable order identities."""
+    prefix = f'auto:{cursor.strategy_id}:{cursor.version}:{cursor.instrument_id}:{cursor.interval}:'
+    if not key.startswith(prefix):
+        return False
+    timestamp = key[len(prefix) :].partition(':exit:')[0]
+    try:
+        end = datetime.fromisoformat(timestamp)
+    except ValueError:
+        return False
+    return end.tzinfo is not None and end == cursor.bar_end
 
 
 @dataclass(frozen=True)

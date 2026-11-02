@@ -6,7 +6,16 @@ from quantlab.trading.domain.models import Environment
 
 
 MANUAL_ACTIONS = frozenset(
-    (UiAction.ENABLE_MANUAL_BOOK, UiAction.PREVIEW_MANUAL, UiAction.SUBMIT_MANUAL, UiAction.CANCEL_MANUAL, UiAction.AMEND_MANUAL, UiAction.TEST_SIM_ORDER)
+    (
+        UiAction.ENABLE_MANUAL_BOOK,
+        UiAction.PREVIEW_MANUAL,
+        UiAction.SUBMIT_MANUAL,
+        UiAction.CANCEL_MANUAL,
+        UiAction.AMEND_MANUAL,
+        UiAction.TEST_SIM_ORDER,
+        UiAction.ADOPT_MANUAL_ORDER,
+        UiAction.DECLARE_MANUAL_NOT_SENT,
+    )
 )
 
 

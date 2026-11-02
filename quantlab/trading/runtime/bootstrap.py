@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, replace
 from contextlib import nullcontext
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import stat
 from threading import RLock, Thread, current_thread
@@ -117,6 +117,8 @@ class RuntimeBundle:
         self.transitioning = False
         self.closing = False
         self.resources_closed = False
+        self.minute_research_active = None
+        self.minute_research_retiring = None
         self.cleanup_unconfirmed = False
         self.legacy_disconnected = False
         self.legacy_disconnecting = False
@@ -144,6 +146,36 @@ class RuntimeBundle:
                 self.high_water = checkpoint.high_water
                 self.version_sequence = event.sequence
             self.version_offset = max(0, self.high_water + 1 - self.facade.snapshot().version)
+
+    def research_stocks(self, reference: str, start: date, end: date, *, stock_kind: str, day_trade=False, cancelled=lambda: False):
+        """Explicit local research over this host's M1 store and selected strategy.
+
+        Snapshot only under the writer lock; computation/evidence publication
+        use a separate journal and never enable a strategy or connect a broker.
+        """
+        from .stock_research import run_stock_research
+
+        with self.lock:
+            if self.closing or self.engine is None:
+                raise DomainError('capability_missing', 'an open strategy host is required for stock research')
+            engine = self.engine
+            with engine.lock:
+                strategy = engine.strategy(reference)
+                spec = engine.catalog.resolve(strategy.form.instrument_id)
+                calendar, clock = engine.calendar, engine.clock
+        return run_stock_research(
+            self.launch.root,
+            self.kline_store,
+            strategy,
+            spec,
+            calendar,
+            start,
+            end,
+            stock_kind=stock_kind,
+            day_trade=day_trade,
+            clock=clock,
+            cancelled=lambda: self.closing or cancelled(),
+        )
 
     @property
     def configuration_id(self) -> str:
@@ -619,11 +651,20 @@ class RuntimeBundle:
                 return
             cache.poll(selected, cancelled=lambda: self.closing or engine.state.engine_closed)
 
+    def research_minutes(self, strategy, settings, *, calendar, deadline, cancel_event=None):
+        from .minute_research_host import run_minute_research
+
+        return run_minute_research(self, strategy, settings, calendar=calendar, deadline=deadline, cancel_event=cancel_event)
+
     def cancel_owned_workers(self) -> None:
         with self.lock:
             self.closing = True
             self.transitioning = False
             self.connection_attempt = ''
+            if self.minute_research_active is not None:
+                cancel, runner = self.minute_research_active
+                cancel.set()
+                runner.close()
         if self.engine is not None and self.engine.research_runner is not None:
             self.engine.research_runner.close()
 
@@ -634,8 +675,13 @@ class RuntimeBundle:
             self.resources_closed = True
         self.cancel_owned_workers()
         if self.market_terminal is not None:
-            if self.market_history.close():
+            history_closed = self.market_history.close()
+            if self.minute_research_retiring is not None:
+                history_closed = self.minute_research_retiring.close(timeout=0) and history_closed
+            if history_closed and self.minute_research_active is None:
                 self.kline_store.close()
+            else:
+                self.cleanup_unconfirmed = True
         self.market_connection.close()
         errors = []
         if self.engine is not None and self.launch.environment is not Environment.LOCAL:

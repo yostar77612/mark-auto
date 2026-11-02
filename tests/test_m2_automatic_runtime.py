@@ -51,7 +51,7 @@ class AutomaticRuntimeTests(unittest.TestCase):
             query_ready=True,
         )
         self.observation = ManualAccountObservation('account', SIM, (), (), (), self.clock.now())
-        typed = SimpleNamespace(parameters=object(), form=SimpleNamespace(account_ref='account'))
+        typed = SimpleNamespace(parameters=StrategyParameters('5m', Decimal('.03'), Decimal('10000')), form=SimpleNamespace(account_ref='account'))
         self.engine = SimpleNamespace(
             lock=RLock(),
             state=replace(AppState(), environment=SIM, strategies=(typed,)),

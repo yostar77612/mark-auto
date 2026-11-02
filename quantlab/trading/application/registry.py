@@ -7,6 +7,8 @@ from . import (
     automatic_state,
     broker_settings,
     contracts,
+    daily_closes,
+    daily_state,
     lifecycle_models,
     manual_book,
     manual_contracts,
@@ -19,7 +21,7 @@ from . import (
     sinopac_contracts,
 )
 from .codec import register
-from quantlab.trading.domain import auto_cycle, calendar, costs, lifecycle, live_bars, models, risk, strategy, watch
+from quantlab.trading.domain import auto_cycle, calendar, costs, lifecycle, live_bars, maintenance, models, risk, strategy, watch
 from quantlab.trading.ports import contracts as port_contracts
 from quantlab.trading.ports import manual as manual_ports
 
@@ -28,9 +30,12 @@ def initialize() -> None:
     for module in (
         auto_cycle,
         automatic_state,
+        daily_state,
+        daily_closes,
         models,
         calendar,
         costs,
+        maintenance,
         risk,
         strategy,
         lifecycle,

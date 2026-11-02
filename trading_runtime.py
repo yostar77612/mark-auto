@@ -2,17 +2,83 @@
 
 from contextlib import closing
 from pathlib import Path
+import logging
 import os
+import subprocess
 import sys
+from time import monotonic, sleep
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.runtime_support import WindowsAppMutex
 from quantlab.trading.application.contextnavigation import CompositeFacade
+from quantlab.trading.application.contracts import UiAction, UiCommand
 from quantlab.trading.application.errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.context_client import RuntimeContextManager
 from quantlab.trading.runtime.context_client import _STARTED as _STARTED, ensure_engine as ensure_engine, shutdown as shutdown
+from quantlab.trading.runtime.ipc import IpcFacade, read_session
+
+
+def _close_window_engines(previous: dict) -> None:
+    """Close only retained children launched during this desktop lifetime.
+
+    Discovered/reused hosts have no new Popen handle and remain independent.
+    A shutdown receipt is only an acknowledgement: success requires zero exit
+    from the original retained process. Never terminate or search by name.
+    """
+    started = monotonic()
+    deadline = started + 5
+    errors = []
+    for root, process in tuple(_STARTED.items()):
+        if previous.get(root) is process:
+            continue
+        try:
+            while process.poll() is None:
+                try:
+                    session = read_session(root)
+                except FileNotFoundError:
+                    # Startup can fail before publishing its endpoint. Give
+                    # only this retained child the remaining close allowance.
+                    if monotonic() >= deadline:
+                        raise DomainError('outcome_unknown', 'owned engine endpoint unavailable') from None
+                    sleep(0.02)
+                    continue
+                if session.process_id != process.pid:
+                    raise DomainError('startup_workspace_busy', 'owned engine endpoint identity changed')
+                args = process.args
+                facade = IpcFacade(
+                    root,
+                    environment=Environment(args[args.index('--trading-environment') + 1]),
+                    account_ref=args[args.index('--trading-account') + 1],
+                )
+                try:
+                    for _ in range(3):
+                        state = facade.snapshot()
+                        if state.engine_state == 'CLOSED':
+                            break
+                        receipt = facade.execute(UiCommand(UiAction.SHUTDOWN_ENGINE, state.version))
+                        if receipt.accepted:
+                            break
+                        if receipt.code != 'state_conflict':
+                            raise DomainError(receipt.code)
+                    else:
+                        raise DomainError('state_conflict', 'owned engine shutdown remained stale')
+                except FileNotFoundError:
+                    # A concurrent normal close may remove the endpoint first.
+                    # The original Popen must still confirm its own zero exit.
+                    pass
+                break
+            if process.wait(timeout=max(0, deadline - monotonic())) != 0:
+                raise DomainError('operation_failed', 'owned engine exited abnormally')
+            if _STARTED.get(root) is process:
+                _STARTED.pop(root)
+            logging.getLogger(__name__).info('Owned engine %s exited normally after %.3fs', process.pid, monotonic() - started)
+        except (DomainError, OSError, EOFError, subprocess.TimeoutExpired) as exc:
+            errors.append(exc)
+            logging.getLogger(__name__).error('Owned engine %s shutdown unconfirmed (%s)', process.pid, type(exc).__name__)
+    if errors:
+        raise DomainError('outcome_unknown', 'owned engine shutdown unconfirmed; retained processes were not terminated') from errors[0]
 
 
 def default_root() -> Path:
@@ -32,14 +98,18 @@ def run_window(
     # UI and independent engine each own a handle to the existing installer
     # presence guard. Closing one lifetime must not expose the other's files.
     with closing(WindowsAppMutex()):
-        return _run_window(
-            root,
-            environment=environment,
-            account_ref=account_ref,
-            profile_path=profile_path,
-            contexts_path=contexts_path,
-            research_bootstrap=research_bootstrap,
-        )
+        previous = dict(_STARTED)
+        try:
+            return _run_window(
+                root,
+                environment=environment,
+                account_ref=account_ref,
+                profile_path=profile_path,
+                contexts_path=contexts_path,
+                research_bootstrap=research_bootstrap,
+            )
+        finally:
+            _close_window_engines(previous)
 
 
 def _presentation_options(root: Path) -> dict:
@@ -61,6 +131,8 @@ def _presentation_options(root: Path) -> dict:
         'save_position_columns': lambda values: save('position_columns', values),
         'order_columns': saved.get('order_columns'),
         'save_order_columns': lambda values: save('order_columns', values),
+        'strategy_columns': saved.get('strategy_columns'),
+        'save_strategy_columns': lambda values: save('strategy_columns', values),
     }
 
 
@@ -84,7 +156,7 @@ def _run_window(
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
     from desktop_app.features.market.workspace import WorkspacePanel
-    from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme, _apply_trading_page_theme
+    from desktop_app.shell.theme import up_down_colors, appearance, _apply_terminal_theme, _apply_trading_page_theme, style_strategy_table
 
     # Share the installed product icon without starting its legacy runtime.
     from desktop_app.components.icon import application_icon
@@ -148,6 +220,8 @@ def _run_window(
         facade,
         initial,
         market_watch=terminal,
+        strategy_error_texts={code: (text.explanation, text.action) for code, text in ERROR_TABLE.items()},
+        style_strategy_table=style_strategy_table,
         **_presentation_options(root or default_root()),
     )
     _apply_trading_page_theme(window)
@@ -169,5 +243,6 @@ def _run_window(
     if research.session.window is not None and not research.session._released:
         if not research.session.request_close():
             return 1
-    # Engine intentionally remains independent when the interface closes.
+    # run_window confirms all children started by this desktop have exited
+    # before releasing the install guard. Reused hosts remain independent.
     return result

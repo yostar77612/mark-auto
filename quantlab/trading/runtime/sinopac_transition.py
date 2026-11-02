@@ -1,6 +1,7 @@
 """Owned SDK transitions run outside UI/book locks; late candidates clean up."""
 
 from time import monotonic
+from zoneinfo import ZoneInfo
 
 from quantlab.trading.adapters.shioaji.account_discovery import discover_accounts
 from quantlab.trading.adapters.shioaji.market_session import MarketSession
@@ -146,6 +147,9 @@ def discard_candidate(owner, candidate, market):
 
 def connect_candidate(owner, ticket):
     dispose(owner)  # An unconfirmed old logout must stop a new login.
+    status = owner.maintenance.key_status(owner.configuration.key_ref, owner.clock.now().astimezone(ZoneInfo('Asia/Taipei')).date())
+    if status.state == 'EXPIRED':
+        raise DomainError('api_key_expired')
     facade = owner.factory(owner.configuration.environment)
     if not isinstance(facade, ShioajiSDKFacade) or facade.environment is not owner.configuration.environment:
         raise DomainError('capability_missing', 'factory broker environment mismatch')
@@ -185,6 +189,8 @@ def transition(owner, command, ticket):
         public = (
             'logout_unconfirmed'
             if owner.cleanup_unconfirmed
+            else 'api_key_expired'
+            if isinstance(error, DomainError) and error.code == 'api_key_expired'
             else 'market_sdk_missing'
             if isinstance(error, SdkUnavailable)
             else 'broker_permission_missing'

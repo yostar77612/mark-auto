@@ -54,12 +54,14 @@ class TradingEngine:
         fees: FeeSchedule | None = None,
         historical_bars: dict[str, tuple[CompletedBar, ...]] | None = None,
         live_market: LiveMarketService | None = None,
+        automatic_entry_check: Callable[[], None] | None = None,
     ):
         initialize()
         self.journal, self.clock, self.calendar, self.catalog = journal, clock, calendar, catalog
         self.gateways, self.simulation, self.ownership_clock = gateways, simulation, ownership_clock
         self.configuration = configuration or ExecutionConfiguration()
         self.live_market = live_market
+        self.automatic_entry_check = automatic_entry_check
         if historical_bars is not None and (type(historical_bars) is not dict or len(historical_bars) > len(catalog.instruments)):
             raise DomainError('validation_failed', 'bounded typed market history mapping required')
         self.history: dict[str, tuple[CompletedBar, ...]] = {}
@@ -524,6 +526,11 @@ class TradingEngine:
 
             manual_request = manual_plan_request(self, plan, key)
             synchronize_session(self)
+            if not plan.reduce_only and manual_request is None:
+                if self.configuration.environment is not Environment.LOCAL:
+                    if self.automatic_entry_check is None:
+                        raise DomainError('calendar_coverage_missing', 'automatic entry maintenance has not been configured')
+                    self.automatic_entry_check()
             if not plan.reduce_only and manual_request is None and not automatic:
                 assert_daily_baseline(self)
             from .scope import refresh_scope
@@ -548,8 +555,6 @@ class TradingEngine:
                 from quantlab.trading.domain.strategy import resolve_tmf_near
 
                 parameters = strategy.parameters
-                if parameters.bar_interval == '1d' and self.configuration.environment is Environment.BROKER_SIMULATION:
-                    raise DomainError('automatic_daily_execution_pending')
                 if parameters.instrument_rule == 'TMF_NEAR':
                     strategy_instrument = resolve_tmf_near(self.catalog.instruments, self.calendar, self.state.trading_day).instrument_id
                 if spec.expiry == self.state.trading_day:
@@ -687,6 +692,14 @@ class TradingEngine:
                     raise DomainError('capability_missing', 'current owner submission boundary required')
                 submission = guard(plan.account_ref, reduce_only=plan.reduce_only)
             with submission:
+                if (
+                    automatic
+                    and self.configuration.environment is Environment.BROKER_SIMULATION
+                    and (strategy.parameters.bar_interval == '1d' and not plan.reduce_only or any(row.key == key for row in self.state.automatic.daily.intents))
+                ):
+                    from .daily_execution import assert_daily_dispatch
+
+                    assert_daily_dispatch(self, plan, key)
                 return execution.commit(self.state, plan, policy, reservation, key, lambda: self.fence(), request_hash=digest)
 
     def _check_exit(self, plan: OrderPlan) -> None:

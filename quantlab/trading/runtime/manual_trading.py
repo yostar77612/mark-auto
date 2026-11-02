@@ -10,6 +10,7 @@ from decimal import Decimal
 from threading import Lock
 from time import monotonic
 import sqlite3
+from zoneinfo import ZoneInfo
 
 from quantlab.trading.adapters.shioaji.gateway import PENDING_PREFIX, ShioajiAdapter
 from quantlab.trading.adapters.shioaji.sdk import SDK_VERSION
@@ -107,6 +108,16 @@ class ManualRuntime:
         self.port_lock = Lock()
         self.automatic_subscription = None
         self.resource_store = ManualResourceStore(bundle)
+
+    def _check_automatic_maintenance(self, engine):
+        # Called under the engine writer lock; same owner lock order as submission.
+        with self.owner.lock:
+            self.owner.maintenance.pre_open(
+                engine.calendar,
+                self.owner.clock.now().astimezone(ZoneInfo('Asia/Taipei')).date(),
+                self.owner.configuration.key_ref,
+                futures_required=any(market is Market.INDEX_FUTURE for market in engine.manual_markets.values()),
+            ).require_automatic_entry()
 
     def _accepted(self):
         view = self.owner.snapshot()
@@ -295,11 +306,13 @@ class ManualRuntime:
             engine.manual_markets = {ref: markets[ref] for ref in engine.gateways}
             engine.configuration, engine.catalog, engine.calendar, engine.fees = configuration, catalog, first.calendar, first.fees
             engine.automatic_capabilities = {row.account_ref: row for resource in resources for row in resource.capabilities}
+            engine.automatic_entry_check = lambda: self._check_automatic_maintenance(engine)
             _update_automatic_margin_sources(engine, resources)
             if self.bundle.automatic_runtime is not None:
                 engine.automatic_observation_validator = self.bundle.automatic_runtime.validate_observation
                 engine.automatic_entry_validator = self.bundle.automatic_runtime.validate_entry
                 engine.automatic_submission_guard = self.bundle.automatic_runtime.submission_guard
+                engine.automatic_owner_stamp = self.bundle.automatic_runtime.owner_stamp
             adapter.session_resolver = CalendarResolver(engine)
             adapter.quote_version = 'v1'
             if adapter.tick_stream is not None:

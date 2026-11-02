@@ -5,8 +5,10 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import timedelta
 from threading import Lock
+from hashlib import sha256
 
 from quantlab.trading.application.contracts import UiAction, UiCommand, UiReceipt
+from quantlab.trading.application.codec import dumps
 from quantlab.trading.domain.live_bars import LiveBar, compose_minute, finalize_minute
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.strategy import is_tmf
@@ -45,6 +47,36 @@ class AutomaticRuntime:
         self.future_stamp = None
         self.future_minutes = {}
         self.future_losses = {}
+
+    def owner_stamp(self):
+        """Bind a run to the authenticated owner; closed-market quotes are irrelevant."""
+        bundle = self.bundle
+        engine, owner, manual = bundle.engine, bundle.sinopac_connection, bundle.manual_runtime
+        if bundle.launch.environment is not Environment.BROKER_SIMULATION:
+            raise DomainError('production_orders_disabled' if bundle.launch.environment is Environment.LIVE else 'capability_missing')
+        if engine is None or owner is None or manual is None or manual.owner is not owner:
+            raise DomainError('capability_missing')
+        with engine.lock, owner.lock:
+            view = owner.snapshot()
+            selected = tuple(sorted(owner.selected))
+            if (
+                bundle.closing
+                or bundle.resources_closed
+                or bundle.control_failed
+                or bundle.engine is not engine
+                or bundle.sinopac_connection is not owner
+                or bundle.manual_runtime is not manual
+                or view.phase != 'CONNECTED'
+                or view.environment is not Environment.BROKER_SIMULATION
+                or not owner.query_ready
+                or owner.shared is None
+                or owner.shared.callback_errors
+                or manual.error
+                or manual.stamp != (view.generation, view.revision, selected, owner.shared)
+                or any(not any(account.alias == ref and account.signed is True for account in view.accounts) for ref in selected)
+            ):
+                raise DomainError('state_conflict', 'automatic run owner changed or became unavailable')
+            return sha256(dumps((view.environment, view.generation, view.revision, selected)).encode()).hexdigest()
 
     def attach_terminal(self):
         terminal = self.bundle.market_terminal
@@ -306,6 +338,14 @@ class AutomaticRuntime:
                     if reason:
                         automatic.pause_automatic(engine, reason)
                         raise DomainError(reason)
+                    from quantlab.trading.application.daily_execution import records
+
+                    if records(engine):
+                        from quantlab.trading.application.preflight import record_preflight
+
+                        for reference in sorted(engine.gateways):
+                            if not any(row.account_ref == reference and row.trade_date == engine.state.trading_day for row in engine.state.preflight):
+                                record_preflight(engine, reference, sinopac_preflight_facts(bundle, reference))
                     automatic.resume_automatic(engine)
                 else:
                     automatic.reconcile_automatic(engine)
@@ -337,8 +377,21 @@ class AutomaticRuntime:
                 automatic.pause_automatic(engine, 'automatic_market_gap')
                 automatic.pump_automatic(engine)
                 return
+            from quantlab.trading.application.daily_execution import records
+
+            if records(engine):
+                from .daily_automatic import route_daily
+
+                if route_daily(self, engine, batches):
+                    for _, _, _, bars in batches:
+                        automatic.on_completed_bars(engine, bars)
+                automatic.pump_automatic(engine)
+                return
             try:
                 reason = self._health_reason(engine)
+                daily = engine.state.automatic.daily
+                if not reason and daily.authorized_run and daily.owner_stamp != self.owner_stamp():
+                    raise DomainError('state_conflict', 'automatic run belongs to a different authenticated owner')
             except DomainError as error:
                 reason = error.code
             if reason:

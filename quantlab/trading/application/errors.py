@@ -10,6 +10,25 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'daily_waiting_session': ErrorText('日 K 訊號已保存，等待下一個可信交易時段。', '保持程式與連線正常；下一交易日仍會重新核對報價、帳戶與風險。'),
+    'daily_signal_expired': ErrorText('日 K 訊號已超過下一個可執行交易時段。', '不會追送舊訊號；等待新的完整日 K 評估。'),
+    'daily_signal_invalidated': ErrorText('已保存訊號的策略、商品或證據已變更。', '核對策略版本與紀錄；舊訊號不會改套新版本或新合約。'),
+    'daily_signal_unresolved': ErrorText('日 K 執行紀錄仍有未確認結果。', '保持停止新倉，先完成對帳；不會自動重送。'),
+    'daily_close_unverified': ErrorText('缺少可驗證的帳戶收盤基準。', '核對收盤報價、完整對帳及日期；不會使用今日損益代替昨收。'),
+    'daily_signal_not_authorized': ErrorText('日 K 送單缺少有效的已保存訊號授權。', '先完成對帳與檢查，並由使用者恢復；沒有明確訊號不會下單。'),
+    'research_cancelled': ErrorText('研究已取消，未發布新的證據。', '既有研究結果保留；需要時可重新執行。'),
+    'stock_entitlement_unknown': ErrorText(
+        '研究持倉跨越尚未確認經濟權益的除權息事件，未產生證據。', '補齊可驗證的現金或股票權益資訊；不得由參考價比率猜測損益。'
+    ),
+    'official_stock_invalid': ErrorText('官方股票資料未通過驗證，原資料已保留。', '核對上市／上櫃來源格式與日期後重新匯入。'),
+    'official_stock_consent_required': ErrorText('尚未同意下載官方股票資料。', '確認來源及日期後明確執行下載。'),
+    'official_stock_coverage_missing': ErrorText('股票日線尚未完整涵蓋研究區間。', '補齊至少五年的官方日線與除權息資料，不使用不完整資料產生證據。'),
+    'api_key_expiry_unknown': ErrorText('API 金鑰到期日未知。', '核對永豐金鑰有效期限並填寫到期日。'),
+    'api_key_expired': ErrorText('設定的 API 金鑰已到期，不能登入或自動開新倉。', '更新金鑰引用及到期日後重新連線。'),
+    'api_key_renewal_due': ErrorText('API 金鑰將在十四天內到期。', '請提前更新金鑰與到期日。'),
+    'calendar_coverage_missing': ErrorText('交易日曆未涵蓋未來三十個交易日。', '更新已驗證且版本化的日曆；自動新倉保持停止。'),
+    'expiry_coverage_missing': ErrorText('期貨到期資料未涵蓋未來三十個交易日。', '沿用既有期交所到期日更新工具，核對官方資料後匯入。'),
+    'calendar_annual_update_due': ErrorText('十二月起請更新下一年度交易日曆與期貨到期資料。', '核對官方版本與覆蓋範圍，未涵蓋時不自動開新倉。'),
     'automatic_paused': ErrorText('自動交易已暫停，等待恢復。', '先核對暫停原因、完成對帳，再由使用者恢復。'),
     'automatic_daily_execution_pending': ErrorText(
         '日 K 自動送單尚待下一交易時段執行支援。', '目前可使用已完成驗證的分鐘策略；日 K 研究與本機交易日推進仍可使用。'

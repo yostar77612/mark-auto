@@ -9,6 +9,7 @@ import sqlite3
 import tempfile
 import threading
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from unittest.mock import patch
 
 from quantlab.research_core.adapters.workspace_store import AppPaths
@@ -499,10 +500,6 @@ class RecoveryLedgerTests(unittest.TestCase):
         database = self.paths.controls / r._DATABASE
         backup = database.with_suffix('.saved')
         database.rename(backup)
-        database.symlink_to(backup)
-        with self.assertRaises(r.RecoveryError):
-            r.inspect_recovery(self.paths)
-        database.unlink()
         import os
 
         os.link(backup, database)
@@ -511,6 +508,16 @@ class RecoveryLedgerTests(unittest.TestCase):
         database.unlink()
         backup.rename(database)
         with patch.object(r, 'MAX_DATABASE', 1), self.assertRaises(r.RecoveryError):
+            r.inspect_recovery(self.paths)
+
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
+    def test_ledger_symlink_is_rejected(self):
+        self.register()
+        database = self.paths.controls / r._DATABASE
+        backup = database.with_suffix('.saved')
+        database.rename(backup)
+        database.symlink_to(backup)
+        with self.assertRaises(r.RecoveryError):
             r.inspect_recovery(self.paths)
 
     def test_registration_requires_active_original_context_and_exact_source(self):

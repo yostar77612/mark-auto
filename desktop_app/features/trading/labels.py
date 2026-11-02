@@ -17,6 +17,7 @@ STATE_KEYS = {
     'RESEARCHED': 'v2.state_researched',
     'ACTIVE': 'v2.state_active',
     'RETIRED': 'v2.state_retired',
+    'DISABLED': 'u3.disabled',
     'WAITING_RECONCILIATION': 'v2.engine_reconcile',
     'STOPPED': 'v2.engine_stopped',
     'RUNNING': 'v2.engine_running',

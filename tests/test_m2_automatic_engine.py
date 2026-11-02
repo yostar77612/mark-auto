@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import patch
 
 import test_manual_trading as manual
+from test_trading_execution_environments import _test_maintenance
 
 from quantlab.trading.application import automatic
 from quantlab.trading.application.account_risk import seed_account_baseline
@@ -54,6 +55,7 @@ class AutomaticEngineTests(unittest.TestCase):
             case.adapter.bindings[ref] = replace(binding, spec=self.engine.catalog.resolve(ref))
         for ref, capability in case.adapter.capabilities.items():
             case.adapter.capabilities[ref] = replace(capability, expires_at=self.clock.now() + timedelta(hours=8))
+        self.engine.automatic_entry_check = lambda: _test_maintenance(self.engine.calendar, self.clock)
         self.engine.profile = compute_profile()
         self.engine.history = synthetic_history(self.engine.catalog, self.engine.calendar)
         self.engine.quotes = {key: replace(quote, source='SHIOAJI') for key, quote in self.engine.quotes.items()}
@@ -84,6 +86,7 @@ class AutomaticEngineTests(unittest.TestCase):
         self.engine.automatic_observation_validator = self.runtime.validate_observation
         self.engine.automatic_entry_validator = self.runtime.validate_entry
         self.engine.automatic_submission_guard = self.runtime.submission_guard
+        self.engine.automatic_owner_stamp = self.runtime.owner_stamp
 
     def deploy(self, *, stock=False, intraday=False, activate=True):
         spec = self.stock if stock else self.case.spec
@@ -186,6 +189,26 @@ class AutomaticEngineTests(unittest.TestCase):
         self.assertEqual(self.placed(), before + 1)
         self.assertEqual(len(self.engine.state.automatic.evaluations), 1)
         self.assertEqual(self.case.native.financial_queries, 0)
+
+    def test_unknown_maintenance_blocks_typed_automatic_new_risk_without_native_submission(self):
+        record = self.deploy()
+        self.start()
+        self.at(9, 1)
+        self.engine.automatic_entry_check = None
+        before = self.placed(), self.engine.state.orders, self.engine.reservations()
+        with self.assertRaises(DomainError) as blocked:
+            self.engine.submit(self.direct_plan(record), record.policy, 'unknown-maintenance')
+        self.assertEqual(blocked.exception.code, 'calendar_coverage_missing')
+        self.assertEqual((self.placed(), self.engine.state.orders, self.engine.reservations()), before)
+
+    def test_unknown_maintenance_does_not_block_known_automatic_protective_exit(self):
+        _, lot = self.open_and_fill()
+        self.engine.automatic_entry_check = None
+        before = self.placed()
+        closed = self.engine.exit_lot(lot.lot_id, protective=True, key='unknown-maintenance-protection')
+        self.assertIsNotNone(closed)
+        self.assertEqual(self.placed(), before + 1)
+        self.assertTrue(self.engine.state.orders[-1].plan.reduce_only)
 
     def test_forming_bar_cannot_reach_native_sdk_or_claim_an_evaluation(self):
         self.deploy()

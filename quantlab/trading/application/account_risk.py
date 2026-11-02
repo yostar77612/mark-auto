@@ -156,6 +156,20 @@ def account_entry_rejection(engine: 'TradingEngine', plan: OrderPlan, *, allocat
     )
 
 
+def account_markets_closed(engine: 'TradingEngine', account_ref: str) -> bool:
+    """Only explicit verified product sessions can explain unavailable live marks."""
+    from quantlab.trading.domain.automatic_calendar import calendar_for_instrument
+
+    instruments = {lot.instrument_id for lot in engine.state.positions if lot.account_ref == account_ref and lot.quantity}
+    if not instruments:
+        return False
+    try:
+        sessions = tuple(calendar_for_instrument(engine.calendar, engine.catalog.resolve(key)).day_session(engine.state.trading_day) for key in instruments)
+    except DomainError:
+        return False
+    return all(not row.opens_at <= engine.clock.now() < row.closes_at for row in sessions)
+
+
 @decimal_operation
 def observe_account_limits(engine: 'TradingEngine') -> None:
     """Latch account loss without a signal or order; missing close stays pending."""
@@ -176,6 +190,10 @@ def observe_account_limits(engine: 'TradingEngine') -> None:
         try:
             daily_pnl = account_net_mark(engine, account_ref) - baseline.previous_close_pnl
         except DomainError as exc:
+            from .daily_execution import scheduled_waiting
+
+            if exc.code == 'stale_quote' and scheduled_waiting(engine) and account_markets_closed(engine, account_ref):
+                continue  # No substitute price/PnL; commitment admission remains strict.
             reasons.add(exc.code)
             continue
         code = check_account_entry(

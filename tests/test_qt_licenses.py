@@ -13,6 +13,7 @@ import io
 import tempfile
 from types import SimpleNamespace
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -129,6 +130,7 @@ class QtLicenseTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     qt.reviewed_notice_bytes(target)
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_source_symlink_and_simulated_junction_fail(self):
         with tempfile.TemporaryDirectory() as temp:
             target = self.copied_notices(temp)
@@ -138,6 +140,8 @@ class QtLicenseTests(unittest.TestCase):
             file.symlink_to(outside)
             with self.assertRaisesRegex(RuntimeError, 'link or reparse'):
                 qt.reviewed_notice_bytes(target)
+
+    def test_source_simulated_junction_fails(self):
         with tempfile.TemporaryDirectory() as temp:
             target = self.copied_notices(temp)
             original = Path.lstat
@@ -150,6 +154,7 @@ class QtLicenseTests(unittest.TestCase):
             with patch.object(Path, 'lstat', lstat), self.assertRaisesRegex(RuntimeError, 'link or reparse'):
                 qt.reviewed_notice_bytes(target)
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_destination_symlink_preserves_target(self):
         with tempfile.TemporaryDirectory() as temp:
             target = Path(temp) / 'target'
@@ -256,6 +261,7 @@ class QtLicenseTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'Unreviewed native'):
                     qt.audit_payload(root)
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_payload_directory_symlink_fails_before_audit(self):
         with tempfile.TemporaryDirectory() as temp:
             root = self.fixture_payload(temp)

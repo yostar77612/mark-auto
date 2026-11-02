@@ -9,6 +9,7 @@ import shutil
 import stat
 import tempfile
 import unittest
+from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 import zipfile
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -187,6 +188,7 @@ class ZipCollectorTests(unittest.TestCase):
             with self.subTest(member=member), self.assertRaisesRegex(RuntimeError, 'checksum'):
                 self.run_collector(lambda t, s: changed_zip(s, lambda items: items.__setitem__(member, b'not reviewed')))
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_source_file_symlink_fails(self):
         def mutate(t, s):
             actual = t / 'actual.zip'
@@ -196,6 +198,7 @@ class ZipCollectorTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'link or reparse'):
             self.run_collector(mutate)
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_source_parent_symlink_fails(self):
         def mutate(t, s):
             actual = t / 'actual-parent'
@@ -205,6 +208,7 @@ class ZipCollectorTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'link or reparse'):
             self.run_collector(mutate)
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_dangling_source_parent_fails(self):
         def mutate(t, s):
             shutil.rmtree(s.parent)
@@ -221,6 +225,7 @@ class ZipCollectorTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'link or reparse'):
             self.run_collector(reparse=lambda t, s: s)
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_destination_parent_symlink_fails(self):
         def mutate(t, s):
             outside = t / 'outside'
@@ -234,6 +239,7 @@ class ZipCollectorTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'link or reparse'):
             self.run_collector(reparse=lambda t, s: t / 'build')
 
+    @unittest.skipUnless(symlinks_available(), SYMLINK_REASON)
     def test_destination_file_symlink_fails_preserves_target(self):
         def mutate(t, s):
             dest = t / 'build/licenses'

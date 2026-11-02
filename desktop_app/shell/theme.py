@@ -523,3 +523,13 @@ QWidget#sinopac_connection_panel QLabel[sinopacStatus="FAILED"] { color:#9b1c1c;
 def _apply_trading_page_theme(window):
     """Composition-only scoped trading-page styles; historical builders stay exact."""
     window.setStyleSheet(window.styleSheet() + _TRADING_PAGE_QSS)
+
+
+def style_strategy_table(window):
+    """Composition-supplied financial styling; trading views own no theme dependency."""
+    for row, strategy in enumerate(window.state.strategies):
+        item = window.strategies.item(row, 9)
+        align_table_item(item, numeric=True)
+        set_financial_item(window.strategies, item, strategy.today_pnl)
+        if strategy.today_pnl is None:
+            item.setForeground(QColor(theme_colors(window.strategies)['disabled_text']))

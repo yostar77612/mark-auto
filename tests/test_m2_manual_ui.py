@@ -31,7 +31,19 @@ class ManualFacade(support.RecordingFacade):
     def __init__(self):
         super().__init__()
         scope = ManualScope('sim-book', 1, Environment.BROKER_SIMULATION, 'sim-stock', 'login-generation', 2)
-        instrument = ManualInstrumentView('TWSE:2330', '2330 台積電', Market.STOCK, QuantityUnit.SHARE, 1000, 1000, Decimal('1'), tradable=True)
+        instrument = ManualInstrumentView(
+            'TWSE:2330',
+            '2330 台積電',
+            Market.STOCK,
+            QuantityUnit.SHARE,
+            1000,
+            1000,
+            Decimal('1'),
+            bid=Decimal('40'),
+            ask=Decimal('41'),
+            quote_at=datetime.now(timezone.utc),
+            tradable=True,
+        )
         manual = ManualTradingView(
             scope=scope,
             book_id='manual-1',
@@ -92,6 +104,8 @@ class ManualFacade(support.RecordingFacade):
                 now + timedelta(seconds=30),
                 quantity_unit=instrument.quantity_unit if instrument else QuantityUnit.CONTRACT if order is None else None,
                 lot_size=instrument.lot_size if instrument else 1,
+                bid=instrument.bid if instrument else None,
+                ask=instrument.ask if instrument else None,
             )
             self.state = replace(self.state, manual=replace(self.state.manual, preview=preview))
             return UiReceipt(True, 'completed', '', preview.preview_id)
@@ -512,14 +526,17 @@ class ManualUiTests(unittest.TestCase):
         position = self._owned_exit_position()
         with patch.object(self.window, '_confirm', return_value=True) as confirm:
             self.window.flatten_selected()
-        self.drain()
+            self.drain()
         command = self.facade.commands[-1]
-        self.assertIs(command.action, UiAction.FLATTEN)
-        self.assertEqual(command.target_id, position.lot_id)
+        self.assertEqual([item.action for item in self.facade.commands], [UiAction.PREVIEW_MANUAL, UiAction.SUBMIT_MANUAL])
+        self.assertEqual(command.manual_order.exit_lot_id, position.lot_id)
         self.assertIs(command.environment, Environment.BROKER_SIMULATION)
-        self.assertEqual(command.manual_book.scope, self.facade.state.manual.scope)
-        self.assertTrue(command.manual_book.confirmed)
-        self.assertEqual(command.manual_book.capital, self.facade.state.manual.capital)
+        self.assertEqual(command.manual_order.scope, self.facade.state.manual.scope)
+        self.assertTrue(command.manual_order.confirmed)
+        self.assertEqual(command.manual_order.quantity, 1000)
+        self.assertEqual(command.manual_order.limit_price, Decimal('40'))
+        self.assertEqual(command.manual_order.request_id, self.facade.commands[0].manual_order.request_id)
+        self.assertEqual(command.manual_order.preview_id, 'preview-receipt')
         self.assertEqual(command.connection_revision, 2)
         self.assertEqual(command.context_epoch, 1)
         self.assertIn('本機帳本保守估算', confirm.call_args.args[0])
@@ -552,7 +569,9 @@ class ManualUiTests(unittest.TestCase):
 
         with patch.object(self.window, '_confirm', side_effect=changed):
             self.window.flatten_selected()
-        self.assertEqual(self.facade.commands, [])
+            self.drain()
+        self.assertEqual([item.action for item in self.facade.commands], [UiAction.PREVIEW_MANUAL])
+        self.assertFalse(self.facade.commands[0].manual_order.confirmed)
 
     def test_connection_readiness_explains_manual_preparation_and_risk_gates(self):
         from desktop_app.features.trading.sinopac_panel_text import reason_text

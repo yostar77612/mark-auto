@@ -1978,6 +1978,138 @@ performed by this agent; all runtime/test/fixture blobs remain unchanged.
 - The added deny-only check covers current-version runtimes at their admission
   boundary; it is not retroactive protection for old running binaries or a
   replacement for an atomic cross-process ownership protocol.
+
+## 2026-11-02 — M2-9 isolated data/cost/maintenance slice
+
+Use additive M1 daily/event tables and retain original official response bytes
+with content hashes. Download transport is injectable, bounded and consented;
+no network data acquisition occurs in tests. Repository recorded TWSE/TPEx
+individual-stock/event fixtures were not available for this implementation.
+Native schema support is therefore provisional and fail-closed, not a claim of
+verified exchange compatibility. Do not substitute invented records for the
+requested recorded samples or silently fall back to stale/zero observations.
+
+Research uses official combined ex-right/dividend reference ratios instead of
+guessing a cash-only adjustment. Supply point-in-time adjusted signal histories
+separately from raw fills/PnL, with source/cost/calendar metadata. The chart switch
+is data-only. Wiring these stock inputs to an admitted research/backtest job and
+the chart/download widgets remains pending; legacy daily research is not changed.
+
+Preserve the eight historical FeeSchedule dataclass fields/codec exactly; expose
+Taiwan variants via a factory and persist new version snapshots, never revise old
+evidence. Ordinary/day-trade/ETF treatment must be explicitly selected by a
+verified caller; generated connection resources still support ordinary 2330/TMF.
+Store expiry/cost preferences in separate stock_maintenance.json so account-alias
+hardening can proceed independently without concurrent sinopac_settings edits.
+Date-only expiry means renewal at the start of that local date (no guessed vendor
+23:59 grace period). Unknown expiry is not zero or a healthy status.
+
+Keep automatic entry fail-closed on missing calendar/expiry coverage, but retain
+manual and protective exits. Existing verified TAIFEX format/update tool is read,
+not run online; no future holidays or expiries are synthesized. December reminders
+are exposed by the rules/data interface; calendar reminder UI remains pending.
+AGENTS.md, CLAUDE.md and GitNexus launcher were absent in this checkout. Impact
+analysis uses grep, affected_tests import graph and check_layers instead.
+
+## 2026-11-02 — M2-9 continuation under owner request to complete remaining work
+
+Close the earlier stock-job gap with an additive bounded service and public
+`run_stock_research` composition entry point, not edits to the legacy daily
+algorithm or M2-7's independent worker. Durable evidence uses existing result/
+evidence DTOs plus an immutable provenance sidecar. Explicit stock tax treatment
+flows through actual job settings, fees, calculations and persisted evidence;
+no ticker-based ETF/day-trade eligibility inference is allowed.
+
+Do not infer dividend cash or new-share quantities from the combined reference
+ratio. Refuse evidence for any position crossing an event without authoritative
+economic entitlement facts. This deliberately rejects unsupported corporate
+cashflow modeling rather than silently publishing incorrect total returns.
+The 100-to-90 synthetic event is tested both as a forbidden holding crossing and
+as a valid flat/point-in-time signal adjustment with raw day-trade fills.
+
+Expose the existing PreOpenMaintenance rule output in SinopacConnectionView and
+the existing readiness panel's minimal pre-open checklist. This closes the
+renewal/annual-reminder presentation gap without broad UI or new activation
+flows. Chart_prices already supplies the requested minimal raw/adjusted data
+switch; a larger chart redesign is not a prerequisite of this task.
+
+Recycled cloud environment has no Qt/Ruff and no verified offline package source;
+network package-install denial is respected. Run available core/profile/static
+checks, generate only reviewed additive catalog pins with explicit verification
+limits, and require unchanged CI tests/formatter/Windows jobs before delivery.
+No assertion or skip is changed to compensate for missing local dependencies.
+## M2-7 / explicit TMF minute research boundary (2026-11-02)
+
+Use an additive TRAINING-only minute engine and M1 cache/refill service rather
+than alter daily research, its DTO fields, or strict next-day signal guard.
+A closed-bar event may precede the next minute open at the same timestamp;
+point-in-time tests distinguish that event ordering from reading current close.
+Require complete explicit DAY session grids, not M1 coverage records: successful
+empty SDK responses also mark coverage. Retry after asynchronous M1 refill,
+with cache-revision validation around the bounded owned worker. Do not fabricate
+no-trade bars or silently substitute index prices for a TMF contract.
+
+A narrow read-only adapter accepts the existing resolved TMF contract/session;
+no additional login, credential, CA or order path is added. It uses the established
+watch-history Taipei right-label convention, not the generic mapper's different
+numeric timestamp convention. Native SDK correctness is still a Windows/recorded
+capture verification item. Retain explicit dates/expiry and reject unsupported
+night/roll/stock workflows. M2-9 is an independent unmerged PR, not a dependency
+copied into this branch.
+
+Current execution policies encode holding days, not holding minutes. Reusing the
+daily deployment fingerprint for a minute-duration receipt would certify a
+different execution policy. Preserve the shared result envelope but namespace
+minute fingerprints so unchanged activation fails closed. This is a deliberate
+partial-delivery boundary, not a claim that the specification's complete minute
+activation/UI acceptance is fulfilled. A later integration must bind minute
+holding policy and UI admission without weakening the activation checks.
+
+GitNexus and repository AGENTS.md/CLAUDE.md are unavailable in this checkout.
+Use grep/import graph plus tools/affected_tests.py and both layer gates; existing
+worker dispatch and HistorySync target annotations are the only modified old
+source paths. Baseline inventory regeneration is kept in its own commit.
+
+## M2-7 / complete original research host scope without deployment expansion (2026-11-02)
+
+The owner explicitly requested continuation. Close the prior service-only gap
+with a genuine RuntimeBundle entry, not a new minute execution scheduler or UI
+activation bypass. Real generated resources expose three constraints: their ID
+is TMF:{month}, effective_at is observation time, and their calendar is only the
+manual common window. Preserve those facts. Accept the generated identity at
+the research boundary; require independently verified historical specification
+applicability and a full research calendar instead of inventing a listing date
+or converting a manual window into market hours. Unknown applicability remains
+a real-data integration blocker, explicitly represented and tested.
+
+Refill completion is awaited within the original15-minute maximum and supports
+cancel/timeout. The owned history worker shares the existing M1 rate authority
+and durable daily counter. Do not multiply40/10-second allowances per job. A
+post-response generation check alone had a check/write race; retain one short
+publication scope and give cancellation/close bounded lock acquisition. A stuck
+native SDK worker remains marked retiring, with cache lifetime retained; never
+pretend it was forcibly cleaned up. A fake blocked cache write and fake blocked
+SDK call verify these different boundaries.
+
+Persist original raw training bars and all deterministic inputs alongside the
+compatible research-only result. Use an append-only SQLite receipt table with
+4MiB payload limits, bounded recent view, typed decoding and a pre-commit guard;
+keep serialization out of infrastructure. No changes to G3, daily research,
+SDK version, PROJECT_STATE, activation validation, or production orders.
+
+The recycled cloud runtime has Python3.12 and patched SQLite, but no Qt or Ruff.
+Do not retry the previously denied network installation. Run stdlib/core tests
+and structural gates locally; dependency-complete Qt/format checks belong to CI.
+The full repin preview reports stylesheet inspection blocked by absent PySide6;
+inventory regeneration is verified locally. Observer generation is mechanical,
+but its Qt-dependent verification cannot run here; retain the unchanged tests
+for CI and report the no-verify generation explicitly. Do not modify stylesheet
+baselines or assertions to hide that limit.
+### M2-7 明確固定模型，而非偽造完整歷史快照（2026-11-02）
+
+`InstrumentSpec.effective_at` 在 generated resources 是觀測時間，margin 與 source/version 也不是歷史市場條款。新增顯式 `FixedModelMinuteSettings`：以指定 spec/fee 參數研究歷史價，歷史適用性標記 UNKNOWN，不要求 caller 提供無關的完整歷史觀測快照。這不是改寫既有 interval-reference 的判定，也不是自動 fallback。舊 reference 只代表 caller 提供的區間／來源引用，不會因 digest 格式正確而取得可信來源身分。完整 spec 仍保存在 receipt 與 fingerprint；margin feasibility／daily price limits 未模擬，research-only 與完整資料／取消守衛不變。
+
+
 ## M2 second round: engine decisions (2026-11-02)
 
 M2-4 keeps legacy StrategyForm unchanged so historical daily research material
@@ -2131,3 +2263,67 @@ preflight collector also supplies automatic resume/completed-bar health; it
 still performs no SDK queries. Empty-ledger automatic exemption remains blocked
 on ownership/quiescence; this sync introduces neither journal migration nor
 new execution capability.
+
+### M2-3 next round: daily signal contract and execution window
+
+2026-11-02 14:23 Taipei start; estimate150 minutes before R5 reassessment at225.
+Base main e5a5941 includes M2-7. Branch codex/m2-3-daily-next-session; this PR
+must remain open after green CI for Claude review, with no autonomous merge.
+
+Separate close-only observation, durable signal saving and current-price
+execution. Retain the existing evaluation claim and add a dispatch claim per
+action/owned lot. Use the next supplied DAY open inclusive/close exclusive as
+the execution window. A new five-minute rule would expire futures signals
+before mixed stock/futures account proofs can become current at09:00; no such
+new default is introduced. Missing verified dates, changed identities or expired
+signals stop rather than retargeting. No opening-price fill is claimed.
+
+Normal calendar waiting retains the current server-owned run authorization;
+restart, disconnect, user stop and risk faults revoke it. Current-day baseline
+and preflight must be established from actual trusted facts before continuation.
+Closing valuation uses actual bid/ask and FeeSchedule on the existing APP virtual
+ledger basis. Synthetic bars or current PnL never impersonate prior close.
+
+GitNexus full local refresh resolved an initial branch/incremental-index gap.
+AutomaticView is CRITICAL (101 upstream), AppState HIGH (86), AutomaticState
+MEDIUM (98), registry initialize MEDIUM (22). Callers include snapshot/IPC,
+serialization, startup and existing observers. No FTS download/repair is used;
+missing flows are not evidence of safety. Contract/codec smoke passes before
+the first small commit. Generated baselines remain one separate final batch.
+
+### M2-3 daily execution: mixed market hours and scoped reductions
+
+2026-11-02. A native fake-SDK regression confirms that requiring every selected
+product to be open at once suppresses a TMF completed five-minute normal exit
+after stocks close at13:30. Preserve the all-account admission for new risk;
+during normal scheduled daily waiting, allow only owned completed-bar reductions
+in an actually open product. Forming bars, repeated cursors and new entries stay
+blocked by their existing boundaries. Fault pauses still retain only the
+independently legal protective path.
+
+Do not invent a live mark from a closed stock quote. While a preserved run is
+normally waiting, background risk monitoring may defer a stale mark only when
+explicit verified sessions prove every held product in that account is closed.
+Other open accounts remain monitored. Manual observation adoption retains its
+accepted quantity caches if aggregate valuation alone is unavailable; an open
+stale market still halts new risk. Submission-time risk admission remains strict.
+Book capital/opening day and lifetime manual accounting are never reset at dawn;
+shared daily PnL uses the committed exact per-account closing evidence.
+
+GitNexus observe_account_limits is HIGH (25 upstream, including engine submit,
+manual resume, runtime and risk observers). Source confirms the dynamic runtime
+route in addition to the graph's limited completed-bar caller set. This is not
+permission to infer safety from absent process edges.
+
+### M2-3 daily evaluation interrupted before signal saving
+
+An interruption after the pure daily evaluation claim but before atomic signal
+saving has no dispatch authority. Explicit reconciliation can discard that work
+only when verified full-state journal history proves the dedicated
+daily_evaluation_claimed transition for the exact cursor/evaluation time and
+there is no saved intent or semantic matching local order. Complete the existing
+evaluation as daily_signal_invalidated with its cursor retained. Never reevaluate
+that close, reset budgets, send an order or resume. Any dispatcher uncertainty,
+minute claim, missing provenance or unknown manual observation remains blocked.
+This avoids turning a harmless pure-evaluation crash into a permanently
+unrecoverable pause while preserving unknown financial outcomes.
