@@ -10,6 +10,13 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'strategy_parameters_invalid': ErrorText('策略參數不符合型態規則。', '依型態的週期、停損及口數範圍調整。'),
+    'strategy_instrument_restricted': ErrorText('此型態不支援選取的商品。', '當沖選微台；短波與長波選股票或 ETF。'),
+    'strategy_daytrade_confirmation_required': ErrorText('現股當沖尚未勾選並確認資格。', '確認具備現股當沖資格與額度後再建立。'),
+    'strategy_allocation_exceeded': ErrorText('啟用策略的資金總和超過帳戶配置。', '降低配置或先停用其他策略。'),
+    'strategy_has_fills': ErrorText('已有成交紀錄的策略不能刪除。', '停用策略並保留成交紀錄。'),
+    'strategy_settlement_day': ErrorText('微台結算日停止自動開新倉。', '保留保護性出場，下一交易日再確認。'),
+    'strategy_size_insufficient': ErrorText('可用資金不足以建立指定部位。', '股票至少一整張；微台須涵蓋保證金與成本。'),
     'manual_allocation_exceeds_settings': ErrorText(
         '人工模擬帳本的已確認額度超過目前配置。', '核對證券及期貨配置後再操作；原帳本與損益紀錄不會重設，合法退出仍可另行核對。'
     ),

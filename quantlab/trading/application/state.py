@@ -12,7 +12,7 @@ from .codec import register
 from .contracts import ReconciliationView, SettingsForm, StrategyForm
 from .broker_settings import BrokerReadiness, BrokerSettings
 from quantlab.trading.domain.models import Environment, HoldingPolicy, InstrumentSpec, OrderPlan, OrderStatus, PositionLot, Reservation
-from quantlab.trading.domain.strategy import StrategyDefinition
+from quantlab.trading.domain.strategy import StrategyDefinition, StrategyParameters
 from .lifecycle_models import CorporateActionJob, RollJob
 from .performance import VersionEquityTrack
 from .manual_book import ManualAcquisition, ManualBook, ManualReceivable, ManualRequest
@@ -30,6 +30,8 @@ class StrategyRecord:
     research_blob: str = ''
     definition: StrategyDefinition | None = None
     draft_hash: str = ''
+    parameters: StrategyParameters | None = None
+    recent_signal: str = ''
 
 
 @dataclass(frozen=True)

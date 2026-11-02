@@ -1944,3 +1944,18 @@ Final metadata observes an external merge of #130 at2026-11-01T20:34:42Z
 and #131 retargeted to main. Record that actor boundary in the report and
 describe four delivery PRs rather than four open PRs. No main merge was
 performed by this agent; all runtime/test/fixture blobs remain unchanged.
+
+## M2 second round: engine decisions (2026-11-02)
+
+M2-4 keeps legacy StrategyForm unchanged so historical daily research material
+keeps its identity. New typed creation supplies separate StrategyParameters on
+StrategyRecord. New restrictions apply at that explicit input boundary; a legacy
+strategy is not implicitly converted or enabled. Parameters join the research
+fingerprint only for typed versions. No v1/G3 or cost implementation is changed.
+
+Estimated active engineering time: M2-4 45 min, M2-5 35 min, M2-3 55 min.
+At 1.5x, deliver a tested mergeable slice with remaining scope explicit.
+GitNexus pre-edit: UiAction/UiCommand/StrategyView CRITICAL (49 direct imports),
+StrategyRecord HIGH (15 direct imports); additive defaults preserve old decoding.
+Source confirms facade.snapshot despite graph UNKNOWN. No process membership was
+reported; graph receiver gaps are not a claim of no runtime effect.

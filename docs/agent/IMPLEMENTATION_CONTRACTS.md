@@ -7181,3 +7181,21 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `MANUAL_MAX_PRICE_DEVIATION` (1%) beyond the opposite quote is refused with
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
+
+## M2-4 engine contract (2026-11-02)
+
+- New typed creation: `UiAction.CREATE_TYPED_STRATEGY`, `UiCommand.strategy` and
+  `strategy_parameters: domain.strategy.StrategyParameters`. Existing creation and
+  stored StrategyForm remain compatible. Parameters freeze interval, stop fraction,
+  entry amount, contracts, stock-daytrade opt-in/confirmation and instrument rule.
+- Management: DISABLE_STRATEGY, CLONE_STRATEGY, REVISE_STRATEGY, DELETE_STRATEGY;
+  `target_id` identifies a version. Revision takes strategy + strategy_parameters;
+  clone copies parameters into a fresh, unresearched version of the same strategy.
+- StrategyView appends parameters, recent_signal, margin_source and
+  resolved_instrument_id; existing field positions remain unchanged.
+- New errors: strategy_parameters_invalid, strategy_instrument_restricted,
+  strategy_daytrade_confirmation_required, strategy_allocation_exceeded,
+  strategy_has_fills, strategy_settlement_day, strategy_size_insufficient.
+- No new production order path, desktop source or string changes. M2-7 supplies
+  evidence through the existing ResearchResult contract; FeeSchedule owns costs.
+- First contract commit defines transport only; behavior follows before PR readiness.

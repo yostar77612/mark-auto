@@ -1,7 +1,7 @@
 """Bounded declarative strategies; no code execution, credentials or AI authority."""
 
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, time
 from decimal import Decimal
 import hashlib
 import json
@@ -14,6 +14,49 @@ from .validation import DomainError, aware, decimal_value, identity, integer
 FIELDS = frozenset(('close', 'sma5', 'sma20', 'return5', 'volume'))
 OPERATORS = frozenset(('GT', 'GE', 'LT', 'LE', 'EQ'))
 STAGES = ('RULES_VALID', 'BACKTEST', 'WALK_FORWARD', 'PAPER', 'BROKER_SIMULATION', 'ENABLEABLE')
+
+
+@dataclass(frozen=True)
+class StrategyParameters:
+    """Explicit M2 execution settings, frozen with each researched version."""
+
+    bar_interval: str
+    stop_fraction: Decimal
+    entry_amount: Decimal
+    contracts: int = 1
+    stock_intraday_enabled: bool = False
+    stock_intraday_confirmed: bool = False
+    instrument_rule: str = 'EXACT'
+
+    def __post_init__(self) -> None:
+        decimal_value(self.stop_fraction, 'protective stop', positive=True)
+        decimal_value(self.entry_amount, 'entry amount', positive=True)
+        integer(self.contracts, 'contracts', 1)
+        if self.bar_interval not in ('1m', '5m', '1d') or self.stop_fraction >= 1 or self.contracts > 5:
+            raise DomainError('strategy_parameters_invalid')
+        if self.instrument_rule not in ('EXACT', 'TMF_NEAR') or any(
+            type(value) is not bool for value in (self.stock_intraday_enabled, self.stock_intraday_confirmed)
+        ):
+            raise DomainError('strategy_parameters_invalid')
+
+
+@dataclass(frozen=True)
+class StrategyDefaults:
+    kind: HoldingKind
+    min_days: int | None
+    max_days: int | None
+    bar_interval: str
+    intervals: tuple[str, ...]
+    stop_fraction: Decimal | None
+    futures_exit_at: time | None = None
+    stock_exit_at: time | None = None
+
+
+@dataclass(frozen=True)
+class SizingDecision:
+    quantity: int
+    margin_source: str
+    required_cash: Decimal
 
 
 @dataclass(frozen=True)
