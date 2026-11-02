@@ -294,3 +294,42 @@ commit3b67a10先提供 AutomaticView／DailyIntentView、既有 UiAction 的操�
 交易與畫面接線驗收由擁有者／畫面車道另行進行。LIVE 保持硬關閉，未修改
 desktop_app/、G3、SDK版本、PROJECT_STATE、成本實作、workflow或分層規則。
 詳細證據：[日 K 引擎驗證](m2-3-daily-engine-verification.md)及相鄰 JSON。
+
+## M2-3c：PR147 審查修正（PR155）
+
+2026-11-02，從main c69d459建立codex/m2-3c-review-fixes，第一個小commit
+a63ca4c先提供DECLARE_DAILY_NOT_SENT、DailyNotSentForm、intent_key DTO與四個
+錯誤碼。只在完整journal證明從未持久化送單、且證明後的新鮮健康同owner對帳
+找不到相符券商單時，擁有者才能將無本機訂單的CLAIMED／UNKNOWN結為KNOWN_NO_ORDER。
+保持停止、撤銷授權，不退款、不送單、不重送、不自動恢復。
+
+每日收盤投影採20個可信DAY保留窗口，移除可安全裁剪的已消費舊列；新收盤改存
+quote引用與order digest/count，每帳戶留最新審計錨點。終態過期意圖在相關委託
+仍活動／未知時保留，包含UTC／+08舊key與EXIT後綴。完整委託、部位與journal保留，
+舊schema空預設可讀，首次startup寫入之前也會裁剪。250日×30商品投影最大低於
+2MiB、末100日大小差低於1000bytes；裁剪前後對帳與舊fill/fee失效能力均有測試。
+
+77項新增專屬測試與142個獨立守衛變異通過（F1 63、F2 54、其他守衛19、S1 6）。
+R8初輪196模組2394項，1項Qt解譯器設定已用正確環境重跑通過，2項既有主機全域鎖
+失敗可在main重現，未關閉使用者程式或改測試。最後修正後直接相關324項全過，
+另retention29項／54個嚴格assertion-only變異完成；原始視窗最終LOCAL7.591秒、
+fake-SIM4.863秒通過，未匯入真SDK，資源清理完成。工具基準另獨立commit。
+
+S1實際6225稀疏交易與2330除息fixture揭露分鐘日K和官方／還原研究基準不等價；
+可信來源bridge尚未接上，保持缺分鐘拒絕。F4普通EXIT驗證不放寬；S3共享手動帳本
+隔日ready的exact evidence規則是有意且有反例。F3實際5000事件payload625.765MB，
+replay+provenance23.199秒；追蹤記憶體下完整recovery峰值628.907MB，時間不可冒充
+正常延遲。journal仍成長，F1鎖內證明若超過30秒會持續因快取過期拒絕，需後續
+分階段復原設計，不以放寬新鮮度解決。本輪只查證，不重構journal或新增信號來源。
+
+[PR155](https://github.com/yostar77612/mark-auto/pull/155)直接對main，完整CI以該PR
+最終head的checks為準。**CI全綠後仍等待Claude審查，不自行合併**。畫面接線與真實
+券商自動交易由各車道／擁有者另驗。LIVE硬關閉，未改desktop_app/、G3、SDK版本、
+PROJECT_STATE、成本、workflow或分層規則。
+詳見[M2-3c驗證](m2-3c-review-fixes-verification.md)及相鄰JSON、追加決策與契約。
+
+同期main f0e974f（M3橋接、U3畫面及timeout fixture）以普通merge保留雙方契約／登記；
+相對main沒有desktop_app/或trading_runtime.py差異。合併後353項直接相關與47項新增
+交界整合全過；原始視窗最終LOCAL8.614秒／fake-SIM4.735秒，資源清理／無真SDK通過。
+前段324項及7.591／4.863秒是合併前證據。合併後靜態檢查與基準dry-run均通過，
+圖分析all/compare完整且保留原CRITICAL風險警告；最終完整CI仍以PR155最新head為準。

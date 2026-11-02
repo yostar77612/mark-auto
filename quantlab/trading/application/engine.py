@@ -115,18 +115,18 @@ class TradingEngine:
             if stale and record.state in ('ACTIVE', 'RESEARCHED'):
                 record = replace(record, state='RULE_VALID', evidence='SOURCE_PROFILE_CHANGED')
             strategies.append(record)
-        self._persist(
-            'startup_reconciliation_required',
-            replace(
-                self.state,
-                orders=pending,
-                strategies=tuple(strategies),
-                stopped=True,
-                reconciled=False,
-                engine_closed=False,
-                automatic=restart_automatic_state(self.state.automatic),
-            ),
+        from .daily_retention import compact_daily_projection
+
+        restarted = replace(
+            self.state,
+            orders=pending,
+            strategies=tuple(strategies),
+            stopped=True,
+            reconciled=False,
+            engine_closed=False,
+            automatic=restart_automatic_state(self.state.automatic),
         )
+        self._persist('startup_reconciliation_required', compact_daily_projection(self, restarted))
         from .sessions import synchronize_session
 
         synchronize_session(self)

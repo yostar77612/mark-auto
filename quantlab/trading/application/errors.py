@@ -10,6 +10,10 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'daily_not_sent_confirmation_required': ErrorText('宣告日 K 委託未送出需要擁有者確認。', '核對意圖與對帳結果後明確確認；此操作不會恢復交易或重送。'),
+    'daily_not_sent_unproven': ErrorText('日誌尚不能證明這筆日 K 委託未送出。', '保留未知狀態，核對完整日誌；已持久化送單紀錄者不可宣告未送出。'),
+    'daily_not_sent_order_found': ErrorText('對帳找到可能相符的券商委託。', '保留未知狀態並核對券商紀錄，不可宣告未送出。'),
+    'daily_declared_not_sent': ErrorText('擁有者已確認這筆日 K 委託未送出。', '意圖已結案，交易仍暫停；完成對帳與明確恢復後才可評估新訊號。'),
     'daily_waiting_session': ErrorText('日 K 訊號已保存，等待下一個可信交易時段。', '保持程式與連線正常；下一交易日仍會重新核對報價、帳戶與風險。'),
     'daily_signal_expired': ErrorText('日 K 訊號已超過下一個可執行交易時段。', '不會追送舊訊號；等待新的完整日 K 評估。'),
     'daily_signal_invalidated': ErrorText('已保存訊號的策略、商品或證據已變更。', '核對策略版本與紀錄；舊訊號不會改套新版本或新合約。'),

@@ -401,6 +401,7 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                     row.phase,
                     row.order_id,
                     row.code,
+                    row.key,
                 )
                 for row in state.automatic.daily.intents
             ),

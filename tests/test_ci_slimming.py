@@ -103,23 +103,23 @@ class WorkflowShapeTests(unittest.TestCase):
             self.assertIn('github.event.pull_request.number || github.ref', head)
             self.assertNotIn('cancel-in-progress: true', head)
 
-    def test_installer_pr_filter_and_unfiltered_main_push(self):
+    def test_installer_filters_and_on_demand_main_builds(self):
         pull_request, rest = header('windows-desktop.yml').split('  push:\n', 1)
-        for required in (
-            'packaging/**',
-            'tests/test_windows_recovery_feasibility.py',
-            'requirements*.lock',
-            'requirements*.txt',
-            'desktop_chatgpt_dependency_manifest.json',
-            "'*.spec'",
-            "'*.iss'",
-            'tools/make_icon.py',
-            '.github/workflows/windows-desktop.yml',
-        ):
-            self.assertIn(required, pull_request)
-        self.assertNotIn('paths:', rest)
-        self.assertIn('branches: [main]', rest)
-        self.assertIn("tags: ['desktop-v*']", rest)
+        push, rest = rest.split("    tags: ['desktop-v*']\n", 1)
+        for scope in (pull_request, push):
+            for required in (
+                'packaging/**',
+                'tests/test_windows_recovery_feasibility.py',
+                'requirements*.lock',
+                'requirements*.txt',
+                'desktop_chatgpt_dependency_manifest.json',
+                "'*.spec'",
+                "'*.iss'",
+                'tools/make_icon.py',
+                '.github/workflows/windows-desktop.yml',
+            ):
+                self.assertIn(required, scope)
+        self.assertIn('branches: [main]', push)
         self.assertIn('workflow_dispatch:', rest)
         installer = job_blocks(text('windows-desktop.yml'))
         self.assertNotIn('changes', installer)

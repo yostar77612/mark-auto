@@ -109,6 +109,7 @@ class MarketSeriesPage:
 class UiAction(str, Enum):
     AUTO_RESUME = 'auto_resume'
     AUTO_RECONCILE = 'auto_reconcile'
+    DECLARE_DAILY_NOT_SENT = 'declare_daily_not_sent'
     CHECK_PREFLIGHT = 'check_preflight'
     SAVE_ACCOUNT_RISK = 'save_account_risk'
     CREATE_TYPED_STRATEGY = 'create_typed_strategy'
@@ -182,6 +183,12 @@ class SettingsForm:
 
 
 @dataclass(frozen=True)
+class DailyNotSentForm:
+    intent_key: str
+    confirmed: bool = False
+
+
+@dataclass(frozen=True)
 class UiCommand:
     action: UiAction
     expected_version: int
@@ -209,6 +216,7 @@ class UiCommand:
     manual_no_admission: bool = False
     strategy_parameters: StrategyParameters | None = None
     account_risk: AccountRiskLimits | None = None
+    daily_not_sent: DailyNotSentForm | None = None
 
 
 @dataclass(frozen=True)
@@ -379,6 +387,7 @@ class DailyIntentView:
     phase: str
     order_id: str = ''
     code: str = ''
+    intent_key: str = ''
 
 
 @dataclass(frozen=True)
