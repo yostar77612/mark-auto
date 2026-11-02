@@ -800,6 +800,16 @@
             "receiver": "self"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_minute_research_host.py",
+            "kind": "assignment",
+            "line": 33,
+            "name": "contract",
+            "receiver": "self"
+          },
+          "count": 1
         }
       ]
     },
