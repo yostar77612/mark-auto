@@ -1964,3 +1964,17 @@ performed by this agent; all runtime/test/fixture blobs remain unchanged.
   remain explicitly unverified. GitNexus/root AGENTS.md/CLAUDE.md are absent in
   this checkout; grep callers and `tools/affected_tests.py` import graph replace
   impact/detect-changes for this work.
+
+### 2026-11-02 continuation — stale selections and empty-ledger boundary
+
+- Revalidate cached aliases at the existing manual readiness/admission boundary
+  against fresh keyed settings. A second runtime observing key loss must not
+  leave a first runtime able to materialize or submit under stale aliases.
+- Retain the existing-ledger reconciliation gate, even for a verified empty
+  schema-v2 ledger. SQLite inspection ownership ends before a stale runtime's
+  lazy lease acquisition; no root-wide settings/ledger ownership fence exists.
+  Automatic exemption is blocked on safe shared ownership or verified
+  quiescence, not on an inability to recognize the empty schema.
+- The added deny-only check covers current-version runtimes at their admission
+  boundary; it is not retroactive protection for old running binaries or a
+  replacement for an atomic cross-process ownership protocol.

@@ -114,8 +114,9 @@ class SinopacSettingsStore:
     def check_selection(self, selected):
         with self.lock:
             body, _ = self._body()
-            if selected and body.get('sinopac_alias_reconciliation_v2', False):
-                raise DomainError('reconciliation_required', 'account alias migration requires journal reconciliation')
+            known = {row['alias'] for row in self._validate_accounts(body.get('sinopac_accounts_v2', []), 'identity_hmac')}
+            if selected and (body.get('sinopac_alias_reconciliation_v2', False) or not set(selected) <= known):
+                raise DomainError('reconciliation_required', 'account aliases changed; reconnect and reconcile')
 
     def advance_revision(self):
         with self.lock:

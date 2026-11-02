@@ -195,6 +195,55 @@ class ManualRuntimeIntegrationTests(unittest.TestCase):
         self.assertEqual(self.native.financial_queries, 0)
         self.assertEqual(len([row for row in self.native._seen if row[0] == 'login']), 1)
 
+    def _rotate_key_in_second_connection(self):
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+        from quantlab.trading.runtime.sinopac_connection import SinopacConnection
+
+        root = self.bundle.launch.root
+        cached_selection = self.bundle.sinopac_connection.selected
+        (root / KEY_FILE).unlink()
+        peer = SinopacConnection(root, factory=lambda environment: self.fail('peer must not log in'), secrets=SimpleNamespace(), clock=self.clock)
+        self.addCleanup(peer.close)
+        self.assertEqual(peer.selected, ())
+        self.assertEqual(self.bundle.sinopac_connection.selected, cached_selection)
+        before = len(self.native._seen)
+        self.bundle.poll_ports()
+        self.assertIsNone(self.bundle.engine)
+        self.assertEqual(self.bundle.manual_runtime.error, 'reconciliation_required')
+        self.assertEqual(len(self.native._seen), before)
+
+    def test_cached_aliases_cannot_materialize_after_key_loss_on_valid_empty_ledger(self):
+        from quantlab.trading.adapters.storage.ledger import Ledger
+
+        root = self.bundle.launch.root
+        journal = Ledger(root / 'manual-trading-v2.sqlite', 'manual-sim-trading-v2', datetime.now(timezone.utc))
+        self.assertEqual(journal.replay(), ())
+        journal.close()
+        self._rotate_key_in_second_connection()
+
+    def test_cached_aliases_cannot_materialize_after_key_loss_without_ledger(self):
+        self.assertFalse((self.bundle.launch.root / 'manual-trading-v2.sqlite').exists())
+        self._rotate_key_in_second_connection()
+        self.assertFalse((self.bundle.launch.root / 'manual-trading-v2.sqlite').exists())
+
+    def test_cached_ready_runtime_rejects_admission_after_alias_key_loss(self):
+        from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
+
+        self.ready()
+        command = self.command(UiAction.TEST_SIM_ORDER)
+        original = self.bundle.engine.state
+        before = len(self.native._seen)
+        (self.bundle.launch.root / KEY_FILE).unlink()
+        result = self.request(Operation.COMMAND, command)
+        self.assertFalse(result.receipt.accepted)
+        self.assertEqual(result.receipt.code, 'reconciliation_required')
+        view = self.state().manual
+        self.assertIn('reconciliation_required', view.reasons)
+        self.assertFalse(view.can_submit)
+        self.assertFalse(view.can_prepare)
+        self.assertEqual(self.bundle.engine.state, original)
+        self.assertEqual(len(self.native._seen), before)
+
     def test_alias_key_loss_with_pending_order_cannot_admit_new_account_scope(self):
         from quantlab.trading.runtime.sinopac_aliases import KEY_FILE
         from quantlab.trading.runtime.sinopac_transition import select_accounts

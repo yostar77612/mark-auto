@@ -78,6 +78,44 @@ class AccountAliasTests(unittest.TestCase):
         self.assertEqual(error.exception.code, 'reconciliation_required')
         self.assertEqual(journal.read_bytes(), b'fake-existing-journal')
 
+    def test_valid_empty_ledger_with_active_writer_remains_blocked(self):
+        from datetime import datetime, timezone
+        from quantlab.trading.adapters.storage.ledger import Ledger
+
+        accounts = self.discover()
+        self.store.save_accounts(accounts, ENV)
+        journal = Ledger(self.root / 'manual-trading-v2.sqlite', 'manual-sim-trading-v2', datetime.now(timezone.utc))
+        self.addCleanup(journal.close)
+        self.assertEqual(journal.replay(), ())
+        (self.root / KEY_FILE).unlink()
+        self.assertEqual(self.store.load()[1], ())
+        with self.assertRaises(DomainError) as error:
+            self.store.check_selection((accounts[0].alias,))
+        self.assertEqual(error.exception.code, 'reconciliation_required')
+        self.assertEqual(journal.replay(), ())
+
+    def test_write_locked_valid_empty_ledger_is_not_an_emptiness_exemption(self):
+        from datetime import datetime, timezone
+        import sqlite3
+        from quantlab.trading.adapters.storage.ledger import Ledger
+
+        accounts = self.discover()
+        path = self.root / 'manual-trading-v2.sqlite'
+        journal = Ledger(path, 'manual-sim-trading-v2', datetime.now(timezone.utc))
+        journal.close()
+        (self.root / KEY_FILE).unlink()
+        with sqlite3.connect(path, isolation_level=None) as writer:
+            writer.execute('BEGIN IMMEDIATE')
+            self.assertEqual(writer.execute('SELECT COUNT(*) FROM events').fetchone(), (0,))
+            self.assertEqual(writer.execute('SELECT COUNT(*) FROM owner').fetchone(), (0,))
+            self.assertEqual(self.store.load()[1], ())
+            with self.assertRaises(DomainError) as error:
+                self.store.check_selection((accounts[0].alias,))
+            self.assertEqual(error.exception.code, 'reconciliation_required')
+            writer.rollback()
+        with self.assertRaises(DomainError):
+            self.store.check_selection((accounts[0].alias,))
+
     def test_legacy_migrates_selection_and_removes_all_unkeyed_identities(self):
         _, digest, old_alias = self.legacy()
         settings, selected = self.store.load()

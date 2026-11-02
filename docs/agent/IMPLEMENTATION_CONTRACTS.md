@@ -7213,3 +7213,23 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `MANUAL_MAX_PRICE_DEVIATION` (1%) beyond the opposite quote is refused with
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
+
+### Account alias continuation: cached-runtime admission fence (2026-11-02)
+
+Manual SIM materialization, readiness and command admission recheck the selected
+aliases against fresh workspace-keyed identity metadata and the persisted
+reconciliation marker. A current-version runtime retaining an old in-memory
+selection cannot create a new manual engine/book or admit an SDK mutation after
+key loss/replacement has invalidated that selection, including when another
+connection observed the change first and when no ledger exists yet. The check
+is deny-only: it neither remaps identities nor edits financial journal facts.
+
+All existing-ledger migration gates remain conservative, including valid empty,
+active-owner and write-locked ledgers. An empty read, even under BEGIN IMMEDIATE,
+does not establish quiescence: a previously accepted runtime can acquire the
+lazy ledger lease after the inspection transaction ends. Safe automatic empty-
+ledger exemption needs shared ownership or verified quiescence across settings
+and ledger admission; it is not implemented here. This boundary check is not an
+atomic cross-process lock, and already-running older binaries cannot be made to
+honor it retroactively. Fake two-connection and ready-runtime tests assert no
+native mutation and preserved state on rejection; no new UI strings are added.

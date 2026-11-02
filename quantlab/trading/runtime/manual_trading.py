@@ -100,6 +100,7 @@ class ManualRuntime:
         if not self.owner.query_ready or self.owner.shared is None or self.owner.shared.callback_errors:
             raise DomainError('manual_account_observation_required')
         selected = tuple(sorted(self.owner.selected))
+        self.owner.preferences.check_selection(selected)
         if not selected:
             raise DomainError('accounts_not_selected')
         return view, selected, self.owner.shared
