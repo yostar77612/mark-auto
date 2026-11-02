@@ -1,0 +1,206 @@
+{
+  "scope": "M4a only: opt-in autostart checkbox and explicit update controls/status. Preserve the historical R7 fixture, all existing reviewed deltas, exact row values/multiplicity, enabled/visible flags, painter pixels/counts, calls/errors and eight result snapshots.",
+  "focus": {
+    "removed": [],
+    "added": [
+      {
+        "row": [
+          "_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "autostart_enabled",
+          "開機時自動啟動 MarkAuto",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_and_install_update",
+          "下載並安裝",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "download_and_install_update_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      }
+    ]
+  },
+  "refresh_states": [
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "autostart_enabled",
+            "開機時自動啟動 MarkAuto",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update",
+            "下載並安裝",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "autostart_enabled",
+            "開機時自動啟動 MarkAuto",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update",
+            "下載並安裝",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "autostart_enabled",
+            "開機時自動啟動 MarkAuto",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update",
+            "下載並安裝",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "autostart_enabled",
+            "開機時自動啟動 MarkAuto",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update",
+            "下載並安裝",
+            true,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "download_and_install_update_prerequisite",
+            "",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

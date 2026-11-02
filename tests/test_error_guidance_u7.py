@@ -89,6 +89,12 @@ class ErrorGuidanceTests(unittest.TestCase):
         # Owner-approved idea diagnostics append fourteen fixed entries; historical text
         # remains byte-locked by test_error_catalog_b1's original 64-entry digest.
         source = (ROOT / 'quantlab/errors.py').read_text(encoding='utf-8-sig')
+        # M4a's complete additive block is pinned independently; reconstruct
+        # the original source before applying every historical source digest.
+        m4a_start = source.index('# Explicit update/startup boundary failures;')
+        m4a_end = source.index('ERROR_LABELS =', m4a_start)
+        self.assertEqual(hashlib.sha256(source[m4a_start:m4a_end].encode()).hexdigest(), '129d1eb0bb22076885ae0915cbb778fe0825a6431739fd807161df33aa71a57d')
+        source = source[:m4a_start] + source[m4a_end:]
         # Admit exactly the download/import addition, then retain the complete historical digest.
         start = source.index('# Download/import composition;')
         end = source.index('ERROR_LABELS =', start)

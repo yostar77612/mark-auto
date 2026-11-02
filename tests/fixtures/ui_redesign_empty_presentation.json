@@ -235,9 +235,9 @@
       ]
     },
     "設定與備份": {
-      "visible_input_count": 4,
+      "visible_input_count": 5,
       "button_count": 8,
-      "label_char_count": 59,
+      "label_char_count": 122,
       "unlabeled_inputs": [],
       "primary_button_count": 1,
       "visible_text": [
@@ -247,6 +247,9 @@
         "展開 ChatGPT 完整連線管理",
         "一般",
         "作業完成／失敗時顯示本機提示並提醒此視窗",
+        "開機時自動啟動 MarkAuto",
+        "只開啟程式，重啟後仍停止新倉，需手動恢復自動交易。電腦睡眠或關機時不會自動交易。",
+        "安裝 Windows 版後可設定開機自動啟動。",
         "介面主題",
         "深色",
         "漲跌配色",

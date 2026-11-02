@@ -7,6 +7,7 @@ from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import install_appearance_controls
 from desktop_app.features.settings.log_table import LogTable
 from desktop_app.features.settings.maintenance import MaintenancePanel
+from desktop_app.features.settings.autostart_panel import AutostartPanel
 from desktop_app.features.settings.diagnostics import DiagnosticsPanel, snapshot_for_state
 
 
@@ -44,6 +45,8 @@ def build_settings(page, layout):
     page.local_notifications = QCheckBox(ui_text('ui.settings_page.notify_jobs'))
     page.local_notifications.setChecked(True)
     general.addWidget(page.local_notifications)
+    page.autostart_panel = AutostartPanel(page)
+    general.addWidget(page.autostart_panel)
     page.appearance_layout = QVBoxLayout()
     general.addLayout(page.appearance_layout)
     appearance_fields = QVBoxLayout()
@@ -134,6 +137,9 @@ def build_settings(page, layout):
     version_hint = QLabel(ui_text('ui.settings_page.manual_update_hint'))
     version_hint.setWordWrap(True)
     maintenance.addWidget(version_hint)
+    manual_hint = QLabel(ui_text('update.manual'))
+    manual_hint.setWordWrap(True)
+    maintenance.addWidget(manual_hint)
     page._button(maintenance, ui_text('ui.settings_page.releases'), 'open_releases', page.open_releases)
     page.maintenance_panel = MaintenancePanel(page)
     maintenance.addWidget(page.maintenance_panel)

@@ -31,6 +31,7 @@ REDESIGN = json.loads((ROOT / 'tests/fixtures/ui_redesign_characterization_delta
 AUTO_IMPORT = json.loads((ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))
 M1_UI = json.loads((ROOT / 'tests/fixtures/m1_u_ui_delta.json').read_text(encoding='utf-8'))
 M2_POLICY = json.loads((ROOT / 'tests/fixtures/m2_policy_text_delta.json').read_text(encoding='utf-8'))
+M4A = json.loads((ROOT / 'tests/fixtures/m4a_maintenance_ui_delta.json').read_text(encoding='utf-8'))
 
 
 def semantic_rows(rows):
@@ -135,7 +136,12 @@ class CharacterizationTests(unittest.TestCase):
             self.assertEqual(
                 semantic_rows(actual),
                 reviewed_ui_rows(
-                    historical, REDESIGN['refresh_states'], AUTO_IMPORT['refresh_states'], M1_UI['refresh_states'][index], M2_POLICY['refresh_states']
+                    historical,
+                    REDESIGN['refresh_states'],
+                    AUTO_IMPORT['refresh_states'],
+                    M1_UI['refresh_states'][index],
+                    M2_POLICY['refresh_states'],
+                    M4A['refresh_states'][index],
                 ),
                 index,
             )
@@ -146,8 +152,15 @@ class CharacterizationTests(unittest.TestCase):
         # test_accessibility_walk checks the new real keyboard traversal order.
         self.assertEqual(
             semantic_rows(self.actual['window']['focus']),
-            reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus'], AUTO_IMPORT['focus'], M1_UI['focus'], M2_POLICY['focus']),
+            reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus'], AUTO_IMPORT['focus'], M1_UI['focus'], M2_POLICY['focus'], M4A['focus']),
         )
+
+    def test_m4a_delta_only_adds_its_explicit_controls_and_prerequisite_labels(self):
+        identities = {'autostart_enabled', 'download_and_install_update', '_prerequisite', 'download_and_install_update_prerequisite'}
+        for changes in (M4A['focus'], *M4A['refresh_states']):
+            self.assertEqual(changes['removed'], [])
+            self.assertEqual({change['row'][0] for change in changes['added']}, identities)
+            self.assertEqual([change['count'] for change in changes['added']], [1] * len(identities))
 
     def test_reviewed_refresh_delta_changes_only_layout_controls_and_captions(self):
         changes = REDESIGN['refresh_states']

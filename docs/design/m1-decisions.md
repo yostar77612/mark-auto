@@ -229,6 +229,26 @@
   provide its stop while retaining every original financial/isolation assertion.
   No new strings/modules or changed style hashes; do not rerun baseline generation.
 
+
+## 2026-11-02 M4a：一鍵更新與選用開機啟動
+
+- 工作目錄從 `origin/main`（f0e974f）建立 `codex/m4a-update-autostart`；直接對 main 開 PR，不堆疊、不自行合併。僅相關模組與實際視窗檢查在本機執行，完整回歸與 Windows 安裝驗證交 CI（依本次擁有者指令）。
+- 安裝接棒使用 Windows 內建 PowerShell，沿用既有 Inno 安裝程式的 `MARKAUTO_PAYLOAD_VERIFIED=` 日誌確認新 payload，不另造 stable launcher。先等自有引擎乾淨退出、安裝 mutex 釋放、原桌面 PID 結束，才啟動安裝；絕不強制終止程序。更新失敗不寫工作區或設定。
+- 初始資產 URL 僅接受具名 GitHub repository release HTTPS 前綴。GitHub 正常下載必須轉址至 `release-assets.githubusercontent.com/github-production-release-asset/`，只允許該 CDN 與 objects.githubusercontent.com/github-production-release-asset-2e65be/ 的明確 HTTPS 轉址；逐跳驗證並驗證最終 URL。禁止任意主機、降級、帳密、非標準連接埠。
+- manifest 新增 aware `published_at`、`signature_verified: false`、`installer: {url, sha256}`；舊 manifest 僅能檢查版本，無完整安裝資訊時拒絕安裝。發布固定指標引用同次不可變版本 release 的資產雜湊，避免指標更新競態。
+- 現有安裝採版本化 payload 路徑，HKCU Run 值指向目前 frozen `MarkAuto.exe`。只有已啟用時在新版啟動修正路徑；原本關閉不建立機碼。只啟動視窗，不接觸交易恢復流程。
+- ChatGPT visible delegation 使用既有設定對話，遇到輸入框 selector deadline/no_matches，未送出 prompt，停止此委派並由本地並行審查承接；未繞過登入或 UI 權限。
+
+- 完整 diff 的 GitNexus 變更分析回報 HIGH（79 symbols、6 flows，非 partial／truncated）；主要涉及設定頁組裝、主題與文字顯示。此範圍以專屬測試、既有設定／關閉回歸及 CI 全套驗證；HIGH 未被當成 low。
+- 更新確認後沿用既有視窗關閉確認，若使用者再取消關閉則取消待安裝要求並清下載，不碰交易頁檔案；不使用測試專用的跳過確認屬性。
+- 下載 worker 採非 daemon，退出期間完成取消清理；成功檔案交接與視窗銷毀以單一 lock 同步，避免未輪詢結果留下完整或半成品檔。
+- 本機原生 installer guard 的兩個既有測試因其他使用中 MarkAuto 持有真實 mutex 而安全拒跑；不擾動既有程序、不削弱斷言，交由隔離的 Windows CI 執行。模組式執行曾遇測試互相import路徑差異，改用 discover 的專案標準指令。
+
+- 2026-11-02 23:35 Asia/Taipei，M4a CI 回歸：設定頁不得透過 window() 探索 shell，改由 trading_runtime 注入 maintenanceRequestClose。保留原更新說明的 help 身份與不背景自動下載的提示，同時展示新的手動安裝說明；恢復原完整 help 基準，不改既有邊界／可達性斷言。新 head 重新執行兩套完整 CI，不使用 failed-only。
+
+- M4a 完整 CI 基準收斂：18 個新增 ErrorText 逐項鎖完整 render，另鎖新增來源區塊雜湊，重建後保留原 64 筆／原來源雜湊；三個 widget 名稱獨立列出後仍保留歷史集合 digest。R7 僅加入四列精準增量（focus 與四種 refresh 各四列），無刪除，r7_base 未改。
+- 新核取方塊增加預設輸入數 4→5；擴充 repin_baselines 的 settings_inputs plan 以工具集中產生這個精準數據，其他頁面數量、頁高、primary 上限與未標示輸入檢查不變。autostart 只需文字狀態，改 PlainText QLabel 消除不必要的隱藏 action 重名，補上核取方塊 tooltip。20 個錯誤／歷史集合測試、16 個 R7 測試，以及完整原失敗模組 90 個測試通過；最終兩模式 native 視窗與八張截圖皆通過。
+
 ## 2026-11-02 — U4 risk and automatic execution desktop
 
 - Start independent U4 from latest merged U3 main f0e974f; append phase68 orders
@@ -242,3 +262,7 @@
   generated once at feature completion in a separate commit; full tests stay CI.
 - Native LOCAL7.816s/fake SIM6.891s pass, normal owned cleanup/no real SDK. CI green
   and Claude review required before merge; Codex does not merge this order path.
+
+- 2026-11-03 M4a 合入最新 main d77a893：保留 M2/M3/U4 與 installer on-demand 的所有意圖；M4a 字串接在 U4 後，phase69、orders3086–3103，catalog 工具量測 +18／0刪／0改、總3104。合併後45字串測試及90相關回歸全通，native LOCAL/fake SIM與8張圖重驗全通。完整合併圖分析 CRITICAL（641 symbols、31 flows，partial=false、truncated=false），風險保留並交完整 CI；相對最新 main，M4a 不含任何交易source變更。
+
+- M4a Linux coverage 診斷：ea75a35 attempt2 所有實際分片成功，但11個新增 Windows registry cases 的既定 Linux 不適用條件未登記，嚴格 aggregate 拒絕。以原 CI reports 三profile重播可穩定紅；精確加入這11筆後，各5517cases原validate皆綠。Windows3.11/3.12證據中這11筆均started/stopped、0skip/error/failure。中央工具 registry_applicability plan 只接受既有decorator、exact11方法與reason，原34/39筆歷史平台資料與hash完整保留；gate/workflow與skip decorator完全未改。39工具/gate測試通過，全部6plans up-to-date；推新head再跑全輪CI。

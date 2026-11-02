@@ -97,19 +97,62 @@ def run_window(
 ) -> int:
     # UI and independent engine each own a handle to the existing installer
     # presence guard. Closing one lifetime must not expose the other's files.
-    with closing(WindowsAppMutex()):
-        previous = dict(_STARTED)
-        try:
-            return _run_window(
-                root,
-                environment=environment,
-                account_ref=account_ref,
-                profile_path=profile_path,
-                contexts_path=contexts_path,
-                research_bootstrap=research_bootstrap,
+    from quantlab.update_install import cancel_pending_install, launch_pending_install, pending_install
+
+    try:
+        with closing(WindowsAppMutex()):
+            previous = dict(_STARTED)
+            try:
+                result = _run_window(
+                    root,
+                    environment=environment,
+                    account_ref=account_ref,
+                    profile_path=profile_path,
+                    contexts_path=contexts_path,
+                    research_bootstrap=research_bootstrap,
+                )
+            finally:
+                _close_window_engines(previous)
+    except (DomainError, OSError):
+        if not pending_install():
+            raise
+        _abort_update('update_shutdown_failed')
+        return 1
+    if result != 0:
+        cancel_pending_install()
+        return result
+    # All retained child exits are confirmed and our guard has been released.
+    # The independent helper additionally waits for this exact desktop PID and
+    # refuses another application/engine's still-present installation guard.
+    try:
+        launch_pending_install(
+            lambda command: subprocess.Popen(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                close_fds=True,
             )
-        finally:
-            _close_window_engines(previous)
+        )
+    except OSError:
+        _abort_update('update_install_start_failed')
+        return 1
+    return result
+
+
+def _abort_update(code: str) -> None:
+    from PySide6.QtWidgets import QMessageBox
+    from quantlab.desktop_errors import error_message
+    from quantlab.update_install import cancel_pending_install
+
+    try:
+        cancel_pending_install()
+    except OSError:
+        # A complete download can remain when the OS refuses removal; no
+        # installer is launched and no installed/user file has been touched.
+        logging.getLogger(__name__).error('Update temporary download cleanup refused')
+    QMessageBox.critical(None, 'MarkAuto', error_message(code))
 
 
 def _presentation_options(root: Path) -> dict:
@@ -175,6 +218,20 @@ def _run_window(
     app.setOrganizationName('MarkAuto')
     app.setApplicationVersion(__version__)
     app.setWindowIcon(application_icon(app))
+    from quantlab.autostart import installed_autostart, repair_autostart
+    from quantlab.desktop_errors import error_message
+    from quantlab.update_download import download_installer
+    from quantlab.update_install import can_install, cancel_pending_install, queue_install
+
+    app.setProperty('autostartController', installed_autostart())
+    app.setProperty('maintenanceDownload', download_installer)
+    app.setProperty('maintenanceCanInstall', can_install)
+    app.setProperty('maintenanceQueueInstall', queue_install)
+    app.setProperty('maintenanceCancelInstall', cancel_pending_install)
+
+    autostart_error = repair_autostart()
+    if autostart_error:
+        QMessageBox.warning(None, 'MarkAuto', error_message(autostart_error))
     try:
         contexts = RuntimeContextManager(root or default_root(), contexts_path)
         selected, account = contexts.selected_context, account_ref or contexts.selected_account
@@ -232,6 +289,7 @@ def _run_window(
         style_automatic_controls=style_automatic_controls,
         **_presentation_options(root or default_root()),
     )
+    app.setProperty('maintenanceRequestClose', window.close)
     _apply_trading_page_theme(window)
     from desktop_app.research_session import ResearchSession, UnifiedResearch
 

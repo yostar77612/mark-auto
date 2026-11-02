@@ -310,7 +310,10 @@
     "quantlab/research_core/ports/history.py": "application",
     "quantlab/research_core/ports/market_data.py": "application",
     "tools/refactor/e_market_history.py": "tooling",
-    "tools/refactor/scan_market_imports.py": "tooling"
+    "tools/refactor/scan_market_imports.py": "tooling",
+    "quantlab/autostart.py": "infrastructure",
+    "quantlab/update_download.py": "infrastructure",
+    "quantlab/update_install.py": "infrastructure"
   },
   "ports": [
     "quantlab/assistant/ports/",

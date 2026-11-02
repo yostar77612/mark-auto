@@ -237,6 +237,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[67])
 # Lane U4: account risk and explicitly resumed automatic execution.
 ZH_TW.update(_ZH_TW_CHUNKS[68])
 
+# Lane M4a: manual update and optional autostart.
+ZH_TW.update(_ZH_TW_CHUNKS[69])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

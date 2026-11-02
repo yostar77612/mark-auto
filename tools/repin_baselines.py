@@ -18,6 +18,7 @@ import argparse
 import ast
 from collections import Counter
 from dataclasses import dataclass, field
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -321,6 +322,127 @@ def observer_plan(root: Path) -> Plan:
     return plan
 
 
+SETTINGS_PRESENTATION = 'tests/fixtures/ui_redesign_empty_presentation.json'
+SETTINGS_TOOLTIP_POLICY = 'tests/fixtures/ui_redesign_tooltip_coverage.json'
+SETTINGS_INPUT_CODE = """
+import json
+from desktop_app.strings.catalog import ui_text
+from tests.snapshot_cache import default_metrics
+pages = default_metrics()['pages']
+name = ui_text('ui.settings_page.title')
+sys.stdout.buffer.write(json.dumps({
+    'name': name,
+    'settings': pages[name],
+    'counts': [page['visible_input_count'] for page in pages.values()],
+}, ensure_ascii=False).encode('utf-8'))
+"""
+
+
+def settings_inputs_plan(root: Path) -> Plan:
+    """Record M4a's one new settings checkbox without widening UI budgets."""
+    plan = Plan('settings_inputs', verify=('test_b4_appearance', 'test_t16_tooltips'))
+    measured = json.loads(run_python(root, SETTINGS_INPUT_CODE))
+    presentation_text = read(root, SETTINGS_PRESENTATION)
+    presentation = json.loads(presentation_text)
+    policy_text = read(root, SETTINGS_TOOLTIP_POLICY)
+    policy = json.loads(policy_text)
+    actual = measured['settings']
+    expected_counts = [3, 0, 0, 0, 3, 4, 5]
+    if measured['counts'] != expected_counts:
+        plan.blockers.append('M4a permits exactly one new settings input; another page/input changed')
+    if actual['unlabeled_inputs']:
+        plan.blockers.append('settings contains an unlabeled input; a baseline cannot fix accessibility')
+    if actual['page_height'] > policy['max_default_page_height']:
+        plan.blockers.append('settings exceeds the existing page-height budget')
+    if actual['primary_button_count'] > policy['max_default_primary_buttons']:
+        plan.blockers.append('settings exceeds the existing primary-button budget')
+    if plan.blockers:
+        return plan
+    before = presentation['pages'][measured['name']]
+    after = {key: actual[key] for key in before}
+    presentation['pages'][measured['name']] = after
+    updated = like(presentation_text, render_json(presentation))
+    if updated != presentation_text:
+        plan.edits[SETTINGS_PRESENTATION] = updated
+    updated_policy = replace_literal(
+        policy_text,
+        r'"default_input_counts":\s*(\[[^\]]*\])',
+        json.dumps(expected_counts),
+        'default input counts',
+    )
+    if updated_policy != policy_text:
+        plan.edits[SETTINGS_TOOLTIP_POLICY] = updated_policy
+    plan.summary.append('settings inputs: exactly 5; all other page counts and UI budgets retained')
+    plan.summary.append('settings presentation fields: ' + ', '.join(key for key in before if before[key] != after[key]))
+    return plan
+
+
+# --- reviewed Windows registry applicability: no other platform skips ---
+
+REGISTRY_METHODS = (
+    'test_correct_registration_has_no_write',
+    'test_create_error_is_specific',
+    'test_default_off_does_not_create_key',
+    'test_delete_error_preserves_registration',
+    'test_disable_missing_key_is_idempotent',
+    'test_disable_removes_only_owned_value',
+    'test_enable_quotes_only_executable_under_hkcu',
+    'test_query_error_is_not_treated_as_disabled',
+    'test_read_access_error_is_specific',
+    'test_repair_follows_updated_or_moved_executable',
+    'test_write_error_is_specific',
+)
+REGISTRY_HISTORICAL = {
+    'tests/fixtures/ui_linux_applicability_skips.json': '6433af69149278c4252c412d55664aa2082dcc15e7a6193ca43d5f0b9cb745a9',
+    'tests/fixtures/linux_offline_applicability_skips.json': '0d0f14d0986d6d803d4f1693d464224b00f26f175ea1707224b5ab27f8d65edf',
+}
+
+
+def _registry_applicability_rows(root: Path) -> list[dict]:
+    """Read the existing native-registry condition without importing its tests."""
+    tree = ast.parse(read(root, 'tests/test_autostart.py'))
+    classes = [node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'RunAutostartTests']
+    if len(classes) != 1:
+        raise Blocked('registry applicability requires the original RunAutostartTests class')
+    owner = classes[0]
+    expected = ast.parse("unittest.skipIf(autostart.winreg is None, 'Windows registry required')", mode='eval').body
+    if len(owner.decorator_list) != 1 or ast.dump(owner.decorator_list[0]) != ast.dump(expected):
+        raise Blocked('registry applicability requires the exact existing Windows registry skip condition and reason')
+    methods = [node for node in owner.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith('test_')]
+    if tuple(sorted(node.name for node in methods)) != REGISTRY_METHODS or any(node.decorator_list for node in methods):
+        raise Blocked('registry applicability admits exactly the eleven reviewed, undecorated registry methods')
+    return [{'id': 'test_autostart.RunAutostartTests.' + name, 'reason': 'Windows registry required'} for name in REGISTRY_METHODS]
+
+
+def registry_applicability_plan(root: Path) -> Plan:
+    """Append the proven native-registry cases; freeze every historical skip."""
+    plan = Plan('registry_applicability', verify=('test_repin_registry_applicability', 'test_ui_test_gate'))
+    additions = _registry_applicability_rows(root)
+    reviewed = {row['id']: row for row in additions}
+    for name, historical_sha in REGISTRY_HISTORICAL.items():
+        original = read(root, name)
+        rows = json.loads(original)
+        if type(rows) is not list or any(
+            type(row) is not dict or set(row) != {'id', 'reason'} or type(row['id']) is not str or type(row['reason']) is not str for row in rows
+        ):
+            raise Blocked(name + ': invalid applicability rows')
+        if len({row['id'] for row in rows}) != len(rows):
+            raise Blocked(name + ': duplicate applicability case')
+        if any(row != reviewed[row['id']] for row in rows if row['id'] in reviewed):
+            raise Blocked(name + ': an existing registry applicability reason changed')
+        historical = [row for row in rows if row['id'] not in reviewed]
+        digest = hashlib.sha256(json.dumps(historical, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        if digest != historical_sha:
+            raise Blocked(name + ': historical applicability rows or order changed; no unreviewed cases are admitted')
+        present = {row['id'] for row in rows}
+        missing = [row for row in additions if row['id'] not in present]
+        updated = like(original, render_json(sorted(rows + missing, key=lambda row: row['id'])))
+        if updated != original:
+            plan.edits[name] = updated
+        plan.summary.append(f'{name}: +{len(missing)} exact native-registry cases; all {len(historical)} historical entries retained')
+    return plan
+
+
 # --- runner ---
 
 BASELINES = {
@@ -328,6 +450,8 @@ BASELINES = {
     'inventory': lambda root, args: inventory_plan(root, args.inventory_note),
     'stylesheet': lambda root, args: stylesheet_plan(root),
     'observers': lambda root, args: observer_plan(root),
+    'settings_inputs': lambda root, args: settings_inputs_plan(root),
+    'registry_applicability': lambda root, args: registry_applicability_plan(root),
 }
 
 
