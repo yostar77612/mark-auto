@@ -7551,3 +7551,17 @@ or search by process name. The UI installation guard covers this shutdown wait.
 Existing engine stop/reconciliation semantics and LIVE prohibition are unchanged.
 Real-process regressions cover active subscriptions, in-flight history, native
 mutex disappearance, research QLockFile reacquisition and journal lease reopening.
+
+## M3-2 v1 信號橋接與候選摘要邊界（2026-11-02）
+
+- `V1SignalSource` 使用原 `research.validate_dsl` AST 准入、`candidate_fingerprint` 與
+  **同一函式物件** `strategies.generate_signals`，只對映 UTC K 棒／信號；不翻譯規則、不改規格。
+  非明確 TMF 月契約、非整數價格、排序重疊錯誤回 `validation_failed`；無效 JSON／AST 回
+  `candidate_spec_unsupported`，錯誤不回顯輸入內容。所有金融數值保持 Decimal。
+- M3-1 的 domain/port 與凍結版本契約不變；任何參數變更仍由 `AutoStrategy.revised` 建立新版本，橋接不提供修改路徑。
+- 候選目錄只接受已由主機 reader 驗證來源綁定的固定 E1 值型別，檢查指紋、標準化規格、唯一參照與本機鎖；
+  缺失、鎖定、不符、讀取失敗一律 `candidate_unavailable`。不讀 OOS／最終保留內容、不取得單寫入者鎖、不寫資料。
+- **現行研究持久層尚無權威的單一候選 E1 摘要，因此預設 reader 一律拒絕；現行工作區的可建成候選目錄未完成。**
+  keyword-only 主機 reader 注入只測試摘要邊界，不把合成 fixture 或顯示用統計 verdict 當成產品資格證據。
+  詳見 `docs/design/m3-decisions.md`；後續 producer 契約／必要授權不可省略。
+- 本項不新增 AI 工具、提示、UI 字串、引擎／日誌接線、網路行情、憑證或任何委託路徑；LIVE 硬關閉與 G3 bytes 保持不變。
