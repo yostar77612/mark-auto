@@ -7182,6 +7182,128 @@ Production orders stay hard-disabled; every change below sends nothing and adds 
   `price_deviation`; previews carry the current bid/ask. A distant resting limit is allowed.
   An exit order may be amended to any legal price (it reserves no cash and has no stop).
 
+## M2-7 — bounded TMF minute training (2026-11-02)
+
+`MinuteResearchService` reads only the selected explicit TMF delivery contract
+from the M1 SQLite `bars_1m` cache. A TRAINING-only request names first/last
+trading dates and a versioned calendar. Every DAY session minute must be present,
+ordered, final, positive Decimal OHLCV, correctly identified, and closed as of
+admission. Coverage records are not completeness evidence. Missing/sparse data
+queues M1 `HistorySync.request(force=True)` and returns a retry-required error;
+no worker or receipt is produced until a later call revalidates the full grid.
+The existing M1 intraday force restriction may defer repair until after hours.
+No synthetic missing minute or index-price/TMF substitution is permitted.
+
+The read-only `TMFMinuteHistorySession` uses an already-owned authenticated
+context and its authoritative `resolve`/real-month InstrumentBinding. It never
+logs in, activates a CA, submits orders, or chooses a rolling contract. It maps
+SDK right-labelled numeric Taipei wall time to UTC minute starts, rejects
+repeated minutes and post-query disconnects, and excludes non-DAY sessions.
+Unknown quota or >=90% of min(reported limit,500MiB) refuses queries; M1 retains
+its existing <=29-day chunks and <=40 calls/10s. Fake SDK tests exercise this
+binding; native SDK/Windows operation remains unverified.
+
+1m/5m bars are session-aligned; 5m requires all five original minutes and no
+partial closing bucket. A prior completed bar event precedes the equal-clock
+next-open event; signals never receive the current close/high/low/volume. The
+unchanged daily helper retains its strict timestamp ordering. Positions execute
+at the next open with the shared FeeSchedule TMF per-contract fees, tax and
+configurable adverse slippage (default one tick per leg). MINUTES means elapsed
+wall-clock minutes, rounded up to an available next-open event; TRADING_DAYS
+counts explicit calendar days, not weekends. Forced exits override minimum
+holding. Intraday positions close at the configured grid-aligned cutoff (TMF
+default13:35 Asia/Taipei), never open at/after cutoff or cross a session date.
+No same-event close/re-entry; terminal liquidation uses the last known opening,
+not a future close. Expiry day/continuous contracts, night sessions, equities,
+and automatic contract rolling are outside this slice and fail closed.
+
+A job is bounded to10000 original minutes and reuses the owned spawn worker's
+4MiB wire/15-minute wall-clock deadline, cancellation and cleanup. A changed cache revision
+triggers a re-read; changes to the selected training snapshot reject its receipt.
+Unrelated live-instrument writes do not invalidate identical selected data. `MinuteResearchResult` preserves
+the daily ResearchResult envelope and adds the exact settings, raw cache digest,
+calendar/cost versions and RAW_CONTRACT basis. Settings and complete derived
+bars enter the dataset fingerprint. Daily research implementation/results and
+fingerprints are unchanged. Minute receipts use a separate fingerprint namespace
+and therefore cannot accidentally authorize the existing daily-policy deployment
+engine. Desktop selection, durable strategy admission/activation for minute
+holding, and equities after M2-9 are explicitly not wired in this research-only
+slice; do not present it as complete M2-7 product acceptance.
+
+### M2-7 continuation — owned host, bounded refill and durable receipts (2026-11-02)
+
+The previous low-level retry API remains available, but the real composition
+entry is now `RuntimeBundle.research_minutes(strategy, settings, calendar=...,
+deadline=..., cancel_event=...)`. It uses the host's existing M1 KlineStore and
+its generated-resource gateway (including ManualExecutionGateway's adapter),
+not an independent fabricated instrument or a new login. A dedicated owned
+HistorySync shares `bundle.market_history.reserve_query`; their combined history KBars
+requests use the same serialized40/10-second authority. Both workers use the
+same durable returned-bar counter and authenticated SDK usage, so a new research
+job does not reset daily quota. SDK calls never hold the limiter or publication
+condition lock; cancellation is checked again after a limiter wait.
+
+One non-renewable deadline, capped at15minutes from admission, covers queueing,
+refill, worker computation and receipt admission. Missing data queues one M1
+refill, waits with cancellation/deadline checks, and revalidates every minute
+before computing. Failed/paused/sparse refill, cancellation, timeout, or changed
+host/contract/cost facts produce no receipt. Cancellation also reaches the owned
+spawn worker. Research never activates a strategy or changes daily admission.
+
+HistorySync's generation/closed check and bars/coverage publication now share
+one condition scope. A successful `watch_removed` return means no subsequent
+publication for that generation. Its optional bounded form can returnFalse when
+a cache write is already in progress; callers must not claim that cancellation
+has linearized in that case. `close(timeout=0)` sets a stop Event without an
+unbounded condition-lock wait and reports whether the worker has actually
+retired. Timeout paths retain a retiring worker marker and reject another job
+until it exits. Host shutdown does not close the shared cache underneath such
+a worker and reports cleanup uncertainty. A native call cannot be killed safely
+in a Python thread: caller waiting is bounded, but native cleanup is not falsely
+reported complete. Consumed returned-bar accounting is not refunded.
+
+Generated resources intentionally retain their `TMF:{month}` identity. Minute
+research accepts it and the existing `TAIFEX:TMF:{month}` spelling only with the
+explicit TAIFEX/index-future specification; it does not rename cache identities.
+Generated `effective_at` remains the current metadata observation time. For a
+window before that observation, `HistoricalContractEvidence` must bind the full
+specification, exact SDK delivery code, valid-from/until interval, source and
+artifact SHA-256. Missing or mismatched evidence is "unknown" and fails before
+querying. No listing/validity date is inferred from expiry or from SDK now. The
+existing generated09:00–13:29:59.999999 calendar is an artificial manual common
+window, not TMF day-session evidence; callers provide an explicit verified TMF
+research calendar. Synthetic integration tests exercise real generated resources
+with explicit fixture historical evidence; they do not establish native vendor
+history or historical applicability for a user's real contract.
+
+A successful run atomically appends a `MinuteResearchReceipt` to
+`research/minute-receipts.sqlite3`. It retains the compatible minute result,
+strategy, full specification, full FeeSchedule, calendar, producer profile,
+original one-minute raw bars and their digest, exact settings (including any
+historical applicability evidence), completion time and M1_SQLITE_BARS_1M source.
+The receipt is research-only; raw prices are not adjusted or index-substituted.
+Encoding is bounded to4MiB; oversized receipts fail before insertion. A final
+cancellation/deadline/host guard runs inside the transaction before commit;
+failure rolls back. Existing receipts are never rewritten. Reopening validates
+payload hashes, schema, raw grid and input fingerprints. The recent in-memory
+view is bounded to32; older immutable rows remain readable by sequence. The
+storage adapter knows only bounded text; typed codecs stay in runtime/application
+so no layer exception is added.
+### M2-7：新主線 typed 參數相容性邊界（2026-11-02）
+
+`StrategyRecord.parameters` 非空時，1m／5m admission 一律以 `capability_missing` 拒絕，發生在回補、worker 與證據發布之前。現有 minute engine 尚未實作 typed stop、entry amount、contracts、近月規則，不能用 legacy 訊號／單口結果冒充；有無 legacy definition 均相同。parameters 為 None 的既有研究保持原語意與結果。
+
+
+
+### M2-7：明確選取固定模型假設（2026-11-02）
+
+- 新 `FixedModelMinuteSettings` 是 caller 必須明確建立的獨立 wire 型別；不是資料不足或證明不足時的自動 fallback。持久化 `basis=FIXED_MODEL`、`model_version=minute-fixed-model-v1`、`historical_applicability=UNKNOWN`、exact SDK code。
+- 將傳入 spec 的 tick grid／multiplier／lot size 與 FeeSchedule 套用到歷史原始價，是明確研究模型假設，不聲稱歷史條款已驗證。margin feasibility、追繳、歷史每日漲跌停不在模型內；當前 observation time／margin 留作 snapshot provenance，不充當歷史事實。
+- 固定模型不得同時帶 `HistoricalContractEvidence`。exact contract identity／SDK binding、expiry、完整 session/grid、下一棒開盤、無前視、成本與滑價、取消／逾時及 receipt publication 守衛保持；typed StrategyParameters 仍不支援。結果仍為 research-only，不得用來取得 execution／activation 權限。
+- 既有 `MinuteResearchSettings` 與 interval-reference 的欄位、wire 名稱、拒絕行為均不改；舊模式所謂 evidence 是 caller-supplied reference，並非程式已驗證的權威來源。source 字串或 64-hex digest 不能驗證 artifact 或其真實性，這項澄清取代先前任何「已驗證」措辭。
+- 模型型別與欄位透過原 settings/result/receipt codec 進入 dataset/hash/fingerprint；新增 golden regression 固定既有 synthetic settings/result/receipt wire hash，舊紀錄不遷移、不重算。
+
+
 ## M2-4 engine contract (2026-11-02)
 
 - New typed creation: `UiAction.CREATE_TYPED_STRATEGY`, `UiCommand.strategy` and
