@@ -9,6 +9,7 @@ from threading import Event, RLock, Thread, current_thread
 from time import monotonic
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from quantlab.trading.adapters.shioaji.account_discovery import discover_accounts
 from quantlab.trading.adapters.shioaji.gateway import ShioajiAdapter
@@ -193,10 +194,31 @@ class MinuteHostTests(unittest.TestCase):
 
     def test_timeout_invalidates_late_refill_and_never_publishes(self):
         self.sdk.release = Event()
+        self.addCleanup(self.sdk.release.set)
+        epoch = datetime.now(timezone.utc)
+        deadline = epoch + timedelta(seconds=0.1)
         started = monotonic()
-        with self.assertRaisesRegex(DomainError, 'research_timeout'):
-            self.run_host(seconds=0.1)
+
+        # Exercise timeout AFTER dispatch, not a race between profile hashing /
+        # thread scheduling and a 100 ms wall deadline. Keep a real-time bound
+        # so a missing SDK dispatch fails rather than freezing the test forever.
+        def elapsed():
+            return 0.1 if self.sdk.started.is_set() or monotonic() - started >= 1 else 0.0
+
+        class BudgetClock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return (epoch + timedelta(seconds=elapsed())).astimezone(tz)
+
+        with (
+            patch('quantlab.trading.runtime.minute_research_wait.datetime', BudgetClock),
+            patch('quantlab.trading.runtime.minute_research_wait.monotonic', elapsed),
+            self.assertRaisesRegex(DomainError, 'research_timeout'),
+        ):
+            self.bundle.research_minutes(self.strategy, self.settings, calendar=self.calendar, deadline=deadline)
         self.assertLess(monotonic() - started, 1)
+        self.assertTrue(self.sdk.started.wait(1), 'fake SDK query did not start')
+        self.assertIsNotNone(self.sdk.query_thread)
         self.assertFalse(self.receipt_path.exists())
         self.assertIsNotNone(self.bundle.minute_research_retiring)
         self.sdk.release.set()
