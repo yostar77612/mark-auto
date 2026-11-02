@@ -861,8 +861,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
 | `quantlab/trading/adapters/shioaji/minute_history.py` | 79 | infrastructure | `quantlab/trading/adapters/shioaji/minute_history.py` | M2-7: read-only resolved TMF history binding; fake SDK time/identity/quota tests; no login or order API. |
-| `quantlab/trading/application/minute_research.py` | 157 | application | `quantlab/trading/application/minute_research.py` | M2-7: deterministic completed-signal/next-open minute engine and research-only evidence; daily activation unchanged. |
-| `quantlab/trading/domain/minute_research.py` | 122 | domain | `quantlab/trading/domain/minute_research.py` | M2-7: TRAINING settings, explicit complete session grid and 1m/5m aggregation; no missing-bar fabrication. |
+| `quantlab/trading/application/minute_research.py` | 159 | application | `quantlab/trading/application/minute_research.py` | M2-7: deterministic completed-signal/next-open minute engine and research-only evidence; daily activation unchanged. |
+| `quantlab/trading/domain/minute_research.py` | 149 | domain | `quantlab/trading/domain/minute_research.py` | M2-7: TRAINING settings, explicit complete session grid and 1m/5m aggregation; no missing-bar fabrication. |
 | `quantlab/trading/runtime/minute_research.py` | 91 | composition | `quantlab/trading/runtime/minute_research.py` | M2-7: M1 cache/refill plus bounded worker composition and selected snapshot admission. |
 
 | `tests/test_minute_research.py` | 338 | tooling | `tests/test_minute_research.py` | M2-7: synthetic next-open/holding/cost/cutoff/grid/evidence tests and real bounded spawn. |
@@ -871,7 +871,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/application/minute_receipt.py` | 69 | application | `quantlab/trading/application/minute_receipt.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/minute_contract.py` | 51 | domain | `quantlab/trading/domain/minute_contract.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/minute_receipt_store.py` | 38 | composition | `quantlab/trading/runtime/minute_receipt_store.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
-| `quantlab/trading/runtime/minute_research_host.py` | 114 | composition | `quantlab/trading/runtime/minute_research_host.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/minute_research_host.py` | 118 | composition | `quantlab/trading/runtime/minute_research_host.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/minute_research_wait.py` | 38 | composition | `quantlab/trading/runtime/minute_research_wait.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `tests/test_minute_research_host.py` | 501 | tooling | `tests/test_minute_research_host.py` | M2-7 continuation: real generated resources/host/M1/spawn/SQLite receipts; cancellation, shared quota, historical validity and persistence fixtures only. |
 | `quantlab/trading/application/account_risk.py` | 206 | application | `quantlab/trading/application/account_risk.py` | M2-5 engine: register account risk authority, immutable preflight boundary and cached Sinopac preflight composition; no layer rules or assertions changed. |
@@ -884,6 +884,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/domain/auto_cycle.py` | 136 | domain | `quantlab/trading/domain/auto_cycle.py` | M2-3 completed-bar execution, durable claims, shared SIM capacity, trusted close evidence and runtime owner binding; engine-only delivery |
 | `quantlab/trading/domain/automatic_calendar.py` | 84 | domain | `quantlab/trading/domain/automatic_calendar.py` | M2-3 completed-bar execution, durable claims, shared SIM capacity, trusted close evidence and runtime owner binding; engine-only delivery |
 | `quantlab/trading/runtime/automatic.py` | 348 | composition | `quantlab/trading/runtime/automatic.py` | M2-3 completed-bar execution, durable claims, shared SIM capacity, trusted close evidence and runtime owner binding; engine-only delivery |
+
+| `tests/test_minute_research_basis.py` | 136 | tooling | `tests/test_minute_research_basis.py` | M2-7: explicit fixed-model assumption/UNKNOWN basis, generated SDK host, unchanged legacy wire hashes and preserved contract/grid/cancellation guards. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
