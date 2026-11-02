@@ -17,6 +17,7 @@ from quantlab.trading.domain.risk import AccountDailyBaseline, AccountRiskLimits
 from .lifecycle_models import CorporateActionJob, RollJob
 from .performance import VersionEquityTrack
 from .manual_book import ManualAcquisition, ManualBook, ManualReceivable, ManualRequest
+from .automatic_state import AutomaticState
 
 
 @dataclass(frozen=True)
@@ -104,6 +105,8 @@ class AppState:
     account_daily_locks: tuple[tuple[str, date], ...] = ()
     preflight: tuple[PreflightView, ...] = ()
     preflight_blocks: tuple[tuple[str, date], ...] = ()
+    automatic: AutomaticState = AutomaticState()
+    automatic_daily_evidence: 'DailyBaselineEvidence | None' = None
 
 
 def replace_order(state: AppState, order: LocalOrder) -> AppState:

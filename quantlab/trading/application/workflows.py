@@ -30,11 +30,11 @@ def run_research(engine: 'TradingEngine', reference: str, bars: tuple['Completed
     record = engine.strategy(reference)
     if record.state not in ('RULE_VALID', 'RESEARCHED'):
         raise DomainError('risk_rejected', 'validate rules before research')
-    spec = engine.catalog.resolve(record.form.instrument_id)
+    spec = engine._strategy_spec(engine.catalog.resolve(record.form.instrument_id), record)
     training = tuple(bar for bar in bars if spec.effective_at <= bar.opened_at and bar.available_at < engine.clock.now())
     if engine.profile is None:
         raise DomainError('source_invalid_evidence', 'v2 producer profile required')
-    calendar, fees, profile = engine.calendar, engine.fees, engine.profile
+    calendar, fees, profile = engine._strategy_calendar(record, spec.instrument_id), engine.fees, engine.profile
     with engine.lock.suspended():
         if engine.research_runner is None:
             result = research(record, spec, calendar, training, fees, source_profile=profile)
@@ -48,9 +48,9 @@ def run_research(engine: 'TradingEngine', reference: str, bars: tuple['Completed
         or current.definition != record.definition
         or current.state != record.state
         or current.evidence_hash != record.evidence_hash
-        or engine.calendar != calendar
+        or engine._strategy_calendar(current, spec.instrument_id) != calendar
         or engine.fees != fees
-        or engine.catalog.resolve(spec.instrument_id) != spec
+        or engine._strategy_spec(engine.catalog.resolve(spec.instrument_id), current) != spec
         or engine.profile != profile
         or engine.state.engine_closed
         or engine.storage_failed

@@ -40,6 +40,19 @@ MANUAL_ACTIONS = frozenset(
 ATTEMPT_SOURCE = 'APP_CONFIRMED_SIM_MANUAL_ATTEMPT_KEY_PERMISSION_UNVERIFIED'
 
 
+def _update_automatic_margin_sources(engine, resources):
+    """Retained contracts keep provenance until an explicit resource replaces it."""
+    unverified = set(getattr(engine, 'unverified_automatic_margins', ()))
+    for resource in resources:
+        for binding in resource.bindings:
+            if binding.spec.market is not Market.STOCK:
+                if resource.margin_source.startswith('BROKER_VERIFIED'):
+                    unverified.discard(binding.spec.instrument_id)
+                else:
+                    unverified.add(binding.spec.instrument_id)
+    engine.unverified_automatic_margins = frozenset(unverified)
+
+
 class ManualExecutionGateway:
     """Serialize adapter cache mutation; financial observations stay unavailable."""
 
@@ -88,9 +101,11 @@ class ManualRuntime:
         self.bundle, self.owner = bundle, bundle.sinopac_connection
         self.service = self.adapter = self.stamp = None
         self.error = 'not_connected'
+        self.protective_stamp = None
         self.last_scopes = {}
         self.refresh_lock = Lock()
         self.port_lock = Lock()
+        self.automatic_subscription = None
         self.resource_store = ManualResourceStore(bundle)
 
     def _accepted(self):
@@ -193,6 +208,8 @@ class ManualRuntime:
         from quantlab.trading.application.manual_trading import ManualTradingService
         from quantlab.trading.ports.manual import ManualPriceLimit
         from .live_market import CalendarResolver
+        from .provenance import compute_profile
+        from .research_worker import SpawnResearchRunner
 
         view, selected, shared = self._accepted()
         if stamp != (view.generation, view.revision, selected, shared):
@@ -238,6 +255,7 @@ class ManualRuntime:
             adapter.disconnect()
             raise
         self.adapter, self.service = adapter, None
+        self.automatic_subscription = None
         gateway = ManualExecutionGateway(adapter, self.port_lock)
         catalog = Catalog(tuple(row.spec for row in retained.bindings))
         engine = self.bundle.engine
@@ -248,7 +266,15 @@ class ManualRuntime:
                 journal = Ledger(self.bundle.launch.root / 'manual-trading-v2.sqlite', 'manual-sim-trading-v2', datetime.now(timezone.utc))
                 try:
                     engine = TradingEngine(
-                        journal, self.owner.clock, first.calendar, catalog, {ref: gateway for ref in accounts}, configuration=configuration, fees=first.fees
+                        journal,
+                        self.owner.clock,
+                        first.calendar,
+                        catalog,
+                        {ref: gateway for ref in accounts},
+                        configuration=configuration,
+                        fees=first.fees,
+                        source_profile=compute_profile(),
+                        research_runner=SpawnResearchRunner(),
                     )
                 except BaseException:
                     journal.close()
@@ -267,7 +293,16 @@ class ManualRuntime:
             engine.gateways = {ref: gateway for ref in set(accounts) | obligations}
             engine.manual_markets = {ref: markets[ref] for ref in engine.gateways}
             engine.configuration, engine.catalog, engine.calendar, engine.fees = configuration, catalog, first.calendar, first.fees
+            engine.automatic_capabilities = {row.account_ref: row for resource in resources for row in resource.capabilities}
+            _update_automatic_margin_sources(engine, resources)
+            if self.bundle.automatic_runtime is not None:
+                engine.automatic_observation_validator = self.bundle.automatic_runtime.validate_observation
+                engine.automatic_entry_validator = self.bundle.automatic_runtime.validate_entry
+                engine.automatic_submission_guard = self.bundle.automatic_runtime.submission_guard
             adapter.session_resolver = CalendarResolver(engine)
+            adapter.quote_version = 'v1'
+            if adapter.tick_stream is not None:
+                adapter.tick_stream.resolver = adapter.session_resolver
             adapter.account_sequences.update({row.account_ref: row.sequence for row in engine.state.cursors if row.account_ref in accounts})
             for order in engine.state.orders:
                 # An unknown submission keeps its placeholder so a later observation can still find it.
@@ -280,6 +315,7 @@ class ManualRuntime:
                 ManualPriceLimit(row.instrument_id, row.lower, row.upper, row.observed_at, row.source) for resource in resources for row in resource.limits
             )
             self.stamp = stamp
+            self.protective_stamp = None
             service = ManualTradingService(
                 engine, validate_scope=self.validate_scope, limits=limits, cost_source=first.fee_source, margin_source=first.margin_source
             )
@@ -289,6 +325,17 @@ class ManualRuntime:
 
     def _resources(self, selected):
         try:
+            if (
+                self.owner.resource_factory is None
+                and self.bundle.engine is not None
+                and any(row.parameters is not None for row in self.bundle.engine.state.strategies)
+            ):
+                from .sinopac_resources import generated_resources
+
+                future_accounts = {
+                    row.form.account_ref for row in self.bundle.engine.state.strategies if row.parameters is not None and row.form.market is Market.INDEX_FUTURE
+                }
+                return tuple(generated_resources(self.owner, ref, include_next=ref in future_accounts) for ref in selected)
             return tuple(self.owner.resources(ref) for ref in selected)
         except DomainError:
             raise
@@ -319,20 +366,36 @@ class ManualRuntime:
         if stamp != (current.generation, current.revision, selected, shared):
             raise DomainError('state_conflict', 'resource renewal belongs to an obsolete session')
         with engine.lock:
+            _update_automatic_margin_sources(engine, resources)
             for resource in resources:
                 for row in resource.capabilities:
                     self.adapter.capabilities[row.account_ref] = replace(
                         row, can_trade=True, short_sell=Market.INDEX_FUTURE in row.markets, day_trade=False, odd_lot=False, source=ATTEMPT_SOURCE
                     )
+                    engine.automatic_capabilities[row.account_ref] = row
                 for row in resource.bindings:
                     self.adapter.bindings[row.spec.instrument_id] = replace(row, spec=engine.catalog.resolve(row.spec.instrument_id))
                 for row in resource.limits:
                     self.service.limits[row.instrument_id] = ManualPriceLimit(row.instrument_id, row.lower, row.upper, row.observed_at, row.source)
 
-    def _failed(self, code):
+    def _failed(self, code, *, validated_stamp=None):
+        self.protective_stamp = None
         self.error = code
         with self.bundle.lock:
             if self.service is not None and not self.bundle.closing:
+                engine = self.bundle.engine
+                if validated_stamp is not None and self.service.protective_batch_failed and engine is self.service.engine:
+                    with engine.lock, self.owner.lock:
+                        current = self.owner.snapshot()
+                        if (
+                            self.bundle.sinopac_connection is self.owner
+                            and current.phase == 'CONNECTED'
+                            and self.owner.query_ready
+                            and validated_stamp == self.stamp == (current.generation, current.revision, tuple(sorted(self.owner.selected)), self.owner.shared)
+                            and engine.manual_protective_observations
+                        ):
+                            self.protective_stamp = validated_stamp
+                            return
                 try:
                     self.service.adopt(())
                 except DomainError:
@@ -341,22 +404,37 @@ class ManualRuntime:
     def refresh(self):
         if not self.refresh_lock.acquire(blocking=False):
             return
+        validated_stamp = None
         try:
             deadline = monotonic() + 8.0
             view, selected, shared = self._accepted()
             stamp = view.generation, view.revision, selected, shared
             if stamp != self.stamp:
                 self._materialize(stamp, self._resources(selected))
-            elif any(row.expires_at <= self.owner.clock.now() for row in self.adapter.capabilities.values()):
+            elif any(row.expires_at <= self.owner.clock.now() for row in self.adapter.capabilities.values()) or (
+                self.owner.resource_factory is None
+                and any(row.parameters is not None and row.form.market is Market.INDEX_FUTURE for row in self.bundle.engine.state.strategies)
+                and len([spec for spec in self.bundle.engine.catalog.instruments if spec.market is Market.INDEX_FUTURE]) < 2
+            ):
                 self._renew_facts(stamp, self._resources(selected))
             engine, adapter, service = self.bundle.engine, self.adapter, self.service
             with engine.lock:
                 cursors = {row.account_ref: row.sequence for row in engine.state.cursors}
                 instruments = tuple(row.instrument_id for row in engine.catalog.instruments)
                 observed_version = engine.state.version
+                automatic_futures = (
+                    tuple(spec.instrument_id for spec in engine.catalog.instruments if spec.market is Market.INDEX_FUTURE)
+                    if any(row.parameters is not None and row.form.market is Market.INDEX_FUTURE for row in engine.state.strategies)
+                    else ()
+                )
             # Every wait below runs outside the writer and composition locks.
             observations, quotes = [], []
             with self.port_lock:
+                if automatic_futures and self.automatic_subscription != automatic_futures:
+                    receipt = adapter.subscribe(automatic_futures)
+                    if not receipt.active:
+                        raise DomainError('market_data_not_connected')
+                    self.automatic_subscription = automatic_futures
                 for ref in engine.gateways:
                     if monotonic() >= deadline:
                         raise DomainError('manual_account_observation_required', 'bounded manual observation deadline')
@@ -375,18 +453,34 @@ class ManualRuntime:
                 raise DomainError('state_conflict', 'observation belongs to an obsolete owner')
             if monotonic() >= deadline:
                 raise DomainError('manual_account_observation_required', 'bounded manual observation deadline')
-            with self.bundle.lock, engine.lock:
+            with self.bundle.lock, engine.lock, self.owner.lock:
                 if self.bundle.closing:
                     return
+                current, current_selected, current_shared = self._accepted()
+                if (
+                    self.bundle.engine is not engine
+                    or self.bundle.sinopac_connection is not self.owner
+                    or service is not self.service
+                    or adapter is not self.adapter
+                    or stamp != (current.generation, current.revision, current_selected, current_shared)
+                ):
+                    raise DomainError('state_conflict')
                 if engine.state.version != observed_version:
+                    engine.manual_protective_observations = {}
                     return  # A command committed after collection began; refresh again.
                 for quote in quotes:
                     if engine.quotes.get(quote.instrument_id) != quote:
                         engine.quote(quote)
-                service.adopt(tuple(observations))
+                try:
+                    service.adopt(tuple(observations))
+                except DomainError:
+                    if service.protective_batch_failed:
+                        validated_stamp = stamp
+                    raise
+            self.protective_stamp = None
             self.error = ''
         except DomainError as error:
-            self._failed(error.code)
+            self._failed(error.code, validated_stamp=validated_stamp)
         except (OSError, sqlite3.Error):
             self._failed('journal_failed')
         finally:

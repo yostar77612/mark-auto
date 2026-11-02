@@ -14,6 +14,7 @@ from quantlab.trading.domain.strategy import StrategyParameters
 from quantlab.trading.domain.strategy import StrategyDefaults as StrategyDefaults, strategy_defaults as strategy_defaults
 from quantlab.trading.domain.risk import AccountRiskLimits
 from .preflight import PreflightView
+from .automatic_state import EvaluationStatus
 from .broker_settings import BrokerReadiness, BrokerSettings
 from .market_settings import MarketDataSettings
 from .manual_contracts import (
@@ -106,6 +107,8 @@ class MarketSeriesPage:
 
 
 class UiAction(str, Enum):
+    AUTO_RESUME = 'auto_resume'
+    AUTO_RECONCILE = 'auto_reconcile'
     CHECK_PREFLIGHT = 'check_preflight'
     SAVE_ACCOUNT_RISK = 'save_account_risk'
     CREATE_TYPED_STRATEGY = 'create_typed_strategy'
@@ -362,6 +365,13 @@ class StrategyProductView:
 
 
 @dataclass(frozen=True)
+class AutomaticView:
+    state: str = 'PAUSED_WAITING_RESUME'
+    reasons: tuple[str, ...] = ('program_restarted',)
+    evaluations: tuple[EvaluationStatus, ...] = ()
+
+
+@dataclass(frozen=True)
 class UiState:
     environment: Environment
     account_ref: str
@@ -410,6 +420,7 @@ class UiState:
     strategy_products: tuple[StrategyProductView, ...] = ()
     account_risks: tuple[AccountRiskView, ...] = ()
     preflight: tuple[PreflightView, ...] = ()
+    automatic: AutomaticView = AutomaticView()
 
 
 class TradingFacade(Protocol):

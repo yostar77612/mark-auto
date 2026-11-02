@@ -173,7 +173,14 @@ def synchronize_session(engine: 'TradingEngine') -> bool:
 def _synchronize_session(engine: 'TradingEngine') -> bool:
     if engine.configuration.environment is Environment.LOCAL:
         return False  # Local lab dates advance only through their explicit control.
-    context = resolve_session(engine.calendar, engine.clock.now(), night_enabled=engine.state.settings.night_enabled)
+    calendar = engine.calendar
+    if engine.state.manual_books and any(row.parameters is not None for row in engine.state.strategies):
+        from quantlab.trading.domain.automatic_calendar import automatic_day_calendar
+        from quantlab.trading.domain.strategy import is_tmf
+        from quantlab.trading.domain.models import Market
+
+        calendar = automatic_day_calendar(calendar, tuple(spec for spec in engine.catalog.instruments if spec.market is Market.STOCK or is_tmf(spec)))
+    context = resolve_session(calendar, engine.clock.now(), night_enabled=engine.state.settings.night_enabled)
     state = engine.state
     rollback = context.trade_date < state.trading_day
     required = rollback or state.daily_baseline_required or not _matches_committed_baseline(engine, context)

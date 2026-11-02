@@ -103,10 +103,13 @@ class RuntimeBundle:
             self.market_connection = MarketConnection(self.launch.root)
         self.sinopac_connection = self.market_connection if self.launch.sinopac else None
         self.manual_runtime = None
+        self.automatic_runtime = None
         if self.sinopac_connection is not None:
             from .manual_trading import ManualRuntime
+            from .automatic import AutomaticRuntime
 
             self.manual_runtime = ManualRuntime(self)
+            self.automatic_runtime = AutomaticRuntime(self)
         if self.engine is not None:
             self.watch_settings.restore(self.engine)
         self.lock = RLock()
@@ -277,6 +280,10 @@ class RuntimeBundle:
             if self.manual_runtime is None or not self.manual_runtime.handles(command) or self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
             return self.manual_runtime.execute(command)
+        if self.automatic_runtime is not None and self.automatic_runtime.handles(command):
+            if self.closing or self.closed or self.control_failed:
+                return UiReceipt(False, 'state_conflict', '')
+            return self.automatic_runtime.execute(command)
         if isinstance(command, UiCommand) and self.manual_runtime is not None and self.manual_runtime.handles(command):
             if self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
@@ -553,6 +560,9 @@ class RuntimeBundle:
                 from quantlab.trading.application.account_risk import observe_account_limits
 
                 observe_account_limits(engine)
+            if self.manual_runtime.adapter is not None:
+                self.automatic_runtime.pump_futures(self.manual_runtime.adapter)
+            self.automatic_runtime.pump()
             return
         if engine.configuration.environment is not Environment.LOCAL:
             from quantlab.trading.application.coordinator import run_cycle, run_readonly_cycle
@@ -697,6 +707,8 @@ def build_runtime(
         from .market_terminal import attach_terminal
 
         attach_terminal(bundle)
+        if bundle.automatic_runtime is not None:
+            bundle.automatic_runtime.attach_terminal()
         return bundle
     resources = None
     settings = None
@@ -733,6 +745,8 @@ def build_runtime(
         from .market_terminal import attach_terminal
 
         attach_terminal(bundle)
+        if bundle.automatic_runtime is not None:
+            bundle.automatic_runtime.attach_terminal()
         return bundle
     except BaseException:
         journal.close()
