@@ -11,6 +11,8 @@ from .execution import ExecutionService
 from .research import research
 from .state import ACTIVE
 from .performance import advance_tracks, unrealized_liquidation
+from .account_risk import account_net_mark, assert_account_resume, m2_account_refs, observe_account_limits
+from .preflight import assert_preflight, engine_preflight_facts, record_preflight
 from quantlab.trading.domain.models import Environment, HoldingKind
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.policies import transfer_position
@@ -90,6 +92,9 @@ def resume(engine: 'TradingEngine') -> None:
         raise DomainError('risk_rejected', 'daily loss stop cannot be cleared today')
     if any(job.status != 'APPLIED' for job in engine.state.corporate_actions) or any(job.status == 'FROZEN' for job in engine.state.rolls):
         raise DomainError('reconciliation_required', 'durable lifecycle work remains unresolved')
+    assert_account_resume(engine)
+    for account_ref in sorted(m2_account_refs(engine)):
+        assert_preflight(engine, account_ref)
     engine.fence()
     engine._persist('entries_resumed_explicitly', replace(engine.state, stopped=False))
 
@@ -144,6 +149,7 @@ def observe_risk(engine: 'TradingEngine') -> None:
 
 @decimal_operation
 def mark_risk(engine: 'TradingEngine') -> None:
+    observe_account_limits(engine)
     prepared = _risk_mark(engine)
     if prepared is None:
         return
@@ -197,10 +203,27 @@ def step(engine: 'TradingEngine', history: dict[str, tuple['CompletedBar', ...]]
         raise DomainError('capability_missing', 'only running local simulation can advance')
     next_day = engine.calendar.advance(engine.state.trading_day, 1)
     baseline = total_mark(engine)
+    from quantlab.trading.domain.risk import AccountDailyBaseline
+
+    accounts = m2_account_refs(engine)
+    account_baselines = (
+        *tuple(row for row in engine.state.account_daily_baselines if row.account_ref not in accounts),
+        *(AccountDailyBaseline(account, next_day, account_net_mark(engine, account), 'LOCAL_DAY_ADVANCE') for account in sorted(accounts)),
+    )
     tracks = tuple(replace(track, daily_baseline=track.equity, trade_date=next_day) for track in advance_tracks(engine))
     now = engine.calendar.day_session(next_day).opens_at + timedelta(minutes=5)
     engine.simulation.advance(next_day, now)
-    engine._persist('trading_day_advanced', replace(engine.state, trading_day=next_day, daily_baseline_pnl=baseline, daily_pnl=ZERO, performance_tracks=tracks))
+    engine._persist(
+        'trading_day_advanced',
+        replace(
+            engine.state,
+            trading_day=next_day,
+            daily_baseline_pnl=baseline,
+            daily_pnl=ZERO,
+            performance_tracks=tracks,
+            account_daily_baselines=account_baselines,
+        ),
+    )
     # Simulation composition updates quote state through the regular quote port.
     for instrument, bars in history.items():
         current = next((b for b in bars if b.opened_at.date() == next_day), None)
@@ -210,6 +233,8 @@ def step(engine: 'TradingEngine', history: dict[str, tuple['CompletedBar', ...]]
 
             engine.quote(Quote(instrument, current.open, spec.shift_ticks(current.open, 1), current.open, now, now, next_day, sequence=engine.quote_count + 1))
     reconcile(engine)
+    for account_ref in sorted(accounts):
+        record_preflight(engine, account_ref, engine_preflight_facts(engine, account_ref))
     # Reconciliation keeps new risk stopped until explicitly resumed. A normal
     # local day step retains an already-authorized RUNNING decision across days.
     # The caller remembers that intent, while restart always remains stopped.

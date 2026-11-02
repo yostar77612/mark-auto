@@ -1,0 +1,1963 @@
+{
+  "scope": "M2-5 engine only; offline fake SDK/fixtures",
+  "tests": {
+    "account_risk": 37,
+    "account_baselines": 36,
+    "preflight": 23,
+    "integration": 28,
+    "strategy_management": 36,
+    "existing_application": 29,
+    "runtime_preflight": 69
+  },
+  "final_focused": {
+    "tests": 189,
+    "seconds": 87.324,
+    "passed": true
+  },
+  "mutations": {
+    "account_risk": [
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "daily_loss_guard",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "check_account_entry",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_loss_limit_uses_account_allocated_capital_and_triggers_at_equality",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "daily_loss_equality",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "check_account_entry",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_loss_limit_uses_account_allocated_capital_and_triggers_at_equality",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "order_notional_guard",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "check_account_entry",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_order_notional_cap_allows_exact_limit_and_rejects_above",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "position_limit_guard",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "check_account_entry",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_position_cap_reserves_new_slot_at_equality",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "position_addition_exception",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "check_account_entry",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_position_cap_reserves_new_slot_at_equality",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 3,
+        "errors": 0,
+        "name": "pure_reduction_exception",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "check_account_entry",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_reductions_remain_legal_under_each_limit",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "limit_account_identity",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountRiskLimits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_limit_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "limit_loss_positive",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountRiskLimits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_limit_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "limit_loss_maximum",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountRiskLimits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_limit_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "limit_notional_positive",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountRiskLimits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_limit_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 2,
+        "errors": 0,
+        "name": "limit_positions_positive",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountRiskLimits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_limit_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "baseline_account_identity",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountDailyBaseline",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_baseline_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "baseline_date_type",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountDailyBaseline",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_baseline_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "baseline_finite_pnl",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountDailyBaseline",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_baseline_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "baseline_source_identity",
+        "module": "quantlab.trading.domain.risk",
+        "scope": "AccountDailyBaseline",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_baseline_inputs_validate_at_boundary",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "all_owner_mark",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_mark_includes_manual_retired_and_closed_realized_lots_and_entry_costs",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "account_mark_isolation",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_mark_includes_manual_retired_and_closed_realized_lots_and_entry_costs",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "entry_costs_only",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_mark_includes_manual_retired_and_closed_realized_lots_and_entry_costs",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "entry_cost_account_isolation",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_mark_includes_manual_retired_and_closed_realized_lots_and_entry_costs",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "entry_costs_included",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_mark_includes_manual_retired_and_closed_realized_lots_and_entry_costs",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "open_mark_required",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_unknown_open_position_mark_does_not_become_zero",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "closed_position_no_slot",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_position_scopes",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_position_slots_include_every_owner_and_active_entry_but_not_exits_or_terminal_orders",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "slot_account_isolation",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_position_scopes",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_position_slots_include_every_owner_and_active_entry_but_not_exits_or_terminal_orders",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "pending_exit_no_slot",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_position_scopes",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_position_slots_include_every_owner_and_active_entry_but_not_exits_or_terminal_orders",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "terminal_order_no_slot",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_position_scopes",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_position_slots_include_every_owner_and_active_entry_but_not_exits_or_terminal_orders",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "pending_entry_account_isolation",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_position_scopes",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_position_slots_include_every_owner_and_active_entry_but_not_exits_or_terminal_orders",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "dated_loss_latch",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_entry_rejection",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_loss_latch_survives_pnl_recovery_and_account_isolation",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "baseline_account_scope",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "_account_baseline",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_missing_or_wrong_day_account_baseline_blocks_entries",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "baseline_day_scope",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "_account_baseline",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_missing_or_wrong_day_account_baseline_blocks_entries",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 0,
+        "errors": 3,
+        "name": "missing_baseline_guard",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_entry_rejection",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_missing_or_wrong_day_account_baseline_blocks_entries",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "attested_close_subtraction",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_entry_rejection",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_daily_pnl_subtracts_attested_close_instead_of_restarting_from_zero",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "risk_limit_account_scope",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_account_specific_notional_limit_is_used",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "futures_multiplier",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_entry_rejection",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_futures_notional_includes_contract_multiplier",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 0,
+        "errors": 1,
+        "name": "application_reduction_exception",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_entry_rejection",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_application_reduction_needs_neither_baseline_nor_account_valuation",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "virtual_capacity_override",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_entry_rejection",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_explicit_virtual_capacity_skips_unsupported_account_query",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "adoption_legacy_exclusion",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "m2_account_refs",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_adoption_survives_deleted_strategy_for_legacy_and_manual_entries",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "adoption_tombstone_persistence",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "m2_account_refs",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_deleted_typed_account_and_distinct_explicit_policy_account_both_stay_adopted",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "unadopted_entry_exception",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_entry_rejection",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_unadopted_account_keeps_legacy_manual_admission",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "account_mark_quality",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_other_instrument_unverified_or_receive_stale_marks_block_account_valuation",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "account_mark_receive_time",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "account_net_mark",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_other_instrument_unverified_or_receive_stale_marks_block_account_valuation",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_old_locks_retained",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_keeps_loss_latched_after_recovery_and_preserves_older_account_locks",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_daily_latch",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_keeps_loss_latched_after_recovery_and_preserves_older_account_locks",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 0,
+        "errors": 1,
+        "name": "observer_missing_baseline",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_marks_missing_baseline_pending_without_inventing_baseline_or_loss_lock",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_actual_loss",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_latches_loss_without_signal_or_order_and_is_idempotent",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_loss_latch_persisted",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_latches_loss_without_signal_or_order_and_is_idempotent",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_stops_entries",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_latches_loss_without_signal_or_order_and_is_idempotent",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_warns",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_marks_missing_baseline_pending_without_inventing_baseline_or_loss_lock",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_state_idempotence",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_latches_loss_without_signal_or_order_and_is_idempotent",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_unknown_mark_warning",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_unknown_mark_stops_account_without_hiding_another_accounts_loss_latch",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_subtracts_previous_close",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_latches_loss_without_signal_or_order_and_is_idempotent",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_manual_book_capital",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "_configured_allocation",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_uses_confirmed_manual_book_capacity_in_shared_sim",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "observer_futures_capital",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "_configured_allocation",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_observer_uses_futures_allocation_for_other_account",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "resume_rechecks_current_loss",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "assert_account_resume",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_resume_observes_fresh_loss_even_before_monitor_tick",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 2,
+        "errors": 0,
+        "name": "resume_daily_lock",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "assert_account_resume",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_scoped_and_global_resume_cannot_clear_today_loss_lock",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "resume_daily_baseline",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "assert_account_resume",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_resume_requires_current_account_baseline",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "manual_allocation_account_scope",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "_configured_allocation",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_another_accounts_manual_capital_cannot_inflate_loss_threshold",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "existing_issues_retained",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "observe_account_limits",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_loss_observation_preserves_existing_unrelated_issue",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 0,
+        "errors": 1,
+        "name": "resume_account_scope",
+        "module": "quantlab.trading.application.account_risk",
+        "scope": "assert_account_resume",
+        "test": "test_m2_account_risk.M2AccountRiskTests.test_scoped_resume_assertion_selects_requested_adopted_account",
+        "killed": true,
+        "exit_code": 1
+      }
+    ],
+    "account_baselines": [
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_existing_history",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_seed_never_replaces_existing_account_history_even_from_prior_day",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "genesis_never_samples_current_mark",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_empty_ledger_genesis_is_zero_without_sampling_current_mark",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_account_history_scope",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_zero_genesis_ignores_other_accounts_history",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 2,
+        "errors": 0,
+        "name": "seed_positions_guard",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_seed_refuses_open_and_closed_position_history",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_order_history_guard",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_seed_refuses_unproven_order_history",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_sim_environment",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_current_book_same_environment_and_confirmed_source",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_current_book_day",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_current_book_same_environment_and_confirmed_source",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_confirmed_book_source",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_current_book_same_environment_and_confirmed_source",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_cancelled_diagnostic",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_refuses_unknown_filled_costly_or_wrong_owner_diagnostic",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_zero_fills",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_refuses_unknown_filled_costly_or_wrong_owner_diagnostic",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_zero_costs",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_refuses_unknown_filled_costly_or_wrong_owner_diagnostic",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 4,
+        "errors": 0,
+        "name": "seed_known_diagnostic_receipt",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_known_diagnostic_receipt_for_same_account",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_diagnostic_owner",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_refuses_unknown_filled_costly_or_wrong_owner_diagnostic",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_receipt_account",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_known_diagnostic_receipt_for_same_account",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_receipt_purpose",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_known_diagnostic_receipt_for_same_account",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_receipt_known_outcome",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_known_diagnostic_receipt_for_same_account",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "seed_same_verified_day",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_sim_genesis_requires_same_verified_trading_day_diagnostic",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "halt_reduction_exception",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_risk_halt_preserves_previous_locks_and_exempts_reductions",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 2,
+        "errors": 0,
+        "name": "halt_loss_only_latch",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_risk_halt_persists_warning_and_only_daily_loss_latches_account",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "halt_no_duplicate_latches",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_risk_halt_preserves_previous_locks_and_exempts_reductions",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "halt_preserve_issues",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_risk_halt_preserves_existing_unknown_outcome_issue",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "close_tuple_type",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_split_boundary_requires_typed_finite_pairs_and_exact_total",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 0,
+        "errors": 1,
+        "name": "close_empty_legacy_compatibility",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_multi_account_aggregate_never_fabricates_splits",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 1,
+        "name": "close_pair_type",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_split_boundary_requires_typed_finite_pairs_and_exact_total",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 0,
+        "errors": 1,
+        "name": "close_decimal_type",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_split_boundary_requires_typed_finite_pairs_and_exact_total",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 5,
+        "errors": 0,
+        "name": "close_exact_accounts",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_split_boundary_rejects_duplicates_missing_wrong_order_and_extra_accounts",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "close_exact_total",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_split_boundary_requires_typed_finite_pairs_and_exact_total",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 0,
+        "errors": 1,
+        "name": "close_decimal_context",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_split_sum_uses_isolated_decimal_context",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "single_account_derive_only",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_multi_account_aggregate_never_fabricates_splits",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "same_day_account_mark_frozen",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_same_day_baseline_is_immutable_even_when_total_is_unchanged",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "close_trusted_source",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_untrusted_proof_never_commits_account_marks",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "close_requires_reconciliation",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_incomplete_reconciliation_never_commits_account_marks",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "pending_only_clears_all_accounts",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_account_pending_clears_only_when_every_adopted_account_is_proven_and_locks_remain",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "close_does_not_reset_account_lock",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_account_pending_clears_only_when_every_adopted_account_is_proven_and_locks_remain",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "local_account_mark_not_zero",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_local_step_records_prior_account_mark_before_advancing_and_keeps_locks",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "local_mark_before_clock",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_local_step_samples_account_mark_before_clock_advances",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "local_account_locks_preserved",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_local_step_records_prior_account_mark_before_advancing_and_keeps_locks",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "resume_account_guard",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_global_resume_requires_account_loss_guard_and_preflight_after_old_reconciliation_gate",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "resume_preflight_guard",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_global_resume_requires_account_loss_guard_and_preflight_after_old_reconciliation_gate",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "risk_monitor_without_signal",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_account_monitor_runs_before_generic_mark_even_without_a_signal",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "zero_unused_allocation",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_zero_allocation_inactive_account_does_not_create_false_daily_loss",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "explicit_saved_limits_adopt",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_explicit_limits_adopt_manual_only_account_and_cover_alternate_entry_owners",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 1,
+        "errors": 0,
+        "name": "local_new_day_preflight",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_public_local_step_records_failed_new_day_check_and_keeps_entries_stopped",
+        "killed": true,
+        "exit_code": 1
+      },
+      {
+        "run": 1,
+        "failures": 2,
+        "errors": 0,
+        "name": "local_day_only_guard",
+        "test": "test_m2_account_baselines.M2AccountBaselineTests.test_broker_context_cannot_advance_or_collect_local_day_preflight",
+        "killed": true,
+        "exit_code": 1
+      }
+    ],
+    "preflight": {
+      "production_module": "quantlab.trading.application.preflight",
+      "test_module": "tests/test_m2_preflight.py",
+      "baseline_tests": 23,
+      "baseline_passed": true,
+      "mutation_count": 24,
+      "killed": 24,
+      "product_source_writes": false,
+      "records": [
+        {
+          "case": "connection",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_connection_failure_and_unknown_block_independently",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_connection_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_connection_failure_and_unknown_block_independently) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('FAIL', 'preflight_connection')\n\nFirst differing element 0:\n'PASS'\n'FAIL'\n\n- ('PASS', '')\n+ ('FAIL', 'preflight_connection')\n\n======================================================================\nFAIL: test_connection_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_connection_failure_and_unknown_block_independently) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('UNKNOWN', 'preflight_connection')\n\nFirst differing element 0:\n'PASS'\n'UNKNOWN'\n\n- ('PASS', '')\n+ ('UNKNOWN', 'preflight_connection')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "account",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_account_failure_and_unknown_block_independently",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_account_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_account_failure_and_unknown_block_independently) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('FAIL', 'preflight_account')\n\nFirst differing element 0:\n'PASS'\n'FAIL'\n\n- ('PASS', '')\n+ ('FAIL', 'preflight_account')\n\n======================================================================\nFAIL: test_account_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_account_failure_and_unknown_block_independently) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('UNKNOWN', 'preflight_account')\n\nFirst differing element 0:\n'PASS'\n'UNKNOWN'\n\n- ('PASS', '')\n+ ('UNKNOWN', 'preflight_account')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "permission",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_permission_failure_and_unknown_block_independently",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_permission_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_permission_failure_and_unknown_block_independently) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('FAIL', 'preflight_permission')\n\nFirst differing element 0:\n'PASS'\n'FAIL'\n\n- ('PASS', '')\n+ ('FAIL', 'preflight_permission')\n\n======================================================================\nFAIL: test_permission_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_permission_failure_and_unknown_block_independently) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('UNKNOWN', 'preflight_permission')\n\nFirst differing element 0:\n'PASS'\n'UNKNOWN'\n\n- ('PASS', '')\n+ ('UNKNOWN', 'preflight_permission')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "ca",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_ca_failure_and_unknown_block_independently_in_live",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_ca_failure_and_unknown_block_independently_in_live (test_m2_preflight.PreflightTests.test_ca_failure_and_unknown_block_independently_in_live) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('FAIL', 'preflight_ca')\n\nFirst differing element 0:\n'PASS'\n'FAIL'\n\n- ('PASS', '')\n+ ('FAIL', 'preflight_ca')\n\n======================================================================\nFAIL: test_ca_failure_and_unknown_block_independently_in_live (test_m2_preflight.PreflightTests.test_ca_failure_and_unknown_block_independently_in_live) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('UNKNOWN', 'preflight_ca')\n\nFirst differing element 0:\n'PASS'\n'UNKNOWN'\n\n- ('PASS', '')\n+ ('UNKNOWN', 'preflight_ca')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "market",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_market_failure_and_unknown_block_independently",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_market_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_market_failure_and_unknown_block_independently) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('FAIL', 'preflight_market')\n\nFirst differing element 0:\n'PASS'\n'FAIL'\n\n- ('PASS', '')\n+ ('FAIL', 'preflight_market')\n\n======================================================================\nFAIL: test_market_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_market_failure_and_unknown_block_independently) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('UNKNOWN', 'preflight_market')\n\nFirst differing element 0:\n'PASS'\n'UNKNOWN'\n\n- ('PASS', '')\n+ ('UNKNOWN', 'preflight_market')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "service",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_service_failure_and_unknown_block_independently",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_service_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_service_failure_and_unknown_block_independently) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('FAIL', 'preflight_service')\n\nFirst differing element 0:\n'PASS'\n'FAIL'\n\n- ('PASS', '')\n+ ('FAIL', 'preflight_service')\n\n======================================================================\nFAIL: test_service_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_service_failure_and_unknown_block_independently) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('UNKNOWN', 'preflight_service')\n\nFirst differing element 0:\n'PASS'\n'UNKNOWN'\n\n- ('PASS', '')\n+ ('UNKNOWN', 'preflight_service')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "reconciliation",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_reconciliation_failure_and_unknown_block_independently",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_reconciliation_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_reconciliation_failure_and_unknown_block_independently) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('FAIL', 'preflight_reconciliation')\n\nFirst differing element 0:\n'PASS'\n'FAIL'\n\n- ('PASS', '')\n+ ('FAIL', 'preflight_reconciliation')\n\n======================================================================\nFAIL: test_reconciliation_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_reconciliation_failure_and_unknown_block_independently) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('PASS', '') != ('UNKNOWN', 'preflight_reconciliation')\n\nFirst differing element 0:\n'PASS'\n'UNKNOWN'\n\n- ('PASS', '')\n+ ('UNKNOWN', 'preflight_reconciliation')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "unknown_blocks",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_connection_failure_and_unknown_block_independently",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_connection_failure_and_unknown_block_independently (test_m2_preflight.PreflightTests.test_connection_failure_and_unknown_block_independently) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 54, in check_failure_and_unknown\n    self.assertTrue(view.blocked_today)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "local_ca_exempt",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown (test_m2_preflight.PreflightTests.test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown) (environment=<Environment.LOCAL: 'LOCAL'>, ca=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 92, in test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown\n    self.assertEqual((check.state, check.code), ('NOT_REQUIRED', ''))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('FAIL', 'preflight_ca') != ('NOT_REQUIRED', '')\n\nFirst differing element 0:\n'FAIL'\n'NOT_REQUIRED'\n\n- ('FAIL', 'preflight_ca')\n+ ('NOT_REQUIRED', '')\n\n======================================================================\nFAIL: test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown (test_m2_preflight.PreflightTests.test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown) (environment=<Environment.LOCAL: 'LOCAL'>, ca=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 92, in test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown\n    self.assertEqual((check.state, check.code), ('NOT_REQUIRED', ''))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('UNKNOWN', 'preflight_ca') != ('NOT_REQUIRED', '')\n\nFirst differing element 0:\n'UNKNOWN'\n'NOT_REQUIRED'\n\n- ('UNKNOWN', 'preflight_ca')\n+ ('NOT_REQUIRED', '')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "sim_ca_exempt",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown (test_m2_preflight.PreflightTests.test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown) (environment=<Environment.BROKER_SIMULATION: 'BROKER_SIMULATION'>, ca=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 92, in test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown\n    self.assertEqual((check.state, check.code), ('NOT_REQUIRED', ''))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('FAIL', 'preflight_ca') != ('NOT_REQUIRED', '')\n\nFirst differing element 0:\n'FAIL'\n'NOT_REQUIRED'\n\n- ('FAIL', 'preflight_ca')\n+ ('NOT_REQUIRED', '')\n\n======================================================================\nFAIL: test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown (test_m2_preflight.PreflightTests.test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown) (environment=<Environment.BROKER_SIMULATION: 'BROKER_SIMULATION'>, ca=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 92, in test_sim_and_local_ca_are_not_required_even_when_unavailable_or_unknown\n    self.assertEqual((check.state, check.code), ('NOT_REQUIRED', ''))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('UNKNOWN', 'preflight_ca') != ('NOT_REQUIRED', '')\n\nFirst differing element 0:\n'UNKNOWN'\n'NOT_REQUIRED'\n\n- ('UNKNOWN', 'preflight_ca')\n+ ('NOT_REQUIRED', '')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "live_ca_required",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_ca_failure_and_unknown_block_independently_in_live",
+          "tests": 1,
+          "detail": "FF\n======================================================================\nFAIL: test_ca_failure_and_unknown_block_independently_in_live (test_m2_preflight.PreflightTests.test_ca_failure_and_unknown_block_independently_in_live) (value=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('NOT_REQUIRED', '') != ('FAIL', 'preflight_ca')\n\nFirst differing element 0:\n'NOT_REQUIRED'\n'FAIL'\n\n- ('NOT_REQUIRED', '')\n+ ('FAIL', 'preflight_ca')\n\n======================================================================\nFAIL: test_ca_failure_and_unknown_block_independently_in_live (test_m2_preflight.PreflightTests.test_ca_failure_and_unknown_block_independently_in_live) (value=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 53, in check_failure_and_unknown\n    self.assertEqual((check.state, check.code), (state, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: ('NOT_REQUIRED', '') != ('UNKNOWN', 'preflight_ca')\n\nFirst differing element 0:\n'NOT_REQUIRED'\n'UNKNOWN'\n\n- ('NOT_REQUIRED', '')\n+ ('UNKNOWN', 'preflight_ca')\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=2)\n"
+        },
+        {
+          "case": "daily_latch_view",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason (test_m2_preflight.PreflightTests.test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 112, in test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason\n    self.assertTrue(view.blocked_today)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "daily_latch_record",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_failure_is_recorded_as_stop_and_named_warning_in_journal",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_failure_is_recorded_as_stop_and_named_warning_in_journal (test_m2_preflight.PreflightTests.test_failure_is_recorded_as_stop_and_named_warning_in_journal)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 101, in test_failure_is_recorded_as_stop_and_named_warning_in_journal\n    self.assertEqual(engine.state.preflight_blocks, (('stock', NOW.date()),))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: () != (('stock', datetime.date(2026, 11, 2)),)\n\nSecond tuple contains 1 additional elements.\nFirst extra element 0:\n('stock', datetime.date(2026, 11, 2))\n\n- ()\n+ (('stock', datetime.date(2026, 11, 2)),)\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "daily_latch_unique",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason (test_m2_preflight.PreflightTests.test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 114, in test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason\n    self.assertEqual(engine.state.preflight_blocks, (('stock', NOW.date()),))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (('stock', datetime.date(2026, 11, 2)), ('stock', datetime.date(2026, 11, 2))) != (('stock', datetime.date(2026, 11, 2)),)\n\nFirst tuple contains 1 additional elements.\nFirst extra element 1:\n('stock', datetime.date(2026, 11, 2))\n\n- (('stock', datetime.date(2026, 11, 2)), ('stock', datetime.date(2026, 11, 2)))\n+ (('stock', datetime.date(2026, 11, 2)),)\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "account_record_guard",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_unknown_account_cannot_record_pass",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_unknown_account_cannot_record_pass (test_m2_preflight.PreflightTests.test_unknown_account_cannot_record_pass)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 182, in test_unknown_account_cannot_record_pass\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "entry_account_scope",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_pass_for_other_account_cannot_authorize_this_account",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_pass_for_other_account_cannot_authorize_this_account (test_m2_preflight.PreflightTests.test_pass_for_other_account_cannot_authorize_this_account)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 166, in test_pass_for_other_account_cannot_authorize_this_account\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "entry_day_scope",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_next_day_requires_new_check_and_does_not_reuse_previous_pass",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_next_day_requires_new_check_and_does_not_reuse_previous_pass (test_m2_preflight.PreflightTests.test_next_day_requires_new_check_and_does_not_reuse_previous_pass)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 143, in test_next_day_requires_new_check_and_does_not_reuse_previous_pass\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "missing_check_guard",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_missing_check_cannot_admit_entries",
+          "tests": 1,
+          "detail": "E\n======================================================================\nERROR: test_missing_check_cannot_admit_entries (test_m2_preflight.PreflightTests.test_missing_check_cannot_admit_entries)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 190, in test_missing_check_cannot_admit_entries\n    assert_preflight(engine, 'stock')\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\application\\preflight.py\", line 87, in assert_preflight\n    if result is None or result.blocked_today or (account_ref, day) in engine.state.preflight_blocks:\n       ^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'blocked_today'\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (errors=1)\n"
+        },
+        {
+          "case": "blocked_projection_guard",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_blocked_projection_is_authoritative_even_without_day_latch",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_blocked_projection_is_authoritative_even_without_day_latch (test_m2_preflight.PreflightTests.test_blocked_projection_is_authoritative_even_without_day_latch)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 204, in test_blocked_projection_is_authoritative_even_without_day_latch\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "persistent_latch_guard",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_day_latch_is_authoritative_even_if_a_projection_claims_pass",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_day_latch_is_authoritative_even_if_a_projection_claims_pass (test_m2_preflight.PreflightTests.test_day_latch_is_authoritative_even_if_a_projection_claims_pass)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 197, in test_day_latch_is_authoritative_even_if_a_projection_claims_pass\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "stops_failed_check",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_failure_is_recorded_as_stop_and_named_warning_in_journal",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_failure_is_recorded_as_stop_and_named_warning_in_journal (test_m2_preflight.PreflightTests.test_failure_is_recorded_as_stop_and_named_warning_in_journal)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 99, in test_failure_is_recorded_as_stop_and_named_warning_in_journal\n    self.assertTrue(engine.state.stopped)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "never_auto_resume",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_passing_check_never_resumes_an_already_stopped_engine",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_passing_check_never_resumes_an_already_stopped_engine (test_m2_preflight.PreflightTests.test_passing_check_never_resumes_an_already_stopped_engine)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 212, in test_passing_check_never_resumes_an_already_stopped_engine\n    self.assertTrue(engine.state.stopped)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "persistent_reason",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason (test_m2_preflight.PreflightTests.test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 113, in test_passing_rerun_cannot_clear_same_day_latch_or_its_original_reason\n    self.assertEqual(view.block_reasons, ('preflight_connection',))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: () != ('preflight_connection',)\n\nSecond tuple contains 1 additional elements.\nFirst extra element 0:\n'preflight_connection'\n\n- ()\n+ ('preflight_connection',)\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "case": "reminder_enabled",
+          "status": "KILLED",
+          "source": "quantlab\\trading\\application\\preflight.py",
+          "test_file": "tests\\test_m2_preflight.py",
+          "test": "test_m2_preflight.PreflightTests.test_keep_awake_is_only_a_reminder_with_no_power_or_sdk_imports",
+          "tests": 1,
+          "detail": "F\n======================================================================\nFAIL: test_keep_awake_is_only_a_reminder_with_no_power_or_sdk_imports (test_m2_preflight.PreflightTests.test_keep_awake_is_only_a_reminder_with_no_power_or_sdk_imports)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight.py\", line 219, in test_keep_awake_is_only_a_reminder_with_no_power_or_sdk_imports\n    self.assertIs(view.keep_awake_reminder, True)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not True\n\n----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nFAILED (failures=1)\n"
+        }
+      ]
+    },
+    "integration": {
+      "mutation_count": 21,
+      "killed": 21,
+      "product_source_writes": false,
+      "records": [
+        {
+          "guard": "submit_account_limits",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port (test_m2_risk_integration.AccountRiskIntegrationTests.test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 84, in test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port\n    self.assert_entry_rejected(reference, 'account_order_limit', quantity=2000, key='above-cap')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.324s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "submit_observe_all_accounts",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_other_adopted_account_loss_is_observed_before_a_healthy_accounts_entry",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_other_adopted_account_loss_is_observed_before_a_healthy_accounts_entry (test_m2_risk_integration.AccountRiskIntegrationTests.test_other_adopted_account_loss_is_observed_before_a_healthy_accounts_entry)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 299, in test_other_adopted_account_loss_is_observed_before_a_healthy_accounts_entry\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.308s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "submit_preflight",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running (test_m2_risk_integration.AccountRiskIntegrationTests.test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 171, in test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running\n    self.assert_entry_rejected(reference, 'preflight_blocked')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.326s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "global_resume_account_latch",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_global_resume_cannot_clear_a_recovered_but_latched_account",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_global_resume_cannot_clear_a_recovered_but_latched_account (test_m2_risk_integration.AccountRiskIntegrationTests.test_global_resume_cannot_clear_a_recovered_but_latched_account)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 253, in test_global_resume_cannot_clear_a_recovered_but_latched_account\n    result = self.case.command(UiAction.RESUME, accepted=False)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_strategy_management.py\", line 75, in command\n    self.assertEqual(result.accepted, accepted, result)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True != False : UiReceipt(accepted=True, code='completed', message='', reference='')\n\n----------------------------------------------------------------------\nRan 1 test in 0.306s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "global_resume_preflight",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_global_resume_checks_passed_preflight_again",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_global_resume_checks_passed_preflight_again (test_m2_risk_integration.AccountRiskIntegrationTests.test_global_resume_checks_passed_preflight_again)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 209, in test_global_resume_checks_passed_preflight_again\n    result = self.case.command(UiAction.RESUME, accepted=False)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_strategy_management.py\", line 75, in command\n    self.assertEqual(result.accepted, accepted, result)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True != False : UiReceipt(accepted=True, code='completed', message='', reference='')\n\n----------------------------------------------------------------------\nRan 1 test in 0.309s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "manual_resume_account_latch",
+          "test": "test_m2_risk_integration.ManualResumeAccountRiskTests.test_confirmed_manual_resume_cannot_clear_an_adopted_account_daily_lock",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_confirmed_manual_resume_cannot_clear_an_adopted_account_daily_lock (test_m2_risk_integration.ManualResumeAccountRiskTests.test_confirmed_manual_resume_cannot_clear_an_adopted_account_daily_lock)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 457, in test_confirmed_manual_resume_cannot_clear_an_adopted_account_daily_lock\n    self.assertFalse(receipt.accepted)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.017s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "preflight_missing_view",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running (test_m2_risk_integration.AccountRiskIntegrationTests.test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 171, in test_missing_preflight_blocks_actual_entry_even_when_global_state_is_running\n    self.assert_entry_rejected(reference, 'preflight_blocked')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.301s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "preflight_failed_view",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_failed_preflight_view_alone_denies_actual_entry",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_failed_preflight_view_alone_denies_actual_entry (test_m2_risk_integration.AccountRiskIntegrationTests.test_failed_preflight_view_alone_denies_actual_entry)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 195, in test_failed_preflight_view_alone_denies_actual_entry\n    self.assert_entry_rejected(reference, 'preflight_blocked')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.299s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "preflight_durable_block",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_durable_preflight_block_alone_denies_actual_entry",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_durable_preflight_block_alone_denies_actual_entry (test_m2_risk_integration.AccountRiskIntegrationTests.test_durable_preflight_block_alone_denies_actual_entry)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 204, in test_durable_preflight_block_alone_denies_actual_entry\n    self.assert_entry_rejected(reference, 'preflight_blocked')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.303s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "preflight_same_day_recheck_latch",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_failed_preflight_is_latched_for_the_day_after_a_successful_recheck",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_failed_preflight_is_latched_for_the_day_after_a_successful_recheck (test_m2_risk_integration.AccountRiskIntegrationTests.test_failed_preflight_is_latched_for_the_day_after_a_successful_recheck)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 185, in test_failed_preflight_is_latched_for_the_day_after_a_successful_recheck\n    self.assertTrue(view.blocked_today)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.310s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "typed_tombstone_adoption",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_typed_adoption_cannot_be_bypassed_by_a_legacy_strategy_entry",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_typed_adoption_cannot_be_bypassed_by_a_legacy_strategy_entry (test_m2_risk_integration.AccountRiskIntegrationTests.test_typed_adoption_cannot_be_bypassed_by_a_legacy_strategy_entry)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 319, in test_typed_adoption_cannot_be_bypassed_by_a_legacy_strategy_entry\n    self.assert_entry_rejected(legacy, 'account_daily_loss_limit')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.327s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "explicit_account_settings_adoption",
+          "test": "test_m2_risk_integration.ManualResumeAccountRiskTests.test_explicit_account_risk_limits_alone_block_manual_orders_before_the_sdk",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_explicit_account_risk_limits_alone_block_manual_orders_before_the_sdk (test_m2_risk_integration.ManualResumeAccountRiskTests.test_explicit_account_risk_limits_alone_block_manual_orders_before_the_sdk)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 420, in test_explicit_account_risk_limits_alone_block_manual_orders_before_the_sdk\n    self.assertIn('future-alias', m2_account_refs(case.engine))\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'future-alias' not found in frozenset()\n\n----------------------------------------------------------------------\nRan 1 test in 0.017s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "local_new_day_preflight",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_healthy_local_typed_day_step_collects_new_day_preflight_and_remains_accepted",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_healthy_local_typed_day_step_collects_new_day_preflight_and_remains_accepted (test_m2_risk_integration.AccountRiskIntegrationTests.test_healthy_local_typed_day_step_collects_new_day_preflight_and_remains_accepted)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 224, in test_healthy_local_typed_day_step_collects_new_day_preflight_and_remains_accepted\n    self.assertTrue(receipt.accepted, receipt)\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true : UiReceipt(accepted=False, code='preflight_blocked', message='今日開盤檢查尚未通過。 查看檢查清單；當日失敗紀錄會保留，保護性出場不受影響。', reference='')\n\n----------------------------------------------------------------------\nRan 1 test in 0.318s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "pending_position_slots",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_unknown_and_cancel_pending_entries_retain_their_position_slot",
+          "exit_code": 1,
+          "killed": true,
+          "output": "FFFF\n======================================================================\nFAIL: test_unknown_and_cancel_pending_entries_retain_their_position_slot (test_m2_risk_integration.AccountRiskIntegrationTests.test_unknown_and_cancel_pending_entries_retain_their_position_slot) (status=<OrderStatus.UNKNOWN: 'UNKNOWN'>)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 105, in test_unknown_and_cancel_pending_entries_retain_their_position_slot\n    self.assertEqual(account_position_count(self.engine, 'test-stock'), 1)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 0 != 1\n\n======================================================================\nFAIL: test_unknown_and_cancel_pending_entries_retain_their_position_slot (test_m2_risk_integration.AccountRiskIntegrationTests.test_unknown_and_cancel_pending_entries_retain_their_position_slot) (status=<OrderStatus.CANCEL_PENDING: 'CANCEL_PENDING'>)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 105, in test_unknown_and_cancel_pending_entries_retain_their_position_slot\n    self.assertEqual(account_position_count(self.engine, 'test-stock'), 1)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 0 != 1\n\n======================================================================\nFAIL: test_unknown_and_cancel_pending_entries_retain_their_position_slot (test_m2_risk_integration.AccountRiskIntegrationTests.test_unknown_and_cancel_pending_entries_retain_their_position_slot) (status=<OrderStatus.SUBMITTING: 'SUBMITTING'>)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 105, in test_unknown_and_cancel_pending_entries_retain_their_position_slot\n    self.assertEqual(account_position_count(self.engine, 'test-stock'), 1)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 0 != 1\n\n======================================================================\nFAIL: test_unknown_and_cancel_pending_entries_retain_their_position_slot (test_m2_risk_integration.AccountRiskIntegrationTests.test_unknown_and_cancel_pending_entries_retain_their_position_slot) (status=<OrderStatus.PARTIALLY_FILLED: 'PARTIALLY_FILLED'>)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 105, in test_unknown_and_cancel_pending_entries_retain_their_position_slot\n    self.assertEqual(account_position_count(self.engine, 'test-stock'), 1)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 0 != 1\n\n----------------------------------------------------------------------\nRan 1 test in 0.357s\n\nFAILED (failures=4)\n"
+        },
+        {
+          "guard": "direct_account_daily_latch",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_recovered_profit_cannot_clear_the_direct_account_entry_latch",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_recovered_profit_cannot_clear_the_direct_account_entry_latch (test_m2_risk_integration.AccountRiskIntegrationTests.test_recovered_profit_cannot_clear_the_direct_account_entry_latch)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 263, in test_recovered_profit_cannot_clear_the_direct_account_entry_latch\n    self.assertEqual(account_entry_rejection(self.engine, self.case.plan(reference)), 'account_daily_loss_limit')\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: '' != 'account_daily_loss_limit'\n+ account_daily_loss_limit\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.311s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "account_allocation_loss_basis",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_default_daily_loss_is_three_percent_of_this_accounts_sixty_thousand",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_default_daily_loss_is_three_percent_of_this_accounts_sixty_thousand (test_m2_risk_integration.AccountRiskIntegrationTests.test_default_daily_loss_is_three_percent_of_this_accounts_sixty_thousand)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 65, in test_default_daily_loss_is_three_percent_of_this_accounts_sixty_thousand\n    self.assert_entry_rejected(reference, 'account_daily_loss_limit')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.302s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "notional_exact_boundary",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port",
+          "exit_code": 1,
+          "killed": true,
+          "output": "E\n======================================================================\nERROR: test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port (test_m2_risk_integration.AccountRiskIntegrationTests.test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 82, in test_order_notional_exact_cap_is_accepted_and_above_cap_stops_the_port\n    self.case.submit(reference, key='at-cap')\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_strategy_management.py\", line 139, in submit\n    return self.engine.submit(plan, self.engine.strategy(reference).policy, plan.plan_id)\n           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\domain\\arithmetic.py\", line 19, in calculate\n    return function(*args, **kwargs)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\application\\engine.py\", line 524, in submit\n    raise DomainError(code)\nquantlab.trading.domain.validation.DomainError: account_order_limit\n\n----------------------------------------------------------------------\nRan 1 test in 0.308s\n\nFAILED (errors=1)\n"
+        },
+        {
+          "guard": "position_count_boundary",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_pending_entry_takes_a_position_slot_before_the_first_fill",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_pending_entry_takes_a_position_slot_before_the_first_fill (test_m2_risk_integration.AccountRiskIntegrationTests.test_pending_entry_takes_a_position_slot_before_the_first_fill)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 94, in test_pending_entry_takes_a_position_slot_before_the_first_fill\n    self.assert_entry_rejected(second, 'account_position_limit')\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 56, in assert_entry_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.358s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "reduce_only_exemption_at_commit",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_legal_reduction_ignores_new_entry_caps_and_failed_preflight",
+          "exit_code": 1,
+          "killed": true,
+          "output": "E\n======================================================================\nERROR: test_legal_reduction_ignores_new_entry_caps_and_failed_preflight (test_m2_risk_integration.AccountRiskIntegrationTests.test_legal_reduction_ignores_new_entry_caps_and_failed_preflight)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 131, in test_legal_reduction_ignores_new_entry_caps_and_failed_preflight\n    exit_id = self.engine.exit_lot(lot.lot_id, protective=True)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\application\\engine.py\", line 666, in exit_lot\n    return self.submit(plan, lot.policy, f'exit:{lot_id}:{self.state.version}')\n           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\domain\\arithmetic.py\", line 19, in calculate\n    return function(*args, **kwargs)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\application\\engine.py\", line 527, in submit\n    assert_preflight(self, plan.account_ref)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\application\\preflight.py\", line 88, in assert_preflight\n    raise DomainError('preflight_blocked', 'this day has no passed preflight')\nquantlab.trading.domain.validation.DomainError: preflight_blocked: this day has no passed preflight\n\n----------------------------------------------------------------------\nRan 1 test in 0.309s\n\nFAILED (errors=1)\n"
+        },
+        {
+          "guard": "stop_retains_protective_exits",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit (test_m2_risk_integration.AccountRiskIntegrationTests.test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 149, in test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit\n    self.assertEqual(orders[exit_id].status, OrderStatus.ACCEPTED)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: <OrderStatus.CANCELED: 'CANCELED'> != <OrderStatus.ACCEPTED: 'ACCEPTED'>\n\n----------------------------------------------------------------------\nRan 1 test in 0.376s\n\nFAILED (failures=1)\n"
+        },
+        {
+          "guard": "stop_cancels_entries",
+          "test": "test_m2_risk_integration.AccountRiskIntegrationTests.test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit",
+          "exit_code": 1,
+          "killed": true,
+          "output": "F\n======================================================================\nFAIL: test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit (test_m2_risk_integration.AccountRiskIntegrationTests.test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_risk_integration.py\", line 148, in test_stop_new_cancels_pending_entries_and_preserves_accepted_protective_exit\n    self.assertEqual(orders[pending_id].status, OrderStatus.CANCELED)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: <OrderStatus.ACCEPTED: 'ACCEPTED'> != <OrderStatus.CANCELED: 'CANCELED'>\n\n----------------------------------------------------------------------\nRan 1 test in 0.356s\n\nFAILED (failures=1)\n"
+        }
+      ]
+    },
+    "runtime": [
+      {
+        "case": "connected_phase",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_disconnected_phase_is_not_current_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_disconnected_phase_is_not_current_connection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 181, in test_disconnected_phase_is_not_current_connection\n    self.assertFalse(facts.connected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "owner_environment",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_owner_environment_must_match_launched_environment (test_m2_preflight_runtime.RuntimePreflightTests.test_owner_environment_must_match_launched_environment)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 209, in test_owner_environment_must_match_launched_environment\n    self.assertFalse(self.facts().connected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "query_ready",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_query_not_ready_is_not_current_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_query_not_ready_is_not_current_connection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 190, in test_query_not_ready_is_not_current_connection\n    self.assertFalse(self.facts().connected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "shared_owner_present",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "E\n======================================================================\nERROR: test_missing_shared_owner_is_not_current_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_missing_shared_owner_is_not_current_connection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 194, in test_missing_shared_owner_is_not_current_connection\n    self.assertFalse(self.facts().connected)\n                     ~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 141, in facts\n    return sinopac_preflight_facts(self.bundle, account_ref)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\runtime\\preflight.py\", line 33, in sinopac_preflight_facts\n    and not shared.callback_errors\n            ^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'callback_errors'\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (errors=1)\n"
+      },
+      {
+        "case": "callback_healthy",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_callback_error_blocks_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_callback_error_blocks_connection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 198, in test_callback_error_blocks_connection\n    self.assertFalse(self.facts().connected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "closing_fence",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_closing_or_closed_resources_block_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_closing_or_closed_resources_block_connection) (key='closing')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 204, in test_closing_or_closed_resources_block_connection\n    self.assertFalse(self.facts().connected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "resource_fence",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_closing_or_closed_resources_block_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_closing_or_closed_resources_block_connection) (key='resources_closed')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 204, in test_closing_or_closed_resources_block_connection\n    self.assertFalse(self.facts().connected)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "selected_account",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_unselected_account_cannot_pass_account_or_permission (test_m2_preflight_runtime.RuntimePreflightTests.test_unselected_account_cannot_pass_account_or_permission)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 214, in test_unselected_account_cannot_pass_account_or_permission\n    self.assertFalse(facts.account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "account_identity",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_another_selected_account_signature_cannot_authorize_target_account (test_m2_preflight_runtime.RuntimePreflightTests.test_another_selected_account_signature_cannot_authorize_target_account)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 221, in test_another_selected_account_signature_cannot_authorize_target_account\n    self.assertFalse(facts.account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "account_signature",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "=======================================================\nFAIL: test_unsigned_or_unknown_signature_cannot_pass_account_or_permission (test_m2_preflight_runtime.RuntimePreflightTests.test_unsigned_or_unknown_signature_cannot_pass_account_or_permission) (signed=False)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 230, in test_unsigned_or_unknown_signature_cannot_pass_account_or_permission\n    self.assertIs(facts.account_ready, signed)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not False\n\n======================================================================\nFAIL: test_unsigned_or_unknown_signature_cannot_pass_account_or_permission (test_m2_preflight_runtime.RuntimePreflightTests.test_unsigned_or_unknown_signature_cannot_pass_account_or_permission) (signed=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 230, in test_unsigned_or_unknown_signature_cannot_pass_account_or_permission\n    self.assertIs(facts.account_ready, signed)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=2)\n"
+      },
+      {
+        "case": "confirmed_book_present",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_confirmed_virtual_book_is_required_for_account_capacity (test_m2_preflight_runtime.RuntimePreflightTests.test_confirmed_virtual_book_is_required_for_account_capacity)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 235, in test_confirmed_virtual_book_is_required_for_account_capacity\n    self.assertFalse(self.facts().account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "confirmed_book_account",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_other_account_book_does_not_supply_target_allocation_confirmation (test_m2_preflight_runtime.RuntimePreflightTests.test_other_account_book_does_not_supply_target_allocation_confirmation)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 239, in test_other_account_book_does_not_supply_target_allocation_confirmation\n    self.assertFalse(self.facts().account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "confirmed_book_source",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_broker_financial_label_cannot_substitute_for_confirmed_virtual_book (test_m2_preflight_runtime.RuntimePreflightTests.test_broker_financial_label_cannot_substitute_for_confirmed_virtual_book)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 244, in test_broker_financial_label_cannot_substitute_for_confirmed_virtual_book\n    self.assertFalse(self.facts().account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "current_account_capability",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_expired_cached_account_capability_is_not_current_account_evidence (test_m2_preflight_runtime.RuntimePreflightTests.test_expired_cached_account_capability_is_not_current_account_evidence)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 249, in test_expired_cached_account_capability_is_not_current_account_evidence\n    self.assertFalse(facts.account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "diagnostic_required",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_signed_login_and_attempt_capability_do_not_prove_key_permission (test_m2_preflight_runtime.RuntimePreflightTests.test_signed_login_and_attempt_capability_do_not_prove_key_permission)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 155, in test_signed_login_and_attempt_capability_do_not_prove_key_permission\n    self.assertIsNone(self.facts().permission_ready)\n    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "diagnostic_current_generation",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_previous_sdk_generation_diagnostic_cannot_prove_current_permission (test_m2_preflight_runtime.RuntimePreflightTests.test_previous_sdk_generation_diagnostic_cannot_prove_current_permission)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 162, in test_previous_sdk_generation_diagnostic_cannot_prove_current_permission\n    self.assertIsNone(self.facts().permission_ready)\n    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.003s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "permission_signature",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_unsigned_or_unknown_signature_cannot_pass_account_or_permission (test_m2_preflight_runtime.RuntimePreflightTests.test_unsigned_or_unknown_signature_cannot_pass_account_or_permission) (signed=None)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 231, in test_unsigned_or_unknown_signature_cannot_pass_account_or_permission\n    self.assertIs(facts.permission_ready, False if signed is False else None)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "permission_current_account",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_expired_cached_account_capability_is_not_current_account_evidence (test_m2_preflight_runtime.RuntimePreflightTests.test_expired_cached_account_capability_is_not_current_account_evidence)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 250, in test_expired_cached_account_capability_is_not_current_account_evidence\n    self.assertIsNone(facts.permission_ready)\n    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "reconciliation_base",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_reconciliation_state_and_differences_are_authoritative (test_m2_preflight_runtime.RuntimePreflightTests.test_reconciliation_state_and_differences_are_authoritative)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 377, in test_reconciliation_state_and_differences_are_authoritative\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "manual_owner_present",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "E\n======================================================================\nERROR: test_reconciliation_cannot_use_cache_without_manual_owner (test_m2_preflight_runtime.RuntimePreflightTests.test_reconciliation_cannot_use_cache_without_manual_owner)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 331, in test_reconciliation_cannot_use_cache_without_manual_owner\n    self.assertFalse(self.facts().reconciled)\n                     ~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 141, in facts\n    return sinopac_preflight_facts(self.bundle, account_ref)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\runtime\\preflight.py\", line 55, in sinopac_preflight_facts\n    and manual.stamp == (view.generation, view.revision, selected, shared)\n        ^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'stamp'\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (errors=1)\n"
+      },
+      {
+        "case": "manual_owner_stamp",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_reconciliation_needs_current_manual_owner_stamp (test_m2_preflight_runtime.RuntimePreflightTests.test_reconciliation_needs_current_manual_owner_stamp)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 327, in test_reconciliation_needs_current_manual_owner_stamp\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "complete_account_cache",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_missing_or_extra_configured_account_cache_is_not_complete (test_m2_preflight_runtime.RuntimePreflightTests.test_missing_or_extra_configured_account_cache_is_not_complete)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 335, in test_missing_or_extra_configured_account_cache_is_not_complete\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "normalized_observation",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_other_account_observation_identity_environment_and_type_are_checked (test_m2_preflight_runtime.RuntimePreflightTests.test_other_account_observation_identity_environment_and_type_are_checked) (row=namespace(account_ref='futures', environment=<Environment.BROKER_SIMULATION: 'BROKER_SIMULATION'>, as_of=datetime.datetime(2026, 10, 23, 1, 0, tzinfo=datetime.timezone.utc), unmapped=(), orders=()))\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 355, in test_other_account_observation_identity_environment_and_type_are_checked\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.008s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "observed_account",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_other_account_observation_identity_environment_and_type_are_checked (test_m2_preflight_runtime.RuntimePreflightTests.test_other_account_observation_identity_environment_and_type_are_checked) (row=ManualAccountObservation(account_ref='stock', environment=<Environment.BROKER_SIMULATION: 'BROKER_SIMULATION'>, orders=(), positions=(), events=(), as_of=datetime.datetime(2026, 10, 23, 1, 0, tzinfo=datetime.timezone.utc), source='SHIOAJI_SCOPED_REFRESH_HEALTHY', amended_prices=(), unmapped=()))\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 355, in test_other_account_observation_identity_environment_and_type_are_checked\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.008s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "observed_environment",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_other_account_observation_identity_environment_and_type_are_checked (test_m2_preflight_runtime.RuntimePreflightTests.test_other_account_observation_identity_environment_and_type_are_checked) (row=ManualAccountObservation(account_ref='futures', environment=<Environment.LIVE: 'LIVE'>, orders=(), positions=(), events=(), as_of=datetime.datetime(2026, 10, 23, 1, 0, tzinfo=datetime.timezone.utc), source='SHIOAJI_SCOPED_REFRESH_HEALTHY', amended_prices=(), unmapped=()))\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 355, in test_other_account_observation_identity_environment_and_type_are_checked\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "observed_freshness",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "===============================================================\nFAIL: test_stale_or_future_other_account_observation_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_stale_or_future_other_account_observation_blocks_reconciliation) (offset=-31)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 344, in test_stale_or_future_other_account_observation_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_stale_or_future_other_account_observation_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_stale_or_future_other_account_observation_blocks_reconciliation) (offset=1)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 344, in test_stale_or_future_other_account_observation_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=2)\n"
+      },
+      {
+        "case": "unmapped_order",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_unmapped_remote_order_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_unmapped_remote_order_blocks_reconciliation)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 359, in test_unmapped_remote_order_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "uncertain_remote_order",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "rder_outcome_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_uncertain_remote_or_local_order_outcome_blocks_reconciliation) (status=<OrderStatus.SUBMITTING: 'SUBMITTING'>, source='remote')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 372, in test_uncertain_remote_or_local_order_outcome_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_uncertain_remote_or_local_order_outcome_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_uncertain_remote_or_local_order_outcome_blocks_reconciliation) (status=<OrderStatus.CANCEL_PENDING: 'CANCEL_PENDING'>, source='remote')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 372, in test_uncertain_remote_or_local_order_outcome_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.009s\n\nFAILED (failures=3)\n"
+      },
+      {
+        "case": "unknown_status",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_uncertain_remote_or_local_order_outcome_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_uncertain_remote_or_local_order_outcome_blocks_reconciliation) (status=<OrderStatus.UNKNOWN: 'UNKNOWN'>, source='remote')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 372, in test_uncertain_remote_or_local_order_outcome_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.010s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "submitting_status",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_uncertain_remote_or_local_order_outcome_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_uncertain_remote_or_local_order_outcome_blocks_reconciliation) (status=<OrderStatus.SUBMITTING: 'SUBMITTING'>, source='remote')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 372, in test_uncertain_remote_or_local_order_outcome_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.010s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "cancel_pending_status",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_uncertain_remote_or_local_order_outcome_blocks_reconciliation (test_m2_preflight_runtime.RuntimePreflightTests.test_uncertain_remote_or_local_order_outcome_blocks_reconciliation) (status=<OrderStatus.CANCEL_PENDING: 'CANCEL_PENDING'>, source='remote')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 372, in test_uncertain_remote_or_local_order_outcome_blocks_reconciliation\n    self.assertFalse(self.facts().reconciled)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "native_quote_source",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_synthetic_or_unverified_quote_cannot_pass_unified_realtime_check (test_m2_preflight_runtime.RuntimePreflightTests.test_synthetic_or_unverified_quote_cannot_pass_unified_realtime_check) (change={'source': 'LOCAL_SIMULATED'})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 274, in test_synthetic_or_unverified_quote_cannot_pass_unified_realtime_check\n    self.assertFalse(self.facts().realtime)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "connected_market",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_disconnected_phase_is_not_current_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_disconnected_phase_is_not_current_connection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 184, in test_disconnected_phase_is_not_current_connection\n    self.assertFalse(facts.realtime)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "connected_service",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_disconnected_phase_is_not_current_connection (test_m2_preflight_runtime.RuntimePreflightTests.test_disconnected_phase_is_not_current_connection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 185, in test_disconnected_phase_is_not_current_connection\n    self.assertFalse(facts.service_open)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "service_day_session",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_service_requires_verified_day_session (test_m2_preflight_runtime.RuntimePreflightTests.test_service_requires_verified_day_session)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 308, in test_service_requires_verified_day_session\n    self.assertFalse(self.facts().service_open)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "service_connection_error",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_connection_service_error_blocks_service (test_m2_preflight_runtime.RuntimePreflightTests.test_connection_service_error_blocks_service)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 323, in test_connection_service_error_blocks_service\n    self.assertFalse(self.facts().service_open)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "service_query_error",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_current_query_error_blocks_service (test_m2_preflight_runtime.RuntimePreflightTests.test_current_query_error_blocks_service)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 319, in test_current_query_error_blocks_service\n    self.assertFalse(self.facts().service_open)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "sim_ca_exemption",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "=========================================\nFAIL: test_sim_ca_is_not_activated_even_if_ready_or_failed_state_is_visible (test_m2_preflight_runtime.RuntimePreflightTests.test_sim_ca_is_not_activated_even_if_ready_or_failed_state_is_visible) (status='FAILED')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 385, in test_sim_ca_is_not_activated_even_if_ready_or_failed_state_is_visible\n    self.assertIsNone(self.facts().ca_ready)\n    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not None\n\n======================================================================\nFAIL: test_sim_ca_is_not_activated_even_if_ready_or_failed_state_is_visible (test_m2_preflight_runtime.RuntimePreflightTests.test_sim_ca_is_not_activated_even_if_ready_or_failed_state_is_visible) (status='NOT_CONFIGURED')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 385, in test_sim_ca_is_not_activated_even_if_ready_or_failed_state_is_visible\n    self.assertIsNone(self.facts().ca_ready)\n    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not None\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=3)\n"
+      },
+      {
+        "case": "existing_ca_ready",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_live_ca_uses_only_existing_ready_certificate_view (test_m2_preflight_runtime.RuntimePreflightTests.test_live_ca_uses_only_existing_ready_certificate_view)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 395, in test_live_ca_uses_only_existing_ready_certificate_view\n    self.assertFalse(self.facts().ca_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "final_environment",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_owner_stamp_change_during_collection_is_rejected (test_m2_preflight_runtime.RuntimePreflightTests.test_owner_stamp_change_during_collection_is_rejected) (change={'environment': <Environment.LIVE: 'LIVE'>})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 405, in test_owner_stamp_change_during_collection_is_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.008s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "final_generation",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_owner_stamp_change_during_collection_is_rejected (test_m2_preflight_runtime.RuntimePreflightTests.test_owner_stamp_change_during_collection_is_rejected) (change={'generation': 'new-generation'})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 405, in test_owner_stamp_change_during_collection_is_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "final_revision",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_owner_stamp_change_during_collection_is_rejected (test_m2_preflight_runtime.RuntimePreflightTests.test_owner_stamp_change_during_collection_is_rejected) (change={'revision': 4})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 405, in test_owner_stamp_change_during_collection_is_rejected\n    with self.assertRaises(DomainError) as rejected:\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "final_selection",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_selection_or_shared_owner_change_during_collection_is_rejected (test_m2_preflight_runtime.RuntimePreflightTests.test_selection_or_shared_owner_change_during_collection_is_rejected) (attribute='selected')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 423, in test_selection_or_shared_owner_change_during_collection_is_rejected\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "final_shared_owner",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_selection_or_shared_owner_change_during_collection_is_rejected (test_m2_preflight_runtime.RuntimePreflightTests.test_selection_or_shared_owner_change_during_collection_is_rejected) (attribute='shared')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 423, in test_selection_or_shared_owner_change_during_collection_is_rejected\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "final_connection_identity",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_engine_or_connection_replacement_during_collection_is_rejected (test_m2_preflight_runtime.RuntimePreflightTests.test_engine_or_connection_replacement_during_collection_is_rejected) (attribute='sinopac_connection')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 441, in test_engine_or_connection_replacement_during_collection_is_rejected\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "final_engine_identity",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 442, in test_engine_or_connection_replacement_during_collection_is_rejected\n    self.facts()\n    ~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 141, in facts\n    return sinopac_preflight_facts(self.bundle, account_ref)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\runtime\\preflight.py\", line 38, in sinopac_preflight_facts\n    if engine is not None and account_ref in engine.gateways:\n                                             ^^^^^^^^^^^^^^^\nAttributeError: 'object' object has no attribute 'gateways'\n\n======================================================================\nFAIL: test_engine_or_connection_replacement_during_collection_is_rejected (test_m2_preflight_runtime.RuntimePreflightTests.test_engine_or_connection_replacement_during_collection_is_rejected) (attribute='engine')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 441, in test_engine_or_connection_replacement_during_collection_is_rejected\n    with self.assertRaises(DomainError):\n         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\nAssertionError: DomainError not raised\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=1, errors=1)\n"
+      },
+      {
+        "case": "capability_expiry",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_expired_cached_account_capability_is_not_current_account_evidence (test_m2_preflight_runtime.RuntimePreflightTests.test_expired_cached_account_capability_is_not_current_account_evidence)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 249, in test_expired_cached_account_capability_is_not_current_account_evidence\n    self.assertFalse(facts.account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "capability_scope",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "==========\nFAIL: test_cached_capability_account_and_environment_must_match_target (test_m2_preflight_runtime.RuntimePreflightTests.test_cached_capability_account_and_environment_must_match_target) (change={'account_ref': 'futures'})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 257, in test_cached_capability_account_and_environment_must_match_target\n    self.assertFalse(self.facts().account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n======================================================================\nFAIL: test_cached_capability_account_and_environment_must_match_target (test_m2_preflight_runtime.RuntimePreflightTests.test_cached_capability_account_and_environment_must_match_target) (change={'environment': <Environment.LIVE: 'LIVE'>})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 257, in test_cached_capability_account_and_environment_must_match_target\n    self.assertFalse(self.facts().account_ready)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=2)\n"
+      },
+      {
+        "case": "quote_quality",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_synthetic_or_unverified_quote_cannot_pass_unified_realtime_check (test_m2_preflight_runtime.RuntimePreflightTests.test_synthetic_or_unverified_quote_cannot_pass_unified_realtime_check) (change={'quality': 'UNKNOWN'})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 274, in test_synthetic_or_unverified_quote_cannot_pass_unified_realtime_check\n    self.assertFalse(self.facts().realtime)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "quote_source_time",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_future_or_stale_source_time_blocks_realtime_market (test_m2_preflight_runtime.RuntimePreflightTests.test_future_or_stale_source_time_blocks_realtime_market) (offset=-11)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 264, in test_future_or_stale_source_time_blocks_realtime_market\n    self.assertFalse(self.facts().realtime)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "quote_receive_time",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_future_receive_time_blocks_realtime_market (test_m2_preflight_runtime.RuntimePreflightTests.test_future_receive_time_blocks_realtime_market)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 268, in test_future_receive_time_blocks_realtime_market\n    self.assertFalse(self.facts().realtime)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: True is not false\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_strict_version",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "integer_version_even_when_float_equals_public_version\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'validation_failed')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'validation_failed')\n\n======================================================================\nFAIL: test_host_requires_exact_integer_version_even_when_float_equals_public_version (test_m2_preflight_runtime.PreflightDispatchTests.test_host_requires_exact_integer_version_even_when_float_equals_public_version) (value='9')\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 548, in test_host_requires_exact_integer_version_even_when_float_equals_public_version\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (False, 'state_conflict') != (False, 'validation_failed')\n\nFirst differing element 1:\n'state_conflict'\n'validation_failed'\n\n- (False, 'state_conflict')\n+ (False, 'validation_failed')\n\n----------------------------------------------------------------------\nRan 1 test in 0.054s\n\nFAILED (failures=3)\n"
+      },
+      {
+        "case": "host_strict_reference",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "reflight_runtime.py\", line 556, in test_host_requires_original_account_reference_to_be_a_string\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'validation_failed')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'validation_failed')\n\n======================================================================\nFAIL: test_host_requires_original_account_reference_to_be_a_string (test_m2_preflight_runtime.PreflightDispatchTests.test_host_requires_original_account_reference_to_be_a_string) (value=123)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 556, in test_host_requires_original_account_reference_to_be_a_string\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (False, 'capability_missing') != (False, 'validation_failed')\n\nFirst differing element 1:\n'capability_missing'\n'validation_failed'\n\n- (False, 'capability_missing')\n+ (False, 'validation_failed')\n\n----------------------------------------------------------------------\nRan 1 test in 0.046s\n\nFAILED (failures=3)\n"
+      },
+      {
+        "case": "host_initial_closing",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_closing_refuses_collection (test_m2_preflight_runtime.PreflightDispatchTests.test_host_closing_refuses_collection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 563, in test_host_closing_refuses_collection\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'capability_missing'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (False, 'state_conflict') != (False, 'capability_missing')\n\nFirst differing element 1:\n'state_conflict'\n'capability_missing'\n\n- (False, 'state_conflict')\n+ (False, 'capability_missing')\n\n----------------------------------------------------------------------\nRan 1 test in 0.038s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_initial_closed",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_closed_refuses_collection (test_m2_preflight_runtime.PreflightDispatchTests.test_host_closed_refuses_collection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 570, in test_host_closed_refuses_collection\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'capability_missing'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (False, 'state_conflict') != (False, 'capability_missing')\n\nFirst differing element 1:\n'state_conflict'\n'capability_missing'\n\n- (False, 'state_conflict')\n+ (False, 'capability_missing')\n\n----------------------------------------------------------------------\nRan 1 test in 0.037s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_initial_control",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_control_failure_refuses_collection (test_m2_preflight_runtime.PreflightDispatchTests.test_host_control_failure_refuses_collection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 577, in test_host_control_failure_refuses_collection\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'capability_missing'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (False, 'state_conflict') != (False, 'capability_missing')\n\nFirst differing element 1:\n'state_conflict'\n'capability_missing'\n\n- (False, 'state_conflict')\n+ (False, 'capability_missing')\n\n----------------------------------------------------------------------\nRan 1 test in 0.041s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_initial_engine",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "E\n======================================================================\nERROR: test_host_without_engine_refuses_collection (test_m2_preflight_runtime.PreflightDispatchTests.test_host_without_engine_refuses_collection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 583, in test_host_without_engine_refuses_collection\n    receipt, provider = self.execute()\n                        ~~~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 513, in execute\n    result = RuntimeBundle.execute(self.bundle, command or self.command())\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\runtime\\bootstrap.py\", line 301, in execute\n    with self.lock, engine.lock, owner.lock:\n                    ^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'lock'\n\n----------------------------------------------------------------------\nRan 1 test in 0.037s\n\nFAILED (errors=1)\n"
+      },
+      {
+        "case": "host_final_closing",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_closing_during_collection_prevents_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_closing_during_collection_prevents_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 644, in test_host_closing_during_collection_prevents_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.039s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_final_closed",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_closed_during_collection_prevents_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_closed_during_collection_prevents_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 662, in test_host_closed_during_collection_prevents_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.040s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_final_control",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_control_failure_during_collection_prevents_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_control_failure_during_collection_prevents_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 653, in test_host_control_failure_during_collection_prevents_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.042s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_engine_identity",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_engine_replacement_during_collection_prevents_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_engine_replacement_during_collection_prevents_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 615, in test_host_engine_replacement_during_collection_prevents_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.040s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_engine_version",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_engine_version_change_during_collection_prevents_preflight_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_engine_version_change_during_collection_prevents_preflight_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 624, in test_host_engine_version_change_during_collection_prevents_preflight_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.041s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_public_offset",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_public_version_offset_change_during_collection_prevents_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_public_version_offset_change_during_collection_prevents_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 635, in test_host_public_version_offset_change_during_collection_prevents_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.038s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_provider_error_map",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_provider_domain_error_is_mapped_without_record_or_raw_detail (test_m2_preflight_runtime.PreflightDispatchTests.test_host_provider_domain_error_is_mapped_without_record_or_raw_detail)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 604, in test_host_provider_domain_error_is_mapped_without_record_or_raw_detail\n    self.assertIn(ERROR_TABLE['preflight_market'].explanation, receipt.message)\n    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: '開盤檢查：行情不是即時資料。' not found in '作業失敗，未能完成。 請保留現有資料，核對狀態後再操作。'\n\n----------------------------------------------------------------------\nRan 1 test in 0.036s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "deny_envelope",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "s\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 764, in test_manual_no_admission_deny_only_envelope_cannot_bypass_preflight_host_boundary\n    self.assertEqual((receipt.accepted, receipt.code), (False, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n======================================================================\nFAIL: test_manual_no_admission_deny_only_envelope_cannot_bypass_preflight_host_boundary (test_m2_preflight_runtime.PreflightDispatchTests.test_manual_no_admission_deny_only_envelope_cannot_bypass_preflight_host_boundary) (value=1)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 764, in test_manual_no_admission_deny_only_envelope_cannot_bypass_preflight_host_boundary\n    self.assertEqual((receipt.accepted, receipt.code), (False, code))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'validation_failed')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'validation_failed')\n\n----------------------------------------------------------------------\nRan 1 test in 0.048s\n\nFAILED (failures=2)\n"
+      },
+      {
+        "case": "facade_original_reference",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "local_facade_rejects_invalid_original_reference_before_defaulting\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'validation_failed')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'validation_failed')\n\n======================================================================\nFAIL: test_local_facade_rejects_invalid_original_reference_before_defaulting (test_m2_preflight_runtime.PreflightDispatchTests.test_local_facade_rejects_invalid_original_reference_before_defaulting) (value=123)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 775, in test_local_facade_rejects_invalid_original_reference_before_defaulting\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (False, 'capability_missing') != (False, 'validation_failed')\n\nFirst differing element 1:\n'capability_missing'\n'validation_failed'\n\n- (False, 'capability_missing')\n+ (False, 'validation_failed')\n\n----------------------------------------------------------------------\nRan 1 test in 0.007s\n\nFAILED (failures=3)\n"
+      },
+      {
+        "case": "risk_settings_original_reference",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "ct_invalid_original_reference_before_falsy_default\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'validation_failed')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'validation_failed')\n\n======================================================================\nFAIL: test_local_risk_settings_reject_invalid_original_reference_before_falsy_default (test_m2_preflight_runtime.PreflightDispatchTests.test_local_risk_settings_reject_invalid_original_reference_before_falsy_default) (value=123)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 786, in test_local_risk_settings_reject_invalid_original_reference_before_falsy_default\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (False, 'state_conflict') != (False, 'validation_failed')\n\nFirst differing element 1:\n'state_conflict'\n'validation_failed'\n\n- (False, 'state_conflict')\n+ (False, 'validation_failed')\n\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nFAILED (failures=3)\n"
+      },
+      {
+        "case": "host_initial_owner",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "E\n======================================================================\nERROR: test_host_owner_removed_before_initial_lock_prevents_collection (test_m2_preflight_runtime.PreflightDispatchTests.test_host_owner_removed_before_initial_lock_prevents_collection)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 596, in test_host_owner_removed_before_initial_lock_prevents_collection\n    receipt, provider = self.execute()\n                        ~~~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 513, in execute\n    result = RuntimeBundle.execute(self.bundle, command or self.command())\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\runtime\\bootstrap.py\", line 297, in execute\n    with owner.lock:\n         ^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'lock'\n\n----------------------------------------------------------------------\nRan 1 test in 0.038s\n\nFAILED (errors=1)\n"
+      },
+      {
+        "case": "host_owner_identity_cas",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_rejects_connection_replacement_after_real_collector_returned_pass (test_m2_preflight_runtime.PreflightDispatchTests.test_host_rejects_connection_replacement_after_real_collector_returned_pass)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 756, in test_host_rejects_connection_replacement_after_real_collector_returned_pass\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.042s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_owner_stamp_cas",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_rejects_disconnect_revision_after_real_collector_returned_pass (test_m2_preflight_runtime.PreflightDispatchTests.test_host_rejects_disconnect_revision_after_real_collector_returned_pass)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 740, in test_host_rejects_disconnect_revision_after_real_collector_returned_pass\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.039s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_owner_environment_cas",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "ne-round2\\tests\\test_m2_preflight_runtime.py\", line 676, in test_host_owner_stamp_members_changed_after_collection_prevent_record\n    self.assert_no_record()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 517, in assert_no_record\n    self.assertEqual(len(self.journal.events), self.before)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 3 != 2\n\n======================================================================\nFAIL: test_host_owner_stamp_members_changed_after_collection_prevent_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_owner_stamp_members_changed_after_collection_prevent_record) (change={'revision': 4})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 676, in test_host_owner_stamp_members_changed_after_collection_prevent_record\n    self.assert_no_record()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 517, in assert_no_record\n    self.assertEqual(len(self.journal.events), self.before)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 3 != 2\n\n----------------------------------------------------------------------\nRan 1 test in 0.038s\n\nFAILED (failures=3)\n"
+      },
+      {
+        "case": "host_owner_generation_cas",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "ne-round2\\tests\\test_m2_preflight_runtime.py\", line 675, in test_host_owner_stamp_members_changed_after_collection_prevent_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n======================================================================\nFAIL: test_host_owner_stamp_members_changed_after_collection_prevent_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_owner_stamp_members_changed_after_collection_prevent_record) (change={'revision': 4})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 676, in test_host_owner_stamp_members_changed_after_collection_prevent_record\n    self.assert_no_record()\n    ~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 517, in assert_no_record\n    self.assertEqual(len(self.journal.events), self.before)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 3 != 2\n\n----------------------------------------------------------------------\nRan 1 test in 0.037s\n\nFAILED (failures=2)\n"
+      },
+      {
+        "case": "host_owner_revision_cas",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_owner_stamp_members_changed_after_collection_prevent_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_owner_stamp_members_changed_after_collection_prevent_record) (change={'revision': 4})\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 675, in test_host_owner_stamp_members_changed_after_collection_prevent_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.037s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_owner_selection_cas",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_owner_selection_changed_after_collection_prevents_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_owner_selection_changed_after_collection_prevents_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 685, in test_host_owner_selection_changed_after_collection_prevents_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.036s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_shared_session_cas",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "F\n======================================================================\nFAIL: test_host_shared_session_changed_after_collection_prevents_record (test_m2_preflight_runtime.PreflightDispatchTests.test_host_shared_session_changed_after_collection_prevents_record)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 694, in test_host_shared_session_changed_after_collection_prevents_record\n    self.assertEqual((receipt.accepted, receipt.code), (False, 'state_conflict'))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Tuples differ: (True, 'completed') != (False, 'state_conflict')\n\nFirst differing element 0:\nTrue\nFalse\n\n- (True, 'completed')\n+ (False, 'state_conflict')\n\n----------------------------------------------------------------------\nRan 1 test in 0.037s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_owner_initial_lock",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "rk\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 710, in test_host_owner_lock_covers_stamp_reads_and_journal_commit\n    receipt, _ = self.execute()\n                 ~~~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 513, in execute\n    result = RuntimeBundle.execute(self.bundle, command or self.command())\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\runtime\\bootstrap.py\", line 298, in execute\n    view = owner.snapshot()\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\Lib\\unittest\\mock.py\", line 1169, in __call__\n    return self._mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\Lib\\unittest\\mock.py\", line 1173, in _mock_call\n    return self._execute_mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\Lib\\unittest\\mock.py\", line 1234, in _execute_mock_call\n    result = effect(*args, **kwargs)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 701, in snapshot\n    self.assertTrue(self.owner.lock._is_owned())\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.042s\n\nFAILED (failures=1)\n"
+      },
+      {
+        "case": "host_owner_commit_lock",
+        "status": "KILLED",
+        "tests": 1,
+        "detail": "rk\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 710, in test_host_owner_lock_covers_stamp_reads_and_journal_commit\n    receipt, _ = self.execute()\n                 ~~~~~~~~~~~~^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 513, in execute\n    result = RuntimeBundle.execute(self.bundle, command or self.command())\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\quantlab\\trading\\runtime\\bootstrap.py\", line 302, in execute\n    view = owner.snapshot()\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\Lib\\unittest\\mock.py\", line 1169, in __call__\n    return self._mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\Lib\\unittest\\mock.py\", line 1173, in _mock_call\n    return self._execute_mock_call(*args, **kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.runtime-sqlite\\Lib\\unittest\\mock.py\", line 1234, in _execute_mock_call\n    result = effect(*args, **kwargs)\n  File \"C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2\\tests\\test_m2_preflight_runtime.py\", line 701, in snapshot\n    self.assertTrue(self.owner.lock._is_owned())\n    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: False is not true\n\n----------------------------------------------------------------------\nRan 1 test in 0.036s\n\nFAILED (failures=1)\n"
+      }
+    ]
+  },
+  "startup": {
+    "LOCAL": {
+      "elapsed_seconds": 5.509,
+      "engine_state": "WAITING_RECONCILIATION",
+      "environment": "LOCAL",
+      "errors": [],
+      "mode": "LOCAL",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [
+        {
+          "exit_code": 0,
+          "shutdown": "NORMAL"
+        }
+      ],
+      "passed": true,
+      "real_sdk_imported": false,
+      "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2",
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    },
+    "SIM": {
+      "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+      "elapsed_seconds": 3.167,
+      "engine_state": "DISCONNECTED",
+      "environment": "BROKER_SIMULATION",
+      "errors": [],
+      "fake_sdk_connected": true,
+      "fake_sdk_login_count": 1,
+      "fake_sdk_logout_count": 1,
+      "host_return_code": 0,
+      "mode": "BROKER_SIMULATION",
+      "owned_endpoints_removed": true,
+      "owned_engine_cleanup": [],
+      "passed": true,
+      "real_sdk_imported": false,
+      "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-engine-round2",
+      "research_attached": true,
+      "research_released": true,
+      "return_code": 0,
+      "widget_count": 2784,
+      "window_type": "TradingWindow",
+      "window_visible": true
+    }
+  },
+  "ci": "Read final PR checks; pending when report generated",
+  "limitations": [
+    "SIM startup connected/unallocated, not running automatic strategy",
+    "No real SDK, keys or CA",
+    "Full suite delegated to CI",
+    "Unchanged main M3 document code fence produces local CRLF Ruff format noise"
+  ],
+  "graph": {
+    "changed_count": 26,
+    "affected_count": 617,
+    "changed_files": 20,
+    "risk_level": "critical"
+  }
+}

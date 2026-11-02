@@ -216,6 +216,9 @@ class ManualTradingService:
         if not isinstance(form, ManualBookForm) or not form.confirmed:
             raise DomainError('manual_confirmation_required')
         self._fresh()
+        from .account_risk import assert_account_resume
+
+        assert_account_resume(self.engine, form.scope.account_ref)
         book = self._book(form.scope.account_ref)
         if form.capital != book.capital:
             raise DomainError('state_conflict', 'manual capital and loss history cannot be reset')

@@ -4,7 +4,18 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from .contracts import AccountView, MarketView, OrderView, OverviewMarketSummary, PerformanceView, PositionView, StrategyProductView, StrategyView, UiState
+from .contracts import (
+    AccountRiskView,
+    AccountView,
+    MarketView,
+    OrderView,
+    OverviewMarketSummary,
+    PerformanceView,
+    PositionView,
+    StrategyProductView,
+    StrategyView,
+    UiState,
+)
 from .errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, Side
 from quantlab.trading.domain.arithmetic import decimal_operation
@@ -44,6 +55,8 @@ def policy_name(policy) -> str:
 @decimal_operation
 def snapshot(engine: 'TradingEngine') -> UiState:
     from quantlab.trading.domain.strategy import is_tmf, resolve_tmf_near
+    from quantlab.trading.domain.risk import AccountRiskLimits
+    from .account_risk import account_net_mark, account_position_count, m2_account_refs
 
     state = engine.state
     verified = _financial_facts_current(engine)
@@ -276,6 +289,40 @@ def snapshot(engine: 'TradingEngine') -> UiState:
     unrealized_total = None if not verified or any(p.unrealized_pnl is None for p in positions) else sum((p.unrealized_pnl for p in positions), ZERO)
     fills = [o for o in state.orders if o.filled and (o.fill_count_day is None or o.fill_count_day == state.trading_day)]
     today_fills = None if any(o.daily_fill_count is None for o in fills) else sum(o.daily_fill_count for o in fills)
+    account_risks = []
+    for reference in sorted(m2_account_refs(engine)):
+        limits = next((row for row in state.account_risk_limits if row.account_ref == reference), AccountRiskLimits(reference))
+        book = next((row for row in state.manual_books if row.account_ref == reference), None)
+        allocation = (
+            book.capital
+            if book is not None
+            else state.settings.stock_allocation
+            if reference == engine.configuration.stock_account_ref
+            else state.settings.futures_allocation
+        )
+        baseline = next((row for row in state.account_daily_baselines if row.account_ref == reference and row.trade_date == state.trading_day), None)
+        reasons = []
+        pnl = None
+        if baseline is None:
+            reasons.append('account_daily_baseline_required')
+        else:
+            try:
+                pnl = account_net_mark(engine, reference) - baseline.previous_close_pnl
+            except DomainError as error:
+                reasons.append(error.code)
+        if (reference, state.trading_day) in state.account_daily_locks:
+            reasons.append('account_daily_loss_limit')
+        account_risks.append(
+            AccountRiskView(
+                reference,
+                limits,
+                pnl,
+                allocation * limits.daily_loss_fraction,
+                account_position_count(engine, reference),
+                state.stopped or bool(reasons),
+                tuple(reasons),
+            )
+        )
     return UiState(
         environment=state.environment,
         account_ref=state.account_ref,
@@ -316,6 +363,8 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         unrealized_pnl=unrealized_total,
         remaining_daily_loss=daily_loss_room if verified else None,
         today_fill_count=today_fills,
+        account_risks=tuple(account_risks),
+        preflight=state.preflight,
         strategy_products=tuple(
             StrategyProductView(
                 spec.instrument_id,

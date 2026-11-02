@@ -234,3 +234,26 @@ class AccountDailyBaseline:
         trading_date(self.trade_date)
         decimal_value(self.previous_close_pnl, 'account previous close pnl')
         identity(self.source_id, 'account baseline source')
+
+
+@decimal_operation
+def check_account_entry(
+    limits: AccountRiskLimits,
+    allocated_cash: Decimal,
+    daily_pnl: Decimal,
+    order_notional: Decimal,
+    current_positions: int,
+    opens_new_position: bool,
+    *,
+    reduce_only: bool = False,
+) -> str:
+    """Pure admission of already validated economics; reductions remain legal."""
+    if reduce_only:
+        return ''
+    if -daily_pnl >= allocated_cash * limits.daily_loss_fraction:
+        return 'account_daily_loss_limit'
+    if order_notional > limits.max_order_notional:
+        return 'account_order_limit'
+    if opens_new_position and current_positions >= limits.max_positions:
+        return 'account_position_limit'
+    return ''
