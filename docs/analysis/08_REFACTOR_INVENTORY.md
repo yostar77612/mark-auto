@@ -917,6 +917,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/strings/strategy_management.py` | 46 | shared | `desktop_app/strings/strategy_management.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/candidate_catalog.py` | 78 | composition | `quantlab/trading/runtime/candidate_catalog.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
 | `quantlab/trading/runtime/v1_signal_source.py` | 62 | composition | `quantlab/trading/runtime/v1_signal_source.py` | M3-2 composition bridge; unchanged v1 callable and validated E1 summary boundary |
+| `desktop_app/features/settings/autostart_panel.py` | 54 | presentation | `desktop_app/features/settings/autostart_panel.py` | M4a manual update and optional HKCU autostart boundary |
+| `desktop_app/strings/m4a_maintenance.py` | 27 | shared | `desktop_app/strings/m4a_maintenance.py` | M4a manual update and optional HKCU autostart boundary |
+| `quantlab/autostart.py` | 89 | infrastructure | `quantlab/autostart.py` | M4a manual update and optional HKCU autostart boundary |
+| `quantlab/update_download.py` | 115 | infrastructure | `quantlab/update_download.py` | M4a manual update and optional HKCU autostart boundary |
+| `quantlab/update_install.py` | 193 | infrastructure | `quantlab/update_install.py` | M4a manual update and optional HKCU autostart boundary |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
