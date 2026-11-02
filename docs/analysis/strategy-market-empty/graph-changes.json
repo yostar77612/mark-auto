@@ -1,0 +1,321 @@
+{
+  "summary": {
+    "changed_count": 39,
+    "affected_count": 3,
+    "changed_files": 28,
+    "risk_level": "medium"
+  },
+  "changed_symbols": [
+    {
+      "id": "Class:desktop_app/features/trading/strategy_options.py:StrategyOptions",
+      "name": "StrategyOptions",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/strategy_options.py:StrategyOptions.refresh_markets#0",
+      "name": "refresh_markets",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/strategy_options.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/window.py:TradingWindow",
+      "name": "TradingWindow",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/window.py:TradingWindow._wizard#2",
+      "name": "_wizard",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/window.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/wizard.py:MarketPage",
+      "name": "MarketPage",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:MarketPage.isComplete#0",
+      "name": "isComplete",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:desktop_app/features/trading/wizard.py:StrategyWizard",
+      "name": "StrategyWizard",
+      "type": "Class",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard.__init__#3",
+      "name": "__init__",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._build_pages#0",
+      "name": "_build_pages",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._page#3",
+      "name": "_page",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._market_availability#0",
+      "name": "_market_availability",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:desktop_app/features/trading/wizard.py:StrategyWizard._open_settings#0",
+      "name": "_open_settings",
+      "type": "Method",
+      "filePath": "desktop_app/features/trading/wizard.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/strategy_market_empty.py:ENTRIES",
+      "name": "ENTRIES",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/strategy_market_empty.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:desktop_app/strings/translation_parts.py:PARTS",
+      "name": "PARTS",
+      "type": "Variable",
+      "filePath": "desktop_app/strings/translation_parts.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L1:分層式重構盤點報告（R0）",
+      "name": "分層式重構盤點報告（R0）",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L27:2 逐檔分層與目標路徑",
+      "name": "2 逐檔分層與目標路徑",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/08_REFACTOR_INVENTORY.md:L582:2.2 PR C slice 2 added responsibilities",
+      "name": "2.2 PR C slice 2 added responsibilities",
+      "type": "Section",
+      "filePath": "docs/analysis/08_REFACTOR_INVENTORY.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/analysis/strategy-market-empty/verification.md:L1:A — Strategy wizard empty market",
+      "name": "A — Strategy wizard empty market",
+      "type": "Section",
+      "filePath": "docs/analysis/strategy-market-empty/verification.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L1:M1 自主決策紀錄",
+      "name": "M1 自主決策紀錄",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L252:2026-11-02 — U4 risk and automatic execution desktop",
+      "name": "2026-11-02 — U4 risk and automatic execution desktop",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Section:docs/design/m1-decisions.md:L270:2026-11-03 — A, strategy market empty state",
+      "name": "2026-11-03 — A, strategy market empty state",
+      "type": "Section",
+      "filePath": "docs/design/m1-decisions.md",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_desktop_catalog_split.py:CatalogSplitTests",
+      "name": "CatalogSplitTests",
+      "type": "Class",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_desktop_catalog_split.py:CatalogSplitTests.test_all_feature_records_are_literal_and_keep_unique_phase_keys#0",
+      "name": "test_all_feature_records_are_literal_and_keep_unique_phase_keys",
+      "type": "Method",
+      "filePath": "tests/test_desktop_catalog_split.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests",
+      "name": "EmptyMarketWizardTests",
+      "type": "Class",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_strategy_market_empty_ui.py:setUpClass",
+      "name": "setUpClass",
+      "type": "Variable",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests.tearDown#0",
+      "name": "tearDown",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests.show_market#3",
+      "name": "show_market",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests.test_disconnected_empty_catalogue_explains_connection_and_blocks_next#0",
+      "name": "test_disconnected_empty_catalogue_explains_connection_and_blocks_next",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests.test_connected_empty_catalogue_does_not_claim_login_failure#0",
+      "name": "test_connected_empty_catalogue_does_not_claim_login_failure",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests.test_local_empty_catalogue_does_not_require_broker_login#0",
+      "name": "test_local_empty_catalogue_does_not_require_broker_login",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests.test_keyboard_settings_closes_without_accepting_a_strategy#0",
+      "name": "test_keyboard_settings_closes_without_accepting_a_strategy",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketWizardTests.test_nonempty_and_filtered_catalogue_update_page_completeness#0",
+      "name": "test_nonempty_and_filtered_catalogue_update_page_completeness",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Class:tests/test_strategy_market_empty_ui.py:EmptyMarketNavigationTests",
+      "name": "EmptyMarketNavigationTests",
+      "type": "Class",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_strategy_market_empty_ui.py:setUp",
+      "name": "setUp",
+      "type": "Variable",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_strategy_market_empty_ui.py:tearDown",
+      "name": "tearDown",
+      "type": "Variable",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Variable:tests/test_strategy_market_empty_ui.py:drain",
+      "name": "drain",
+      "type": "Variable",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Method:tests/test_strategy_market_empty_ui.py:EmptyMarketNavigationTests.test_settings_route_sends_nothing_and_does_not_keep_empty_snapshot#0",
+      "name": "test_settings_route_sends_nothing_and_does_not_keep_empty_snapshot",
+      "type": "Method",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_strategy_market_empty_ui.py:EmptyMarketNavigationTests.test_settings_route_sends_nothing_and_does_not_keep_empty_snapshot.open_settings@90:8#1",
+      "name": "open_settings",
+      "type": "Function",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    },
+    {
+      "id": "Function:tests/test_strategy_market_empty_ui.py:EmptyMarketNavigationTests.test_settings_route_sends_nothing_and_does_not_keep_empty_snapshot.reopen@101:8#1",
+      "name": "reopen",
+      "type": "Function",
+      "filePath": "tests/test_strategy_market_empty_ui.py",
+      "change_type": "touched"
+    }
+  ],
+  "affected_processes": [
+    {
+      "id": "proc_47_new_version",
+      "name": "New_version → _feedback",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "_wizard",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_229_new_version",
+      "name": "New_version → _clear_pending_wizard",
+      "process_type": "intra_community",
+      "step_count": 3,
+      "changed_steps": [
+        {
+          "symbol": "_wizard",
+          "step": 2
+        }
+      ]
+    },
+    {
+      "id": "proc_563_new_version",
+      "name": "New_version → Ui_text",
+      "process_type": "cross_community",
+      "step_count": 6,
+      "changed_steps": [
+        {
+          "symbol": "_wizard",
+          "step": 2
+        }
+      ]
+    }
+  ]
+}

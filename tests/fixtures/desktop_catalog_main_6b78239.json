@@ -3104,7 +3104,11 @@
       "autostart.unavailable": "安裝 Windows 版後可設定開機自動啟動。",
       "autostart.enabled": "已啟用開機自動啟動。",
       "autostart.disabled": "已關閉開機自動啟動。",
-      "update.available": "有新版本 {0}，可按「下載並安裝」更新。"
+      "update.available": "有新版本 {0}，可按「下載並安裝」更新。",
+      "strategy.empty.disconnected": "尚未連線，無法取得可交易商品。請先到設定頁連線，或切換至本機模擬。",
+      "strategy.empty.catalog": "目前環境沒有可交易商品。請到設定頁檢查連線與商品目錄，或切換至本機模擬。",
+      "strategy.empty.local": "本機模擬目前沒有可交易商品。請到設定頁確認執行環境。",
+      "strategy.empty.settings": "前往設定"
     }
   },
   "aliases": {
@@ -7537,6 +7541,10 @@
       "autostart.enabled": "已啟用開機自動啟動。",
       "autostart.disabled": "已關閉開機自動啟動。",
       "update.available": "有新版本 {0}，可按「下載並安裝」更新。",
+      "strategy.empty.disconnected": "尚未連線，無法取得可交易商品。請先到設定頁連線，或切換至本機模擬。",
+      "strategy.empty.catalog": "目前環境沒有可交易商品。請到設定頁檢查連線與商品目錄，或切換至本機模擬。",
+      "strategy.empty.local": "本機模擬目前沒有可交易商品。請到設定頁確認執行環境。",
+      "strategy.empty.settings": "前往設定",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -11965,7 +11973,11 @@
     "autostart.unavailable",
     "autostart.enabled",
     "autostart.disabled",
-    "update.available"
+    "update.available",
+    "strategy.empty.disconnected",
+    "strategy.empty.catalog",
+    "strategy.empty.local",
+    "strategy.empty.settings"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

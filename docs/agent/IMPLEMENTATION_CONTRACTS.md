@@ -7866,3 +7866,13 @@ polling. WAITING_SESSION is neutral scheduling, not a resume request. Daily sign
 target dates/windows/phases remain backend facts; UNKNOWN never resends and
 DISPATCHED never claims a fill. No new engine or IPC contract is introduced.
 Strings phase68 orders3032–3085. Evidence: docs/analysis/u4-automatic/verification.md.
+
+## Strategy wizard empty market presentation (2026-11-03)
+
+With no accepted market candidates, step2 explains the empty product catalogue,
+links to settings and is incomplete, so Next is disabled. Broker-disconnected,
+connected-without-catalogue and LOCAL copy are distinct. The settings action rejects
+the modal, clears its cached snapshot and navigates without a command; reopening
+uses the current snapshot. Existing form admission, creation and LIVE gates remain.
+No engine/IPC change. Strings phase70/orders3104–3107; evidence:
+docs/analysis/strategy-market-empty/verification.md.

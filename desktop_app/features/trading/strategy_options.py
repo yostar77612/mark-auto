@@ -104,6 +104,7 @@ class StrategyOptions:
                     wizard.market.addItem(caption, market)
             wizard.market.setCurrentIndex(max(0, wizard.market.findData(wanted)))
         self.candidates()
+        wizard._market_availability()
 
     def candidates(self):
         wizard = self.wizard
