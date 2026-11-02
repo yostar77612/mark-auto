@@ -60,7 +60,7 @@ mutations total347/347: daily state91, closing valuation70, manual/day monitors5
 pure-evaluation recovery35, runtime/native daily exits73 and final commitment26.
 The runtime73 includes its earlier25 stable owner/engine cases only once. Final
 formatted source mutations were rerun; exact hashes are in the adjacent JSON.
-Original window startups return0: LOCAL6.155s and fake-SIM3.648s, each2784 widgets,
+Original window startups return0: LOCAL6.075s and fake-SIM3.606s, each2807 widgets,
 research attached/released, no real SDK import and owned endpoints removed.
 Offline pre-push lint/format, tracked Python syntax and credential gate pass.
 The final R8-related result and complete final-head CI are recorded on PR147;
@@ -110,9 +110,28 @@ and the total to347; the seven dedicated modules contain196 tests.
 
 The final source passes54 native/runtime/commit tests, including this case and
 actual saved EXIT. All73 runtime/native mutations are rerun against matching
-final source hashes. The original windows are also rerun: LOCAL6.155s and fake
+final source hashes. The original windows are also rerun: LOCAL6.075s and fake
 SIM3.648s, both return0 with normal cleanup. All generated baselines remain
 current on dry-run. The three combined-harness tool/worker modules pass47 tests
 from a spawn-safe UTF-8 script with the configured child interpreter; this does
 not change product code or any assertion. Remaining local app-lifetime checks
 are isolated-host acceptance in CI, not a reason to close a user's running app.
+
+## Parallel main integration
+
+Main advanced to217fe6a during this task, merging M3-1, M2-9, U1, CI cleanup
+and graceful exit. PR147 could not start a new CI run while it conflicted.
+Merge45d1a85 preserves both appended contract/inventory sections and both error
+catalog additions. Main's maintenance admission, FeeSchedule changes, M3 types,
+desktop and workflow files are retained unchanged relative to current main.
+The generated observer location repair is isolated in commit5e2f2c4, regenerated
+with the required tool because main moved the shared automatic fixture.
+
+Post-merge native daily/runtime/commit/protective verification passes71 tests.
+All73 runtime/native guard mutations are rerun against matching merged-source
+hashes; the remaining production mutation sources are unchanged. Ruff, syntax
+and static/credential gates pass. The original windows return0 again with2807
+widgets: LOCAL6.075s and fake-SIM3.606s, research released and endpoints removed.
+R8 selects194 related modules against current main; its final result and complete
+final-head CI remain recorded on PR147. This PR stays draft until green CI,
+then remains open for Claude review; no autonomous merge is authorized.

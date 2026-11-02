@@ -287,7 +287,7 @@ commit3b67a10先提供 AutomaticView／DailyIntentView、既有 UiAction 的操�
 
 196項新增專屬測試與347/347個獨立產品守衛變異通過；舊模組的 R8 相關驗證與
 完整 CI 結果以 [PR147](https://github.com/yostar77612/mark-auto/pull/147) 為準。
-原始視窗 LOCAL6.155秒／fake-SIM3.648秒皆返回0並完成資源清理；未匯入真 SDK。
+原始視窗 LOCAL6.075秒／fake-SIM3.606秒皆返回0並完成資源清理；未匯入真 SDK。
 機械基準用指定工具集中一次，獨立 commit，不弱化既有斷言。
 
 本 PR **不自行合併**；CI 全綠後仍留給 Claude 審查自動下單路徑。真實券商自動
