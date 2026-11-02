@@ -825,7 +825,7 @@
           "row": {
             "file": "tests/test_minute_research_host.py",
             "kind": "assignment",
-            "line": 33,
+            "line": 34,
             "name": "contract",
             "receiver": "self"
           },
