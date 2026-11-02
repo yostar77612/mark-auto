@@ -188,9 +188,7 @@ def reference_drawdown(expected_max_drawdown_pct: Decimal, thresholds: Promotion
 
 
 @decimal_operation
-def evaluate_drift(
-    expected_max_drawdown_pct: Decimal, observed_drawdown_pct: Decimal, thresholds: PromotionThresholds = DEFAULT_THRESHOLDS
-) -> DriftVerdict:
+def evaluate_drift(expected_max_drawdown_pct: Decimal, observed_drawdown_pct: Decimal, thresholds: PromotionThresholds = DEFAULT_THRESHOLDS) -> DriftVerdict:
     """Pause when the simulated drawdown reaches the drift line (inclusive)."""
     observed = decimal_value(observed_drawdown_pct, 'observed drawdown', nonnegative=True)
     reference = reference_drawdown(expected_max_drawdown_pct, thresholds)
@@ -232,11 +230,7 @@ def evaluate_promotion(
     reject_rate = Decimal(o.rejected_or_unknown_orders) / Decimal(o.orders) if o.orders else Decimal(0)
     add('reject_rate', reject_rate <= t.PROMOTION_MAX_REJECT_RATE, reject_rate, t.PROMOTION_MAX_REJECT_RATE)
     add('reconciliation_clean', not o.unresolved_reconciliation)
-    review_needed = (
-        kind is HoldingKind.POSITION
-        and o.trading_days > t.PROMOTION_POSITION_REVIEW_DAYS
-        and o.round_trips < t.PROMOTION_MIN_ROUND_TRIPS_POSITION
-    )
+    review_needed = kind is HoldingKind.POSITION and o.trading_days > t.PROMOTION_POSITION_REVIEW_DAYS and o.round_trips < t.PROMOTION_MIN_ROUND_TRIPS_POSITION
     return PromotionVerdict(all(c.passed for c in checks), tuple(checks), review_needed)
 
 

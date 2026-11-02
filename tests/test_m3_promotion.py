@@ -87,7 +87,12 @@ class ThresholdTests(unittest.TestCase):
                 thresholds_for(unknown)  # type: ignore[arg-type]
 
     def test_invalid_thresholds_are_refused(self) -> None:
-        for change in (dict(PROMOTION_MIN_TRADING_DAYS=0), dict(DRIFT_DRAWDOWN_MULTIPLE=D('-1')), dict(PROMOTION_FULL_DAY_REQUIRED=1), dict(DRIFT_MIN_REFERENCE_PCT=0.02)):
+        for change in (
+            dict(PROMOTION_MIN_TRADING_DAYS=0),
+            dict(DRIFT_DRAWDOWN_MULTIPLE=D('-1')),
+            dict(PROMOTION_FULL_DAY_REQUIRED=1),
+            dict(DRIFT_MIN_REFERENCE_PCT=0.02),
+        ):
             with self.subTest(change), self.assertRaises(DomainError):
                 replace(DEFAULT_THRESHOLDS, **change)
 
@@ -113,7 +118,12 @@ def observation(**changes: object) -> SimObservation:
     return SimObservation(**base)  # type: ignore[arg-type]
 
 
-def verdict(kind: HoldingKind = HoldingKind.INTRADAY, expectation: ExecutionExpectation = EXPECT, thresholds: PromotionThresholds = DEFAULT_THRESHOLDS, **changes: object):
+def verdict(
+    kind: HoldingKind = HoldingKind.INTRADAY,
+    expectation: ExecutionExpectation = EXPECT,
+    thresholds: PromotionThresholds = DEFAULT_THRESHOLDS,
+    **changes: object,
+):
     return evaluate_promotion(kind, expectation, observation(**changes), thresholds)
 
 
@@ -152,9 +162,21 @@ class PromotionTests(unittest.TestCase):
             ('no orders is a clean reject rate', intraday, {}, dict(orders=0, rejected_or_unknown_orders=0), None),
             ('unresolved reconciliation', intraday, {}, dict(unresolved_reconciliation=True), 'reconciliation_clean'),
             ('history incomplete', intraday, {}, dict(history_complete=False), 'history_complete'),
-            ('position needs only round trips', position, {}, dict(trading_days=1, full_trading_days=1, completed_trades=0, wins=0, round_trips=3, net_return=D('0.0005')), None),
+            (
+                'position needs only round trips',
+                position,
+                {},
+                dict(trading_days=1, full_trading_days=1, completed_trades=0, wins=0, round_trips=3, net_return=D('0.0005')),
+                None,
+            ),
             ('position one round trip short', position, {}, dict(round_trips=2), 'round_trips'),
-            ('position ignores the day and trade minimums', position, {}, dict(trading_days=1, full_trading_days=1, completed_trades=0, wins=0, round_trips=3, net_return=D('0.0005')), None),
+            (
+                'position ignores the day and trade minimums',
+                position,
+                {},
+                dict(trading_days=1, full_trading_days=1, completed_trades=0, wins=0, round_trips=3, net_return=D('0.0005')),
+                None,
+            ),
         ]
         for label, kind, expectation, change, failing in table:
             with self.subTest(label):
@@ -163,8 +185,18 @@ class PromotionTests(unittest.TestCase):
                 self.assertEqual(result.eligible, failing is None)
 
     def test_every_condition_is_reported_not_short_circuited(self) -> None:
-        result = verdict(trading_days=1, full_trading_days=1, completed_trades=0, wins=0, net_return=D('-1'), max_drawdown_pct=D('0.9'), history_complete=False,
-                         unresolved_reconciliation=True, orders=1, rejected_or_unknown_orders=1)
+        result = verdict(
+            trading_days=1,
+            full_trading_days=1,
+            completed_trades=0,
+            wins=0,
+            net_return=D('-1'),
+            max_drawdown_pct=D('0.9'),
+            history_complete=False,
+            unresolved_reconciliation=True,
+            orders=1,
+            rejected_or_unknown_orders=1,
+        )
         self.assertEqual(failed(result), {'history_complete', 'trading_days', 'trades', 'return', 'drawdown', 'reject_rate', 'reconciliation_clean'})
         names = [c.name for c in verdict(completed_trades=10, wins=10).checks]
         self.assertEqual(names, ['history_complete', 'trading_days', 'trades', 'return', 'drawdown', 'win_rate', 'reject_rate', 'reconciliation_clean'])
@@ -285,7 +317,11 @@ LEGAL_EDGES = frozenset(
         for trigger, reasons in ((Trigger.AUTO_PAUSE, AUTO_REASONS), (Trigger.OWNER_PAUSE, (PauseReason.MANUAL,)))
         for reason in reasons
     ]
-    + [(paused(stage, reason), Trigger.OWNER_RESUME, StageState(stage, RunState.RUNNING)) for stage in (Stage.BROKER_SIM, Stage.LIVE_APPROVED) for reason in PauseReason]
+    + [
+        (paused(stage, reason), Trigger.OWNER_RESUME, StageState(stage, RunState.RUNNING))
+        for stage in (Stage.BROKER_SIM, Stage.LIVE_APPROVED)
+        for reason in PauseReason
+    ]
     + [
         (StageState(Stage.LIVE_APPROVED, run, reason), trigger, StageState(Stage.BROKER_SIM, run, reason))
         for trigger in (Trigger.AUTO_APPROVAL_EXPIRED, Trigger.AUTO_NEW_VERSION)
@@ -315,8 +351,20 @@ class StageMachineTests(unittest.TestCase):
             ('build in any environment', None, Trigger.OWNER_BUILD, ctx(LOCAL), BT),
             ('start in simulation', BT, Trigger.AUTO_START_SIM, ctx(start_in_sim=True, reproduced=True, preopen_checks_passed=True), SIM_RUN),
             ('drift pause', SIM_RUN, Trigger.AUTO_PAUSE, ctx(pause_reason=PauseReason.DRIFT), paused(Stage.BROKER_SIM, PauseReason.DRIFT)),
-            ('evidence pause', SIM_RUN, Trigger.AUTO_PAUSE, ctx(pause_reason=PauseReason.EVIDENCE_CHANGED), paused(Stage.BROKER_SIM, PauseReason.EVIDENCE_CHANGED)),
-            ('order failure pause', SIM_RUN, Trigger.AUTO_PAUSE, ctx(pause_reason=PauseReason.ORDER_FAILURES), paused(Stage.BROKER_SIM, PauseReason.ORDER_FAILURES)),
+            (
+                'evidence pause',
+                SIM_RUN,
+                Trigger.AUTO_PAUSE,
+                ctx(pause_reason=PauseReason.EVIDENCE_CHANGED),
+                paused(Stage.BROKER_SIM, PauseReason.EVIDENCE_CHANGED),
+            ),
+            (
+                'order failure pause',
+                SIM_RUN,
+                Trigger.AUTO_PAUSE,
+                ctx(pause_reason=PauseReason.ORDER_FAILURES),
+                paused(Stage.BROKER_SIM, PauseReason.ORDER_FAILURES),
+            ),
             ('restart pause', SIM_RUN, Trigger.AUTO_PAUSE, ctx(LIVE, pause_reason=PauseReason.RESTART), paused(Stage.BROKER_SIM, PauseReason.RESTART)),
             ('manual pause', SIM_RUN, Trigger.OWNER_PAUSE, ctx(pause_reason=PauseReason.MANUAL), paused(Stage.BROKER_SIM, PauseReason.MANUAL)),
             ('resume', paused(Stage.BROKER_SIM, PauseReason.DRIFT), Trigger.OWNER_RESUME, ctx(reconciled=True, cause_cleared=True), SIM_RUN),
@@ -324,10 +372,34 @@ class StageMachineTests(unittest.TestCase):
             ('approve needs no environment fact', SIM_RUN, Trigger.OWNER_APPROVE_LIVE, ctx(LOCAL, eligible=True), APPROVED),
             ('approval expires', APPROVED, Trigger.AUTO_APPROVAL_EXPIRED, ctx(), SIM_RUN),
             ('new version voids approval', APPROVED, Trigger.AUTO_NEW_VERSION, ctx(), SIM_RUN),
-            ('drift while approved voids approval', APPROVED, Trigger.AUTO_PAUSE, ctx(pause_reason=PauseReason.DRIFT), paused(Stage.BROKER_SIM, PauseReason.DRIFT)),
-            ('other pause keeps approval', APPROVED, Trigger.AUTO_PAUSE, ctx(pause_reason=PauseReason.ORDER_FAILURES), paused(Stage.LIVE_APPROVED, PauseReason.ORDER_FAILURES)),
-            ('resume keeps approval', paused(Stage.LIVE_APPROVED, PauseReason.MANUAL), Trigger.OWNER_RESUME, ctx(reconciled=True, cause_cleared=True), APPROVED),
-            ('expiry keeps the pause', paused(Stage.LIVE_APPROVED, PauseReason.MANUAL), Trigger.AUTO_APPROVAL_EXPIRED, ctx(), paused(Stage.BROKER_SIM, PauseReason.MANUAL)),
+            (
+                'drift while approved voids approval',
+                APPROVED,
+                Trigger.AUTO_PAUSE,
+                ctx(pause_reason=PauseReason.DRIFT),
+                paused(Stage.BROKER_SIM, PauseReason.DRIFT),
+            ),
+            (
+                'other pause keeps approval',
+                APPROVED,
+                Trigger.AUTO_PAUSE,
+                ctx(pause_reason=PauseReason.ORDER_FAILURES),
+                paused(Stage.LIVE_APPROVED, PauseReason.ORDER_FAILURES),
+            ),
+            (
+                'resume keeps approval',
+                paused(Stage.LIVE_APPROVED, PauseReason.MANUAL),
+                Trigger.OWNER_RESUME,
+                ctx(reconciled=True, cause_cleared=True),
+                APPROVED,
+            ),
+            (
+                'expiry keeps the pause',
+                paused(Stage.LIVE_APPROVED, PauseReason.MANUAL),
+                Trigger.AUTO_APPROVAL_EXPIRED,
+                ctx(),
+                paused(Stage.BROKER_SIM, PauseReason.MANUAL),
+            ),
             ('retire from backtest', BT, Trigger.OWNER_RETIRE, ctx(), retired(Stage.BACKTEST)),
             ('retire while paused', paused(Stage.BROKER_SIM, PauseReason.DRIFT), Trigger.OWNER_RETIRE, ctx(), retired(Stage.BROKER_SIM)),
             ('retire when approved', APPROVED, Trigger.OWNER_RETIRE, ctx(), retired(Stage.LIVE_APPROVED)),

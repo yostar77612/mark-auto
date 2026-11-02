@@ -1,7 +1,7 @@
 """M3 frozen signal strategy: immutability, canonical hash, revision, windows and target helpers."""
 
 import ast
-from dataclasses import FrozenInstanceError, fields, replace
+from dataclasses import FrozenInstanceError, fields
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -338,7 +338,18 @@ class CandidateTypeTests(unittest.TestCase):
     def test_candidate_evidence_has_a_fixed_field_set_with_no_oos_values(self) -> None:
         self.assertEqual(
             [f.name for f in fields(CandidateEvidence)],
-            ['candidate_ref', 'campaign_ref', 'candidate_fingerprint', 'verdict', 'oos_consumed', 'sample_count', 'completed_at', 'dataset_family', 'dataset_interval', 'signal_spec_json'],
+            [
+                'candidate_ref',
+                'campaign_ref',
+                'candidate_fingerprint',
+                'verdict',
+                'oos_consumed',
+                'sample_count',
+                'completed_at',
+                'dataset_family',
+                'dataset_interval',
+                'signal_spec_json',
+            ],
         )
         self.assertEqual([f.name for f in fields(CandidateSummary)], ['candidate_ref', 'verdict', 'completed_at', 'dataset_interval'])
         for f in fields(CandidateEvidence):
@@ -346,11 +357,28 @@ class CandidateTypeTests(unittest.TestCase):
 
     def test_construction_and_boundaries(self) -> None:
         done = datetime(2026, 1, 5, tzinfo=UTC)
-        ok = dict(candidate_ref='c1', campaign_ref='k1', candidate_fingerprint='fp', verdict='statistical_edge', oos_consumed=True, sample_count=40, completed_at=done,
-                  dataset_family='TMF', dataset_interval='1d', signal_spec_json=SPEC)
+        ok = dict(
+            candidate_ref='c1',
+            campaign_ref='k1',
+            candidate_fingerprint='fp',
+            verdict='statistical_edge',
+            oos_consumed=True,
+            sample_count=40,
+            completed_at=done,
+            dataset_family='TMF',
+            dataset_interval='1d',
+            signal_spec_json=SPEC,
+        )
         CandidateEvidence(**ok)
         CandidateSummary('c1', 'statistical_edge', done, '1d')
-        for change in (dict(oos_consumed=1), dict(sample_count=-1), dict(completed_at=datetime(2026, 1, 5)), dict(dataset_interval='15m'), dict(signal_spec_json=''), dict(candidate_ref='')):
+        for change in (
+            dict(oos_consumed=1),
+            dict(sample_count=-1),
+            dict(completed_at=datetime(2026, 1, 5)),
+            dict(dataset_interval='15m'),
+            dict(signal_spec_json=''),
+            dict(candidate_ref=''),
+        ):
             with self.subTest(change), self.assertRaises(DomainError):
                 CandidateEvidence(**{**ok, **change})
         with self.assertRaises(FrozenInstanceError):
