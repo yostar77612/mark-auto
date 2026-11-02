@@ -46,10 +46,11 @@ def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
         raise DomainError('validation_failed', 'minute intraday policy or TMF cutoff mismatch')
     sessions = settings.sessions(calendar)
     evidence = settings.historical_contract
-    if (
-        (evidence is not None and not evidence.covers(spec, sessions[0].opens_at, sessions[-1].closes_at))
-        or (evidence is None and sessions[0].opens_at < spec.effective_at)
-    ):
+    if evidence is None:
+        historically_applicable = sessions[0].opens_at >= spec.effective_at
+    else:
+        historically_applicable = evidence.covers(spec, sessions[0].opens_at, sessions[-1].closes_at)
+    if not historically_applicable:
         raise DomainError('instrument_unresolved', 'historical contract applicability is unknown')
     return sessions
 

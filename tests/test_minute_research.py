@@ -7,13 +7,14 @@ import unittest
 
 from quantlab.trading.application.codec import dumps, loads
 from quantlab.trading.application.contracts import StrategyForm
-from quantlab.trading.application.minute_research import research_minutes
+from quantlab.trading.application.minute_research import research_minutes, validate_minute_request
 from quantlab.trading.application.registry import initialize
 from quantlab.trading.application.research import ResearchResult, research_fingerprint
 from quantlab.trading.application.state import StrategyRecord
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.live_bars import LiveBar
+from quantlab.trading.domain.minute_contract import HistoricalContractEvidence
 from quantlab.trading.domain.minute_research import TAIPEI, MinuteResearchSettings, complete_minutes
 from quantlab.trading.domain.models import Environment, HoldingKind, HoldingPolicy, Side
 from quantlab.trading.domain.strategy import Rule, StrategyDefinition, StrategyParameters
@@ -117,6 +118,32 @@ class MinuteResearchTests(unittest.TestCase):
                         with self.assertRaisesRegex(DomainError, 'typed strategy parameters') as raised:
                             self.run_research(settings=settings, strategy=replace(legacy, parameters=typed))
                         self.assertEqual(raised.exception.code, 'capability_missing')
+
+    def test_historical_applicability_preserves_evidence_and_grid_boundaries(self):
+        session = self.calendar.sessions[0]
+        observed = replace(self.spec, effective_at=session.closes_at)
+        proof = HistoricalContractEvidence(observed, 'TMFK6', session.opens_at, session.closes_at, 'SYNTHETIC_FIXTURE', 'a' * 64)
+        for evidence, accepted in (
+            (None, False),
+            (proof, True),
+            (replace(proof, spec=self.spec), False),
+            (replace(proof, valid_from=session.opens_at + timedelta(minutes=1)), False),
+            (replace(proof, valid_until=session.closes_at - timedelta(minutes=1)), False),
+        ):
+            settings = replace(self.settings, historical_contract=evidence)
+            with self.subTest(evidence=evidence):
+                if accepted:
+                    self.assertEqual(validate_minute_request(self.strategy, observed, self.calendar, settings), (session,))
+                else:
+                    with self.assertRaisesRegex(DomainError, 'historical contract applicability') as raised:
+                        validate_minute_request(self.strategy, observed, self.calendar, settings)
+                    self.assertEqual(raised.exception.code, 'instrument_unresolved')
+        self.assertEqual(validate_minute_request(self.strategy, self.spec, self.calendar, self.settings), (session,))
+        invalid = replace(self.calendar, sessions=(replace(session, closes_at=session.closes_at + timedelta(seconds=1)),))
+        for evidence in (None, proof):
+            with self.assertRaisesRegex(DomainError, 'minute session or forced-close grid') as raised:
+                validate_minute_request(self.strategy, observed, invalid, replace(self.settings, historical_contract=evidence))
+            self.assertEqual(raised.exception.code, 'calendar_missing')
 
     def test_no_current_close_leakage(self):
         rule = Rule('close', 'GT', Decimal('20005'))
