@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from .manual_contracts import ManualPurpose, ManualScope
+from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.models import AccountSnapshot, Environment, HoldingKind, HoldingPolicy, Market, OrderPlan, OrderStatus, Side
 from quantlab.trading.domain.validation import DomainError
 
@@ -154,6 +155,91 @@ def manual_net_pnl(engine: 'TradingEngine', book: ManualBook) -> Decimal:
     return result
 
 
+def manual_day_ready(engine: 'TradingEngine', book: ManualBook) -> bool:
+    """An old shared book needs committed exact closes, never a new opening seed."""
+    if book.opening_day == engine.state.trading_day:
+        return True
+    if (
+        engine.configuration.environment is not Environment.BROKER_SIMULATION
+        or book.source != CAPACITY_SOURCE
+        or not any(row.parameters is not None for row in engine.state.strategies)
+    ):
+        return False
+    from .sessions import DailyBaselineEvidence, resolve_session, validate_baseline
+    from quantlab.trading.domain.automatic_calendar import automatic_day_calendar
+    from quantlab.trading.domain.strategy import is_tmf
+
+    evidence = engine.state.automatic_daily_evidence
+    if not isinstance(evidence, DailyBaselineEvidence):
+        return False
+    try:
+        calendar = automatic_day_calendar(engine.calendar, tuple(spec for spec in engine.catalog.instruments if spec.market is Market.STOCK or is_tmf(spec)))
+        context = resolve_session(calendar, engine.clock.now())
+        if context.trade_date != engine.state.trading_day:
+            return False
+        # This field is written only after trusted provider validation. Its
+        # source must still agree with every committed per-account baseline.
+        validate_baseline(
+            evidence,
+            environment=engine.configuration.environment,
+            account_refs=tuple(engine.gateways),
+            calendar=calendar,
+            fees=engine.fees,
+            now=engine.clock.now(),
+            trade_date=context.trade_date,
+            trusted_sources=frozenset((evidence.source_id,)),
+        )
+        splits = evidence.account_previous_close
+        if not splits and len(evidence.account_refs) == 1:
+            splits = ((evidence.account_refs[0], evidence.previous_close_total_pnl),)
+        expected = {reference: (evidence.source_id, value) for reference, value in splits}
+        if tuple(sorted(expected)) != tuple(sorted(engine.gateways)):
+            return False
+        actual = tuple(row for row in engine.state.account_daily_baselines if row.trade_date == context.trade_date and row.account_ref in expected)
+        return len(actual) == len(expected) and {row.account_ref: (row.source_id, row.previous_close_pnl) for row in actual} == expected
+    except DomainError:
+        return False
+
+
+@decimal_operation
+def manual_daily_pnl(engine: 'TradingEngine', book: ManualBook) -> Decimal:
+    """Shared accounts use their dated net mark; pure manual retains its history."""
+    shared = book.source == CAPACITY_SOURCE and any(row.parameters is not None for row in engine.state.strategies)
+    if not shared:
+        return manual_net_pnl(engine, book)
+    if not manual_day_ready(engine, book):
+        raise DomainError('manual_day_baseline_required')
+    baseline = tuple(row for row in engine.state.account_daily_baselines if row.account_ref == book.account_ref and row.trade_date == engine.state.trading_day)
+    if len(baseline) != 1:
+        raise DomainError('manual_day_baseline_required')
+    from .account_risk import account_net_mark
+
+    return account_net_mark(engine, book.account_ref) - baseline[0].previous_close_pnl
+
+
+def release_manual_day_wait(engine: 'TradingEngine') -> None:
+    """Writer-held transition: remove only a proved day wait, without resuming."""
+    from dataclasses import replace
+
+    state = engine.state
+    books = tuple(
+        replace(
+            book,
+            reasons=tuple(reason for reason in book.reasons if reason != 'manual_day_baseline_required'),
+            halted=book.halted and any(reason != 'manual_day_baseline_required' for reason in book.reasons),
+        )
+        if 'manual_day_baseline_required' in book.reasons and manual_day_ready(engine, book)
+        else book
+        for book in state.manual_books
+    )
+    issues = state.issues
+    if books and all(manual_day_ready(engine, book) for book in books):
+        issues = tuple(reason for reason in issues if reason != 'manual_day_baseline_required')
+    proposed = replace(state, manual_books=books, issues=issues)
+    if proposed != state:
+        engine._persist('manual_day_wait_proved', proposed)
+
+
 def manual_capacity(engine: 'TradingEngine', book: ManualBook) -> ManualRiskCapacity:
     lots = tuple(lot for lot in engine.state.positions if lot.strategy_id == book.book_id)
     entry_costs = sum((order.costs for order in engine.state.orders if order.plan.strategy_id == book.book_id and not order.plan.reduce_only), ZERO)
@@ -227,7 +313,7 @@ def assert_manual_plan(engine: 'TradingEngine', request: ManualRequest, plan: Or
             raise DomainError('manual_allocation_exceeds_settings')
         if book.halted or engine.state.stopped or not engine.state.reconciled:
             raise DomainError('risk_rejected', 'manual new risk is stopped')
-        if book.opening_day != engine.state.trading_day:
+        if not manual_day_ready(engine, book):
             raise DomainError('manual_day_baseline_required')
         if not diagnostic_passed(engine, request.scope.connection_generation) and request.purpose is not ManualPurpose.DIAGNOSTIC_TMF:
             raise DomainError('manual_futures_test_required' if manual_market(engine, plan.account_ref) is Market.STOCK else 'manual_test_required')

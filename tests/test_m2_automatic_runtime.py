@@ -44,7 +44,7 @@ class AutomaticRuntimeTests(unittest.TestCase):
         self.shared = SimpleNamespace(callback_errors=0)
         self.owner = SimpleNamespace(lock=RLock(), snapshot=Mock(side_effect=lambda: self.view), selected=('account',), shared=self.shared, query_ready=True)
         self.observation = ManualAccountObservation('account', SIM, (), (), (), self.clock.now())
-        typed = SimpleNamespace(parameters=object(), form=SimpleNamespace(account_ref='account'))
+        typed = SimpleNamespace(parameters=StrategyParameters('5m', Decimal('.03'), Decimal('10000')), form=SimpleNamespace(account_ref='account'))
         self.engine = SimpleNamespace(
             lock=RLock(),
             state=replace(AppState(), environment=SIM, strategies=(typed,)),

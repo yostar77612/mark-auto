@@ -1,4 +1,4 @@
-"""Explicit deferred broker daily entries; local steps and known exits stay legal."""
+"""Daily dispatch requires a saved claim; local steps and known exits stay legal."""
 
 from dataclasses import replace
 from decimal import Decimal as D
@@ -46,7 +46,7 @@ class AutomaticDailyBoundaryTests(unittest.TestCase):
         orders, reservations, native = case.engine.state.orders, case.engine.reservations(), case.placed()
         with self.assertRaises(DomainError) as rejected:
             case.engine.submit(case.direct_plan(record), record.policy, 'broker-daily-explicit-pending')
-        self.assertEqual(rejected.exception.code, 'automatic_daily_execution_pending')
+        self.assertEqual(rejected.exception.code, 'daily_signal_not_authorized')
         self.assertEqual(case.placed(), native)
         self.assertEqual(case.engine.state.orders, orders)
         self.assertEqual(case.engine.reservations(), reservations)
@@ -58,8 +58,11 @@ class AutomaticDailyBoundaryTests(unittest.TestCase):
         self.assertFalse(case.engine.state.stopped)
         self.assertFalse(case.engine.state.automatic.auto_paused)
         view = next(row for row in LocalFacade(case.engine).snapshot().strategies if (row.strategy_id, row.version) == (record.strategy_id, record.version))
-        self.assertEqual(view.entry_block_code, 'automatic_daily_execution_pending')
-        self.assertEqual(view.activity_state, 'PAUSED')
+        self.assertEqual(view.entry_block_code, '')
+        self.assertEqual(view.activity_state, 'RUNNING')
+        cycle = LocalFacade(case.engine).snapshot().automatic
+        self.assertEqual(cycle.daily_intents, ())
+        self.assertTrue(case.engine.state.automatic.daily.authorized_run)
 
     def test_local_daily_public_day_step_still_advances_and_executes(self):
         case = local_fixtures.StrategyManagementTests()

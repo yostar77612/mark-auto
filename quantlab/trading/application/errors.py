@@ -10,6 +10,12 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'daily_waiting_session': ErrorText('日 K 訊號已保存，等待下一個可信交易時段。', '保持程式與連線正常；下一交易日仍會重新核對報價、帳戶與風險。'),
+    'daily_signal_expired': ErrorText('日 K 訊號已超過下一個可執行交易時段。', '不會追送舊訊號；等待新的完整日 K 評估。'),
+    'daily_signal_invalidated': ErrorText('已保存訊號的策略、商品或證據已變更。', '核對策略版本與紀錄；舊訊號不會改套新版本或新合約。'),
+    'daily_signal_unresolved': ErrorText('日 K 執行紀錄仍有未確認結果。', '保持停止新倉，先完成對帳；不會自動重送。'),
+    'daily_close_unverified': ErrorText('缺少可驗證的帳戶收盤基準。', '核對收盤報價、完整對帳及日期；不會使用今日損益代替昨收。'),
+    'daily_signal_not_authorized': ErrorText('日 K 送單缺少有效的已保存訊號授權。', '先完成對帳與檢查，並由使用者恢復；沒有明確訊號不會下單。'),
     'research_cancelled': ErrorText('研究已取消，未發布新的證據。', '既有研究結果保留；需要時可重新執行。'),
     'stock_entitlement_unknown': ErrorText(
         '研究持倉跨越尚未確認經濟權益的除權息事件，未產生證據。', '補齊可驗證的現金或股票權益資訊；不得由參考價比率猜測損益。'
