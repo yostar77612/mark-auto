@@ -281,6 +281,7 @@ def _run_window(
         style_strategy_table=style_strategy_table,
         **_presentation_options(root or default_root()),
     )
+    app.setProperty('maintenanceRequestClose', window.close)
     _apply_trading_page_theme(window)
     from desktop_app.research_session import ResearchSession, UnifiedResearch
 

@@ -243,3 +243,5 @@
 - 更新確認後沿用既有視窗關閉確認，若使用者再取消關閉則取消待安裝要求並清下載，不碰交易頁檔案；不使用測試專用的跳過確認屬性。
 - 下載 worker 採非 daemon，退出期間完成取消清理；成功檔案交接與視窗銷毀以單一 lock 同步，避免未輪詢結果留下完整或半成品檔。
 - 本機原生 installer guard 的兩個既有測試因其他使用中 MarkAuto 持有真實 mutex 而安全拒跑；不擾動既有程序、不削弱斷言，交由隔離的 Windows CI 執行。模組式執行曾遇測試互相import路徑差異，改用 discover 的專案標準指令。
+
+- 2026-11-02 23:35 Asia/Taipei，M4a CI 回歸：設定頁不得透過 window() 探索 shell，改由 trading_runtime 注入 maintenanceRequestClose。保留原更新說明的 help 身份與不背景自動下載的提示，同時展示新的手動安裝說明；恢復原完整 help 基準，不改既有邊界／可達性斷言。新 head 重新執行兩套完整 CI，不使用 failed-only。

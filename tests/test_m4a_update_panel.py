@@ -38,6 +38,7 @@ class UpdatePanelTests(unittest.TestCase):
             ('maintenanceDownload', Mock()),
             ('maintenanceQueueInstall', self.queued),
             ('maintenanceCancelInstall', self.cancel),
+            ('maintenanceRequestClose', lambda: self.panel.close()),
         ]:
             self.app.setProperty(key, value)
             self.addCleanup(self.app.setProperty, key, None)

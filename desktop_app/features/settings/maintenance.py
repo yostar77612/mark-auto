@@ -242,7 +242,7 @@ class MaintenancePanel(QWidget):
             self.async_status.set_state('error', error_code=exc.code if isinstance(exc, UpdateError) else 'update_install_start_failed')
             return
         self.async_status.set_state('empty', message=ui_text('update.ready'))
-        if not self.window().close():
+        if not self.app.property('maintenanceRequestClose')():
             self.app.property('maintenanceCancelInstall')()
             self.async_status.set_state('error', error_code='update_shutdown_failed')
 
