@@ -860,6 +860,9 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tests/test_m2_readability.py` | 156 | tooling | `tests/test_m2_readability.py` | M2-6: first-start/date/readability and accessible full explanations with unknown financial facts; original assertions retained. |
 | `tests/test_m2_trading_page.py` | 321 | tooling | `tests/test_m2_trading_page.py` | M2-6: accepted environment switching, LIVE UI refusal, explicit page ownership, context confirmation and populated position layout. |
 | `tests/test_m2_order_report.py` | 153 | tooling | `tests/test_m2_order_report.py` | M2-2: six-column order defaults, native keyboard preference persistence, canonical quantities/identity and account confirmation regressions; no SDK calls. |
+| `quantlab/trading/runtime/sinopac_aliases.py` | 43 | composition | `quantlab/trading/runtime/sinopac_aliases.py` | Account alias hardening: workspace-only random key lifecycle; exclusive create and fail-closed read; no broker credentials. |
+
+| `tests/test_sinopac_account_aliases.py` | 218 | tooling | `tests/test_sinopac_account_aliases.py` | Account alias hardening: offline HMAC migration, privacy, key loss and journal reconciliation guards. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
