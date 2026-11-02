@@ -10,6 +10,15 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'automatic_paused': ErrorText('自動交易已暫停，等待恢復。', '先核對暫停原因、完成對帳，再由使用者恢復。'),
+    'automatic_daily_execution_pending': ErrorText('日 K 自動送單尚待下一交易時段執行支援。', '目前可使用已完成驗證的分鐘策略；日 K 研究與本機交易日推進仍可使用。'),
+    'program_restarted': ErrorText('程式重新啟動，自動新倉保持停止。', '先完成對帳及檢查，再由使用者恢復。'),
+    'order_result_unknown': ErrorText('自動委託結果未知。', '保留資金與委託紀錄；對帳確認前不會重送。'),
+    'automatic_overdue_position': ErrorText('收盤後仍有當沖部位待處理。', '核對券商回報與剩餘部位，保持停止新倉。'),
+    'automatic_bar_overflow': ErrorText('自動交易的完成 K 棒佇列已超出容量。', '核對行情與執行狀態，完成對帳後再恢復。'),
+    'automatic_market_gap': ErrorText('自動交易行情序列或連線世代已改變。', '完成對帳與行情檢查後，再由使用者恢復。'),
+    'intraday_force_exit': ErrorText('已到當沖強制平倉時間，自動新倉已停止。', '核對平倉委託及剩餘部位；只有已確認取消的委託才可重送。'),
+    'reconciled_waiting_resume': ErrorText('自動交易已完成對帳，等待恢復。', '確認檢查結果後，由使用者恢復新倉。'),
     'account_daily_loss_limit': ErrorText('帳戶已達單日虧損上限，新倉停止。', '今日不能解除；核對部位並保留保護性出場。'),
     'account_order_limit': ErrorText('委託金額超過帳戶單筆上限。', '調整策略新版本的數量或帳戶上限，再明確恢復。'),
     'account_position_limit': ErrorText('帳戶已達最大同時持倉數。', '未成交進場單也占用名額；核對後明確恢復。'),

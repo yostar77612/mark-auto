@@ -7251,3 +7251,46 @@ is UNKNOWN when resolution is blocked.
 - Account limits cover all app-owned positions/pending entries and admission
   routes once the account adopts M2. Reductions retain their existing guards.
   Neither resume, restart nor changed limits clears today's loss latch.
+
+## M2-3 engine contract (2026-11-02)
+
+- AUTO_RECONCILE reads the accepted worker cache and resolves durable automatic
+  claims; it never resumes. AUTO_RESUME is a distinct explicit user action after
+  current owner, reconciliation, account baselines, preflight and risk checks.
+  Ordinary manual RESUME never clears the separate automatic pause.
+- UiState.automatic is AutomaticView(state,reasons,evaluations). State is
+  PAUSED_WAITING_RESUME or RUNNING. EvaluationStatus carries its immutable
+  strategy/version/instrument/interval/bar-end cursor, evaluated_at,
+  next_evaluation_at, phase, order_result/order_id and code.
+- AppState.automatic defaults to paused/program_restarted, retaining cursors
+  and forced attempts on replay. Every startup pauses it. CLAIMED evaluation or
+  SUBMITTING/CANCEL_PENDING forced attempt becomes unresolved after restart;
+  trusted reconciliation and a separate user resume are required.
+- AppState.automatic_daily_evidence optionally stores the existing typed
+  DailyBaselineEvidence accepted by confirm_automatic_baseline. This provider
+  boundary requires exact account closes, calendar/fees/source attestation and
+  current cached reconciliation; it never synthesizes a close or resumes.
+- Completed final, non-incomplete DAY bars only. Persist each cursor before the
+  decision; never replay paused-period bars after resume. ForcedAttempt keys
+  belong to one lot/attempt; UNKNOWN retains reserves and cannot be resent.
+  Retry follows observed terminal cancellation, at least30 seconds apart and
+  never later than actual market close minus2 minutes.
+- New errors/reasons: automatic_paused, program_restarted, order_result_unknown,
+  automatic_overdue_position, automatic_bar_overflow, automatic_market_gap,
+  intraday_force_exit, reconciled_waiting_resume. Existing preflight/risk codes
+  identify connection, market, baseline and loss stops. UI text remains another lane.
+- This R5 delivery supports completed 1m/5m broker cycles. Typed BROKER_SIMULATION
+  1d new entries fail with automatic_daily_execution_pending and expose that
+  entry_block_code/PAUSED status. Saving the completed daily signal and submitting
+  it in the next verified session is next-round work. LOCAL daily research/day
+  advancement and independently legal protective reductions remain available.
+- New product modules: domain/auto_cycle.py, domain/automatic_calendar.py,
+  application/automatic_state.py, application/automatic_capacity.py,
+  application/automatic.py, application/automatic_baseline.py, runtime/automatic.py. No broker financial snapshot
+  is synthesized; manual and automatic entries use the same confirmed SIM pool.
+  Costs remain FeeSchedule. LIVE stays hard-disabled, including forced retries.
+- Runtime injects mandatory current-owner observation and new-entry validators.
+  Current-generation key permission cannot be inherited from a prior daily
+  preflight pass. Protective reductions validate their own account/instrument
+  scope independently. AUTO_RECONCILE can consume fresh cached proof after
+  service close; it grants no new exposure and never implies AUTO_RESUME.
