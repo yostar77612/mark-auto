@@ -280,6 +280,8 @@ def _run_window(
         alerts_panel=alerts.panel,
         style_terminal=_apply_terminal_theme,
     )
+    from desktop_app.components.async_status import AsyncStatus
+
     window = TradingWindow(
         facade,
         initial,
@@ -287,6 +289,7 @@ def _run_window(
         strategy_error_texts={code: (text.explanation, text.action) for code, text in ERROR_TABLE.items()},
         style_strategy_table=style_strategy_table,
         style_automatic_controls=style_automatic_controls,
+        research_status_factory=AsyncStatus,
         **_presentation_options(root or default_root()),
     )
     app.setProperty('maintenanceRequestClose', window.close)

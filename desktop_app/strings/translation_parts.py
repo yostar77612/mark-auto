@@ -11,6 +11,7 @@ from .strategy_management import ENTRIES as _part_strategy_management
 from .automatic_risk import ENTRIES as _part_automatic_risk
 from .strategy_market_empty import ENTRIES as _part_strategy_market_empty
 from .connection_failures import ENTRIES as _part_connection_failures
+from .strategy_research_feedback import ENTRIES as _part_strategy_research_feedback
 from .assistant import ENTRIES as _part_assistant
 from .terminal import ENTRIES as _part_terminal
 from .marketdata import ENTRIES as _part_marketdata
@@ -89,6 +90,7 @@ from .dashboard import ENTRIES as _part_dashboard
 from .m4a_maintenance import ENTRIES as _part_m4a_maintenance
 
 PARTS = (
+    _part_strategy_research_feedback,
     _part_connection_failures,
     _part_strategy_market_empty,
     _part_m4a_maintenance,

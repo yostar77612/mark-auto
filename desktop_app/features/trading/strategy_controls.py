@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QLabel
 
 from desktop_app.features.trading.labels import policy_label
 from desktop_app.features.trading.widgets import selected_id
+from desktop_app.features.trading.strategy_research_feedback import StrategyResearchFeedback
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.domain.models import Environment
@@ -41,6 +42,7 @@ class StrategyControls:
         self.research_details.setTextFormat(Qt.TextFormat.PlainText)
         self.research_details.setWordWrap(True)
         research_layout.insertWidget(0, self.research_details)
+        self.research_feedback = StrategyResearchFeedback(window, research_layout) if window.research_status_factory is not None else None
         window.strategies.itemSelectionChanged.connect(lambda: self.render(window.state))
         window.version_button.setText(ui_text('u3.revise'))
         window.version_button.setAccessibleName(ui_text('u3.revise'))
@@ -58,6 +60,8 @@ class StrategyControls:
         return state.context_id, state.context_epoch, state.environment, state.account_ref, state.version
 
     def render(self, state):
+        if self.research_feedback is not None:
+            self.research_feedback.render(state)
         strategy = self.selected(state)
         if strategy is None:
             self.details.setText(ui_text('v2.select_strategy'))
