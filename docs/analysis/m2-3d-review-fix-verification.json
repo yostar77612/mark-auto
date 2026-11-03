@@ -1,7 +1,7 @@
 {
   "scope": "M2-3d F1-F6 review fixes",
   "branch": "codex/m2-3d-daily-basis-fixes",
-  "base": "6387968",
+  "base": "5652457",
   "contract_commit": "e763bdb",
   "contract": {
     "appended_fields": [
@@ -18,7 +18,8 @@
     "automatic_resend_added": false,
     "automatic_resume_added": false,
     "desktop_or_G3_or_pin_or_cost_or_workflow_or_layer_changes": false,
-    "assertions_weakened": false
+    "assertions_weakened": false,
+    "owner_authorized_wall_clock_assertion_replaced": true
   },
   "limits": {
     "verified_histories": 128,
@@ -53,7 +54,7 @@
     "source": {
       "cases": 81,
       "killed": 81,
-      "raw": ".gitnexus/verification/s1d-source-and-previous-close-mutations.json"
+      "raw": ".gitnexus/verification/s1d-source-mutations.before-public-cache-probe.json"
     },
     "legacy_domain": {
       "cases": 58,
@@ -3096,7 +3097,8 @@
   "claude_review": "PENDING",
   "read_only_review": {
     "new_reproducible_product_defects_found": 0,
-    "does_not_replace_claude_review": true
+    "does_not_replace_claude_review": true,
+    "source_epoch": "Historical initial review; current independent local review also found no concrete regression, not Claude approval."
   },
   "source_domain_deployment_tests": {
     "passed": 148,
@@ -3106,7 +3108,10 @@
   "main_integration": {
     "main": "4867549",
     "commit": "49d7064",
-    "resolution": "Preserve both appended contract sections; desktop bytes equal main."
+    "resolution": "Preserve both appended contract sections; desktop bytes equal main.",
+    "latest_main": "5652457",
+    "latest_merge": "c8de66b",
+    "latest_resolution": "Preserve both appended contracts; incoming desktop bytes unchanged from main; R7 symbolic baseline adopted"
   },
   "ci_repair": {
     "projection_cache": {
@@ -3290,6 +3295,443 @@
       "layer_findings": 0,
       "architecture_violations": 0,
       "raw": "ci-repair-prepush.log"
+    },
+    "source_epoch": "Historical first performance correction before subsequent owner deterministic-test instruction; not latest acceptance."
+  },
+  "status": "FINAL_LOCAL_RELATED_COMPLETE_R7_FIXED_TWO_MAIN_REPRODUCED_HOST_PRECONDITIONS_CI_PENDING",
+  "original_base": "6387968",
+  "deterministic_verification": {
+    "product_commit": "1ad42aa",
+    "timing_policy": "measure-only, no elapsed-time success assertion; explicit owner supersedes0.5-second wall assertion",
+    "source_cache_tests": {
+      "passed": 44,
+      "seconds": 0.242223,
+      "raw": "public-cache-probe-tests.json"
+    },
+    "source_mutations": {
+      "cases": 100,
+      "killed": 100,
+      "assertion_kills": 89,
+      "body_exception_kills": 11,
+      "original_cases_rerun": 81,
+      "new_public_cache_cases": 19,
+      "harness_kills": 0,
+      "raw": "s1d-source-and-previous-close-mutations.json"
+    },
+    "application": {
+      "scope": "strict public cached_history seam; zero source.history calls on hot revision-unchanged paths",
+      "current_fresh_mutations": {
+        "total": 104,
+        "killed": 104,
+        "projection_and_seams": 27,
+        "admission": 25,
+        "root_review": 19,
+        "deployment": 33,
+        "counts": {
+          "KILLED_ASSERTION": 94,
+          "KILLED_BODY_EXCEPTION": 10
+        },
+        "setup_loader_cleanup_kills": 0,
+        "preserved_survivor_report": "cache-seam-affected-mutations-before-test-probes.json",
+        "raw": [
+          "daily-projection-cache-seam-mutations.json",
+          "cache-seam-affected-mutations.json",
+          "daily-deployment-cache-seam-mutations.json"
+        ]
+      },
+      "focused_tests": {
+        "total": 94,
+        "projection": 23,
+        "admission": 23,
+        "root_review": 15,
+        "deployment_native": 33,
+        "errors": 0,
+        "failures": 0,
+        "skips": 0,
+        "deployment_native_seconds": 3.174,
+        "projection_seconds": 1.806,
+        "admission_seconds": 1.366,
+        "root_review_seconds": 0.891,
+        "raw": [
+          "test_daily_signal_projection.log",
+          "projection-cache-seam-admission.log",
+          "projection-cache-seam-review-final.log",
+          "projection-cache-seam-deployment-native.log"
+        ]
+      },
+      "test_migration": {
+        "locked_miss": "native cached_history(None) refuses with original code; no history fallback, orders/cursor/intents/reservations unchanged",
+        "outside_locks": "genuine cache miss probes and loads twice outside ownership locks",
+        "pending_tests": "original history no-call retained; cached_history no-call added to two methods covering three previously-surviving window guards"
+      },
+      "superseded_sandbox_run": "projection-cache-seam-deployment.log had SQLite unable-open host boundary; native escalated rerun passed all33 unchanged assertions",
+      "source_sha256": {
+        "quantlab/trading/application/daily_signal_data.py": "f33243c080151da13c13b193d0de0c3becbadefde40ea2aaf48fd87906433a0a",
+        "quantlab/trading/runtime/daily_source_cache.py": "411d99805be37eecdc4f9b537651a8778cf96b8b8acdcbd29efc1e02be5a9f3c",
+        "quantlab/trading/runtime/official_daily_source.py": "c5b933830b3be541e11b9cd22028ec1cf5e2fd25bb8e4592cee48dc043221c63",
+        "quantlab/trading/ports/daily_signals.py": "1c2ed1ed53e0302ba5a946528d619f9dd91ed7881dfb6e80144b2ce946c20dc3",
+        "tests/official_daily_fixtures.py": "9841576a2fe803144939a67011fdcc9668772389203a2a402e2a70298774e27f",
+        "tests/test_daily_signal_projection.py": "fea58efaa88dd25d678036523c9640ad3cb633afe15e3b92d2aeadce8bc33ba2",
+        "tests/test_daily_basis_review_application.py": "2ef45c7238d26ca71225c55f8c734af911acd342e0cb8ef0702356d2f7c36b32"
+      },
+      "products_and_tests_frozen": true,
+      "timing_policy": "measure-only per latest user instruction; no new elapsed-time success gate"
+    },
+    "three_locks_and_hot_history_mutations": {
+      "cases": 4,
+      "killed": 4,
+      "fresh_processes": 8,
+      "elapsed_seconds": 156.67269269999815,
+      "workers": 2,
+      "wall_clock_assertions": false,
+      "all_same_source_snapshot": true,
+      "pairs": [
+        {
+          "case": "only-bundle",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history-method:bundle",
+          "killed": true,
+          "source_unchanged": true
+        },
+        {
+          "case": "only-engine",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history-method:engine",
+          "killed": true,
+          "source_unchanged": true
+        },
+        {
+          "case": "only-owner",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history-method:owner",
+          "killed": true,
+          "source_unchanged": true
+        },
+        {
+          "case": "hot-history-bypass",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history_calls",
+          "killed": true,
+          "source_unchanged": true
+        }
+      ],
+      "source_sha256": {
+        "quantlab/trading/application/daily_signal_data.py": "f33243c080151da13c13b193d0de0c3becbadefde40ea2aaf48fd87906433a0a",
+        "quantlab/trading/application/daily_signal_projection.py": "cd23b29c2b6dcc8d01cd58187b6550ce98aba41a5bb43f7bc0be0017bdb4a35c",
+        "quantlab/trading/runtime/daily_source_cache.py": "411d99805be37eecdc4f9b537651a8778cf96b8b8acdcbd29efc1e02be5a9f3c",
+        "quantlab/trading/runtime/official_daily_source.py": "c5b933830b3be541e11b9cd22028ec1cf5e2fd25bb8e4592cee48dc043221c63",
+        "quantlab/trading/runtime/sinopac_connection.py": "a0d910de6fee9f2c03908452d7854f73214760c3d905b02e4dc5f71584306c52",
+        "tests/test_official_daily_large_pump.py": "85c6dac25fe24e95d2303a9f235de57fb852d443e8c7abde451beebda506197c",
+        "tests/test_official_daily_runtime_e2e.py": "4b2a4a593b79a1e7c9806fcf382bc05357d64eb241b658917674077a37fe7f89"
+      },
+      "raw": "ci-history-method-guard-mutations.json",
+      "native_deterministic_positive": "ci-large-deterministic-probe-one-run.json",
+      "visible_startup_round": "ci-repair-diagnostic-startup-round-summary.json",
+      "prior_wall_budget_evidence": "historical only, superseded by explicit user deterministic-contract steering"
+    },
+    "fresh_total": {
+      "cases": 208,
+      "killed": 208,
+      "assertion_kills": 187,
+      "body_exception_kills": 21,
+      "harness_kills": 0,
+      "distinct_guard_exhaustiveness_claim": false
+    },
+    "owner_calendar_carry_forward": {
+      "tests": 9,
+      "mutations": 3,
+      "source_sha256": "a0d910de6fee9f2c03908452d7854f73214760c3d905b02e4dc5f71584306c52",
+      "changed_in_latest_seam_update": false
+    },
+    "large_native": {
+      "passed": true,
+      "test_seconds": 27.377,
+      "bars": 1553,
+      "months": 72,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "cold": {
+        "daily_parses": 144,
+        "event_parses": 2,
+        "sha_calls": 148,
+        "payload_reads": 146,
+        "full_reads": 2,
+        "semantic_derivations": 2,
+        "history_calls": 2
+      },
+      "hot": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0,
+        "semantic_derivations": 0,
+        "history_calls": 0
+      },
+      "cached_history_calls": {
+        "cold": 3,
+        "hot": 6,
+        "revision": 5
+      },
+      "revision": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2,
+        "semantic_derivations": 2,
+        "history_calls": 2
+      },
+      "lock_violations": [],
+      "max_pump_lock_seconds_MEASUREMENT_ONLY": 0.2619734000181779,
+      "nonvacuity": "Advance only fake clock to OPEN+1, no SDK refresh;6actualcacheprobes,READY/grant/notpaused/noorderassertions;original later refresh sends exactlyoneSDKorder",
+      "raw": [
+        "ci-large-deterministic-probe-one-run.json",
+        "ci-large-deterministic-probe-one-metrics.json"
+      ]
+    },
+    "startups": {
+      "source_unchanged": true,
+      "files": 183,
+      "local": {
+        "elapsed_seconds": 6.225,
+        "engine_state": "WAITING_RECONCILIATION",
+        "environment": "LOCAL",
+        "errors": [],
+        "mode": "LOCAL",
+        "owned_endpoints_removed": true,
+        "owned_engine_cleanup": [
+          {
+            "exit_code": 0,
+            "shutdown": "NORMAL"
+          }
+        ],
+        "passed": true,
+        "qt_platform": "windows",
+        "real_sdk_imported": false,
+        "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-3d-daily-basis-fixes",
+        "research_attached": true,
+        "research_released": true,
+        "return_code": 0,
+        "widget_count": 2865,
+        "window_type": "TradingWindow",
+        "window_visible": true
+      },
+      "simulation": {
+        "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+        "elapsed_seconds": 4.342,
+        "engine_state": "DISCONNECTED",
+        "environment": "BROKER_SIMULATION",
+        "errors": [],
+        "fake_sdk_connected": true,
+        "fake_sdk_login_count": 1,
+        "fake_sdk_logout_count": 1,
+        "host_return_code": 0,
+        "mode": "BROKER_SIMULATION",
+        "owned_endpoints_removed": true,
+        "owned_engine_cleanup": [],
+        "passed": true,
+        "qt_platform": "windows",
+        "real_sdk_imported": false,
+        "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-3d-daily-basis-fixes",
+        "research_attached": true,
+        "research_released": true,
+        "return_code": 0,
+        "widget_count": 2865,
+        "window_type": "TradingWindow",
+        "window_visible": true
+      },
+      "whole_round_rerun_after_qt_crash": true,
+      "native_exit_codes": [
+        0,
+        0
+      ],
+      "original_crash_retained": "ci-repair-startup-local.log",
+      "orphan_normal_cleanup": "ci-repair-crashed-startup-exit.json"
+    },
+    "statics": {
+      "passed": true,
+      "ruff_format_files": 1379,
+      "python311_tracked_files": 1265,
+      "syntax_failures": 0,
+      "quality_findings": 0,
+      "layer_findings": 0,
+      "architecture_findings": 0,
+      "raw": [
+        "r7-final-prepush.log",
+        "r7-final-layers.log",
+        "r7-final-architecture.log"
+      ]
+    },
+    "graph": {
+      "changed_count": 514,
+      "affected_count": 17,
+      "changed_files": 49,
+      "risk_level": "critical",
+      "base_ref": "5652457",
+      "scope": "all current product plus generated baselines before final evidence-only commit",
+      "partial": false,
+      "truncated": false,
+      "empty_ids": 0,
+      "raw": "deterministic-product-compare.json",
+      "limits": "Graph budget/dynamic receiver/file-size omissions remain; zero mapped callers is not safety proof."
+    },
+    "related": {
+      "modules": 227,
+      "tests": 3002,
+      "seconds": 647.755,
+      "passed": 2990,
+      "failures": 3,
+      "errors": 0,
+      "skips": 9,
+      "full_suite": false,
+      "failed_modules": [
+        "test_observer_symbol_pins",
+        "test_trading_installer_guard"
+      ],
+      "installer_serial_after_parallel": true,
+      "raw": "ci-repair-post-main-related/selected-tests-summary.json",
+      "disposition": "R7 test compared mismatched historical/current inputs; corrected with all existing asserts retained and89targetedtestsPASS. Two installer preconditions reproduce unchanged on exact main565; installed user application is exact mutex owner and preserved."
+    },
+    "baseline": {
+      "files": [
+        "docs/analysis/08_REFACTOR_INVENTORY.md",
+        "tests/fixtures/page_service_observer_delta.json"
+      ],
+      "modules_registered": 4,
+      "symbol_observers_added": 37,
+      "alias_changes": 0,
+      "string_changes": 0,
+      "applicability_changes": 0,
+      "status": "generated/verified; single final separate commit pending",
+      "raw": "deterministic-final-baseline-write.log"
+    },
+    "new_head_ci": "PENDING",
+    "claude": "PENDING_NO_SELF_MERGE",
+    "r7_migration_input_fix": {
+      "scope": "R7 historical-to-symbolic migration input corrected to frozen frontier; current delta remains exact independently",
+      "test_source_sha256": "d7b30d7b53e1713c5cef43aa616f7d3ee0619662a907a1c0e6de5aa59d92cc67",
+      "original_migration_assertions_ast_identical": true,
+      "historical_fixture_edits": false,
+      "product_tool_edits": false,
+      "red": "r7-migration-pre-fix-red.log",
+      "focused_tests": [
+        {
+          "module": "test_observer_symbol_pins",
+          "tests": 8,
+          "seconds": 30.788,
+          "raw": "r7-migration-final-native-tests.log"
+        },
+        {
+          "module": "test_repin_baselines",
+          "tests": 15,
+          "seconds": 4.252,
+          "raw": "r7-repin-focused-tests.log"
+        },
+        {
+          "module": "test_page_services_r1.InventoryTests.test_complete_inventory_regenerates_exactly",
+          "tests": 1,
+          "seconds": 4.947,
+          "raw": "r7-current-exact-inventory.log"
+        },
+        {
+          "module": "test_download_auto_import_contracts",
+          "tests": 4,
+          "seconds": 0.016,
+          "raw": "r7-historical-contracts.log"
+        },
+        {
+          "module": "test_daily_signal_projection",
+          "tests": 23,
+          "seconds": 1.906,
+          "raw": "r7-m2-projection.log"
+        },
+        {
+          "module": "test_official_daily_admission",
+          "tests": 23,
+          "seconds": 1.744,
+          "raw": "r7-m2-admission.log"
+        },
+        {
+          "module": "test_daily_basis_review_application",
+          "tests": 15,
+          "seconds": 1.242,
+          "raw": "r7-m2-review.log"
+        }
+      ],
+      "tests_total": 89,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "negative_controls": [
+        "frozen receiver modification rejected",
+        "frozen name modification rejected",
+        "duplicate frozen location rejected",
+        "existing current exact-inventory test rejects a removed reviewed observer"
+      ],
+      "observer_dry_run": {
+        "state": "up-to-date",
+        "removed": 0,
+        "added": 37,
+        "new": 0,
+        "dropped": 0,
+        "alias_changes": 0,
+        "write": false,
+        "raw": "r7-observers-repin-native-dry.log"
+      },
+      "restricted_temp_failure": "first R7 run original temporary-directory tests and repin dry-run hit Windows Temp permissions; unchanged native rerun passes; original logs preserved",
+      "products_tests_frozen": true
+    },
+    "installer_host_comparison": {
+      "main_commit": "5652457f578eeefd37f330ca23bfd4f1c8f7135f",
+      "conclusion": "The exact app guard is held by three installed user-owned MarkAuto processes, not test orphans. Both unchanged branch and exact main565 fail the same host preconditions before native test process creation. User app preserved.",
+      "branch": {
+        "passed": 5,
+        "elapsed_seconds": 0.46253379998961464,
+        "failures": 2,
+        "skips": 0,
+        "failing_test_ids": [
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace"
+        ],
+        "errors": 0,
+        "tests": 7
+      },
+      "main": {
+        "passed": 5,
+        "elapsed_seconds": 0.7020815000287257,
+        "failures": 2,
+        "skips": 0,
+        "failing_test_ids": [
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace"
+        ],
+        "errors": 0,
+        "tests": 7
+      },
+      "exact_named_mutex_owners": "Installed user UI+LOCAL/SIM engines, zero matching test orphan; read-only exact object/handle proof, no user application closed",
+      "five_relevant_source_files_byte_equal": true,
+      "raw": [
+        "post-r8-installer-host-comparison.json",
+        "post-r8-installer-mutex-handles-v2.json"
+      ]
     }
   }
 }

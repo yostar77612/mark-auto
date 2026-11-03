@@ -115,6 +115,10 @@ class ObserverSymbolPinTests(unittest.TestCase):
         base = json.loads(inventory.FIXTURE.read_text(encoding='utf-8'))
         delta = json.loads((inventory.ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))['inventory']
         delta.update(json.loads((inventory.ROOT / 'tests/fixtures/page_service_observer_delta.json').read_text(encoding='utf-8'))['inventory'])
+        # This proves the frozen one-to-one migration, before later observer changes.
+        delta = copy.deepcopy(delta)
+        delta['symbol_patch_points'] = {'removed': [], 'added': []}
+        delta['symbol_aliases'] = []
         # The historical projection mutates its delta rows; compare independent inputs.
         legacy = inventory.reviewed_inventory(base, copy.deepcopy(delta))
         symbolic = inventory.reviewed_symbolic_inventory(base, delta)
@@ -126,3 +130,47 @@ class ObserverSymbolPinTests(unittest.TestCase):
             for point in symbolic['patch_points']
         )
         self.assertEqual(new, old)
+
+    def test_historical_projection_rejects_changed_receiver_name_and_count(self):
+        base = json.loads(inventory.FIXTURE.read_text(encoding='utf-8'))
+        delta = json.loads((inventory.ROOT / 'tests/fixtures/download_auto_import_ui_delta.json').read_text(encoding='utf-8'))['inventory']
+        delta.update(json.loads((inventory.ROOT / 'tests/fixtures/page_service_observer_delta.json').read_text(encoding='utf-8'))['inventory'])
+        delta['symbol_patch_points'] = {'removed': [], 'added': []}
+        delta['symbol_aliases'] = []
+        path = inventory.ROOT / 'tests/fixtures/page_service_observer_symbols.json'
+        frozen = json.loads(path.read_text(encoding='utf-8'))
+        original_read = Path.read_text
+        for field in ('receiver', 'name', 'count'):
+            changed = copy.deepcopy(frozen)
+            if field == 'count':
+                changed['locations'].append(copy.deepcopy(changed['locations'][0]))
+            else:
+                changed['locations'][0]['original'][field] += '_changed'
+
+            def read(selected, *args, **kwargs):
+                return json.dumps(changed) if selected == path else original_read(selected, *args, **kwargs)
+
+            with self.subTest(field=field), patch.object(Path, 'read_text', new=read):
+                with self.assertRaises(AssertionError):
+                    inventory.reviewed_symbolic_inventory(base, copy.deepcopy(delta))
+
+    def test_current_full_inventory_still_rejects_a_dropped_new_observer(self):
+        from tests import test_page_services_r1
+
+        path = inventory.ROOT / 'tests/fixtures/page_service_observer_delta.json'
+        changed = json.loads(path.read_text(encoding='utf-8'))
+        added = changed['inventory']['symbol_patch_points']['added']
+        self.assertTrue(added, 'this counterexample requires a reviewed current observer addition')
+        self.assertGreater(added[0]['count'], 0)
+        if added[0]['count'] == 1:
+            del added[0]
+        else:
+            added[0]['count'] -= 1
+        original_read = Path.read_text
+
+        def read(selected, *args, **kwargs):
+            return json.dumps(changed) if selected == path else original_read(selected, *args, **kwargs)
+
+        case = test_page_services_r1.InventoryTests('test_complete_inventory_regenerates_exactly')
+        with patch.object(Path, 'read_text', new=read), self.assertRaises(AssertionError):
+            case.test_complete_inventory_regenerates_exactly()

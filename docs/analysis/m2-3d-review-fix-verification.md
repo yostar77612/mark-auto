@@ -168,3 +168,79 @@ The final corrective R8 batch, actual windows, statics, graph analysis and new
 head complete CI are recorded separately in the JSON/PR as they finish. The first
 run is a genuine failure, not an occasional timeout eligible for a blind rerun.
 Claude review is still required; this PR must not be merged automatically.
+
+## Final deterministic acceptance after owner instruction
+
+Product source is frozen at `1ad42aa`, with main `5652457` integrated by
+`c8de66b`. The wall-clock assertion is removed under the explicit owner update;
+elapsed time remains recorded without a pass/fail threshold. The source's new
+cache-only port returns None only for a real absent key, after current revision,
+calendar/time and store-identity checks. IO and temporal refusals cannot select
+cold acquisition. Locked native admission refuses None; lock-free preparation
+alone may call full history on that miss. Legacy cached-only API behavior stays.
+
+The real large fixture remains 1,553 bars / 72 months / 250 refreshes, with
+573→574 archived payloads, 73 active sources and one manifest. It passes in
+27.377 seconds. To avoid a vacuous hot-path check, only the fake clock advances
+to OPEN+1 while SDK observations remain unchanged: three real pumps make
+**6 cache probes, 0 history calls, 0 SHA/parses/payload reads/full reads/math
+derivations**. READY, grant, not-paused and no-new-order assertions hold.
+Cold acquisition and the subsequent actual store revision each call history
+twice, parse 144 daily payloads and compute 148 SHA operations, all outside
+bundle/engine/owner locks. The original later fresh SDK adoption dispatches
+exactly one order. The recorded maximum lock time (0.26197 seconds) is only a
+measurement, not acceptance. No time or clock is changed by guard mutations.
+
+| Current frozen-source evidence | Result |
+| --- | --- |
+| Public cache tests | 44 PASS; cold miss never acquires, hit never calls history; revision, calendar, store, arrival and ordinary-error counterexamples. |
+| Source/parser/previous-close mutants | 100/100: 89 assertion failures + 11 test-body exceptions; all original 81 rerun and 19 new cache cases. |
+| Application/projection/admission/deployment | 94 tests PASS; 104/104 mutants: 94 assertion failures + 10 test-body exceptions. |
+| Independent actual cold-lock/hot-history mutants | 4/4 assertion kills, 8 fresh processes: hold only bundle, only engine, only owner, or bypass the hot cache. Every same-case unmodified baseline passes. |
+| Whole actual Windows startup rerun | LOCAL 6.225 s / fake SIM 4.342 s; both exit 0, visible Windows Qt, 2865 widgets, accepted normal close, research/IPC/owned resource cleanup; fake login/logout 1/1, no real SDK. |
+| Final statics | Ruff/format 1379 files, Python 3.11 syntax 1265 tracked files; quality/layer/architecture findings 0. |
+| Product plus generated-baseline graph | 514 mapped changed symbols / 17 affected / 49 files; CRITICAL, complete returned list, no partial/truncated/empty IDs. Dynamic receiver, file-size and flow-budget limitations remain. |
+
+Fresh mutation total is **208/208: 187 assertion failures + 21 test-body
+exceptions**, zero loader/setup/cleanup/skip/harness kills. This counts exercised
+cases rather than claiming 208 distinct or exhaustive guards. The unchanged
+owner-calendar 9-test / 3-mutant evidence is carried forward at its identical
+source SHA. Historical initial totals are not added to these fresh counts.
+Three pending-window mutants initially survived an obsolete history-only spy;
+the new cache API is now observed alongside the retained original history
+no-call checks, and the complete affected set was rerun. The survivor record is
+retained. Actual window rerun follows the earlier Qt access violation and normal
+shutdown of its identified owned orphan; no user application was closed.
+
+Raw current evidence: `daily-projection-cache-seam-final.json`,
+`s1d-source-and-previous-close-mutations.json`,
+`ci-history-method-guard-mutations-summary.json`,
+`ci-large-deterministic-probe-one-metrics.json` and
+`ci-repair-diagnostic-startup-round-summary.json` in the ignored verification
+directory. Original source-81 results are preserved separately as
+`s1d-source-mutations.before-public-cache-probe.json`.
+
+Final merged-tree R8 completed 227 related modules / 3002 tests in 647.755 s:
+2990 pass, 3 failures, 0 errors, 9 existing platform skips. Two modules failed;
+the unchanged large deterministic cycle and all other product modules passed.
+The R7 migration test accidentally compared its historical 212 rows with current
+symbolic additions (37 here). Correct its input to the same frozen frontier
+already used by R6; retain all original Counter/non-location/assertEqual checks
+and frozen fixtures. Actual receiver/name/count corruption still refuses, and
+the existing complete current inventory test still rejects a dropped observer.
+Focused R7/R6/inventory and existing M2 reruns pass 89 tests, zero skips;
+R6 dry-run is up-to-date with no new baseline changes. No product/tool changes
+are needed for this input correction. Source AST comparison confirms the
+original migration assertions are unchanged.
+
+The remaining two installer failures occur at their first preexisting-app
+precondition. Original seven tests run alone on this branch and exact archived
+main `5652457` both report 5 pass / the same 2 failures, zero errors/skips; five
+related source files are byte-identical. Native handle/object verification
+identifies only the installed user's UI plus LOCAL/SIM engines as the exact
+app-mutex owners, with no test orphan. Preserve those user processes and all
+original assertions; clean-host CI must cover the preconditions. Raw records:
+`r7-migration-input-fix-verification.json`,
+`ci-repair-post-main-related/selected-tests-summary.json` and
+`post-r8-installer-host-comparison.json`. Full CI remains separate from these
+local related checks. Keep the PR open for Claude after CI is green.
