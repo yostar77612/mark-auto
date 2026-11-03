@@ -7961,3 +7961,14 @@ must reverify payload bytes. Tests observe actual bundle/engine/owner lock state
 at history, parser, digest and payload calls. Wall-clock values are measurements
 only, replacing the owner-superseded 0.5-second assertion without increasing it.
 No serialized DTO, UiAction, IPC operation or error code is added by this seam.
+## Strategy research feedback presentation (2026-11-03)
+
+Admitted RESEARCH/VALIDATE workers have visible in-tab progress and disable both
+submit controls until completion. Accepted research reports exact target/version
+and returned evidence source; validation alone explicitly still requires research.
+Failures render injected ERROR_TABLE reason and next step without raw details.
+Context changes hide old results; stale/unknown outcomes cannot offer activation.
+Next actions navigate/focus only, retaining original activation/LIVE/confirmation
+gates. Composition injects existing AsyncStatus; commands/lifecycle/IPC stay intact.
+Strings phase72/orders3111–3123; evidence:
+docs/analysis/strategy-research-feedback/verification.md.

@@ -289,3 +289,21 @@
   startup service's existing best-effort subscription loop.
 - Preserve legacy error table identity and desktop historical strings. No
   connection retry, financial action or LIVE admission change is introduced.
+
+## 2026-11-03 — Strategy research feedback
+
+- Keep results visible inside the research tab; the persistent notice is in the
+  normally closed header detail dialog. Bind feedback only after existing worker
+  admission, before start, without changing commands or execution order.
+- Inject existing AsyncStatus from the composition root, preserving the trading
+  presentation boundary. Use only its established styles; repolish child text
+  when its parent's state changes.
+- Use the returned target/version evidence for source labels. Rule validation
+  is not research completion: its next step focuses research without submitting.
+  Successful research returns to the list and focuses the existing activation
+  control; it never activates. LIVE retains its existing disabled control.
+- Display injected ERROR_TABLE reason/next step, never raw receipt/exception
+  text. Scope changes hide old results; stale/unknown outcomes remain unconfirmed.
+- Append phase72/orders3111–3123 in a new file; repin once separately after
+  feature completion. This PR is appearance-only; merge after full green CI as
+  explicitly authorized by the owner.
