@@ -105,11 +105,17 @@ def synthetic_catalog() -> Catalog:
 def synthetic_history(catalog: Catalog, calendar: TradingCalendar) -> dict[str, tuple[CompletedBar, ...]]:
     result = {}
     paper_origin = calendar.index(date(2026, 10, 23))
+    sessions = {}
     for spec in catalog.instruments:
         base = Decimal('20000') if spec.market is Market.INDEX_FUTURE else Decimal('50') if spec.market is Market.STOCK_FUTURE else Decimal('10')
         bars = []
         for index, day in enumerate(calendar.days):
-            session = calendar.day_session(day)
+            # The immutable calendar is shared by every synthetic instrument.
+            # Resolve lazily once per day, preserving first-use validation and
+            # empty-catalog behavior without a cache surviving this call.
+            if day not in sessions:
+                sessions[day] = calendar.day_session(day)
+            session = sessions[day]
             # Keep the paper path fixed when extending training lookback.
             phase = index - paper_origin
             step = Decimal(phase % 12) - Decimal('6')
