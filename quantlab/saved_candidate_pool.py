@@ -1375,8 +1375,12 @@ def admit_saved_campaign_pool(*, source_campaign_dir: Path, source_campaign_ref:
             _validate_chatgpt_provider(provider, state, producer)
         else:
             _validate_legacy_receipts(provider, state, current_schema=current_schema)
-        _validate_source_selection(state, config, by_id, splits, producer)
-        registry_identity = _validate_source_registry(state, splits['holdout'], authoritative_registry_path)
+        # Reservation semantics come from the audited producer, never a source flag.
+        protected = splits['holdout']
+        if producer['protocol'] == E1_EXPOSURE_PROFILE_V1['protocol']:
+            protected = Dataset(splits['oos'].bars + splits['holdout'].bars, {}, {})
+        _validate_source_selection(state, config, by_id, splits, producer, protected)
+        registry_identity = _validate_source_registry(state, protected, authoritative_registry_path)
         return _saved_pool_snapshot(state, source_campaign_ref, original_dataset_ref, binding,
                                     original_dataset, first_event, last_event, first_training_timestamp,
                                     registry_identity, producer, provider, provenance, pool)
