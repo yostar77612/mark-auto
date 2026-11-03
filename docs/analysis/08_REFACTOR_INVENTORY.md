@@ -10,7 +10,7 @@
 - 在作業系統暫存目錄 `%TEMP%/r0-slice1-inventory/` 使用一次性 Python 腳本：由 Git 取得檔案集合，讀取 UTF-8 原始碼、計算 LF 數量（等同 `wc -l`），以 `ast.parse`、`ast.walk` 擷取匯入及定義；輸出表格與違規。腳本與中間 JSON 均不納入版本控制，不 import／執行產品模組。分層、目標與例外是閱讀模組責任、定義及匯入後的人工判定，不由檔名或匯入數量自動推論。
 - 匯入解析涵蓋 `import`、`from ... import ...`、相對匯入、別名、函式內匯入與條件／型別檢查區塊。先以受追蹤模組表解析實際子模組；`from quantlab import strict_json` 解析為 `quantlab.strict_json`，匯入符號則歸到宣告匯入的模組。每個 `(path, line, imported module, rule)` 記一筆，同一敘述的多個符號不重複計數；不同位置的同模組匯入分別保留。
 - 第 3 節是 **3.1 的模組相依清單**，不是完整副作用或動態執行掃描。一般標準函式庫匯入不直接算跨層邊；例如 SQLite 實際連線、讀檔、時鐘呼叫仍須按責任拆分，不能因沒出現在清單就當作允許。`importlib` 字串、callback 註冊與 re-export 的間接傳遞不併入 145 筆；第 3.2、4 節補充已確認的行為。既有交易閘門的 IO、SDK 與動態載入限制全部保留。
-- GitNexus 綁定目前工作樹的絕對路徑 `C:/Users/Mark/Desktop/Mark auto`，排除同名舊測試工作樹。已執行 `node .gitnexus/run.cjs status`：CLI 未讀到 current commit，顯示 stale；但 `.gitnexus/meta.json` 的 `lastCommit` 與 `git rev-parse HEAD` 都是上述完整 SHA，索引時間為 `2026-10-29T07:18:24.291Z`，MCP 列表也指向此索引。本次依這個交叉確認使用現有索引，沒有下載 extension 或重建索引。首次同名查詢不採為本報告證據。
+- GitNexus 綁定目前工作樹的絕對路徑 目前儲存庫工作樹（使用者絕對路徑省略），排除同名舊測試工作樹。已執行 `node .gitnexus/run.cjs status`：CLI 未讀到 current commit，顯示 stale；但 `.gitnexus/meta.json` 的 `lastCommit` 與 `git rev-parse HEAD` 都是上述完整 SHA，索引時間為 `2026-10-29T07:18:24.291Z`，MCP 列表也指向此索引。本次依這個交叉確認使用現有索引，沒有下載 extension 或重建索引。首次同名查詢不採為本報告證據。
 
 ### 1.1 分層判定與目標解讀
 
@@ -950,6 +950,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tools/import_official_daily.py` | 215 | tooling | `tools/import_official_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/strategy_research_feedback.py` | 122 | presentation | `desktop_app/features/trading/strategy_research_feedback.py` | Strategy research progress, exact-target results and navigation-only next steps |
 | `desktop_app/strings/strategy_research_feedback.py` | 17 | shared | `desktop_app/strings/strategy_research_feedback.py` | Strategy research progress, exact-target results and navigation-only next steps |
+| `quantlab/trading/runtime/stock_signal_research.py` | 180 | composition | `quantlab/trading/runtime/stock_signal_research.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
@@ -1324,7 +1325,7 @@ Existing tests changed only by mechanical imports: `tests/test_accessibility_wal
 
 ## 8 死碼候選
 
-本節列「圖上沒有直接呼叫」的候選與實際處置，不將它當成可刪清單。查詢綁定 `C:/Users/Mark/Desktop/Mark auto`，索引 commit／來源基線交叉確認同第 1 節。以 GitNexus `context` 與 upstream `impact` 核對，CLI 重現例：
+本節列「圖上沒有直接呼叫」的候選與實際處置，不將它當成可刪清單。查詢綁定 目前儲存庫工作樹（使用者絕對路徑省略），索引 commit／來源基線交叉確認同第 1 節。以 GitNexus `context` 與 upstream `impact` 核對，CLI 重現例：
 
 ```powershell
 node .gitnexus/run.cjs context _training_status --repo .
