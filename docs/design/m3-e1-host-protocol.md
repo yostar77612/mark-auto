@@ -82,6 +82,16 @@ network action, redirect/size refusal and dynamic AI/log leakage sentinels.
 Synthetic checks do not certify market profitability, native Windows packaging,
 UI integration or any real user's dataset. Formal acceptance score is unchanged.
 
+The historical UI registry golden remains unchanged. The additive
+`tests/fixtures/ui_operations_e1_exposure_delta.json` changes exactly four expected
+leaves: `holdout_registry.holdout_hash` and `reservation_id` for the synthetic
+240-bar fixture and 241-bar mock subscription campaign. Their reservation now
+covers OOS plus holdout, rather than holdout alone. Tests pin the delta, derive
+both old and new identities independently from synthetic bars and coverage,
+reject tampering, and assert the new identities on every platform. All other
+golden values, exact Windows comparisons, and old-dispatcher/registry equality
+remain intact; observed hashes are never masked or rewritten.
+
 ## Independent branch integration
 
 This branch's `E1_EXPOSURE_PROFILE_V1` binds its current research source tuple.

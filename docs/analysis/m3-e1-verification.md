@@ -90,3 +90,31 @@ producer profile, explicit OOS-plus-holdout semantics for that profile, and ADR
 number reconciliation. Neither standalone profile can be relabeled as the
 combined producer. Formal CI must verify the final integrated tree; this report
 does not authorize merge, release, LIVE operation or real-data evaluation.
+
+## PR 171 CI follow-up
+
+Quantlab CI run [41601314376](https://github.com/yostar77612/mark-auto/actions/runs/41601314376)
+tested PR head `6f7bee76add7ace9741890d2170d3b5fa7fea137`. Windows Python 3.11
+and 3.12 exposed the same two fixture problems:
+
+- Eleven E1 cleanup errors: a SQLite connection context commits/rolls back but
+  does not close the handle. All E1 fixture connection scopes now explicitly
+  close, with a regression holding references to verify commit, rollback and
+  immediate close without garbage collection. Production connection ownership
+  was already explicit and is unchanged.
+- Four UI golden failure records: the reviewed OOS-plus-holdout accounting changed
+  only two reservation identities in each of two synthetic campaigns. A pinned
+  additive four-leaf expectation delta preserves the original golden. Independent
+  synthetic identity derivation, tamper negative controls and all-platform actual
+  result checks retain exact assertions rather than masking observed hashes.
+
+The combined focused recheck passed 52 tests; eight additional golden metadata,
+historical-profile and frozen characterization checks passed. Both complete
+campaign observations also matched under a read-only Windows checkout line-ending
+simulation; this is not native Windows execution. Ruff, formatting, mechanical
+baseline and diff checks passed. Runtime files, frozen goldens and historical
+producer profiles are unchanged by these CI repairs. Native CI must rerun them.
+
+The Linux UI desktop partition failed before tests during dependency installation
+with an `IncompleteRead` download error; the aggregate UI gate consequently lacked
+that partition's evidence. No dependency lock or coverage requirement was relaxed.

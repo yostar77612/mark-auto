@@ -1,0 +1,42 @@
+[
+  {
+    "path": [
+      "campaign_fixture",
+      "result",
+      "holdout_registry",
+      "holdout_hash"
+    ],
+    "old": "bd86668ea116cdc073a4e2aeec9eb8d9ca4c8e1453570cfb4171a6fd5e44fe82",
+    "new": "45972d1a6578bd2cb989294afdd3480bc2c44bb3ae0d3e4e2fd69fed54c9ec4c"
+  },
+  {
+    "path": [
+      "campaign_fixture",
+      "result",
+      "holdout_registry",
+      "reservation_id"
+    ],
+    "old": "e2833ce54579b3aee617293b26fd25b0f655f1d6e15506551a4bc05509f0a666",
+    "new": "dca2827d07e0541c822a504e6bc80ccd9f9ba3fab05e0d16a10a342e22b23c59"
+  },
+  {
+    "path": [
+      "campaign_subscription_fixture",
+      "result",
+      "holdout_registry",
+      "holdout_hash"
+    ],
+    "old": "a35558aca0eecb81dc4cd6ad4d32d54608033bb9a1b1792b7b2d6fba7267f9aa",
+    "new": "379a78c6d42d66e214eedeb9cdfdced66c073d90c12cef8b9277e0cb2e2d6f99"
+  },
+  {
+    "path": [
+      "campaign_subscription_fixture",
+      "result",
+      "holdout_registry",
+      "reservation_id"
+    ],
+    "old": "cab9ca49f83b2e365c5fe041f7b32b4aeb6be938ebaf3628aa2703e1928495d8",
+    "new": "7a5114fb037a842a79e20bbdaa22d9b4119d5c3a3b8b62350e18d2970a06944a"
+  }
+]
