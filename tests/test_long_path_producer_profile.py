@@ -57,12 +57,12 @@ class LongPathProducerProfileTests(unittest.TestCase):
     def test_current_engine_and_both_provider_checkout_variants_match(self):
         for profile in (TRANSPORT, SIWC):
             actual = {
-                name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']
+                name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.E1_EXPOSURE_PROFILE_V1['engine_source_hashes']
             }
-            expected = dict(pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'])
+            expected = dict(pools.E1_EXPOSURE_PROFILE_V1['engine_source_hashes'])
             self.assertEqual(actual, expected)
             self.assertNotEqual(actual['research.py'], profile['engine_source_hashes']['research.py'])
-        for index, implementation in enumerate(pools.CORE_SPLIT_SIWC_PROFILE_V1['chatgpt_plan_implementations']):
+        for index, implementation in enumerate(pools.E1_EXPOSURE_PROFILE_V1['chatgpt_plan_implementations']):
             for name, expected in implementation['source_sha256'].items():
                 raw = reviewed_source_bytes(ROOT, name, current=True).replace(b'\r\n', b'\n')
                 self.assertEqual(

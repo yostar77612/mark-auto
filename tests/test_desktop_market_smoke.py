@@ -167,9 +167,9 @@ class MarketSmokeWidgetTests(unittest.TestCase):
                 {'research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py', 'research_core/domain/receipts.py'},
             )
             from quantlab.core import to_dict
-            from quantlab.saved_candidate_pool import CORE_SPLIT_SIWC_PROFILE_V1
+            from quantlab.saved_candidate_pool import E1_EXPOSURE_PROFILE_V1
 
-            self.assertEqual(market['engine_source_hashes'], to_dict(CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']))
+            self.assertEqual(market['engine_source_hashes'], to_dict(E1_EXPOSURE_PROFILE_V1['engine_source_hashes']))
             self.assertEqual(market['real_model_status'], 'not_verified')
             self.assertEqual(market['source_type'], 'synthetic')
             history = value['history_smoke']

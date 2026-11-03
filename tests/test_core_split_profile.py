@@ -47,8 +47,8 @@ class CoreSplitProfileTests(unittest.TestCase):
         self.assertEqual(dict(SOURCE_COMPONENTS), CURRENT_SOURCES)
         self.assertEqual(len(SOURCE_COMPONENTS), len(CURRENT_SOURCES))
         self.assertEqual(PROFILE['protocol'], 'mark_auto_0_2_2_campaign_core_split_siwc_v1')
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 30)
-        self.assertIs(pools.SUPPORTED_PRODUCERS[-1], PROFILE)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 31)
+        self.assertIs(pools.SUPPORTED_PRODUCERS[29], PROFILE)
         self.assertEqual(PROFILE['provider_modes'], ['fixture', 'openai_compatible', 'chatgpt_plan'])
         for mode in ('fixture', 'openai_compatible'):
             value = binding()
@@ -80,7 +80,7 @@ class CoreSplitProfileTests(unittest.TestCase):
     def test_engine_result_and_receipt_source_identity(self):
         expected_keys = {'research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py', 'research_core/domain/receipts.py'}
         self.assertEqual(set(PROFILE['engine_source_hashes']), expected_keys)
-        for name, expected in PROFILE['engine_source_hashes'].items():
+        for name, expected in pools.E1_EXPOSURE_PROFILE_V1['engine_source_hashes'].items():
             raw = (ROOT / 'quantlab' / name).read_bytes().replace(b'\r\n', b'\n')
             for body in (raw, raw.replace(b'\n', b'\r\n')):
                 with io.TextIOWrapper(io.BytesIO(body), encoding='utf-8') as stream:
@@ -107,7 +107,7 @@ class CoreSplitProfileTests(unittest.TestCase):
         baseline = frozen_blocks(layered_source_bytes('quantlab/saved_candidate_pool.py'))
         current = frozen_blocks((ROOT / 'quantlab/saved_candidate_pool.py').read_bytes())
         self.assertEqual(len(baseline), 29)
-        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1'})
+        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1', 'E1_EXPOSURE_PROFILE_V1'})
         for name, block in baseline.items():
             with self.subTest(name=name):
                 allowed = (block, block.replace(b'\n', b'\r\n'))
