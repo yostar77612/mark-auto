@@ -2,7 +2,415 @@
   "inventory": {
     "symbol_patch_points": {
       "removed": [],
-      "added": []
+      "added": [
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_claimed_cursor_returns_before_source_even_without_saved_actions"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_dispatch_source_io_error_is_a_typed_refusal_with_invalidated_view"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_every_source_exception_is_recoverable_and_never_claims"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 2,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_every_source_exception_is_recoverable_and_never_claims"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_existing_intent_blocks_reconstruction_even_without_evaluation_row"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_expired_intent_never_rebuilds_a_dispatch_window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_locked_read_miss_never_falls_back_to_full_verification"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_preparation_does_not_hold_bundle_engine_or_owner_locks"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_preparation_skips_already_evaluated_cursor"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_saved_intent_is_not_prewarmed_until_its_dispatch_window"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_basis_review_application.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyBasisReviewApplicationTests.test_view_expires_without_any_source_reads"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.rejects_after_change"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_deliberate_source_refusal_preserves_its_typed_code"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_ineligible_state_or_missing_evidence_keeps_original_risk_rejected_precedence"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_invalid_expected_version_is_refused_before_io"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_legacy_research_without_official_basis_refuses_before_source"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_live_all_three_layers_refuse_before_reading_source"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_local_or_non_native_or_non_official_strategy_retains_existing_route"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_missing_source_and_missing_research_basis_never_warm"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_source_io_failure_is_typed_and_never_delegates_or_changes_state"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_deployment.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailyDeploymentTests.test_warming_is_outside_all_locks_and_facade_keeps_original_version_translation"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_previous_close.py",
+            "kind": "assignment",
+            "name": "days",
+            "occurrence": 1,
+            "receiver": "self",
+            "symbol": "PreviousCloseValidationTests.setUp"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_previous_close.py",
+            "kind": "assignment",
+            "name": "bars",
+            "occurrence": 2,
+            "receiver": "self",
+            "symbol": "PreviousCloseValidationTests.setUp"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_previous_close.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 3,
+            "receiver": "self",
+            "symbol": "PreviousCloseValidationTests.setUp"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_stock_store_bounds.py",
+            "kind": "assignment",
+            "name": "batch",
+            "occurrence": 1,
+            "receiver": "self",
+            "symbol": "OfficialDailyStoreBoundsTests.setUp"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_cache.py",
+            "kind": "assignment",
+            "name": "batch",
+            "occurrence": 1,
+            "receiver": "self.store",
+            "symbol": "OfficialDailyCacheTests.test_conflicting_archived_previous_close_is_not_hidden_by_current_valid_facts"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_cache.py",
+            "kind": "assignment",
+            "name": "batch",
+            "occurrence": 1,
+            "receiver": "self.store",
+            "symbol": "OfficialDailyCacheTests.test_new_revision_rechecks_bytes_and_does_not_cache_a_failure"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_cache.py",
+            "kind": "assignment",
+            "name": "batch",
+            "occurrence": 2,
+            "receiver": "self.store",
+            "symbol": "OfficialDailyCacheTests.test_new_revision_rechecks_bytes_and_does_not_cache_a_failure"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_large_pump.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "fixture.engine.daily_signal_source",
+            "symbol": "OfficialDailyLargePumpTests.test_real_sqlite_large_cold_work_is_outside_locks_hot_pump_is_inert_and_revision_revalidates"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_signal_projection.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailySignalProjectionTests.test_locked_native_source_hit_never_calls_history_method"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_signal_projection.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailySignalProjectionTests.test_locked_native_source_miss_refuses_without_history_fallback"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_signal_projection.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailySignalProjectionTests.test_pump_preparation_hot_history_never_calls_acquisition_method"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_signal_projection.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailySignalProjectionTests.test_pump_preparation_never_retries_cache_authority_or_temporal_refusals"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_daily_signal_projection.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "DailySignalProjectionTests.test_pump_preparation_only_absent_cache_acquires_outside_writer_locks"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_cache.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "OfficialDailyCacheTests.test_public_cache_probe_absent_key_returns_none_without_history_or_cold_work"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_cache.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "OfficialDailyCacheTests.test_public_cache_probe_hot_reads_call_history_method_exactly_zero_times"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_official_daily_cache.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.source",
+            "symbol": "OfficialDailyCacheTests.test_public_cache_probe_revision_change_is_a_miss_without_revalidation"
+          },
+          "count": 1
+        }
+      ]
     },
     "symbol_aliases": []
   }
