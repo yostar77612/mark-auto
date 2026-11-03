@@ -50,7 +50,7 @@ class ScalarProducerProfileTests(unittest.TestCase):
             self.assertEqual(profile['engine_source_hashes']['research.py'], 'a5b8dda5003553261e1cd85cd4b0843b57891c878fcc72a4dcfd63893a77fc2a')
             self.assertEqual(
                 {
-                    name: content_hash((root / name).read_text(encoding='utf-8'))
+                    name: content_hash(reviewed_source_bytes(root, name).decode('utf-8').replace('\r\n', '\n'))
                     for name in profile['engine_source_hashes']
                     if name not in ('research.py', 'backtest.py')
                 },

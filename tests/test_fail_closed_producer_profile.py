@@ -13,7 +13,7 @@ from quantlab.saved_candidate_pool import (
     FAIL_CLOSED_TRANSPORT_PROFILE_V1,
     FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1,
     DEADLINE_TRANSPORT_PROFILE_V1,
-    CORE_SPLIT_SIWC_PROFILE_V1,
+    STOCK_SIGNAL_PROFILE_V1,
     DEADLINE_SIWC_ANALYSIS_PROFILE_V1,
     CURRENT_PRODUCER,
     TRANSPORT_VERIFIER_PRODUCER,
@@ -32,7 +32,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
 
     def test_current_literal_sources_and_only_reviewed_changes(self):
         root = Path(__file__).resolve().parents[1]
-        self.assertEqual(len(SUPPORTED_PRODUCERS), 30)
+        self.assertEqual(len(SUPPORTED_PRODUCERS), 31)
         self.assertEqual(SUPPORTED_PRODUCERS[11:13], (FAIL_CLOSED_TRANSPORT_PROFILE_V1, FAIL_CLOSED_SIWC_ANALYSIS_PROFILE_V1))
         for old, new in (
             (CLEANUP_TRANSPORT_PROFILE_V1, FAIL_CLOSED_TRANSPORT_PROFILE_V1),
@@ -41,7 +41,8 @@ class FailClosedProducerProfileTests(unittest.TestCase):
             # Historical research pins remain covered by the all-thirteen hash
             # check; this current-checkout assertion includes the newly reviewed pin.
             expected_sources = dict(new['engine_source_hashes'])
-            expected_sources['research.py'] = CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes']['research.py']
+            for name in ('research.py', 'core.py', 'backtest.py'):
+                expected_sources[name] = STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'][name]
             self.assertEqual(
                 {name: content_hash((root / 'quantlab' / name).read_text(encoding='utf-8')) for name in new['engine_source_hashes']}, expected_sources
             )
@@ -51,7 +52,7 @@ class FailClosedProducerProfileTests(unittest.TestCase):
             restored['result_source_hashes']['backtest.py'] = old['result_source_hashes']['backtest.py']
             for index, hashes in enumerate(new['result_source_hash_variants']):
                 for name, digest in hashes.items():
-                    raw = (root / 'quantlab' / name).read_bytes().replace(b'\r\n', b'\n')
+                    raw = reviewed_source_bytes(root / 'quantlab', name).replace(b'\r\n', b'\n')
                     if index:
                         raw = raw.replace(b'\n', b'\r\n')
                     self.assertEqual(hashlib.sha256(raw).hexdigest(), digest)
@@ -241,7 +242,7 @@ class DeadlineProducerProfileTests(unittest.TestCase):
         ):
             self.assertEqual(
                 {name: content_hash((root / 'quantlab' / name).read_text(encoding='utf-8')) for name in new['engine_source_hashes']},
-                {name: CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'][name] for name in new['engine_source_hashes']},
+                {name: STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'][name] for name in new['engine_source_hashes']},
             )
             restored = to_dict(new)
             self.assertNotEqual(new['protocol'], old['protocol'])

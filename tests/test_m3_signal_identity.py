@@ -107,25 +107,30 @@ class SignalIdentityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, 'candidate_spec_unsupported')
             self.assertEqual(str(caught.exception), 'candidate_spec_unsupported')
 
-    def test_g3_locked_sources_are_byte_identical_to_task_base(self):
+    def test_g3_locked_sources_match_exact_owner_approved_baselines(self):
         contributing = (ROOT / 'docs/CONTRIBUTING.md').read_text(encoding='utf-8')
         locked_section = contributing.split('The G3 locked file set', 1)[1].split('The owner approved relocation', 1)[0]
         locked = re.findall(r'^- `([^`]+)`', locked_section, re.MULTILINE)
         self.assertEqual(len(locked), 30)
+        # ADR 0007 owner approval is limited to these exact two source blobs.
+        approved = {
+            'quantlab/core.py': '9a3b354037633b5f883a971aba0c5713a8eb82ee',
+            'quantlab/backtest.py': '87ea5d2d67b3efc152754d97ba9360f7ae5282f9',
+        }
         for path in locked:
             with self.subTest(path=path):
+                baseline_object = approved.get(path, f'0b7606658947c48457d23f3bd25e0f8dde33c3a7:{path}')
                 # The eight historical !eol G3 paths intentionally use platform
                 # checkout conversion. Compare exact bytes under the same Git
                 # filters, then independently verify canonical blob identity.
-                baseline = subprocess.check_output(
-                    ['git', 'cat-file', '--filters', '--path', path, f'0b7606658947c48457d23f3bd25e0f8dde33c3a7:{path}'], cwd=ROOT
-                )
+                baseline = subprocess.check_output(['git', 'cat-file', '--filters', '--path', path, baseline_object], cwd=ROOT)
                 current = (ROOT / path).read_bytes()
                 self.assertEqual(hashlib.sha256(current).digest(), hashlib.sha256(baseline).digest())
-                expected_blob = subprocess.check_output(['git', 'rev-parse', f'0b7606658947c48457d23f3bd25e0f8dde33c3a7:{path}'], cwd=ROOT).strip()
+                expected_blob = subprocess.check_output(['git', 'rev-parse', baseline_object], cwd=ROOT).strip()
                 current_blob = subprocess.check_output(['git', 'hash-object', '--stdin', '--path', path], input=current, cwd=ROOT).strip()
                 self.assertEqual(current_blob, expected_blob)
-        self.assertEqual(subprocess.check_output(['git', 'diff', '--stat', '0b7606658947c48457d23f3bd25e0f8dde33c3a7', '--', *locked], cwd=ROOT), b'')
+        changed = subprocess.check_output(['git', 'diff', '--name-only', '0b7606658947c48457d23f3bd25e0f8dde33c3a7', '--', *locked], cwd=ROOT)
+        self.assertEqual(set(changed.decode().splitlines()), set(approved))
 
 
 if __name__ == '__main__':
