@@ -1,0 +1,122 @@
+{
+  "scope": "M3 only: disabled research candidate build button and its prerequisite label. Preserve all historical rows, reviewed deltas, enabled/visible flags and multiplicity.",
+  "widget_names_added": [
+    "research_build_auto_strategy_button",
+    "research_build_auto_strategy_button_prerequisite"
+  ],
+  "focus": {
+    "removed": [],
+    "added": [
+      {
+        "row": [
+          "research_build_auto_strategy_button",
+          "建成自動交易策略",
+          ""
+        ],
+        "count": 1
+      },
+      {
+        "row": [
+          "research_build_auto_strategy_button_prerequisite",
+          "",
+          ""
+        ],
+        "count": 1
+      }
+    ]
+  },
+  "refresh_states": [
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "research_build_auto_strategy_button",
+            "建成自動交易策略",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "research_build_auto_strategy_button_prerequisite",
+            "需要先完成：等待目前背景作業或連線作業停止",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "research_build_auto_strategy_button",
+            "建成自動交易策略",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "research_build_auto_strategy_button_prerequisite",
+            "需要先完成：等待目前背景作業或連線作業停止",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "research_build_auto_strategy_button",
+            "建成自動交易策略",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "research_build_auto_strategy_button_prerequisite",
+            "需要先完成：等待目前背景作業或連線作業停止",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    },
+    {
+      "removed": [],
+      "added": [
+        {
+          "row": [
+            "research_build_auto_strategy_button",
+            "建成自動交易策略",
+            false,
+            false
+          ],
+          "count": 1
+        },
+        {
+          "row": [
+            "research_build_auto_strategy_button_prerequisite",
+            "需要先完成：等待目前背景作業或連線作業停止",
+            true,
+            false
+          ],
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

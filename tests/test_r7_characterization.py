@@ -32,6 +32,7 @@ AUTO_IMPORT = json.loads((ROOT / 'tests/fixtures/download_auto_import_ui_delta.j
 M1_UI = json.loads((ROOT / 'tests/fixtures/m1_u_ui_delta.json').read_text(encoding='utf-8'))
 M2_POLICY = json.loads((ROOT / 'tests/fixtures/m2_policy_text_delta.json').read_text(encoding='utf-8'))
 M4A = json.loads((ROOT / 'tests/fixtures/m4a_maintenance_ui_delta.json').read_text(encoding='utf-8'))
+M3_CANDIDATE = json.loads((ROOT / 'tests/fixtures/m3_candidate_ui_delta.json').read_text(encoding='utf-8'))
 
 
 def semantic_rows(rows):
@@ -142,6 +143,7 @@ class CharacterizationTests(unittest.TestCase):
                     M1_UI['refresh_states'][index],
                     M2_POLICY['refresh_states'],
                     M4A['refresh_states'][index],
+                    M3_CANDIDATE['refresh_states'][index],
                 ),
                 index,
             )
@@ -152,8 +154,37 @@ class CharacterizationTests(unittest.TestCase):
         # test_accessibility_walk checks the new real keyboard traversal order.
         self.assertEqual(
             semantic_rows(self.actual['window']['focus']),
-            reviewed_ui_rows(BASE['window']['focus'], REDESIGN['focus'], AUTO_IMPORT['focus'], M1_UI['focus'], M2_POLICY['focus'], M4A['focus']),
+            reviewed_ui_rows(
+                BASE['window']['focus'], REDESIGN['focus'], AUTO_IMPORT['focus'], M1_UI['focus'], M2_POLICY['focus'], M4A['focus'], M3_CANDIDATE['focus']
+            ),
         )
+
+    def test_m3_delta_only_adds_its_disabled_candidate_control_and_prerequisite(self):
+        button = 'research_build_auto_strategy_button'
+        prerequisite = button + '_prerequisite'
+        self.assertEqual(M3_CANDIDATE['widget_names_added'], [button, prerequisite])
+        self.assertEqual(
+            M3_CANDIDATE['focus'],
+            {
+                'removed': [],
+                'added': [
+                    {'row': [button, '建成自動交易策略', ''], 'count': 1},
+                    {'row': [prerequisite, '', ''], 'count': 1},
+                ],
+            },
+        )
+        self.assertEqual(len(M3_CANDIDATE['refresh_states']), 4)
+        for changes in M3_CANDIDATE['refresh_states']:
+            self.assertEqual(
+                changes,
+                {
+                    'removed': [],
+                    'added': [
+                        {'row': [button, '建成自動交易策略', False, False], 'count': 1},
+                        {'row': [prerequisite, '需要先完成：等待目前背景作業或連線作業停止', True, False], 'count': 1},
+                    ],
+                },
+            )
 
     def test_m4a_delta_only_adds_its_explicit_controls_and_prerequisite_labels(self):
         identities = {'autostart_enabled', 'download_and_install_update', '_prerequisite', 'download_and_install_update_prerequisite'}
