@@ -170,3 +170,51 @@ trading UI and desktop pages 67 passed. These groups overlap earlier evidence an
 are not added to a cumulative total. Pinned Ruff, affected-file compilation,
 layer/trading architecture checks, baseline preview and `git diff --check` passed.
 No local full-suite replay was used; the corrected exact remote head still needs CI.
+
+## Repeated CI cancellation: measured LOCAL history work
+
+The unchanged-tree full run
+[41606606344](https://github.com/yostar77612/mark-auto/actions/runs/41606606344)
+retains two cancellations. Windows 3.11 remaining completed all 4,653 tests in
+842.531 seconds with no failures before cancellation during artifact/cleanup.
+Linux UI paper-remaining was interrupted near its 15-minute job limit while
+processing the WFO tail. No gate was relaxed and no further blind rerun was used.
+
+The matching successful #170 jobs took 700.498 seconds for UI paper-remaining,
+469.539 seconds for Windows 3.11 remaining, and 788.707 seconds for Windows 3.12
+remaining. #171 took 727.546, 601.544, and 790.626 seconds respectively. #169's
+Windows 3.12 remaining passed in 657.875 seconds. Broad differences across shared
+modules support runner variability, but do not prove cross-PR CPU contention.
+
+The added M3 integration tests also contribute measurable work: their 24 fresh
+real-engine setups add roughly 34–42 seconds in those logs. A local profile of
+26 engine constructions attributed 34.892 of 36.196 seconds to the pre-existing
+synthetic history generator, which repeatedly resolves the same calendar sessions
+for every instrument. This is additional repetition, not slower paper execution.
+
+The narrow correction resolves each immutable calendar session lazily once within
+one generator call. It retains the original first-use validation/error order,
+empty-catalog behavior, Decimal context, fresh result objects, and all real engine
+setup, journal, replay and gateway tests. It introduces no persistent cache.
+An ABBA local measurement changed median generation time from 1.102 to 0.292
+seconds; wall-clock numbers are observations, not a relaxed test threshold.
+
+Seven new regression cases compare all 20 instruments / 11,440 bars and every
+serialized series byte against the original algorithm, bound lookups to one per
+day, and check failures plus changed calendars. Independent read-only review
+confirmed the oracle AST matches the original executable algorithm and found no
+blocker. Focused runs passed: 31 new/history-plus-M3 integration tests; 109 existing
+application, execution-environment, broker-session, research-worker, coordinator,
+price-band and M3 UI tests; and 74 G3-identity, M2 automatic/daily-runtime and
+research-concurrency tests. Counts are separate runs, not a cumulative total.
+Ruff, compilation, layers, trading architecture, static gate and mechanical
+baseline preview passed. Full CI and native Windows acceptance remain pending.
+
+`runtime/build.py` is outside the 30-file G3 lock. Those files and
+`saved_candidate_pool.py` remain unchanged. The v2 current producer digest
+correctly includes the new build.py bytes; old-source evidence continues to
+invalidate under the existing rules. No historical profile, source-validation
+algorithm, workflow, timeout, coverage assignment, skip or existing assertion was
+changed. The import-based affected-test tool identifies a broad transitive set;
+only the direct generator/engine and sensitive integration paths were run locally,
+with complete regression coverage still delegated to CI.
