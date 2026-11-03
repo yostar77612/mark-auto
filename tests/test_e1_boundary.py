@@ -6,7 +6,6 @@ from io import StringIO
 import json
 from pathlib import Path
 import secrets
-import sqlite3
 import unittest
 from unittest.mock import Mock, patch
 
@@ -41,7 +40,7 @@ class E1BoundaryTests(unittest.TestCase):
             (evidence,) = f.summaries()
         # Protected test fixture really reached local host state/evidence.
         self.assertEqual(evidence.campaign_ref, marker)
-        with sqlite3.connect(f.registry) as db:
+        with fixtures.database(f.registry) as db:
             capture = db.execute('SELECT payload FROM e1_captures ORDER BY slot LIMIT 1').fetchone()[0]
         self.assertIn(str(price), capture)
         protected = (marker, str(price), str(price + 2), ref, evidence.candidate_fingerprint)

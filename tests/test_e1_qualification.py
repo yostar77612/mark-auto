@@ -5,6 +5,7 @@ contract only and are not market evidence or synthetic candidates shipped to use
 """
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing, contextmanager
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
@@ -69,6 +70,13 @@ def mock_outcome(function, args, **kwargs):
     return {'value': {'verdict': 'statistical_edge', 'sample_count': len(args[0].bars), 'result_hash': content_hash(['synthetic-result', args[1]])}}
 
 
+@contextmanager
+def database(path):
+    """Commit/rollback fixture writes, then release the handle before cleanup."""
+    with closing(sqlite3.connect(path)) as db, db:
+        yield db
+
+
 class E1QualificationTests(unittest.TestCase):
     def setUp(self):
         self.temporary = TemporaryDirectory()
@@ -114,6 +122,24 @@ class E1QualificationTests(unittest.TestCase):
 
     def summaries(self):
         return read_e1_summaries(self.workspace, registry_path=self.registry)
+
+    def test_fixture_database_scope_commits_rolls_back_and_closes_without_collection(self):
+        path = self.root / 'synthetic-lifecycle.sqlite3'
+        with database(path) as committed:
+            committed.execute('CREATE TABLE fixture (value TEXT)')
+            committed.execute("INSERT INTO fixture VALUES ('committed')")
+        with self.assertRaises(sqlite3.ProgrammingError):
+            committed.execute('SELECT 1')
+        with self.assertRaisesRegex(RuntimeError, 'synthetic rollback'):
+            with database(path) as rolled_back:
+                rolled_back.execute("INSERT INTO fixture VALUES ('rolled_back')")
+                raise RuntimeError('synthetic rollback')
+        with self.assertRaises(sqlite3.ProgrammingError):
+            rolled_back.execute('SELECT 1')
+        with database(path) as inspected:
+            self.assertEqual(inspected.execute('SELECT value FROM fixture').fetchall(), [('committed',)])
+        with self.assertRaises(sqlite3.ProgrammingError):
+            inspected.execute('SELECT 1')
 
     def test_future_freeze_and_atomic_completion_project_one_exact_candidate(self):
         ref = self.freeze()
@@ -177,7 +203,7 @@ class E1QualificationTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as executor:
             values = list(executor.map(lambda _: run(), range(2)))
         self.assertEqual(sum(value is not None for value in values), 1)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             self.assertEqual(db.execute('SELECT COUNT(*) FROM reservations').fetchone()[0], 1)
             self.assertEqual(db.execute('SELECT COUNT(*) FROM e1_plans').fetchone()[0], 1)
 
@@ -200,13 +226,13 @@ class E1QualificationTests(unittest.TestCase):
     def test_conflicting_official_source_revision_fails_without_overwriting_capture(self):
         ref = self.freeze()
         self.capture(ref)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             before = db.execute('SELECT payload FROM e1_captures ORDER BY slot').fetchall()
         rows = json.loads(self.raw)
         rows[0]['Last'] = '99999'
         self.fetch.return_value = json.dumps(rows).encode()
         self.unavailable(lambda: self.host.capture(ref, network_authorized=True))
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             self.assertEqual(db.execute('SELECT payload FROM e1_captures ORDER BY slot').fetchall(), before)
         self.assertEqual(self.state(ref)[1], 'failed')
 
@@ -244,7 +270,7 @@ class E1QualificationTests(unittest.TestCase):
     def test_unknown_inflight_capture_cannot_resume_or_evaluate(self):
         ref = self.freeze()
         self.capture(ref)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             db.execute("UPDATE e1_plans SET status='capturing' WHERE reference=?", (ref,))
         self.unavailable(lambda: self.host.capture(ref, network_authorized=True))
         with patch.object(qualification, '_run_bounded') as worker:
@@ -264,7 +290,7 @@ class E1QualificationTests(unittest.TestCase):
 
         self.fetch.side_effect = crossing_fetch
         self.host.capture(ref, network_authorized=True)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             self.assertEqual(db.execute('SELECT COUNT(*) FROM e1_captures').fetchone()[0], 0)
         self.assertEqual(self.state(ref)[1], 'captured')
 
@@ -287,7 +313,7 @@ class E1QualificationTests(unittest.TestCase):
         self.host.capture(ref, network_authorized=True)
         with patch.object(qualification, '_run_bounded', side_effect=mock_outcome):
             self.host.evaluate(ref)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             # Terminal history is deliberately not evidence and never upgraded.
             db.executemany(
                 'INSERT INTO e1_plans VALUES (?,?,?,?,?,?,?)',
@@ -310,7 +336,7 @@ class E1QualificationTests(unittest.TestCase):
                 if failure == 'cancelled':
                     host.cancel(ref)
                 elif failure == 'unknown':
-                    with sqlite3.connect(host.registry) as db:
+                    with database(host.registry) as db:
                         db.execute("UPDATE e1_plans SET status='evaluating' WHERE reference=?", (ref,))
                 else:
                     with patch.object(qualification, '_run_bounded', side_effect=RuntimeError('private')) as worker:
@@ -369,13 +395,13 @@ class E1QualificationTests(unittest.TestCase):
     def test_receipt_and_reservation_tampering_refuse(self):
         ref = self.freeze()
         self.complete(ref)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             original = db.execute('SELECT receipt FROM e1_plans').fetchone()[0]
             receipt = json.loads(original)
             receipt['outcome']['sample_count'] = 39
             db.execute('UPDATE e1_plans SET receipt=?', (canonical_json(receipt),))
         self.unavailable(self.summaries)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             db.execute('UPDATE e1_plans SET receipt=?', (original,))
             db.execute("UPDATE reservations SET selection_hash='changed'")
         self.unavailable(self.summaries)
@@ -453,14 +479,14 @@ class E1QualificationTests(unittest.TestCase):
         with patch.object(protocol, 'utc_now', side_effect=crossing):
             self.unavailable(self.freeze)
         self.assertIsNotNone(original())
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             self.assertEqual(db.execute('SELECT status FROM e1_plans').fetchone()[0], 'failed')
             self.assertEqual(db.execute('SELECT COUNT(*) FROM reservations').fetchone()[0], 1)
         self.unavailable(self.freeze)
 
     def test_uncertain_initial_commit_is_not_resumable(self):
         ref = self.freeze()
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             db.execute("UPDATE e1_plans SET status='committing',reserved_at=NULL WHERE reference=?", (ref,))
         self.unavailable(lambda: self.host.capture(ref, network_authorized=True))
         self.unavailable(lambda: self.host.evaluate(ref))
@@ -469,7 +495,7 @@ class E1QualificationTests(unittest.TestCase):
     def test_rehashed_receipt_cannot_change_frozen_daily_sample_count(self):
         ref = self.freeze()
         self.complete(ref)
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             receipt = json.loads(db.execute('SELECT receipt FROM e1_plans').fetchone()[0])
             receipt['outcome']['sample_count'] -= 1
             receipt['receipt_hash'] = content_hash({key: value for key, value in receipt.items() if key != 'receipt_hash'})
@@ -480,7 +506,7 @@ class E1QualificationTests(unittest.TestCase):
         ref = self.freeze()
         self.capture(ref)
         # A schema trigger is itself forbidden, so no work can be admitted.
-        with sqlite3.connect(self.registry) as db:
+        with database(self.registry) as db:
             db.execute("CREATE TRIGGER reject_receipt BEFORE UPDATE OF receipt ON e1_plans BEGIN SELECT RAISE(ABORT, 'synthetic'); END")
         with patch.object(qualification, '_run_bounded') as worker:
             self.unavailable(lambda: self.host.evaluate(ref))
