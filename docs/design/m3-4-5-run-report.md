@@ -138,3 +138,35 @@ Publication must use the final sanitized file tree against the verified main bas
 not push the local intermediate commit chain. Earlier local inventory blobs still
 contain the original historical prefixes and are not publication inputs.
 `IMPLEMENTATION_CONTRACTS.md` is outside this slice and absent from the changed-file set.
+
+## PR #169 first CI run and focused correction
+
+[Run 41600521398](https://github.com/yostar77612/mark-auto/actions/runs/41600521398)
+on remote head `3aba6d12b8e480a86cdf263003d5f5dd7f5efc41` failed. Its source tree
+matches the originally reviewed slice; the failures are retained as evidence.
+
+- UI Linux 3.12 and offline Linux 3.11/3.12 paper-remaining each reported the same
+  five failures. Two assertions detected a fullwidth colon outside the shared
+  text catalog. Three found that the new research candidate button and prerequisite
+  label had not been admitted to the historical widget/focus/four-state deltas.
+- The summary now uses the existing named-value catalog template, preserving its
+  displayed text. A narrowly scoped M3 delta admits exactly those two controls;
+  the original historical name hash and R7 fixture are unchanged. A new assertion
+  pins the exact added rows, disabled button, visible flags, and multiplicity.
+- Linux aggregate rejected the unsuccessful producer report. No gate, skip,
+  assertion, or historical hash was weakened to accept the failed run.
+- Windows 3.12 desktop stopped with a native access violation in unchanged
+  `components/help.py::_group_settings_help`, at `action.setText(button.toolTip())`,
+  while constructing the automatic-backup test window. An attributable M3 cause
+  is not established. The settings-only help group has no direct ownership path
+  from the M3 research result button. Linux same-order automatic-backup tests
+  passed 8/8; settings-help plus backup passed 11/11. This does not establish a
+  Windows pass or prove flakiness. A native Windows base/head reproduction remains
+  necessary; no speculative unrelated code change was made.
+
+Focused Linux checks after the correction: no-hardcoded text plus appearance
+27 passed; download-import contracts plus R7 characterization 21 passed; M3 UI,
+trading UI and desktop pages 67 passed. These groups overlap earlier evidence and
+are not added to a cumulative total. Pinned Ruff, affected-file compilation,
+layer/trading architecture checks, baseline preview and `git diff --check` passed.
+No local full-suite replay was used; the corrected exact remote head still needs CI.
