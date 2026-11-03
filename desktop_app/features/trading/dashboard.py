@@ -175,7 +175,7 @@ class DashboardWidget(QWidget):
     def render(self, state: UiState, *, state_changed: bool) -> None:
         from desktop_app.features.trading.auto_strategy_rows import summary_text
 
-        self.auto_summary.setText(ui_text('m3.overview_card') + '：' + summary_text(state.auto_strategies))
+        self.auto_summary.setText(ui_text('forms.readable.named_value').format(ui_text('m3.overview_card'), summary_text(state.auto_strategies)))
         self.render_market(state, tables_current=not state_changed)
         rows(self.positions, display.position_rows(state))
         if not state_changed:
