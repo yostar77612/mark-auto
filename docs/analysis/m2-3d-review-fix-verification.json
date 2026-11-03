@@ -1,0 +1,3737 @@
+{
+  "scope": "M2-3d F1-F6 review fixes",
+  "branch": "codex/m2-3d-daily-basis-fixes",
+  "base": "5652457",
+  "contract_commit": "e763bdb",
+  "contract": {
+    "appended_fields": [
+      "DailySignalDataView.verified_at=None",
+      "DailySignalDataView.expires_at=None"
+    ],
+    "new_ui_actions": 0,
+    "new_ipc_operations": 0,
+    "new_error_codes": 0,
+    "research_wire_changed": false
+  },
+  "boundaries": {
+    "live_hard_disabled": true,
+    "automatic_resend_added": false,
+    "automatic_resume_added": false,
+    "desktop_or_G3_or_pin_or_cost_or_workflow_or_layer_changes": false,
+    "assertions_weakened": false,
+    "owner_authorized_wall_clock_assertion_replaced": true
+  },
+  "limits": {
+    "verified_histories": 128,
+    "active_manifests_per_instrument": 242,
+    "selected_sources": 242,
+    "manifest_bytes": 131072,
+    "payload_bytes": 8388608,
+    "selected_payload_bytes": 67108864,
+    "archive_total_bound": null,
+    "archive_unbounded_intentionally": true,
+    "arbitrary_union_digest_reverse_lookup": false
+  },
+  "deferred": [
+    {
+      "item": "F4",
+      "reason": "No separate research/live coverage contract; retain strict complete history instead of silently shortening research."
+    }
+  ],
+  "store_tests": {
+    "passed": 68,
+    "failed": 0,
+    "seconds": 6.500612700008787,
+    "raw": ".gitnexus/verification/daily-stock-store-revision-split-final.json"
+  },
+  "mutations": {
+    "store": {
+      "cases": 40,
+      "killed": 40,
+      "seconds": 10.632,
+      "raw": ".gitnexus/verification/daily-stock-store-mutations.json"
+    },
+    "source": {
+      "cases": 81,
+      "killed": 81,
+      "raw": ".gitnexus/verification/s1d-source-mutations.before-public-cache-probe.json"
+    },
+    "legacy_domain": {
+      "cases": 58,
+      "killed": 58,
+      "raw": ".gitnexus/verification/s1d-legacy-domain58-mutations.json"
+    },
+    "deployment": {
+      "cases": 33,
+      "killed": 33,
+      "raw": ".gitnexus/verification/daily-deployment-production-mutations.json"
+    },
+    "root_application": {
+      "cases": 19,
+      "killed": 19,
+      "assertion_kills": 17,
+      "body_boundary_exception_kills": 2,
+      "pending": 0,
+      "raw": ".gitnexus/verification/review-application-mutations.json"
+    },
+    "previous_admission": {
+      "cases": 25,
+      "killed": 25,
+      "raw": ".gitnexus/verification/previous-admission-mutations.json"
+    },
+    "import": {
+      "cases": 21,
+      "killed": 21,
+      "raw": ".gitnexus/verification/official-daily-import-mutations.json"
+    },
+    "performance": {
+      "cases": 1,
+      "killed": 1,
+      "raw": ".gitnexus/verification/official-daily-quadratic-mutation.json"
+    },
+    "planned_total": 278,
+    "recorded_kills": 278,
+    "pending": 0,
+    "coverage_claim": "Lower bound of exercised counterexamples; not exhaustive safety proof.",
+    "assertion_kills": 261,
+    "body_boundary_exception_kills": 17,
+    "source_epoch": "Historical initial source epoch; performance1 obsolete for new native projection path; see ci_repair for fresh cases and unchanged-target carry-forward."
+  },
+  "selected_regression": {
+    "initial": {
+      "modules": 223,
+      "tests": 2950,
+      "seconds": 597.874,
+      "failed_modules": 8,
+      "all_green": false,
+      "raw": ".gitnexus/verification/selected-tests-initial-summary.json"
+    },
+    "product_rerun": {
+      "modules_passed": 5,
+      "tests_passed": 55,
+      "new_application_tests_passed": 15,
+      "combined_passed": 70,
+      "raw_module_logs": [
+        "test_sinopac_runtime_routing.log",
+        "test_trading_broker_sessions.log",
+        "test_trading_coordinator.log",
+        "test_trading_execution_environments.log",
+        "test_trading_readonly_coordination.log"
+      ],
+      "raw_directory": ".gitnexus/verification",
+      "new_application_raw": ".gitnexus/verification/test_daily_basis_review_application.log"
+    },
+    "harness_path_issues": {
+      "count": 2,
+      "status": "RESOLVED_RUNNER_PATHS",
+      "final_results": {
+        "worker_import": {
+          "passed": 3,
+          "seconds": 2.472
+        },
+        "repin_baselines": {
+          "passed": 15,
+          "seconds": 4.551
+        },
+        "interpreter": "shared .venv/Scripts/python.exe; no injected PYTHONPATH"
+      }
+    },
+    "host_blockers": {
+      "module": "test_trading_installer_guard",
+      "cases": 2,
+      "reason": "Preexisting visible application lifetime; original assertions preserved."
+    },
+    "final_selected_status": "PRODUCT_REGRESSIONS_RESOLVED; TWO_EXISTING_INSTALLER_HOST_PRECONDITIONS_REMAIN; CI_PENDING",
+    "initial_modules": [
+      {
+        "module": "test_affected_tests",
+        "tests": 14,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_agent_harness_d1",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_agent_harness_d7",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_agent_read_tools_d3",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_agent_return_d11",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_agent_skills_d7",
+        "tests": 10,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_alert_transport",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_alert_ui",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_analysis_capable_producer_profile",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_analysis_recovery_ui",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_application_icon",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_assistant_d4",
+        "tests": 10,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_assistant_d5",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_assistant_d6",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_assistant_d8",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_atomic_replace_producer_profile",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_b11_privacy",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_b4_appearance",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_broker_optional_packaging",
+        "tests": 10,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_campaign_catalog_producer_profile",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_capital_scenario_b5",
+        "tests": 20,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_ci_slimming",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_compare_table",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_completed_items_producer_profile",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_context_navigation_v2",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_basis_fixes_contract",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_basis_review_application",
+        "tests": 15,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_deployment",
+        "tests": 33,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_owner_maintenance",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_previous_close",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_signal_data",
+        "tests": 31,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_signal_source_refresh",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_daily_stock_store_bounds",
+        "tests": 40,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_dashboard_characterization",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_dashboard_rows",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_dashboard_ui",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_bootstrap",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_layered_worker_import",
+        "tests": 1,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_market_smoke",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [
+          [
+            "test_desktop_market_smoke.MarketSmokeWidgetTests.test_missing_bundled_root_module_fails_overall_without_dialog_hang",
+            "Use an isolated home for failure-report test; Windows profile must remain untouched"
+          ],
+          [
+            "test_desktop_market_smoke.MarketSmokeWidgetTests.test_source_smoke_runs_worker_manual_exchange_and_preserves_seven_steps",
+            "Windows frozen smoke is run by installer harness; do not touch test-runner real profile here"
+          ]
+        ],
+        "success": true
+      },
+      {
+        "module": "test_desktop_pages",
+        "tests": 14,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_runtime",
+        "tests": 36,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_smoke_package",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_strings",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_theme",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_tls_smoke",
+        "tests": 19,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_ui_p0_correctness",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_unified_research",
+        "tests": 19,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_desktop_worker_import",
+        "tests": 3,
+        "failures": [
+          "test_desktop_worker_import.SourceWorkerImportTests.test_first_parent_registrar_lookup_cannot_poison_real_mainwindow_or_public_aliases"
+        ],
+        "errors": [],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_diagnostics_b12",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_docs_layering",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_download_auto_import_contracts",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_error_guidance_u7",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_fail_closed_producer_profile",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_finished_reconciliation_producer_profile",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_function_lengths",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_history_sync",
+        "tests": 18,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_import_graph",
+        "tests": 19,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_kline_store",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_layer_gate",
+        "tests": 21,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_layered_paths_profile",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_lb_b3_indicators",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_live_market_repairs",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_live_market_service",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_live_market_wiring",
+        "tests": 10,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_live_order_guard",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_long_path_producer_profile",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m1_architecture",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m1_market_runtime",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m1_ui_defects",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_account_baselines",
+        "tests": 36,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_account_risk",
+        "tests": 37,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic",
+        "tests": 85,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_baseline",
+        "tests": 13,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_capacity",
+        "tests": 64,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_daily_boundary",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_engine",
+        "tests": 40,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_protective",
+        "tests": 17,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_resources",
+        "tests": 27,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_runtime",
+        "tests": 46,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_automatic_state",
+        "tests": 21,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_cash_entitlements",
+        "tests": 23,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_closes",
+        "tests": 42,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_commit",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_native",
+        "tests": 16,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_not_sent",
+        "tests": 28,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_price_basis",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_recovery",
+        "tests": 27,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_retention",
+        "tests": 29,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_review_guards",
+        "tests": 13,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_daily_runtime",
+        "tests": 27,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_guidelines",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_manual_amend_risk",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_manual_daily_baseline",
+        "tests": 37,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_manual_ui",
+        "tests": 29,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_order_report",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_preflight",
+        "tests": 23,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_preflight_runtime",
+        "tests": 69,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_readability",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_risk_integration",
+        "tests": 28,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_stock_history",
+        "tests": 17,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_stock_maintenance",
+        "tests": 13,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_stock_research",
+        "tests": 15,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_strategy_management",
+        "tests": 36,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m2_trading_page",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m3_candidate_catalog",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m3_candidate_intake",
+        "tests": 27,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m3_promotion_service",
+        "tests": 42,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m3_signal_research",
+        "tests": 30,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_m3_stage_matrix",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manifest_d12",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_contracts",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_no_admission_routing",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_review_fixes",
+        "tests": 27,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_review_guards",
+        "tests": 25,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_review_runtime",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_runtime",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_runtime_integration",
+        "tests": 25,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_runtime_scope",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_manual_trading",
+        "tests": 30,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_alerts_runtime",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_alerts_ui",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_connection",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_series_transport",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_settings_concurrency",
+        "tests": 1,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_settings_fix",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_terminal_service",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_terminal_theme",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_terminal_ui",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_market_watch_ui",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_minute_research",
+        "tests": 20,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_minute_research_basis",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_minute_research_history",
+        "tests": 10,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_minute_research_host",
+        "tests": 14,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_models_limit_producer_profile",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_no_hardcoded_ui_text",
+        "tests": 18,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_no_inline_stylesheet",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_notifications_c8",
+        "tests": 14,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_official_daily_admission",
+        "tests": 23,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_official_daily_cache",
+        "tests": 29,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_official_daily_import",
+        "tests": 30,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_official_daily_research",
+        "tests": 27,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_official_daily_runtime_e2e",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_official_daily_source",
+        "tests": 37,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_official_daily_worker",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_packaging",
+        "tests": 17,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_page_services_r1",
+        "tests": 15,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_panel_card_c3",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_paper_cancel_all_a2",
+        "tests": 10,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_paper_lock_b2",
+        "tests": 19,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_paper_stop_a1",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_preferences_u8",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_product_ai_boundary",
+        "tests": 13,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_quality_gate_v2_boundaries",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_quote_stats",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_r7_characterization",
+        "tests": 16,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_repin_baselines",
+        "tests": 15,
+        "failures": [],
+        "errors": [
+          "test_repin_baselines.CatalogPlanTests.test_changed_text_needs_explicit_acceptance_and_gaps_are_never_papered_over",
+          "test_repin_baselines.CatalogPlanTests.test_current_tree_is_up_to_date_and_additions_update_fixture_and_count"
+        ],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_repo_layout",
+        "tests": 29,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_result_widgets",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_runtime_context_cli_v2",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_runtime_context_client_v2",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_saved_candidate_pool",
+        "tests": 57,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_scalar_producer_profile",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_shioaji_tick_overflow",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_shioaji_tick_reconnect",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_sinopac_connection",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_sinopac_contracts",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_sinopac_panel_ui",
+        "tests": 14,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_sinopac_resources",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_sinopac_runtime_routing",
+        "tests": 11,
+        "failures": [],
+        "errors": [
+          "test_sinopac_runtime_routing.ConnectionRoutingTests.test_environment_switch_confirms_old_logout_and_public_revision_stays_monotonic",
+          "test_sinopac_runtime_routing.ConnectionRoutingTests.test_independent_revision_is_not_refreshed_away_between_guard_and_dispatch",
+          "test_sinopac_runtime_routing.ConnectionRoutingTests.test_legacy_market_logout_precedes_new_login_without_changing_local_book",
+          "test_sinopac_runtime_routing.ConnectionRoutingTests.test_local_first_connect_selection_and_explicit_broker_navigation_use_one_login",
+          "test_sinopac_runtime_routing.ConnectionRoutingTests.test_unconfirmed_logout_prevents_new_environment_login"
+        ],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_sinopac_window_ui",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_smoke_timeout_diagnostics",
+        "tests": 37,
+        "failures": [],
+        "errors": [],
+        "skips": [
+          [
+            "test_smoke_timeout_diagnostics.ProcDisappearanceTests.test_group_join_and_liveness_do_not_hide_permission_or_unknown_errors",
+            "Linux /proc disappearance semantics"
+          ],
+          [
+            "test_smoke_timeout_diagnostics.ProcDisappearanceTests.test_group_join_survives_real_unrelated_proc_exit_during_scan",
+            "Linux /proc disappearance semantics"
+          ],
+          [
+            "test_smoke_timeout_diagnostics.ProcDisappearanceTests.test_liveness_classifies_kernel_dead_states_and_retains_unknowns",
+            "Linux /proc disappearance semantics"
+          ],
+          [
+            "test_smoke_timeout_diagnostics.ProcDisappearanceTests.test_liveness_survives_real_process_exit_during_stat_read",
+            "Linux /proc disappearance semantics"
+          ],
+          [
+            "test_smoke_timeout_diagnostics.ProcDisappearanceTests.test_owned_stopped_process_is_live_until_killed_zombie_and_reaped",
+            "Linux /proc disappearance semantics"
+          ],
+          [
+            "test_smoke_timeout_diagnostics.ProcDisappearanceTests.test_timeout_cleanup_survives_real_unrelated_proc_exit_during_scan",
+            "Linux /proc disappearance semantics"
+          ],
+          [
+            "test_smoke_timeout_diagnostics.ProcDisappearanceTests.test_timeout_scan_permission_and_unknown_errors_keep_cleanup_unverified",
+            "Linux /proc disappearance semantics"
+          ]
+        ],
+        "success": true
+      },
+      {
+        "module": "test_startup_timing_e1",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_strategy_tabs",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_stream_content_type_producer_profile",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_subscription_producer_profile",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_t11_part_b",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_t11_repair",
+        "tests": 1,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_t9_repair",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_tls_anchor_producer_profile",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_token_format_producer_profile",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trade_statistics_b1",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_acceptance_combinations",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_application",
+        "tests": 29,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_architecture",
+        "tests": 8,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_broker_runtime",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_broker_sessions",
+        "tests": 18,
+        "failures": [
+          "test_trading_broker_sessions.BrokerSessionLifecycleTests.test_missing_maintenance_blocks_automatic_entry_before_submission"
+        ],
+        "errors": [
+          "test_trading_broker_sessions.BrokerSessionLifecycleTests.test_maintenance_failure_does_not_block_protective_exit",
+          "test_trading_broker_sessions.BrokerSessionLifecycleTests.test_missing_new_day_baseline_does_not_block_legally_executable_protection",
+          "test_trading_broker_sessions.BrokerSessionLifecycleTests.test_next_trading_day_keeps_dated_locks_and_unverified_pnl_without_zeroing",
+          "test_trading_broker_sessions.BrokerSessionLifecycleTests.test_stale_or_missing_position_mark_cannot_confirm_a_zero_current_pnl",
+          "test_trading_broker_sessions.BrokerSessionLifecycleTests.test_trusted_new_day_close_revalues_pnl_and_keeps_previous_dated_stop"
+        ],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_trading_coordinator",
+        "tests": 13,
+        "failures": [
+          "test_trading_coordinator.SharedCoordinatorTests.test_both_nonlocal_environments_use_reports_without_fill_or_clock_advance (environment=<Environment.BROKER_SIMULATION: 'BROKER_SIMULATION'>)",
+          "test_trading_coordinator.SharedCoordinatorTests.test_stale_quote_blocks_new_risk_and_journal_failure_propagates",
+          "test_trading_coordinator.SharedCoordinatorTests.test_unknown_submit_and_rejection_do_not_retry_same_daily_decision (fault=FaultPlan(reject=False, unknown_after_accept=True, disconnect_before_submit=False, partial_quantity=0, duplicate_event=False, cancel_fill_race=False, drop_event=False))",
+          "test_trading_coordinator.SharedCoordinatorTests.test_unknown_submit_and_rejection_do_not_retry_same_daily_decision (fault=FaultPlan(reject=True, unknown_after_accept=False, disconnect_before_submit=False, partial_quantity=0, duplicate_event=False, cancel_fill_race=False, drop_event=False))",
+          "test_trading_coordinator.SharedCoordinatorTests.test_unknown_submit_and_rejection_do_not_retry_same_daily_decision (fault=FaultPlan(reject=False, unknown_after_accept=False, disconnect_before_submit=True, partial_quantity=0, duplicate_event=False, cancel_fill_race=False, drop_event=False))",
+          "test_trading_coordinator.SharedCoordinatorTests.test_unrelated_difference_does_not_suppress_a_confirmed_scope_protection"
+        ],
+        "errors": [
+          "test_trading_coordinator.SharedCoordinatorTests.test_intraday_mid_session_keeps_position_then_explicit_close_window_exits",
+          "test_trading_coordinator.SharedCoordinatorTests.test_nonlocal_roll_waits_for_both_actual_fills_and_carries_policy_origin",
+          "test_trading_coordinator.SharedCoordinatorTests.test_normal_deadline_exits_after_trading_days_without_fake_fill",
+          "test_trading_coordinator.SharedCoordinatorTests.test_partial_and_duplicate_reports_preserve_actual_remaining_exposure",
+          "test_trading_coordinator.SharedCoordinatorTests.test_protective_exit_precedes_normal_minimum_and_missing_baseline"
+        ],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_trading_draft_concurrency",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_engine_cleanup",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_execution_environments",
+        "tests": 2,
+        "failures": [],
+        "errors": [
+          "test_trading_execution_environments.ExecutionEnvironmentTests.test_controlled_nonlocal_entry_fill_protection_and_performance_keep_environment (environment=<Environment.BROKER_SIMULATION: 'BROKER_SIMULATION'>)"
+        ],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_trading_graceful_exit",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_installer_guard",
+        "tests": 7,
+        "failures": [
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace"
+        ],
+        "errors": [],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_trading_lifecycle",
+        "tests": 13,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_load_probe",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_market_refresh",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_navigation_observation",
+        "tests": 3,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_performance",
+        "tests": 14,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_price_bands",
+        "tests": 16,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_readonly_coordination",
+        "tests": 11,
+        "failures": [],
+        "errors": [
+          "test_trading_readonly_coordination.ReadonlyCoordinationTests.test_nonlocal_flatten_keeps_position_until_actual_fill_report"
+        ],
+        "skips": [],
+        "success": false
+      },
+      {
+        "module": "test_trading_research_concurrency",
+        "tests": 2,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_research_worker",
+        "tests": 10,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_runtime",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_runtime_context",
+        "tests": 13,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_runtime_context_broker",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_runtime_context_cache",
+        "tests": 9,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_scope_guards",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_ui",
+        "tests": 32,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_ui_integration",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_ui_market_watch",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_unix_socket",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_trading_valuation_freshness",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_u1_readiness_ui",
+        "tests": 4,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_u2_exit_preview_ui",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_u2_manual_recovery_ui",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_u3_strategy_ui",
+        "tests": 16,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_u4_automatic_ui",
+        "tests": 13,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_ui_operations_registry",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_ui_redesign_paper_settings",
+        "tests": 7,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_ui_redesign_strategy",
+        "tests": 12,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_unknown_reconciliation_producer_profile",
+        "tests": 6,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_update_install",
+        "tests": 14,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_watchlist_settings",
+        "tests": 5,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      },
+      {
+        "module": "test_wf_wizard",
+        "tests": 11,
+        "failures": [],
+        "errors": [],
+        "skips": [],
+        "success": true
+      }
+    ],
+    "post_main": {
+      "modules": 12,
+      "tests": 236,
+      "seconds": 32.814,
+      "failed": [],
+      "results": [
+        {
+          "module": "test_docs_layering",
+          "tests": 8,
+          "seconds": 0.794,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_repo_layout",
+          "tests": 29,
+          "seconds": 1.816,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_layer_gate",
+          "tests": 21,
+          "seconds": 4.269,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_import_graph",
+          "tests": 19,
+          "seconds": 17.262,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_download_auto_import_contracts",
+          "tests": 4,
+          "seconds": 0.016,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_r7_characterization",
+          "tests": 16,
+          "seconds": 1.503,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_strategy_market_empty_ui",
+          "tests": 6,
+          "seconds": 0.666,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_live_order_guard",
+          "tests": 8,
+          "seconds": 0.359,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_m2_automatic_engine",
+          "tests": 40,
+          "seconds": 12.155,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_m2_automatic_runtime",
+          "tests": 46,
+          "seconds": 1.726,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_m2_daily_native",
+          "tests": 16,
+          "seconds": 11.837,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        },
+        {
+          "module": "test_official_daily_admission",
+          "tests": 23,
+          "seconds": 1.328,
+          "failures": [],
+          "errors": [],
+          "skips": [],
+          "success": true,
+          "exit_code": 0
+        }
+      ]
+    }
+  },
+  "import_tests": {
+    "new": 30,
+    "existing_http": 3,
+    "passed": 33
+  },
+  "native": {
+    "earlier_connected_passed": 4,
+    "earlier_large_passed": 1,
+    "post_revision_split_passed": 5,
+    "post_revision_split_seconds": 36.976,
+    "status": "PASS",
+    "raw": ".gitnexus/verification/official-daily-native-five-strict-api-final.log"
+  },
+  "large_fixture": {
+    "synthetic_calendar": true,
+    "bars": 1553,
+    "months": 72,
+    "refreshes": 250,
+    "archived_payloads_initial": 573,
+    "archived_payloads_extended": 574,
+    "active_sources": 73,
+    "active_manifests": 1,
+    "lock_threshold_seconds": 0.5,
+    "pre_split_samples": [
+      {
+        "cold_lock": 0.0925671,
+        "hot_lock_max": 0.0272027,
+        "revision_lock": 0.4028457
+      },
+      {
+        "cold_lock": 0.0941127,
+        "hot_lock_max": 0.031049,
+        "revision_lock": 0.448662
+      }
+    ],
+    "raw": ".gitnexus/verification/official-daily-delivery-summary.json",
+    "post_revision_split": {
+      "synthetic_fixture": true,
+      "months": 72,
+      "bars": 1553,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "fixture_build_seconds": 21.7819971999852,
+      "cold_pump_seconds": 0.23249209998175502,
+      "max_bundle_lock_seconds": 0.4295236000325531,
+      "max_pump_bundle_lock_seconds": 0.4295236000325531,
+      "lock_phase_maxima": {
+        "hot_pump": 0.034083399979863316,
+        "revision_pump": 0.4295236000325531,
+        "cold_pump": 0.1109576000017114,
+        "query_adopt": 0.024565400031860918
+      },
+      "gc_collections": [
+        {
+          "phase": "cold_pump",
+          "generation": 1,
+          "seconds": 7.809995440766215e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 2.5699962861835957e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 2.2899999748915434e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 2.1899992134422064e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 3.1999952625483274e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 5.199998850002885e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 4.929996794089675e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 7.639999967068434e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 0.00022330001229420304,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 6.440002471208572e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 0.00011390005238354206,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 0.00013719999697059393,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 1,
+          "seconds": 0.0008533999789506197,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 0.00010579999070614576,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 8.359999628737569e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 9.809999028220773e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 0.0001784000196494162,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 8.219998562708497e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 3.190001007169485e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 2.0599982235580683e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 2.0300038158893585e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 3.2100011594593525e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 5.370000144466758e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 5.630002124235034e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 1,
+          "seconds": 0.0005964999436400831,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 9.649997809901834e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 7.27999722585082e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 6.690004374831915e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 3.619998460635543e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 2.1499989088624716e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 1.829996472224593e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 1.6400008462369442e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 1.4599994756281376e-05,
+          "collected": 0
+        },
+        {
+          "phase": "cold_pump",
+          "generation": 0,
+          "seconds": 2.0499981474131346e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 3.960001049563289e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 2.2099993657320738e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 1,
+          "seconds": 0.00010689999908208847,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 2.069998299703002e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 3.219995414838195e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 6.549997488036752e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 5.859998054802418e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 4.859996261075139e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 3.950000973418355e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 2.3600005079060793e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 2.4399952962994576e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 2.4699955247342587e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 3.130000550299883e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 4.8900023102760315e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 1,
+          "seconds": 0.0004485000390559435,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 7.389998063445091e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 4.4000043999403715e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 2.6800029445439577e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 2.1000043489038944e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 3.8700003642588854e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 4.640000406652689e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 5.189998773857951e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 4.5900000259280205e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 5.139998393133283e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 0.0001770000089891255,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 7.289997301995754e-05,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 1,
+          "seconds": 0.0002654999843798578,
+          "collected": 0
+        },
+        {
+          "phase": "hot_pump",
+          "generation": 0,
+          "seconds": 7.740000728517771e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.320003790780902e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.559996210038662e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.8200040105730295e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.269999822601676e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 3.1100003980100155e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.859996261075139e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.9200025387108326e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.189998773857951e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00019150000298395753,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.7699973694980145e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 1,
+          "seconds": 0.000264700036495924,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00010040000779554248,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00010130001464858651,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 8.169998181983829e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 6.960000609979033e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 6.609997944906354e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00017910002497956157,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.2499992307275534e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.329999839887023e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 9.82999918051064e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00010140001541003585,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00010010000551119447,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 1,
+          "seconds": 0.0011607999913394451,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 6.669998401775956e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 6.3000014051795e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.069998299703002e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.5399960577487946e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 1.8499966245144606e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.4100008886307478e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.6999968364834785e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.299997817724943e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.3700041715055704e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00012229999992996454,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.0001023999648168683,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 1,
+          "seconds": 0.000575800018850714,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 2,
+          "seconds": 0.014752800052519888,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.4900014977902174e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 1.750001683831215e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 1.680001150816679e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 1.6600009985268116e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 6.330001633614302e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 3.99000127799809e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.4999957531690598e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.1599989850074053e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00010089995339512825,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.449998959898949e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.740001168102026e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 1,
+          "seconds": 0.000380899989977479,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 7.950002327561378e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.5499961338937283e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.4200009647756815e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.340000355616212e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.829998265951872e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.879998207092285e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.299999611452222e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 3.370002377778292e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 1.950003206729889e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 1.71000137925148e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.300000051036477e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 1,
+          "seconds": 0.0004972000024281442,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.39999857917428e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.069997860118747e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.7200032491236925e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.570002106949687e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 3.330002073198557e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.730001091957092e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 4.919996717944741e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.409994628280401e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 0.00013020000187680125,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 9.789998875930905e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 5.609996151179075e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 1,
+          "seconds": 0.0010576000204309821,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.7100031729787588e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 3.160000778734684e-05,
+          "collected": 0
+        },
+        {
+          "phase": "revision_pump",
+          "generation": 0,
+          "seconds": 2.400000812485814e-05,
+          "collected": 0
+        }
+      ],
+      "lock_violations": [],
+      "cold": {
+        "daily_parses": 72,
+        "event_parses": 1,
+        "sha_calls": 74,
+        "payload_reads": 73,
+        "full_reads": 1
+      },
+      "three_hot_pumps": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0
+      },
+      "revision_revalidation": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2
+      }
+    }
+  },
+  "startup": {
+    "earlier_local_passed": true,
+    "earlier_local_seconds": 6.666,
+    "earlier_fake_sim_passed": true,
+    "earlier_fake_sim_seconds": 4.263,
+    "final_source_results": {
+      "local": {
+        "passed": true,
+        "seconds": 8.07,
+        "raw": ".gitnexus/verification/startup-visible-local-strict-final.json"
+      },
+      "fake_sim": {
+        "passed": true,
+        "seconds": 4.773,
+        "raw": ".gitnexus/verification/startup-visible-sim-strict-final.json"
+      },
+      "qt_platform": "windows",
+      "visible": true,
+      "real_sdk_imported": false
+    }
+  },
+  "static": {
+    "earlier_pre_push_passed": true,
+    "python311_files": 1258,
+    "final_source_results": {
+      "passed": true,
+      "ruff_files": 1372,
+      "python311_files": 1260,
+      "quality_findings": 0,
+      "layer_findings": 0,
+      "architecture_violations": 0,
+      "raw": ".gitnexus/verification/prepush-after-main.log"
+    }
+  },
+  "baseline": {
+    "pre_commit_adjustments": 2,
+    "final_separate_baseline_commit": "Planned immediately after this evidence commit; exact SHA in PR.",
+    "regeneration_tool": "python tools/repin_baselines.py --write; default verification enabled",
+    "modules_registered": 3,
+    "observer_added_pins": 70,
+    "observer_removed_pins": 6
+  },
+  "ci": {
+    "status": "FIRST_HEAD_FAILED_CORRECTION_PENDING_NEW_HEAD",
+    "run": 41538250305,
+    "attempt": 1,
+    "completed_jobs": {
+      "success": 25,
+      "failure": 9,
+      "skipped": 1
+    },
+    "original_producer_failures": {
+      "Windows3.11": 0.6218819,
+      "Linux3.11": 0.567874834,
+      "UI_Linux3.12": 0.50110002
+    },
+    "budget_seconds": 0.5,
+    "classification": "Real product latency failure, not flaky timeout"
+  },
+  "claude_review": "PENDING",
+  "read_only_review": {
+    "new_reproducible_product_defects_found": 0,
+    "does_not_replace_claude_review": true,
+    "source_epoch": "Historical initial review; current independent local review also found no concrete regression, not Claude approval."
+  },
+  "source_domain_deployment_tests": {
+    "passed": 148,
+    "seconds": 3.1157574,
+    "raw": ".gitnexus/verification/daily-basis-owned-tests.json"
+  },
+  "main_integration": {
+    "main": "4867549",
+    "commit": "49d7064",
+    "resolution": "Preserve both appended contract sections; desktop bytes equal main.",
+    "latest_main": "5652457",
+    "latest_merge": "c8de66b",
+    "latest_resolution": "Preserve both appended contracts; incoming desktop bytes unchanged from main; R7 symbolic baseline adopted"
+  },
+  "ci_repair": {
+    "projection_cache": {
+      "bound": 128,
+      "keys": [
+        "actual immutable history",
+        "complete calendar",
+        "original committed DailyResearchBasis",
+        "through-day"
+      ],
+      "authority_cached": false,
+      "native_cold_miss": "typed refusal, no in-lock computation",
+      "wire_hash_compatibility": "fixed original committed goldens",
+      "ordinary_preparation_failure": "daily_signal_source_unverified; no storage_failed"
+    },
+    "maintenance_calendar_cache": {
+      "bound": 1,
+      "factory_identity_key": true,
+      "snapshot_count": 57,
+      "build_count": 1,
+      "preflight_count": 57,
+      "tests_passed": 9,
+      "mutations": {
+        "cases": 3,
+        "assertion_kills": 3
+      },
+      "date_or_authority_cached": false
+    },
+    "pure_tests": {
+      "passed": 88,
+      "old_admission": 23,
+      "new_projection": 18,
+      "total": 88,
+      "old_review": 15,
+      "raw": "daily-projection-pure-related-final.log",
+      "unittest_seconds": 6.794,
+      "old_deployment": 32
+    },
+    "fresh_changed_path_mutations": {
+      "killed": 99,
+      "setup_loader_cleanup_kills": 0,
+      "old_admission": {
+        "seconds": 10.471,
+        "killed": 25,
+        "cases": 25
+      },
+      "new_projection": {
+        "seconds": 15.017,
+        "killed": 22,
+        "cases": 22,
+        "classifications": [
+          {
+            "Name": "KILLED_ASSERTION",
+            "Count": 15
+          },
+          {
+            "Name": "KILLED_BODY_EXCEPTION",
+            "Count": 7
+          }
+        ]
+      },
+      "new_test_sha256": [
+        "a2f2df075d2a0c5d03300683716d926578c4842808cec9bea5025cb1a0d0499d"
+      ],
+      "total": 99,
+      "old_review": {
+        "counts": {
+          "KILLED_ASSERTION": 17,
+          "KILLED_BODY_EXCEPTION": 2
+        },
+        "seconds": 8.113,
+        "cases": 19
+      },
+      "old_deployment": {
+        "killed": 33,
+        "cases": 33
+      }
+    },
+    "fresh_performance_mutation": {
+      "cases": 1,
+      "assertion_kills": 1,
+      "baseline_pass": true,
+      "seven_held_lock_derivations_detected": true,
+      "raw": "ci-large-cache-bypass-run.json"
+    },
+    "fresh_total": {
+      "cases": 103,
+      "killed": 103,
+      "assertion_kills": 93,
+      "body_exception_kills": 10,
+      "harness_kills": 0
+    },
+    "unchanged_target_historical_guards": 200,
+    "old_quadratic_performance_mutant": "obsolete target, excluded from current fresh total",
+    "native_samples": {
+      "native_first": {
+        "tests": 5,
+        "passed": true,
+        "lock_phase_maxima": {
+          "revision_pump": 0.258667099988088,
+          "hot_pump": 0.020866599981673062,
+          "query_adopt": 0.0245351999765262,
+          "cold_pump": 0.058898999996017665
+        },
+        "bars": 1553,
+        "months": 72,
+        "refreshes": 250,
+        "lock_violations": [],
+        "three_hot_pumps": {
+          "daily_parses": 0,
+          "event_parses": 0,
+          "sha_calls": 0,
+          "payload_reads": 0,
+          "full_reads": 0,
+          "semantic_derivations": 0
+        }
+      },
+      "native_second": {
+        "tests": 1,
+        "passed": true,
+        "lock_phase_maxima": {
+          "revision_pump": 0.27487700001802295,
+          "query_adopt": 0.023837000015191734,
+          "hot_pump": 0.023208900005556643,
+          "cold_pump": 0.051493900013156235
+        },
+        "bars": 1553,
+        "months": 72,
+        "refreshes": 250,
+        "lock_violations": [],
+        "three_hot_pumps": {
+          "daily_parses": 0,
+          "event_parses": 0,
+          "sha_calls": 0,
+          "payload_reads": 0,
+          "full_reads": 0,
+          "semantic_derivations": 0
+        }
+      }
+    },
+    "source_sha256": {
+      "quantlab/trading/application/daily_signal_data.py": "bad4fa7f13579badb43f3d03cfbad167db4fa72cb4d0885348a3cc968e484c04",
+      "quantlab/trading/application/daily_signal_projection.py": "cd23b29c2b6dcc8d01cd58187b6550ce98aba41a5bb43f7bc0be0017bdb4a35c",
+      "quantlab/trading/runtime/daily_deployment.py": "e7fca4fe0b0e150c380df7ed9ab7582d2eec373042b2532174ecd12da9f7ee4c",
+      "quantlab/trading/runtime/daily_source_cache.py": "3bc3b4b0fbc4e5272ec46d4d673ba26b1549f678a16f009bc73f87de63b704bb",
+      "quantlab/trading/runtime/sinopac_connection.py": "a0d910de6fee9f2c03908452d7854f73214760c3d905b02e4dc5f71584306c52"
+    },
+    "all_source_unchanged": true,
+    "raw": [
+      "daily-projection-final.json",
+      "owner-calendar-cache-mutations.json",
+      "ci-performance-repair-final-evidence.json"
+    ],
+    "precommit_graph": {
+      "changed_count": 71,
+      "affected_count": 6,
+      "changed_files": 14,
+      "risk_level": "high"
+    },
+    "final_related": {
+      "source_epoch": "before latest main5652457 integration",
+      "modules": 214,
+      "tests": 2747,
+      "seconds": 580.658,
+      "failures": 2,
+      "errors": 0,
+      "skips": 9,
+      "passed": 2736,
+      "failed_modules": [
+        "test_trading_installer_guard"
+      ],
+      "raw": "ci-repair-related/selected-tests-summary.json",
+      "disposition": "Only installer global-mutex preconditions failed; final merged-tree isolated original module will rerun after concurrent modules exit."
+    },
+    "final_startups": "FIRST_ROUND_WINDOWS_QT_ACCESS_VIOLATION; owned orphan normally shut down; complete two-mode round pending after main integration",
+    "final_statics": {
+      "ruff_files": 1374,
+      "python311_tracked_files": 1262,
+      "syntax_failures": 0,
+      "quality_findings": 0,
+      "layer_findings": 0,
+      "architecture_violations": 0,
+      "raw": "ci-repair-prepush.log"
+    },
+    "source_epoch": "Historical first performance correction before subsequent owner deterministic-test instruction; not latest acceptance."
+  },
+  "status": "FINAL_LOCAL_RELATED_COMPLETE_R7_FIXED_TWO_MAIN_REPRODUCED_HOST_PRECONDITIONS_CI_PENDING",
+  "original_base": "6387968",
+  "deterministic_verification": {
+    "product_commit": "1ad42aa",
+    "timing_policy": "measure-only, no elapsed-time success assertion; explicit owner supersedes0.5-second wall assertion",
+    "source_cache_tests": {
+      "passed": 44,
+      "seconds": 0.242223,
+      "raw": "public-cache-probe-tests.json"
+    },
+    "source_mutations": {
+      "cases": 100,
+      "killed": 100,
+      "assertion_kills": 89,
+      "body_exception_kills": 11,
+      "original_cases_rerun": 81,
+      "new_public_cache_cases": 19,
+      "harness_kills": 0,
+      "raw": "s1d-source-and-previous-close-mutations.json"
+    },
+    "application": {
+      "scope": "strict public cached_history seam; zero source.history calls on hot revision-unchanged paths",
+      "current_fresh_mutations": {
+        "total": 104,
+        "killed": 104,
+        "projection_and_seams": 27,
+        "admission": 25,
+        "root_review": 19,
+        "deployment": 33,
+        "counts": {
+          "KILLED_ASSERTION": 94,
+          "KILLED_BODY_EXCEPTION": 10
+        },
+        "setup_loader_cleanup_kills": 0,
+        "preserved_survivor_report": "cache-seam-affected-mutations-before-test-probes.json",
+        "raw": [
+          "daily-projection-cache-seam-mutations.json",
+          "cache-seam-affected-mutations.json",
+          "daily-deployment-cache-seam-mutations.json"
+        ]
+      },
+      "focused_tests": {
+        "total": 94,
+        "projection": 23,
+        "admission": 23,
+        "root_review": 15,
+        "deployment_native": 33,
+        "errors": 0,
+        "failures": 0,
+        "skips": 0,
+        "deployment_native_seconds": 3.174,
+        "projection_seconds": 1.806,
+        "admission_seconds": 1.366,
+        "root_review_seconds": 0.891,
+        "raw": [
+          "test_daily_signal_projection.log",
+          "projection-cache-seam-admission.log",
+          "projection-cache-seam-review-final.log",
+          "projection-cache-seam-deployment-native.log"
+        ]
+      },
+      "test_migration": {
+        "locked_miss": "native cached_history(None) refuses with original code; no history fallback, orders/cursor/intents/reservations unchanged",
+        "outside_locks": "genuine cache miss probes and loads twice outside ownership locks",
+        "pending_tests": "original history no-call retained; cached_history no-call added to two methods covering three previously-surviving window guards"
+      },
+      "superseded_sandbox_run": "projection-cache-seam-deployment.log had SQLite unable-open host boundary; native escalated rerun passed all33 unchanged assertions",
+      "source_sha256": {
+        "quantlab/trading/application/daily_signal_data.py": "f33243c080151da13c13b193d0de0c3becbadefde40ea2aaf48fd87906433a0a",
+        "quantlab/trading/runtime/daily_source_cache.py": "411d99805be37eecdc4f9b537651a8778cf96b8b8acdcbd29efc1e02be5a9f3c",
+        "quantlab/trading/runtime/official_daily_source.py": "c5b933830b3be541e11b9cd22028ec1cf5e2fd25bb8e4592cee48dc043221c63",
+        "quantlab/trading/ports/daily_signals.py": "1c2ed1ed53e0302ba5a946528d619f9dd91ed7881dfb6e80144b2ce946c20dc3",
+        "tests/official_daily_fixtures.py": "9841576a2fe803144939a67011fdcc9668772389203a2a402e2a70298774e27f",
+        "tests/test_daily_signal_projection.py": "fea58efaa88dd25d678036523c9640ad3cb633afe15e3b92d2aeadce8bc33ba2",
+        "tests/test_daily_basis_review_application.py": "2ef45c7238d26ca71225c55f8c734af911acd342e0cb8ef0702356d2f7c36b32"
+      },
+      "products_and_tests_frozen": true,
+      "timing_policy": "measure-only per latest user instruction; no new elapsed-time success gate"
+    },
+    "three_locks_and_hot_history_mutations": {
+      "cases": 4,
+      "killed": 4,
+      "fresh_processes": 8,
+      "elapsed_seconds": 156.67269269999815,
+      "workers": 2,
+      "wall_clock_assertions": false,
+      "all_same_source_snapshot": true,
+      "pairs": [
+        {
+          "case": "only-bundle",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history-method:bundle",
+          "killed": true,
+          "source_unchanged": true
+        },
+        {
+          "case": "only-engine",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history-method:engine",
+          "killed": true,
+          "source_unchanged": true
+        },
+        {
+          "case": "only-owner",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history-method:owner",
+          "killed": true,
+          "source_unchanged": true
+        },
+        {
+          "case": "hot-history-bypass",
+          "baseline_tests": 1,
+          "baseline_passed": true,
+          "mutant_tests": 1,
+          "mutant_passed": false,
+          "body_assertions": 1,
+          "expected_marker": "history_calls",
+          "killed": true,
+          "source_unchanged": true
+        }
+      ],
+      "source_sha256": {
+        "quantlab/trading/application/daily_signal_data.py": "f33243c080151da13c13b193d0de0c3becbadefde40ea2aaf48fd87906433a0a",
+        "quantlab/trading/application/daily_signal_projection.py": "cd23b29c2b6dcc8d01cd58187b6550ce98aba41a5bb43f7bc0be0017bdb4a35c",
+        "quantlab/trading/runtime/daily_source_cache.py": "411d99805be37eecdc4f9b537651a8778cf96b8b8acdcbd29efc1e02be5a9f3c",
+        "quantlab/trading/runtime/official_daily_source.py": "c5b933830b3be541e11b9cd22028ec1cf5e2fd25bb8e4592cee48dc043221c63",
+        "quantlab/trading/runtime/sinopac_connection.py": "a0d910de6fee9f2c03908452d7854f73214760c3d905b02e4dc5f71584306c52",
+        "tests/test_official_daily_large_pump.py": "85c6dac25fe24e95d2303a9f235de57fb852d443e8c7abde451beebda506197c",
+        "tests/test_official_daily_runtime_e2e.py": "4b2a4a593b79a1e7c9806fcf382bc05357d64eb241b658917674077a37fe7f89"
+      },
+      "raw": "ci-history-method-guard-mutations.json",
+      "native_deterministic_positive": "ci-large-deterministic-probe-one-run.json",
+      "visible_startup_round": "ci-repair-diagnostic-startup-round-summary.json",
+      "prior_wall_budget_evidence": "historical only, superseded by explicit user deterministic-contract steering"
+    },
+    "fresh_total": {
+      "cases": 208,
+      "killed": 208,
+      "assertion_kills": 187,
+      "body_exception_kills": 21,
+      "harness_kills": 0,
+      "distinct_guard_exhaustiveness_claim": false
+    },
+    "owner_calendar_carry_forward": {
+      "tests": 9,
+      "mutations": 3,
+      "source_sha256": "a0d910de6fee9f2c03908452d7854f73214760c3d905b02e4dc5f71584306c52",
+      "changed_in_latest_seam_update": false
+    },
+    "large_native": {
+      "passed": true,
+      "test_seconds": 27.377,
+      "bars": 1553,
+      "months": 72,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "cold": {
+        "daily_parses": 144,
+        "event_parses": 2,
+        "sha_calls": 148,
+        "payload_reads": 146,
+        "full_reads": 2,
+        "semantic_derivations": 2,
+        "history_calls": 2
+      },
+      "hot": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0,
+        "semantic_derivations": 0,
+        "history_calls": 0
+      },
+      "cached_history_calls": {
+        "cold": 3,
+        "hot": 6,
+        "revision": 5
+      },
+      "revision": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2,
+        "semantic_derivations": 2,
+        "history_calls": 2
+      },
+      "lock_violations": [],
+      "max_pump_lock_seconds_MEASUREMENT_ONLY": 0.2619734000181779,
+      "nonvacuity": "Advance only fake clock to OPEN+1, no SDK refresh;6actualcacheprobes,READY/grant/notpaused/noorderassertions;original later refresh sends exactlyoneSDKorder",
+      "raw": [
+        "ci-large-deterministic-probe-one-run.json",
+        "ci-large-deterministic-probe-one-metrics.json"
+      ]
+    },
+    "startups": {
+      "source_unchanged": true,
+      "files": 183,
+      "local": {
+        "elapsed_seconds": 6.225,
+        "engine_state": "WAITING_RECONCILIATION",
+        "environment": "LOCAL",
+        "errors": [],
+        "mode": "LOCAL",
+        "owned_endpoints_removed": true,
+        "owned_engine_cleanup": [
+          {
+            "exit_code": 0,
+            "shutdown": "NORMAL"
+          }
+        ],
+        "passed": true,
+        "qt_platform": "windows",
+        "real_sdk_imported": false,
+        "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-3d-daily-basis-fixes",
+        "research_attached": true,
+        "research_released": true,
+        "return_code": 0,
+        "widget_count": 2865,
+        "window_type": "TradingWindow",
+        "window_visible": true
+      },
+      "simulation": {
+        "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+        "elapsed_seconds": 4.342,
+        "engine_state": "DISCONNECTED",
+        "environment": "BROKER_SIMULATION",
+        "errors": [],
+        "fake_sdk_connected": true,
+        "fake_sdk_login_count": 1,
+        "fake_sdk_logout_count": 1,
+        "host_return_code": 0,
+        "mode": "BROKER_SIMULATION",
+        "owned_endpoints_removed": true,
+        "owned_engine_cleanup": [],
+        "passed": true,
+        "qt_platform": "windows",
+        "real_sdk_imported": false,
+        "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-3d-daily-basis-fixes",
+        "research_attached": true,
+        "research_released": true,
+        "return_code": 0,
+        "widget_count": 2865,
+        "window_type": "TradingWindow",
+        "window_visible": true
+      },
+      "whole_round_rerun_after_qt_crash": true,
+      "native_exit_codes": [
+        0,
+        0
+      ],
+      "original_crash_retained": "ci-repair-startup-local.log",
+      "orphan_normal_cleanup": "ci-repair-crashed-startup-exit.json"
+    },
+    "statics": {
+      "passed": true,
+      "ruff_format_files": 1379,
+      "python311_tracked_files": 1265,
+      "syntax_failures": 0,
+      "quality_findings": 0,
+      "layer_findings": 0,
+      "architecture_findings": 0,
+      "raw": [
+        "r7-final-prepush.log",
+        "r7-final-layers.log",
+        "r7-final-architecture.log"
+      ]
+    },
+    "graph": {
+      "changed_count": 514,
+      "affected_count": 17,
+      "changed_files": 49,
+      "risk_level": "critical",
+      "base_ref": "5652457",
+      "scope": "all current product plus generated baselines before final evidence-only commit",
+      "partial": false,
+      "truncated": false,
+      "empty_ids": 0,
+      "raw": "deterministic-product-compare.json",
+      "limits": "Graph budget/dynamic receiver/file-size omissions remain; zero mapped callers is not safety proof."
+    },
+    "related": {
+      "modules": 227,
+      "tests": 3002,
+      "seconds": 647.755,
+      "passed": 2990,
+      "failures": 3,
+      "errors": 0,
+      "skips": 9,
+      "full_suite": false,
+      "failed_modules": [
+        "test_observer_symbol_pins",
+        "test_trading_installer_guard"
+      ],
+      "installer_serial_after_parallel": true,
+      "raw": "ci-repair-post-main-related/selected-tests-summary.json",
+      "disposition": "R7 test compared mismatched historical/current inputs; corrected with all existing asserts retained and89targetedtestsPASS. Two installer preconditions reproduce unchanged on exact main565; installed user application is exact mutex owner and preserved."
+    },
+    "baseline": {
+      "files": [
+        "docs/analysis/08_REFACTOR_INVENTORY.md",
+        "tests/fixtures/page_service_observer_delta.json"
+      ],
+      "modules_registered": 4,
+      "symbol_observers_added": 37,
+      "alias_changes": 0,
+      "string_changes": 0,
+      "applicability_changes": 0,
+      "status": "generated/verified; single final separate commit pending",
+      "raw": "deterministic-final-baseline-write.log"
+    },
+    "new_head_ci": "PENDING",
+    "claude": "PENDING_NO_SELF_MERGE",
+    "r7_migration_input_fix": {
+      "scope": "R7 historical-to-symbolic migration input corrected to frozen frontier; current delta remains exact independently",
+      "test_source_sha256": "d7b30d7b53e1713c5cef43aa616f7d3ee0619662a907a1c0e6de5aa59d92cc67",
+      "original_migration_assertions_ast_identical": true,
+      "historical_fixture_edits": false,
+      "product_tool_edits": false,
+      "red": "r7-migration-pre-fix-red.log",
+      "focused_tests": [
+        {
+          "module": "test_observer_symbol_pins",
+          "tests": 8,
+          "seconds": 30.788,
+          "raw": "r7-migration-final-native-tests.log"
+        },
+        {
+          "module": "test_repin_baselines",
+          "tests": 15,
+          "seconds": 4.252,
+          "raw": "r7-repin-focused-tests.log"
+        },
+        {
+          "module": "test_page_services_r1.InventoryTests.test_complete_inventory_regenerates_exactly",
+          "tests": 1,
+          "seconds": 4.947,
+          "raw": "r7-current-exact-inventory.log"
+        },
+        {
+          "module": "test_download_auto_import_contracts",
+          "tests": 4,
+          "seconds": 0.016,
+          "raw": "r7-historical-contracts.log"
+        },
+        {
+          "module": "test_daily_signal_projection",
+          "tests": 23,
+          "seconds": 1.906,
+          "raw": "r7-m2-projection.log"
+        },
+        {
+          "module": "test_official_daily_admission",
+          "tests": 23,
+          "seconds": 1.744,
+          "raw": "r7-m2-admission.log"
+        },
+        {
+          "module": "test_daily_basis_review_application",
+          "tests": 15,
+          "seconds": 1.242,
+          "raw": "r7-m2-review.log"
+        }
+      ],
+      "tests_total": 89,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "negative_controls": [
+        "frozen receiver modification rejected",
+        "frozen name modification rejected",
+        "duplicate frozen location rejected",
+        "existing current exact-inventory test rejects a removed reviewed observer"
+      ],
+      "observer_dry_run": {
+        "state": "up-to-date",
+        "removed": 0,
+        "added": 37,
+        "new": 0,
+        "dropped": 0,
+        "alias_changes": 0,
+        "write": false,
+        "raw": "r7-observers-repin-native-dry.log"
+      },
+      "restricted_temp_failure": "first R7 run original temporary-directory tests and repin dry-run hit Windows Temp permissions; unchanged native rerun passes; original logs preserved",
+      "products_tests_frozen": true
+    },
+    "installer_host_comparison": {
+      "main_commit": "5652457f578eeefd37f330ca23bfd4f1c8f7135f",
+      "conclusion": "The exact app guard is held by three installed user-owned MarkAuto processes, not test orphans. Both unchanged branch and exact main565 fail the same host preconditions before native test process creation. User app preserved.",
+      "branch": {
+        "passed": 5,
+        "elapsed_seconds": 0.46253379998961464,
+        "failures": 2,
+        "skips": 0,
+        "failing_test_ids": [
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace"
+        ],
+        "errors": 0,
+        "tests": 7
+      },
+      "main": {
+        "passed": 5,
+        "elapsed_seconds": 0.7020815000287257,
+        "failures": 2,
+        "skips": 0,
+        "failing_test_ids": [
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_guard_survives_either_owned_process_exiting_first",
+          "test_trading_installer_guard.WindowsInstallerGuardLifetimeTests.test_native_ui_exception_releases_guard_without_engine_or_workspace"
+        ],
+        "errors": 0,
+        "tests": 7
+      },
+      "exact_named_mutex_owners": "Installed user UI+LOCAL/SIM engines, zero matching test orphan; read-only exact object/handle proof, no user application closed",
+      "five_relevant_source_files_byte_equal": true,
+      "raw": [
+        "post-r8-installer-host-comparison.json",
+        "post-r8-installer-mutex-handles-v2.json"
+      ]
+    }
+  }
+}

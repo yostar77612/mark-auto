@@ -312,6 +312,12 @@ class RuntimeBundle:
             if self.manual_runtime is None or not self.manual_runtime.handles(command) or self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
             return self.manual_runtime.execute(command)
+        if isinstance(command, UiCommand) and command.action is UiAction.DEPLOY:
+            from .daily_deployment import prepare_daily_deployment
+
+            prepared = prepare_daily_deployment(self, command)
+            if prepared is not None:
+                return prepared
         if self.automatic_runtime is not None and self.automatic_runtime.handles(command):
             if self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
@@ -624,7 +630,15 @@ class RuntimeBundle:
             if engine.configuration.read_only:
                 run_readonly_cycle(engine)
             else:
-                run_cycle(engine, engine.history, allow_entries=not engine.state.stopped and not self.control_failed)
+                # SIM entries require the owner/preflight authority wired by
+                # ManualRuntime above; the legacy host still services exits.
+                run_cycle(
+                    engine,
+                    engine.history,
+                    allow_entries=engine.configuration.environment is not Environment.BROKER_SIMULATION
+                    and not engine.state.stopped
+                    and not self.control_failed,
+                )
         from quantlab.trading.application.market_cycle import poll_market
 
         with engine.lock:

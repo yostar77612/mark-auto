@@ -7867,6 +7867,50 @@ target dates/windows/phases remain backend facts; UNKNOWN never resends and
 DISPATCHED never claims a fill. No new engine or IPC contract is introduced.
 Strings phase68 orders3032–3085. Evidence: docs/analysis/u4-automatic/verification.md.
 
+## M2-3d official daily review-fix contract (2026-11-03)
+
+- `DailySignalDataView` appends `verified_at` / `expires_at`, both optional
+  datetime values with empty defaults. A snapshot reads cached rows only and
+  changes an expired VERIFIED presentation to UNVERIFIED. A refused saved-signal
+  revalidation invalidates its view immediately. `available_at` is the actual
+  persisted arrival of required official payloads; it is never refreshed by a
+  read clock. Arrival does not certify an exchange endpoint's finality.
+- No new UiAction, IPC operation or error code. Existing daily source/basis/
+  availability refusal codes remain authoritative. Ordinary source IO/parser
+  exceptions become typed refusals, without permanently poisoning journal health.
+- Durable cursor and intent checks precede daily source reconstruction. Native
+  cold verification runs outside bundle/engine/owner locks. Locked source reads
+  require a warmed same-revision immutable history, with no cold fallback.
+  Revision change requires full byte/schema/provenance verification again.
+- Official imports are explicit operations. Recorded public-response manifests
+  are usable offline; downloads need per-call consent. The producer includes
+  global TWT49U responses proving both positive actions and complete negative
+  event coverage. Automatic execution and view projection never download.
+- Fully superseded active manifests may be compacted; immutable payload archives
+  and complete manifest-row archives remain available for old evidence. Every
+  replaced legacy row is archived before deletion in the same transaction.
+  `DailyStockStore.official_manifest_archive(source_digest)` returns immutable
+  `OfficialStockManifest` metadata for individual source sets; it never guesses
+  a historical union from an opaque history digest. Bounded source/byte selection refuses
+  excessive active input before loading blobs. Unknown old arrival metadata
+  cannot be upgraded to a verified runtime signal merely by reading it.
+- Official actions that adjust earlier rows must agree with the immediately
+  preceding verified raw DAY close, within half a cent. Raw execution prices,
+  account valuation and all existing entitlement-unknown refusals remain.
+- Typed BROKER_SIMULATION submissions use the automatic admission authority even
+  when no manual book exists. Missing books/owner proofs refuse rather than
+  selecting legacy account admission. LOCAL behavior and the LIVE hard guard
+  retain their existing semantics. No automatic resend or resume is introduced.
+  RuntimeBundle's legacy SIM cycle always disables new entries when no
+  ManualRuntime owner authority is present, while continuing protective work.
+  Existing direct generic-engine fixtures keep their prior admission semantics.
+- Real native composition exposed an unrelated connection display/control seam:
+  key remaining-day countdown and a rolling pre-open display horizon update the
+  view without replacing the authenticated control revision. Every expiry
+  date/state, calendar/expiry version, coverage count, issue and reminder still
+  replaces it. Connection/selection/generation CAS, fresh observation and entry
+  maintenance checks remain mandatory; restart never resumes automatically.
+
 ## Strategy wizard empty market presentation (2026-11-03)
 
 With no accepted market candidates, step2 explains the empty product catalogue,
@@ -7876,6 +7920,20 @@ the modal, clears its cached snapshot and navigates without a command; reopening
 uses the current snapshot. Existing form admission, creation and LIVE gates remain.
 No engine/IPC change. Strings phase70/orders3104–3107; evidence:
 docs/analysis/strategy-market-empty/verification.md.
+
+## M2-3d CI performance correction: calculated values are not admission
+
+Native official-daily deployment and pump preparation compute immutable daily
+research/window projections outside bundle, engine and owner locks. The bounded
+128-entry cache uses actual history, complete calendar, original committed basis
+and through-day; the original dataset and signal hash wire formats are unchanged.
+Locked native admission requires an existing projection and refuses on eviction
+or a miss. Source revision/bytes/arrival and current owner/evidence/permission
+guards remain authoritative; a calculation-cache hit never grants permission.
+Ordinary preparation exceptions return `daily_signal_source_unverified` without
+marking the financial journal failed. No new UiAction, IPC operation or error code.
+Only construction of the immutable bundled maintenance calendar is memoized;
+date-sensitive preflight and connection checks still run on every snapshot.
 
 ## Connection failure stage presentation (2026-11-03)
 
@@ -7890,6 +7948,19 @@ No call sequence, retry, automatic execution, order action or IPC shape changes.
 Strings phase71/orders3108–3110; evidence:
 docs/analysis/connection-failures/verification.md.
 
+## M2-3d deterministic verification contract (owner update, 2026-11-03)
+
+`OfficialDailySignalSource.cached_history(...) -> OfficialDailyHistory | None`
+reads a current verified value without calling full history verification. None
+means only an absent revision/calendar/request key after the normal source,
+time and store checks; errors remain typed refusals. Native locked admission
+refuses None. Only lock-free preparation may turn that miss into history().
+The legacy history(cached_only=True) miss still raises its existing error.
+Duplicate same-revision pumps must call history zero times; a changed revision
+must reverify payload bytes. Tests observe actual bundle/engine/owner lock state
+at history, parser, digest and payload calls. Wall-clock values are measurements
+only, replacing the owner-superseded 0.5-second assertion without increasing it.
+No serialized DTO, UiAction, IPC operation or error code is added by this seam.
 ## Strategy research feedback presentation (2026-11-03)
 
 Admitted RESEARCH/VALIDATE workers have visible in-tab progress and disable both

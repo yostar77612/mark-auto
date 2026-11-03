@@ -5,7 +5,7 @@ from dataclasses import replace
 from . import automatic_state as claims, daily_state as pending
 from .automatic_baseline import automatic_baseline_rows
 from .daily_closes import SOURCE_ID, daily_close_evidence, observe_daily_closes
-from .daily_signal_data import assert_daily_intent_source, stock_daily_window, uses_official_daily
+from .daily_signal_data import assert_daily_intent_source, official_daily_cursor, stock_daily_window, uses_official_daily
 from .preflight import PreflightFacts, assert_preflight, record_preflight
 from .research import entry_signal, exit_signal
 from .state import ACTIVE
@@ -120,6 +120,8 @@ def observe_daily(engine, bars):
             for instrument_id in sorted(instruments):
                 calendar = calendar_for_instrument(engine.calendar, engine.catalog.resolve(instrument_id))
                 session = calendar.day_session(engine.state.trading_day)
+                if uses_official_daily(record) and official_daily_cursor(engine, record, instrument_id, calendar) is None:
+                    continue
                 official = stock_daily_window(engine, record, instrument_id, calendar) if uses_official_daily(record) else None
                 if uses_official_daily(record):
                     if official is None:

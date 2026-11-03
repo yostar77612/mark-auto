@@ -1,0 +1,29 @@
+{
+  "retrieved_at": "2026-11-02T21:29:50.738218+00:00",
+  "documents": [
+    {
+      "file": "twse_actions_20250601_20250630.json",
+      "url": "https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate=20250601&endDate=20250630&response=json",
+      "sha256": "d83da5f5acfdb1575326152313c6e3079c01ac6a0689709ebef87c8b03851db7",
+      "requested_at": "2026-11-02T21:29:49.797390+00:00",
+      "retrieved_at": "2026-11-02T21:29:50.738218+00:00",
+      "recording_policy": "byte-for-byte public HTTPS response; one manual owner-consented recording, never a test network request"
+    },
+    {
+      "file": "twse_6225_202506.json",
+      "url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=6225&response=json",
+      "response_url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=6225&response=json",
+      "content_type": "application/json;charset=UTF-8",
+      "sha256": "8f3bbac0d2a7f95ff48da767569bbd5dc5350af48ec8177388eb48a85f298166",
+      "rows": 21
+    },
+    {
+      "file": "twse_2330_202506.json",
+      "url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=2330&response=json",
+      "response_url": "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date=20250601&stockNo=2330&response=json",
+      "content_type": "application/json;charset=UTF-8",
+      "sha256": "206e5de8ea69b81651ffacedff4226f13ecb241692ac9f79d54665870ddbc2b1",
+      "rows": 21
+    }
+  ]
+}

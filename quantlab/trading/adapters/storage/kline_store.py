@@ -61,7 +61,7 @@ def _decode(row: tuple) -> LiveBar:
 class KlineStore:
     """Thread-safe SQLite cache with official-history precedence and preserved recovery."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, arrival_clock=None):
         if sqlite3.sqlite_version_info < (3, 53, 0):
             raise DomainError('validation_failed', 'patched SQLite runtime required')
         if not path.is_absolute() or path.is_symlink():
@@ -70,7 +70,7 @@ class KlineStore:
         self.path = path
         self._lock = RLock()
         self.warning_code = ''
-        self.revision = 0
+        self._arrival_clock = arrival_clock
         self.recovered_path: Path | None = None
         try:
             self._open()
@@ -116,12 +116,24 @@ class KlineStore:
             if len(self._db.execute(f'PRAGMA table_info({table})').fetchall()) != expected:
                 raise DomainError('kline_store_unavailable', 'invalid cache schema')
         self._db.commit()
-        self.daily = DailyStockStorage(self._db, self._lock)
+        self.daily = DailyStockStorage(self._db, self._lock, arrival_clock=self._arrival_clock)
+
+    @property
+    def revision(self) -> int:
+        return self.daily.revision
+
+    @property
+    def verification_revision(self) -> int:
+        return self.daily.verification_revision
 
     def import_daily(self, batch) -> None:
-        with self._lock:
-            self.daily.import_daily(batch)
-            self.revision += 1
+        self.daily.import_daily(batch)
+
+    def official_payload_arrival(self, source_url, digest):
+        return self.daily.official_payload_arrival(source_url, digest)
+
+    def official_manifest_archive(self, source_digest):
+        return self.daily.official_manifest_archive(source_digest)
 
     def official_payload(self, source_url, digest):
         return self.daily.official_payload(source_url, digest)
@@ -137,7 +149,8 @@ class KlineStore:
             raise DomainError('validation_failed', 'unknown minute source')
         rows = tuple(_bar_row(bar, source) for bar in bars)
         with self._lock, self._db:
-            self._db.executemany(
+            self.daily._observe_revision()
+            result = self._db.executemany(
                 '''
                 INSERT INTO bars_1m VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(instrument_id,start_utc) DO UPDATE SET
                 end_utc=excluded.end_utc,trade_date=excluded.trade_date,session=excluded.session,
@@ -146,19 +159,20 @@ class KlineStore:
             ''',
                 rows,
             )
-            if rows:
-                self.revision += 1
+            self.daily._record_changes(result.rowcount, changed=bool(rows))
 
     def mark_coverage(self, instrument_id: str, start: datetime, end: datetime) -> None:
         instrument_id, first, last = _range(instrument_id, start, end)
         with self._lock, self._db:
+            self.daily._observe_revision()
             ranges = self._db.execute(
                 'SELECT start_utc,end_utc FROM coverage WHERE instrument_id=? AND end_utc>=? AND start_utc<=?', (instrument_id, first, last)
             ).fetchall()
             first = min([first, *(row[0] for row in ranges)])
             last = max([last, *(row[1] for row in ranges)])
-            self._db.execute('DELETE FROM coverage WHERE instrument_id=? AND end_utc>=? AND start_utc<=?', (instrument_id, first, last))
-            self._db.execute('INSERT INTO coverage VALUES(?,?,?)', (instrument_id, first, last))
+            removed = self._db.execute('DELETE FROM coverage WHERE instrument_id=? AND end_utc>=? AND start_utc<=?', (instrument_id, first, last))
+            inserted = self._db.execute('INSERT INTO coverage VALUES(?,?,?)', (instrument_id, first, last))
+            self.daily._record_changes(removed.rowcount + inserted.rowcount)
 
     def missing_ranges(self, instrument_id: str, start: datetime, end: datetime) -> tuple[tuple[datetime, datetime], ...]:
         instrument_id, first, last = _range(instrument_id, start, end)
@@ -201,10 +215,12 @@ class KlineStore:
     def record_queried_bars(self, day: date, count: int) -> None:
         integer(count, 'queried bars')
         with self._lock, self._db:
-            self._db.execute(
+            self.daily._observe_revision()
+            result = self._db.execute(
                 'INSERT INTO meta VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=CAST(value AS INTEGER)+?',
                 ('queried_bars:' + day.isoformat(), str(count), count),
             )
+            self.daily._record_changes(result.rowcount)
 
     def close(self) -> None:
         with self._lock:

@@ -310,6 +310,7 @@ class ManualRuntime:
             from .official_daily_source import OfficialDailyStockSource
 
             engine.daily_signal_source = OfficialDailyStockSource(self.bundle.kline_store, self.owner.clock)
+            engine.daily_signal_cached_only = True
             engine.daily_signal_data_views = {}
             _update_automatic_margin_sources(engine, resources)
             if self.bundle.automatic_runtime is not None:

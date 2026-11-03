@@ -25,8 +25,8 @@ def _document(fields, rows):
     return json.dumps(dict(stat='OK', fields=fields, data=rows), ensure_ascii=False).encode()
 
 
-def _batch(days, event_rows=(EVENT,)):
-    first, end = days[0], days[-1] + timedelta(days=1)
+def _batch(days, event_rows=(EVENT,), *, first=None):
+    first, end = first or days[0], days[-1] + timedelta(days=1)
     raw = _document(
         ['日期', '成交股數', '成交金額', '開盤價', '最高價', '最低價', '收盤價', '漲跌價差', '成交筆數'],
         [[f'{day.year - 1911:03d}/{day.month:02d}/{day.day:02d}', '1000', '100000', '100', '102', '98', '100', '0', '1'] for day in days],
@@ -49,8 +49,8 @@ class OfficialDailyRefreshTests(unittest.TestCase):
     def setUp(self):
         self.db = sqlite3.connect(':memory:')
         self.addCleanup(self.db.close)
-        self.store = DailyStockStorage(self.db, RLock())
         self.clock = SimpleNamespace(now=lambda: datetime(2020, 1, 7, 2, tzinfo=timezone.utc))
+        self.store = DailyStockStorage(self.db, RLock(), arrival_clock=self.clock.now)
         self.source = OfficialDailyStockSource(self.store, self.clock)
 
     def read(self, days=DAYS):
@@ -68,7 +68,9 @@ class OfficialDailyRefreshTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, 'daily_signal_source_unverified')
 
     def test_expanding_refresh_preserves_same_event_despite_new_manifest_url(self):
-        first, expanded = _batch(DAYS[:2]), _batch(DAYS)
+        # Jan1 is an explicitly uncovered holiday margin. The next import only
+        # partially overlaps that source range, so both manifests remain active.
+        first, expanded = _batch(DAYS[:2], first=DAYS[0] - timedelta(days=1)), _batch(DAYS)
         self.store.import_daily(first)
         original = self.read(DAYS[:2])
         self.assertEqual(len(original.events), 1)
@@ -84,17 +86,17 @@ class OfficialDailyRefreshTests(unittest.TestCase):
     def test_expanding_refresh_cannot_hide_contradictory_old_positive(self):
         for previous, reference in (('100', '80'), ('110', '90')):
             with self.subTest(previous=previous, reference=reference):
-                self.store.import_daily(_batch(DAYS[:2]))
+                self.store.import_daily(_batch(DAYS[:2], first=DAYS[0] - timedelta(days=1)))
                 self.store.import_daily(_batch(DAYS, (('2330', '109/01/03', previous, reference),)))
                 self.assert_refused()
 
     def test_expanding_refresh_cannot_move_old_positive_to_another_date(self):
-        self.store.import_daily(_batch(DAYS[:2]))
+        self.store.import_daily(_batch(DAYS[:2], first=DAYS[0] - timedelta(days=1)))
         self.store.import_daily(_batch(DAYS, (('2330', '109/01/06', '100', '90'),)))
         self.assert_refused()
 
     def test_expanding_empty_response_cannot_erase_old_positive_evidence(self):
-        self.store.import_daily(_batch(DAYS[:2]))
+        self.store.import_daily(_batch(DAYS[:2], first=DAYS[0] - timedelta(days=1)))
         self.store.import_daily(_batch(DAYS, ()))
         self.assert_refused()
 
@@ -113,6 +115,17 @@ class OfficialDailyRefreshTests(unittest.TestCase):
         result = self.read()
         self.assertEqual(result.events, corrected.events)
         self.assertFalse(original.research_basis(DAYS[0], DAYS[-1]).compatible(result.research_basis(DAYS[0], DAYS[-1])))
+
+    def test_fully_superseding_range_correction_loads_but_invalidates_old_basis(self):
+        self.store.import_daily(_batch(DAYS[:2]))
+        original = self.read(DAYS[:2])
+        corrected = _batch(DAYS, (('2330', '109/01/03', '100', '80'),))
+        self.store.import_daily(corrected)
+        result = self.read()
+        current = self.store.daily_history(INSTRUMENT, DAYS[0], DAYS[-1] + timedelta(days=1))
+        self.assertEqual((len(current.bars), len(current.events), len(current.payloads)), (3, 1, 2))
+        self.assertEqual(result.events, corrected.events)
+        self.assertFalse(original.research_basis(DAYS[0], DAYS[1]).compatible(result.research_basis(DAYS[0], DAYS[1])))
 
 
 if __name__ == '__main__':

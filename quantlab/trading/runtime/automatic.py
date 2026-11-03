@@ -371,6 +371,9 @@ class AutomaticRuntime:
             return
         if bundle.closing or bundle.resources_closed or bundle.control_failed or engine.state.engine_closed or engine.storage_failed:
             return
+        from .daily_source_cache import prepare_daily_sources
+
+        prepare_daily_sources(bundle, engine)
         with bundle.lock, engine.lock, owner.lock if owner is not None else nullcontext():
             if bundle.engine is not engine or bundle.sinopac_connection is not owner:
                 return

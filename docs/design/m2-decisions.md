@@ -2482,3 +2482,125 @@ No engine behavior conflicts or desktop edits are introduced by resolution;
 desktop/trading_runtime bytes remain exactly incoming main. Repeat relevant
 integration checks and real LOCAL/fake-SIM starts on this combined final tree,
 then require the final-head complete CI before leaving the PR for Claude.
+
+## M2-3d: bounded official source validation and operational imports
+
+The owner requested independent-review fixes for #161, before enabling stock
+short/long swing automation. Keep prior-civil-day availability and all fail-closed
+admission. An already evaluated or saved cursor needs no new source window.
+Warm official immutable histories outside runtime locks; inside admission a
+same-revision cache hit is mandatory, with no cold fallback. Official imports
+invalidate verification through the store revision. Byte validation remains a
+condition of every newly admitted revision, not every idle pump.
+
+Compact superseded active manifests while retaining every immutable historical
+payload and complete replaced manifest row, because the cache cannot enumerate
+all external research evidence references. This intentionally does not claim a bound on the archival evidence
+database. Bound the active manifest/source selection and selected raw bytes
+before materializing blobs. Reimporting retained official bytes is the explicit
+recovery path; a read does not resurrect a superseded manifest as current truth.
+The read-only archive API resolves individual canonical source sets. A history
+digest can name a union of multiple sets; no opaque union is guessed from one
+archived row. Existing explicit evidence references or an operator's selected
+recording are needed for reconstruction. Reads never append archive records.
+
+Store-owned import time, not history-call time or a supplied manifest timestamp,
+determines arrival. Missing old metadata remains unknown. The latest required
+arrival describes snapshot availability, and each raw daily payload must itself
+have arrived after its applicable DAY close. A later action response cannot
+turn a pre-close raw price payload into post-close evidence. Neither timestamps
+nor an official URL prove that a public monthly endpoint is final for that date.
+
+Provide an explicit public-data importer with per-invocation download consent
+and an offline recorded-response mode. TWSE TWT49U complete-range responses are
+the event producer; no automatic data fetch, SDK key or CA is involved. Tests
+consume recorded fixtures and fake SDKs only. No general TPEX event-availability
+claim follows from the TWSE producer.
+
+F4's broader training-range gap relaxation is deferred: the current history port
+does not carry the research/signal split needed to relax only signal history
+without silently shortening new research. The latest-20 domain signal window
+already checks only its selected DAY range; runtime source and raw research
+remain strict. A missing older DAY can therefore still block automation. This
+known availability limit does not justify accepting incomplete evidence.
+
+For F5, require action previous-close agreement with the previous verified raw
+DAY (half-cent tolerance). An action at the first observation cannot adjust an
+earlier in-snapshot row; it needs no invented predecessor. F6 expires displayed
+verification after30 seconds and invalidates it on dispatch refusal. Expiry is
+presentation only and never authorizes an order.
+
+S5 is confirmed: RuntimeLaunch permits BROKER_SIMULATION with sinopac=False.
+Typed SIM submission classification must not depend on manual_books existing;
+the automatic authority must refuse missing books or owner observations. This
+closes the legacy selection gap without creating a new execution route.
+Legacy runtime cycles without ManualRuntime cannot open SIM entries even if
+an injected host is writable; they still service protective exits. Keep this
+restriction at the runtime composition boundary rather than changing direct
+generic-engine fixtures and their existing account-admission contract.
+
+The official daily research path deliberately uses current FeeSchedule
+slippage_ticks (introduced by #161), preserving legacy research's fixed one tick.
+RAW fills and the current fee fingerprint bind that assumption to research;
+the existing two-tick regression demonstrates the behavior. This review-fix PR
+does not alter either slippage rule or costs.py.
+
+The real F3 assembly test also reproduced a normal overnight false owner change:
+snapshot published key remaining-day and rolling horizon display changes through
+the same control revision used by the automatic grant. Preserve the full current
+maintenance view but exclude only these two derived display values from deciding
+whether control revision changed. Expiry date/state, versions, coverage count,
+issues and reminders still advance it, as do every existing control publication.
+Do not change owner_stamp, its revision comparison, fresh-health, preflight,
+maintenance, writer fence, run latch or restart behavior to make a fixture pass.
+
+### M2-3d CI performance correction
+
+PR166's first full CI run (41538250305) measured revision-pump lock maxima of
+0.621882, 0.567875 and 0.501100 seconds on three producers, exceeding the unchanged
+0.5-second requirement. Treat this as a product failure, not a flaky timeout.
+The payload reads, SHA checks and parsing were already outside the three locks;
+repeated pure research/window encoding and construction of the immutable bundled
+maintenance calendar remained inside them. Profiling identified these CPU costs;
+it does not establish the garbage collector's state on the CI runners.
+
+Prepare a bounded 128-entry immutable daily projection cache outside the locks,
+keyed by actual history values, the complete calendar, original research basis
+and through-day. Preserve the original dataset/hash wire identities. Prewarm both
+the research-end and current signal-day histories; native cache misses refuse
+without cold computation. This cache contains calculations, never admission,
+source revision, owner health, research PASS, permission or order decisions.
+Every current source and evidence check still runs before using its values.
+Ordinary semantic-preparation failures become source-unverified at that boundary
+and do not poison the financial journal. Do not catch BaseException.
+
+Memoize only the immutable static bundled maintenance calendar, with a one-entry
+cache keyed by the actual factory. Current date, expiry, versions, overrides,
+connection health and every pre-open check are still evaluated on every snapshot.
+The bundled calendar does not acquire future sessions or imply coverage in 2027.
+
+Retain the full large fixture and the 0.5-second assertion. Two fresh independent
+samples recorded revision lock maxima of 0.258667 and 0.274877 seconds; all pure
+projection work was outside bundle/engine/owner locks and duplicate pumps added
+no such work. Bypassing the math cache is independently killed by the held-lock
+work assertion. These finite samples are evidence, not a universal latency bound.
+No LIVE path, automatic retry/resume, desktop, SDK, costs or workflow changes.
+
+### M2-3d owner update: deterministic lock/call assertions
+
+The owner's subsequent instruction replaces the runner-dependent wall-clock
+assertion with direct structural evidence. Keep elapsed times as measurements
+only; do not increase a threshold or present the old 0.5-second assertion as
+current acceptance. Preserve the real SQLite, source, native deployment, SDK,
+orders, archive size, parser and revision fixture checks.
+
+Observe all three actual ownership locks at every source.history call and every
+payload/hash/parser/semantic derivation. Cold verification must occur outside all
+three; same-revision duplicate pumps must call history zero times, and a changed
+revision must call it and revalidate bytes again. The new cached_history port
+returns None only for an absent key after current revision/time/store checks;
+all typed refusals propagate without cold fallback. Native locked admission
+uses this cache-only port and refuses None. Preparation alone can turn that
+specific miss into a full history read, outside the ownership locks. Preserve
+the prior history(cached_only=True) API's typed-miss behavior for compatibility.
+This is a calculation/read boundary, not an order retry or new permission path.

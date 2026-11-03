@@ -41,7 +41,14 @@ class FakeOfficialDailySource:
     def publish(self, history):
         self.histories[history.instrument_id] = history
 
-    def history(self, instrument_id, calendar, *, through, start=None):
+    def history(self, instrument_id, calendar, *, through, start=None, cached_only=False):
+        return self._read(instrument_id, calendar, through=through, start=start)
+
+    def cached_history(self, instrument_id, calendar, *, through, start=None):
+        # Explicit immutable fixture publication is already memory-resident.
+        return self._read(instrument_id, calendar, through=through, start=start)
+
+    def _read(self, instrument_id, calendar, *, through, start=None):
         self.requests.append((instrument_id, through, start))
         history = self.histories.get(instrument_id)
         if history is None:

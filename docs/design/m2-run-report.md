@@ -333,3 +333,28 @@ PROJECT_STATE、成本、workflow或分層規則。
 交界整合全過；原始視窗最終LOCAL8.614秒／fake-SIM4.735秒，資源清理／無真SDK通過。
 前段324項及7.591／4.863秒是合併前證據。合併後靜態檢查與基準dry-run均通過，
 圖分析all/compare完整且保留原CRITICAL風險警告；最終完整CI仍以PR155最新head為準。
+
+## M2-3d：官方日 K 審查修正（PR166）
+
+分支 codex/m2-3d-daily-basis-fixes，首契約 commit e763bdb，追加
+DailySignalDataView 的 verified_at／expires_at；沒有新增 UiAction、IPC 操作或錯誤碼。
+補上 claim／意圖先行短路、有界來源驗證與純計算快取、鎖外預熱、暫時來源錯誤的
+型別拒絕、官方公開資料匯入與 TWT49U 負面證據、實際入庫時間、前收交叉核對、
+派送拒絕時立即失效及檢視到期。LIVE 維持硬關閉，沒有自動重送或恢復。
+
+F4 研究區間缺日放寬仍未實作，採最保守完整覆蓋；被取代的完整 manifest／payload
+保留可供明確重匯，歸檔磁碟成長沒有宣稱有上限。S5 的非 sinopac 模擬組裝也禁止
+新倉；FeeSchedule 滑價沿用 #161 的官方研究語意，未改成本實作。
+
+首輪完整 CI 41538250305 的大型快取牆時斷言失敗。先移出重複純計算並保持原始
+研究與訊號指紋；之後依擁有者指示，以真實鎖狀態／呼叫計數取代 0.5 秒斷言，
+時間只記錄。真實 SQLite 1553 日、250 次 refresh 的非空熱路徑有 6 次快取讀取、
+0 次 history／SHA／解析／payload／視窗重算；冷路徑及 revision 改變後各 2 次
+history 均在 bundle／engine／owner 鎖外，仍只派送一筆原本預期的模擬單。
+
+最新主線5652457的連線提示與R7符號基準整合時只解契約追加衝突，保留雙方內容；
+本車道相對主線沒有desktop_app、G3、SDK pin、PROJECT_STATE、成本或workflow差異。
+逐項測試、守衛變異、視窗與最終CI以
+[PR166](https://github.com/yostar77612/mark-auto/pull/166)與
+[驗證紀錄](../analysis/m2-3d-review-fix-verification.md)為準。
+**完整CI全綠後仍等Claude審查，不自行合併。**

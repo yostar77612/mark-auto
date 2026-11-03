@@ -63,6 +63,15 @@ class CachedStore:
 
     def __init__(self, batch):
         self.batch, self.coverage, self.calls = batch, True, []
+        self.revision = 0
+        self.arrival = datetime.combine(batch.bars[-1].trade_date, time(6), timezone.utc)
+
+    @property
+    def verification_revision(self):
+        return self.revision
+
+    def official_payload_arrival(self, url, digest):
+        return self.arrival
 
     def daily_history(self, instrument_id, start, end):
         self.calls.append(('history', instrument_id, start, end))
@@ -101,7 +110,7 @@ class OfficialDailySourceTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             path = Path(directory) / 'cache.sqlite3'
             batch = sample()
-            with closing(KlineStore(path)) as store:
+            with closing(KlineStore(path, arrival_clock=lambda: self.now)) as store:
                 source = StockDataSource(lambda url: batch.payloads[1].raw if 'TWT48U' in url else batch.payloads[0].raw)
                 StockHistorySync(store, source).refresh(ID, FIRST, END, today=END, consent=True)
             with closing(KlineStore(path)) as store:
@@ -111,7 +120,10 @@ class OfficialDailySourceTests(unittest.TestCase):
                 self.assertEqual(value.bars, batch.bars)
                 self.assertEqual(value.events, ())
                 self.assertTrue(statements)
-                self.assertTrue(all(statement.lstrip().upper().startswith('SELECT') for statement in statements), statements)
+                readonly_probes = {'PRAGMA DATA_VERSION', 'PRAGMA SCHEMA_VERSION', 'PRAGMA BUSY_TIMEOUT', 'PRAGMA BUSY_TIMEOUT=0', 'PRAGMA BUSY_TIMEOUT=2000'}
+                self.assertTrue(
+                    all(statement.lstrip().upper().startswith('SELECT') or statement.upper() in readonly_probes for statement in statements), statements
+                )
             self.assertEqual(value.observed_at, self.now)
             self.assertEqual((value.policy.price_mode, value.policy.scope), ('ADJUSTED', 'EXCHANGE_REPORTED_DAILY_V1'))
             material = json.dumps(sorted((p.source_url, p.digest) for p in batch.payloads), separators=(',', ':'), ensure_ascii=True)
@@ -325,7 +337,7 @@ class OfficialDailySourceTests(unittest.TestCase):
             (OfficialPayload(daily_url, sha256(raw).hexdigest(), raw), OfficialPayload(event_url, sha256(event_raw).hexdigest(), event_raw)),
         )
         self.now = datetime(2025, 6, 13, tzinfo=timezone.utc)
-        with TemporaryDirectory() as directory, closing(KlineStore(Path(directory) / 'cache.sqlite3')) as store:
+        with TemporaryDirectory() as directory, closing(KlineStore(Path(directory) / 'cache.sqlite3', arrival_clock=lambda: self.now)) as store:
             store.import_daily(batch)
             history = self.read(store=store, dates=calendar((first, through)), start=first, through=through)
         self.assertEqual(tuple(b.close for b in history.bars), (D('1065'), D('1045')))

@@ -1,0 +1,554 @@
+{
+  "tool_tests": {
+    "new": 30,
+    "existing_http": 3,
+    "passed": 33
+  },
+  "native_tests": {
+    "real_connected_runtime": 4,
+    "large_cache": 1,
+    "passed": 5
+  },
+  "source_sha256": {
+    "quantlab/trading/adapters/storage/daily_stock_store.py": "f5902dcfa13f57b44cc84980a4c92959c2d85f023327a31beaaa3a41c0d7d765",
+    "quantlab/trading/adapters/storage/kline_store.py": "c31dd9d6834bd190b5f8c8692a9e2d24ba604030f63b86d48e34a148fc63a215",
+    "quantlab/trading/application/daily_signal_data.py": "5bf0ac6db4bb3b9fd0f4d66844f3b00120c58b5648f8fb5d48d03dd9f50503b1",
+    "quantlab/trading/application/engine.py": "9213cea184c65633e641030810e3e126acf9ffeaa591c4b949ffe94ee8170bcf",
+    "quantlab/trading/ports/stock_history.py": "3976f679bc05a2e87cdfd5d4194639468cf56542fbf732689983c2ea8fe1d51f",
+    "quantlab/trading/runtime/automatic.py": "329ed99aef873fda8295747779779bec907c6e1b0b766a2e46ab773c68001d09",
+    "quantlab/trading/runtime/bootstrap.py": "292243b57a348c697d65b43c131a8a30030addf831580a787e24be29e904f2a3",
+    "quantlab/trading/runtime/daily_deployment.py": "f468bf1e90a0f15b4eeefb33dae7bc3ac378dc1673ef8b3dc6e37e8f9ef19cbf",
+    "quantlab/trading/runtime/daily_source_cache.py": "846547a6782b0468539a6a7c58180dd6e91d52d9077355ba19cb5a03b77f7d8e",
+    "quantlab/trading/runtime/manual_trading.py": "ac958eea6a8066188d32fbfbb355cabcbee91f89de8ee4ad7a4ad0aa98f60b8a",
+    "quantlab/trading/runtime/official_daily_source.py": "8da2f0a60dd31bb01a2f00febf995b2cb0e975c9518904ac75a3bf6489a5a180",
+    "quantlab/trading/runtime/sinopac_connection.py": "01a9baec75774c741da07a4b1494a7a152f06e756b7ab53a171b3a2353f75db8",
+    "quantlab/trading/runtime/stock_history.py": "2dd259e2b1c4f8b095f91844ea2f5a30fbab4f47e5a9b2b84f54e49880232825",
+    "tests/test_official_daily_import.py": "101e724f50b1fca75005fc5796fc4d924561c589e56fcd3c68e239f0c12225d9",
+    "tests/test_official_daily_large_pump.py": "c903f9862036323aa177ead4bff3d559717d7ba3338870afa5bb7ab797bd5db6",
+    "tests/test_official_daily_runtime_e2e.py": "82505f0d0d3396bafaa2b37512ffb0bd2d8acab76044295f3703493dfe8cd161",
+    "tools/import_official_daily.py": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+  },
+  "tool_mutations": [
+    {
+      "case": "consent_required",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_download_requires_explicit_per_invocation_consent_before_transport",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "consent_strict_bool",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_truthy_non_boolean_consent_is_not_consent",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "archive_required",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_download_requires_new_archive_before_transport",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "archive_not_overwritten",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_download_never_overwrites_archive",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "twse_only",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_unknown_venue_is_not_promoted_to_verified_twse_global_coverage",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "manifest_bytes",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_byte_limit_is_checked_before_json_decode",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "manifest_documents",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_document_count_is_bounded",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "adjacent_files",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_cannot_escape_adjacent_payload_directory",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "no_symlink",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_payload_symlink_is_refused_before_read",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "payload_bytes",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_payload_size_is_checked_before_read",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "aggregate_bytes",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_aggregate_bytes_are_bounded",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "sha_binding",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_digest_cannot_be_forged",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "official_url_scope",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_requires_supported_official_endpoint",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "unique_payloads",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_manifest_rejects_duplicate_payload_identity",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "unique_month",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_ambiguous_monthly_payloads_are_not_arbitrarily_selected",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "complete_negative_events",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_event_date_range_must_cover_entire_requested_window",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "unique_event_response",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_ambiguous_complete_event_payloads_are_not_arbitrarily_selected",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "parse_native_events",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_recorded_ex_dividend_positive_preserves_raw_prices_and_reference",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 0,
+      "errors": 1,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "monthly_response_identity",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_payload_stock_title_is_independent_of_manifest_url",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205"
+    },
+    {
+      "case": "twt49u_scope_rejection",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_twt49u_url_rejects_altered_identity_dates_and_query",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 7,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "2dd259e2b1c4f8b095f91844ea2f5a30fbab4f47e5a9b2b84f54e49880232825"
+    },
+    {
+      "case": "twt49u_canonical",
+      "test": "test_official_daily_import.OfficialDailyImportTests.test_twt49u_url_rejects_altered_identity_dates_and_query",
+      "status": "KILLED",
+      "original_tests": 1,
+      "mutant_tests": 1,
+      "failures": 2,
+      "errors": 0,
+      "body_failures_only": true,
+      "source_sha256": "2dd259e2b1c4f8b095f91844ea2f5a30fbab4f47e5a9b2b84f54e49880232825"
+    }
+  ],
+  "performance_mutation": {
+    "test": "test_official_daily_large_pump.OfficialDailyLargePumpTests.test_real_sqlite_large_cold_work_is_outside_locks_hot_pump_is_inert_and_revision_revalidates",
+    "status": "KILLED",
+    "source_sha256": "5bf0ac6db4bb3b9fd0f4d66844f3b00120c58b5648f8fb5d48d03dd9f50503b1",
+    "baseline": {
+      "synthetic_fixture": true,
+      "months": 72,
+      "bars": 1553,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "fixture_build_seconds": 19.17062230000738,
+      "cold_pump_seconds": 0.1944002999807708,
+      "max_bundle_lock_seconds": 0.4486619999515824,
+      "max_pump_bundle_lock_seconds": 0.4486619999515824,
+      "lock_phase_maxima": {
+        "cold_pump": 0.09411269996780902,
+        "query_adopt": 0.028103800024837255,
+        "revision_pump": 0.4486619999515824,
+        "hot_pump": 0.031048999982886016
+      },
+      "lock_violations": [],
+      "cold": {
+        "daily_parses": 72,
+        "event_parses": 1,
+        "sha_calls": 74,
+        "payload_reads": 73,
+        "full_reads": 1
+      },
+      "three_hot_pumps": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0
+      },
+      "revision_revalidation": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2
+      }
+    },
+    "mutant": {
+      "synthetic_fixture": true,
+      "months": 72,
+      "bars": 1553,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "fixture_build_seconds": 19.146814799983986,
+      "cold_pump_seconds": 0.6851048999815248,
+      "max_bundle_lock_seconds": 1.3910287000471726,
+      "max_pump_bundle_lock_seconds": 1.3910287000471726,
+      "lock_phase_maxima": {
+        "revision_pump": 1.3910287000471726,
+        "query_adopt": 0.023019300017040223,
+        "cold_pump": 0.5846690000034869,
+        "hot_pump": 0.02847629995085299
+      },
+      "lock_violations": [],
+      "cold": {
+        "daily_parses": 72,
+        "event_parses": 1,
+        "sha_calls": 74,
+        "payload_reads": 73,
+        "full_reads": 1
+      },
+      "three_hot_pumps": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0
+      },
+      "revision_revalidation": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2
+      }
+    },
+    "original_tests": 1,
+    "mutant_tests": 1,
+    "mutant_assertion_body_failure": true,
+    "errors": 0,
+    "skips": 0
+  },
+  "total_independent_mutant_kills": 22,
+  "two_fresh_large_samples": [
+    {
+      "synthetic_fixture": true,
+      "months": 72,
+      "bars": 1553,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "fixture_build_seconds": 19.807337900041603,
+      "cold_pump_seconds": 0.20098419999703765,
+      "max_bundle_lock_seconds": 0.402845700038597,
+      "max_pump_bundle_lock_seconds": 0.402845700038597,
+      "lock_phase_maxima": {
+        "hot_pump": 0.027202700031921268,
+        "cold_pump": 0.09256710001500323,
+        "revision_pump": 0.402845700038597,
+        "query_adopt": 0.022733299992978573
+      },
+      "lock_violations": [],
+      "cold": {
+        "daily_parses": 72,
+        "event_parses": 1,
+        "sha_calls": 74,
+        "payload_reads": 73,
+        "full_reads": 1
+      },
+      "three_hot_pumps": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0
+      },
+      "revision_revalidation": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2
+      }
+    },
+    {
+      "synthetic_fixture": true,
+      "months": 72,
+      "bars": 1553,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "fixture_build_seconds": 19.17062230000738,
+      "cold_pump_seconds": 0.1944002999807708,
+      "max_bundle_lock_seconds": 0.4486619999515824,
+      "max_pump_bundle_lock_seconds": 0.4486619999515824,
+      "lock_phase_maxima": {
+        "cold_pump": 0.09411269996780902,
+        "query_adopt": 0.028103800024837255,
+        "revision_pump": 0.4486619999515824,
+        "hot_pump": 0.031048999982886016
+      },
+      "lock_violations": [],
+      "cold": {
+        "daily_parses": 72,
+        "event_parses": 1,
+        "sha_calls": 74,
+        "payload_reads": 73,
+        "full_reads": 1
+      },
+      "three_hot_pumps": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0
+      },
+      "revision_revalidation": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2
+      }
+    }
+  ],
+  "raw_evidence_policy": "All initial failures, profiled observations, old heartbeat-Mock GC observation, and final native/mutation reports are retained locally; no product source writes by mutation runners.",
+  "recorded_fixture_manifest": "tests/fixtures/daily_basis_import/manifest.json",
+  "network_policy": "Tests offline only; exactly one separately owner-consented public TWT49U recording.",
+  "ci": "NOT_RUN_BY_THIS_AGENT",
+  "before_strict_api_source_sha256": {
+    "tools/import_official_daily.py": "027e80228a9c11addf7d2f65f74d0dfd0e22340f17c3e9f842759aaf05922205",
+    "quantlab/trading/runtime/stock_history.py": "2dd259e2b1c4f8b095f91844ea2f5a30fbab4f47e5a9b2b84f54e49880232825",
+    "quantlab/trading/application/daily_signal_data.py": "5bf0ac6db4bb3b9fd0f4d66844f3b00120c58b5648f8fb5d48d03dd9f50503b1",
+    "quantlab/trading/runtime/official_daily_source.py": "2eaa149dd0ff9bf8f78ff06823ce08055e339a5705dc974652c4fb924e035bba",
+    "quantlab/trading/adapters/storage/daily_stock_store.py": "a7ae4e51fb97d60f79d0000343ccb8a68c3a3ee76bc5a0f4494d6b8e45248888",
+    "quantlab/trading/adapters/storage/kline_store.py": "1124af6f4d41288c061723798e215692dd5d40ea64086dc16f51b4557cbba47a",
+    "tests/test_official_daily_import.py": "101e724f50b1fca75005fc5796fc4d924561c589e56fcd3c68e239f0c12225d9",
+    "tests/test_official_daily_runtime_e2e.py": "82505f0d0d3396bafaa2b37512ffb0bd2d8acab76044295f3703493dfe8cd161",
+    "tests/test_official_daily_large_pump.py": "c903f9862036323aa177ead4bff3d559717d7ba3338870afa5bb7ab797bd5db6"
+  },
+  "strict_api_final": {
+    "native_tests": 5,
+    "native_seconds": 36.976,
+    "native_result": "PASS",
+    "native_log": ".gitnexus/verification/official-daily-native-five-strict-api-final.log",
+    "metrics": {
+      "synthetic_fixture": true,
+      "months": 72,
+      "bars": 1553,
+      "refreshes": 250,
+      "archived_payloads_initial": 573,
+      "archived_payloads_after_next_day_extension": 574,
+      "active_sources": 73,
+      "active_manifests": 1,
+      "fixture_build_seconds": 21.7819971999852,
+      "cold_pump_seconds": 0.23249209998175502,
+      "max_bundle_lock_seconds": 0.4295236000325531,
+      "max_pump_bundle_lock_seconds": 0.4295236000325531,
+      "lock_phase_maxima": {
+        "hot_pump": 0.034083399979863316,
+        "revision_pump": 0.4295236000325531,
+        "cold_pump": 0.1109576000017114,
+        "query_adopt": 0.024565400031860918
+      },
+      "lock_violations": [],
+      "cold": {
+        "daily_parses": 72,
+        "event_parses": 1,
+        "sha_calls": 74,
+        "payload_reads": 73,
+        "full_reads": 1
+      },
+      "three_hot_pumps": {
+        "daily_parses": 0,
+        "event_parses": 0,
+        "sha_calls": 0,
+        "payload_reads": 0,
+        "full_reads": 0
+      },
+      "revision_revalidation": {
+        "daily_parses": 144,
+        "sha_calls": 148,
+        "full_reads": 2
+      }
+    },
+    "semantics": "Ordinary store revision retains blocking/fresh semantics; official verification uses the strict nonblocking verification_revision key and postcheck. Legacy broker-simulation pump denies new entries when no ManualRuntime owns admission; generic Engine.submit fixture API remains preserved.",
+    "mutation_targets_unchanged": true,
+    "mutations_not_rerun_for_this_api_split": true,
+    "startups": {
+      "LOCAL": {
+        "elapsed_seconds": 8.07,
+        "engine_state": "WAITING_RECONCILIATION",
+        "environment": "LOCAL",
+        "errors": [],
+        "mode": "LOCAL",
+        "owned_endpoints_removed": true,
+        "owned_engine_cleanup": [
+          {
+            "exit_code": 0,
+            "shutdown": "NORMAL"
+          }
+        ],
+        "passed": true,
+        "qt_platform": "windows",
+        "real_sdk_imported": false,
+        "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-3d-daily-basis-fixes",
+        "research_attached": true,
+        "research_released": true,
+        "return_code": 0,
+        "widget_count": 2865,
+        "window_type": "TradingWindow",
+        "window_visible": true
+      },
+      "BROKER_SIMULATION": {
+        "broker_host": "Real authenticated IPC in an owned thread; fake SDK only",
+        "elapsed_seconds": 4.773,
+        "engine_state": "DISCONNECTED",
+        "environment": "BROKER_SIMULATION",
+        "errors": [],
+        "fake_sdk_connected": true,
+        "fake_sdk_login_count": 1,
+        "fake_sdk_logout_count": 1,
+        "host_return_code": 0,
+        "mode": "BROKER_SIMULATION",
+        "owned_endpoints_removed": true,
+        "owned_engine_cleanup": [],
+        "passed": true,
+        "qt_platform": "windows",
+        "real_sdk_imported": false,
+        "repo": "C:\\Users\\Mark\\Desktop\\Mark auto\\.worktrees\\m2-3d-daily-basis-fixes",
+        "research_attached": true,
+        "research_released": true,
+        "return_code": 0,
+        "widget_count": 2865,
+        "window_type": "TradingWindow",
+        "window_visible": true
+      }
+    },
+    "startup_harness": "Original .tmp-m2-round2-startup.py compiled in memory with only offscreen->windows plus a native-platform assertion; original helper, product code and cleanup assertions unchanged.",
+    "startup_wrapper": ".gitnexus/verification/run_visible_original_startup.py",
+    "user_applications_closed": false
+  }
+}

@@ -337,7 +337,9 @@ class DailySignalDataTests(unittest.TestCase):
 
     def test_source_port_is_read_only_and_has_explicit_keyword_range(self):
         parameters = inspect.signature(OfficialDailySignalSource.history).parameters
-        self.assertEqual(tuple(parameters), ('self', 'instrument_id', 'calendar', 'through', 'start'))
+        self.assertEqual(tuple(parameters), ('self', 'instrument_id', 'calendar', 'through', 'start', 'cached_only'))
+        self.assertEqual(parameters['cached_only'].kind, inspect.Parameter.KEYWORD_ONLY)
+        self.assertIs(parameters['cached_only'].default, False)
         self.assertEqual(parameters['through'].kind, inspect.Parameter.KEYWORD_ONLY)
         self.assertIsNone(parameters['start'].default)
         self.assertFalse(any(name in OfficialDailySignalSource.__dict__ for name in ('submit', 'cancel', 'place_order')))
