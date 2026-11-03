@@ -46,8 +46,14 @@ class AutoStrategyRecord:
     state: StageState = INITIAL_STATE
     observation_started_on: date | None = None
     eligible: bool = False
+    live_approved_on: date | None = None
+    observation_started_at: datetime | None = None
 
     def __post_init__(self) -> None:
+        if self.observation_started_at is not None:
+            aware(self.observation_started_at, 'observation epoch')
+        if self.live_approved_on is not None:
+            trading_date(self.live_approved_on)
         decimal_value(self.allocated_amount, 'allocated amount', positive=True)
         e = self.evidence
         if (e.strategy_id, e.version, e.frozen_hash) != (self.auto.strategy_id, self.auto.version, self.auto.frozen_hash) or e.partition != 'TRAINING':
@@ -97,6 +103,7 @@ class PromotionEvaluation:
     observation_started_on: date
     observation: SimObservation
     verdict: PromotionVerdict
+    observation_started_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -114,6 +121,7 @@ _EVENT_KINDS = frozenset(
         'auto_resumed',
         'auto_retired',
         'auto_evidence_refreshed',
+        'auto_live_intent_approved',
     )
 )
 # Explicit module-local registration follows automatic_state.py. Central engine
@@ -162,6 +170,27 @@ class PromotionService:
             if record.state.stage is not Stage.BACKTEST and record.state.run_state is RunState.RUNNING:
                 self.pause(record.auto.strategy_id, record.auto.version, PauseReason.RESTART, now=now)
 
+    @classmethod
+    def from_projection(
+        cls,
+        journal: Journal,
+        environment: Environment,
+        records: tuple[AutoStrategyRecord, ...],
+        evaluations: tuple[PromotionEvaluation, ...],
+        *,
+        sequence: int,
+    ) -> 'PromotionService':
+        """Use the engine's already-decoded state without replaying or restarting it.
+
+        The caller holds the engine writer lock; journal is its projection adapter,
+        never the engine's underlying journal. Obtain a fresh service per operation.
+        """
+        service = cls.__new__(cls)
+        service.journal, service.environment, service._sequence = journal, environment, sequence
+        service._records = {(row.auto.strategy_id, row.auto.version): row for row in records}
+        service._evaluations = {(item.strategy_id, item.version, item.trade_date): item.verdict for item in evaluations}
+        return service
+
     def _restore(self, kind: str, event: AutoStrategyEvent) -> None:
         row = event.record
         if not isinstance(row, AutoStrategyRecord):
@@ -181,6 +210,7 @@ class PromotionService:
             not isinstance(item, PromotionEvaluation)
             or (item.strategy_id, item.version) != (row.auto.strategy_id, row.auto.version)
             or item.observation_started_on != row.observation_started_on
+            or item.observation_started_at != row.observation_started_at
         ):
             raise DomainError('validation_failed', 'auto evaluation identity')
         self._apply(event)
@@ -213,7 +243,7 @@ class PromotionService:
         key = record.auto.strategy_id, record.auto.version
         if key in self._records:
             raise DomainError('auto_frozen', 'strategy version already exists')
-        if record.state != INITIAL_STATE or record.eligible or record.observation_started_on is not None:
+        if record.state != INITIAL_STATE or record.eligible or record.observation_started_on is not None or record.observation_started_at is not None:
             raise DomainError('stage_transition_denied', 'build must begin at BACKTEST')
         state = next_stage(None, Trigger.OWNER_BUILD, TransitionContext(self.environment))
         return self._write('auto_strategy_built', replace(record, state=state), now)
@@ -247,7 +277,7 @@ class PromotionService:
                 preopen_checks_passed=preopen_checks_passed,
             ),
         )
-        return self._write('auto_stage_changed', replace(row, state=state, observation_started_on=trade_date), now)
+        return self._write('auto_stage_changed', replace(row, state=state, observation_started_on=trade_date, observation_started_at=now), now)
 
     def evaluate_after_close(
         self, strategy_id: str, version: int, trade_date: date, observation: SimObservation, *, observation_started_on: date, now: datetime
@@ -263,7 +293,7 @@ class PromotionService:
             raise DomainError('validation_failed', 'observation epoch mismatch')
         trading_date(trade_date)
         verdict = evaluate_promotion(row.auto.holding_kind, row.expectation, observation, thresholds_for(row.auto.thresholds_version))
-        item = PromotionEvaluation(strategy_id, version, trade_date, observation_started_on, observation, verdict)
+        item = PromotionEvaluation(strategy_id, version, trade_date, observation_started_on, observation, verdict, row.observation_started_at)
         self._write('auto_promotion_evaluated', replace(row, eligible=verdict.eligible), now, item)
         return verdict
 
@@ -285,7 +315,7 @@ class PromotionService:
         row = self.record(strategy_id, version)
         self._require_unique(row)
         state = next_stage(row.state, Trigger.OWNER_RESUME, TransitionContext(self.environment, reconciled=reconciled, cause_cleared=cause_cleared))
-        return self._write('auto_resumed', replace(row, state=state, eligible=False, observation_started_on=trade_date), now)
+        return self._write('auto_resumed', replace(row, state=state, eligible=False, observation_started_on=trade_date, observation_started_at=now), now)
 
     def retire(self, strategy_id: str, version: int, *, now: datetime) -> AutoStrategyRecord:
         row = self.record(strategy_id, version)

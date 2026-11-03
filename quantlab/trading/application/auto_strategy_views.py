@@ -42,6 +42,7 @@ class AutoStrategyView:
     pause_reason: PauseReason | None
     frozen_hash: str
     progress: PromotionProgressView = PromotionProgressView()
+    account_ref: str = ''
     live_available: bool = field(default=False, init=False)
 
 

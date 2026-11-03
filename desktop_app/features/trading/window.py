@@ -194,7 +194,12 @@ class TradingWindow(QMainWindow):
         connection_generation='',
         strategy_parameters=None,
         account_risk=None,
+        auto_build=None,
+        auto_strategy=None,
     ) -> None:
+        if auto_build is not None or auto_strategy is not None:
+            environment = self.state.environment
+            account_ref = self.state.account_ref
         if self.state.environment is Environment.LIVE and action in LIVE_ORDER_ACTIONS:
             self._feedback(ui_text('m2t.orders_disabled'))
             return
@@ -225,6 +230,8 @@ class TradingWindow(QMainWindow):
                 connection_generation=connection_generation,
                 strategy_parameters=strategy_parameters,
                 account_risk=account_risk,
+                auto_build=auto_build,
+                auto_strategy=auto_strategy,
             )
         )
 
@@ -254,6 +261,7 @@ class TradingWindow(QMainWindow):
             self._feedback(ui_text('v2.working'))
         if self.strategy_controls.research_feedback is not None:
             self.strategy_controls.research_feedback.started(command, operation)
+        self.auto_strategies.started(command)
         operation.start()
 
     def _completed(self, state: UiState, receipt: UiReceipt | None) -> None:
@@ -290,6 +298,7 @@ class TradingWindow(QMainWindow):
         if complete_connection(self, state, receipt, action):
             return
         operation = self._operation if action is not UiAction.STOP_NEW else self._priority_operation
+        self.auto_strategies.received(operation.command if operation is not None else None, receipt)
         self.manual_controls.received(operation.command if operation is not None else None, state, receipt)
         self.strategy_controls.received(operation.command if operation is not None else None, state, receipt)
         self.automatic_controls.received(operation.command if operation is not None else None, state, receipt)
@@ -327,6 +336,8 @@ class TradingWindow(QMainWindow):
                         break
 
     def _failed(self) -> None:
+        if self._operation is not None and self._operation.command is not None and self._operation.command.action is UiAction.BUILD_AUTO_STRATEGY:
+            self.auto_strategies.failed()
         self._engine_reachable = False
         self.broker_panel.unavailable()
         self._feedback(ui_text('v2.connection_failed'))
@@ -617,6 +628,7 @@ class TradingWindow(QMainWindow):
             return
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
+        self.auto_strategies.render(state)
         render_tables(self, state, state_changed=state_changed)
         self.strategy_controls.render(state)
         self.manual_controls.render(state)
@@ -647,6 +659,10 @@ class TradingWindow(QMainWindow):
         return state.context_epoch, state.version, state.quote_revision
 
     def closeEvent(self, event) -> None:
+        if self.auto_strategies.worker is not None:
+            self._feedback(ui_text('v2.busy'))
+            event.ignore()
+            return
         if self._operation is not None or self._priority_operation is not None:
             self._feedback(ui_text('v2.busy'))
             event.ignore()

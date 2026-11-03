@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .sessions import DailyBaselineEvidence
+    from .promotion_service import AutoStrategyRecord, PromotionEvaluation
 
 from .codec import register
 from .contracts import ReconciliationView, SettingsForm, StrategyForm, PreflightView
@@ -112,6 +113,8 @@ class AppState:
     daily_closing_quotes: tuple[ClosingQuote, ...] = ()
     daily_account_closes: tuple[DailyAccountClose, ...] = ()
     daily_close_archives: tuple[DailyCloseArchive, ...] = ()
+    auto_strategies: tuple['AutoStrategyRecord', ...] = ()
+    auto_promotion_evaluations: tuple['PromotionEvaluation', ...] = ()
 
 
 def replace_order(state: AppState, order: LocalOrder) -> AppState:

@@ -1,13 +1,14 @@
 """Candidate reference -> frozen strategy, with no journal write until E1/E2 pass."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 import json
+from typing import TYPE_CHECKING
 
-from .promotion_service import AutoStrategyRecord, PromotionService
 from .provenance import ProducerProfile
-from .signal_research import ExecutionEvidence, research_auto_strategy
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.costs import FeeSchedule
 from quantlab.trading.domain.minute_contract import is_tmf_contract
@@ -18,6 +19,11 @@ from quantlab.trading.domain.signal_strategy import AutoStrategy, CandidateEvide
 from quantlab.trading.domain.validation import DomainError, identity
 from quantlab.trading.ports.candidates import CandidateCatalog
 from quantlab.trading.ports.signals import SignalSource
+
+
+if TYPE_CHECKING:
+    from .promotion_service import AutoStrategyRecord, PromotionService
+    from .signal_research import ExecutionEvidence
 
 
 @dataclass(frozen=True)
@@ -93,6 +99,13 @@ def _configuration(request: AutoBuildRequest, spec: InstrumentSpec, service: Pro
         raise DomainError('auto_instrument_busy')
 
 
+def research_auto_strategy(*args, **kwargs):
+    """Keep the existing injectable research seam without a DTO import cycle."""
+    from .signal_research import research_auto_strategy as research
+
+    return research(*args, **kwargs)
+
+
 def build_auto_strategy(
     request: AutoBuildRequest,
     *,
@@ -108,6 +121,8 @@ def build_auto_strategy(
     service: PromotionService,
     settings: MinuteResearchSettings,
 ) -> AutoBuildResult:
+    from .promotion_service import AutoStrategyRecord
+
     candidate = catalog.resolve(request.candidate_ref)
     _qualify(candidate, request)
     _configuration(request, spec, service)

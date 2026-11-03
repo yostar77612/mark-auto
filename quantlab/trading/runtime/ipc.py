@@ -85,6 +85,9 @@ class IpcFacade:
             raise DomainError(response.code, 'engine rejected request')
         return response
 
+    def candidates(self):
+        return self.request(Operation.LIST_CANDIDATES).candidates
+
     def market_series(self, query: MarketSeriesQuery) -> MarketSeriesPage:
         response = self.request(Operation.MARKET_SERIES, series=query)
         if not isinstance(response.series, MarketSeriesPage):
@@ -122,7 +125,17 @@ class IpcFacade:
         return response.state
 
     def execute(self, command: UiCommand) -> UiReceipt:
-        response = self.request(Operation.COMMAND, command=command)
+        from quantlab.trading.application.auto_strategy_service import AUTO_STRATEGY_ACTIONS
+        from quantlab.trading.application.contracts import UiAction
+
+        operation = (
+            Operation.BUILD_AUTO_STRATEGY
+            if command.action is UiAction.BUILD_AUTO_STRATEGY
+            else Operation.AUTO_STRATEGY_COMMAND
+            if command.action in AUTO_STRATEGY_ACTIONS
+            else Operation.COMMAND
+        )
+        response = self.request(operation, command=command)
         if not isinstance(response.receipt, UiReceipt):
             raise DomainError('validation_failed', 'missing command receipt')
         if response.state is not None and response.state.engine_state == 'CLOSED':

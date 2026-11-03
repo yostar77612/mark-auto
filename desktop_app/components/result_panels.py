@@ -16,6 +16,13 @@ class WalkForwardResults(QWidget):
         layout.addWidget(self.kpis)
         self.table = ResultTable()
         layout.addWidget(self.table)
+        self.build_auto = QPushButton(ui_text('m3.build_button'), self)
+        self.build_auto.setObjectName('research_build_auto_strategy_button')
+        self.build_auto.setAccessibleName(ui_text('m3.build_button'))
+        self.build_auto.setProperty('role', 'primary')
+        self.build_auto.setEnabled(False)
+        self.build_auto.setToolTip(ui_text('m3.candidates_unavailable'))
+        layout.addWidget(self.build_auto)
         self.set_result({})
 
     def set_result(self, result):

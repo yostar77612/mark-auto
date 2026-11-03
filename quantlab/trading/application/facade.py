@@ -31,6 +31,12 @@ class LocalFacade:
                 raise DomainError('capability_missing', 'live market unavailable')
             return self.engine.live_market.series(query)
 
+    def candidates(self):
+        with self.engine.lock:
+            if self.engine.auto_runtime is None:
+                raise DomainError('candidate_unavailable')
+            return self.engine.auto_runtime.candidates()
+
     @decimal_operation
     def execute(self, command: UiCommand) -> UiReceipt:
         started = perf_counter()
@@ -58,6 +64,10 @@ class LocalFacade:
 
     def _execute(self, command: UiCommand) -> str:
         engine, action = self.engine, command.action
+        from .auto_strategy_service import AUTO_STRATEGY_ACTIONS
+
+        if action in AUTO_STRATEGY_ACTIONS:
+            return engine.execute_auto_strategy(command)
         if action in (UiAction.AUTO_RESUME, UiAction.AUTO_RECONCILE, UiAction.DECLARE_DAILY_NOT_SENT):
             if engine.configuration.environment is Environment.LIVE:
                 raise DomainError('production_orders_disabled')

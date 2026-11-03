@@ -89,7 +89,10 @@ from .dashboard import ENTRIES as _part_dashboard
 
 from .m4a_maintenance import ENTRIES as _part_m4a_maintenance
 
+from .m3_ui import ENTRIES as _part_m3_ui
+
 PARTS = (
+    _part_m3_ui,
     _part_strategy_research_feedback,
     _part_connection_failures,
     _part_strategy_market_empty,

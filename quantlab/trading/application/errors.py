@@ -10,6 +10,19 @@ from quantlab.errors import ERROR_TABLE as LEGACY_ERROR_TABLE, ErrorText
 
 
 V2_ERROR_TEXT = {
+    'candidate_not_passed': ErrorText('這個候選尚未通過驗證。', '回研究頁完成回測與樣本外驗證後再建成。'),
+    'candidate_unavailable': ErrorText('找不到可驗證的候選研究紀錄。', '確認研究工作區與可信候選來源可用後重試。'),
+    'candidate_spec_unsupported': ErrorText('候選含有目前不支援的設定。', '回研究頁產生不含固定停損跳數等設定的候選。'),
+    'candidate_data_mismatch': ErrorText('候選的研究資料與所選型態不符。', '用對應週期的資料重新研究，再建成。'),
+    'auto_instrument_not_allowed': ErrorText('這個型態不能使用所選商品。', '當沖只選微台；股票研究尚未開放。'),
+    'auto_instrument_busy': ErrorText('這個帳戶的商品已有執行中的自動策略。', '先暫停或停用原策略。'),
+    'auto_execution_data_insufficient': ErrorText('執行資料不足，無法重跑回測。', '先補齊可信的訓練 K 線資料與執行接線。'),
+    'auto_evidence_changed': ErrorText('程式更新後回測結果與原本不同。', '檢視新的回測結果後，決定恢復或停用。'),
+    'auto_not_eligible': ErrorText('這個策略尚未達到申請正式的門檻。', '等待券商模擬累積足夠的交易日與成績。'),
+    'auto_frozen': ErrorText('已建成的策略不能直接修改。', '回研究頁建立新版本。'),
+    'auto_confirmation_required': ErrorText('此操作需要明確確認。', '核對策略與版本，再確認核准意圖或停用。'),
+    'auto_exit_required': ErrorText('策略仍有部位或未結委託，不能完成停用。', '先由受控執行流程確認退出與對帳；不會宣稱已平倉。'),
+    'stage_transition_denied': ErrorText('目前不能變更此策略的階段或狀態。', '確認模擬環境、對帳、回測證據與執行接線均已就緒。'),
     'broker_login_failed': ErrorText('登入失敗。', '請檢查金鑰引用與連線環境後重試。'),
     'broker_initialization_failed': ErrorText('登入成功，但初始化失敗。', '請查看診斷後重試連線。'),
     'market_data_subscription_failed': ErrorText('行情訂閱失敗，連線仍成功；該商品目前只能查看歷史資料。', '請查看診斷後重試該商品。'),

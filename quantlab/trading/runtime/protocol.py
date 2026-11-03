@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from quantlab.trading.application.auto_strategy_views import CandidateSummaryView
 from quantlab.trading.application.codec import register
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery, UiCommand, UiReceipt, UiState
 from quantlab.trading.application.context import QuoteBatch
@@ -17,6 +18,9 @@ from quantlab.trading.domain.validation import DomainError, aware, identity
 
 
 class Operation(str, Enum):
+    LIST_CANDIDATES = 'list_candidates'
+    BUILD_AUTO_STRATEGY = 'build_auto_strategy'
+    AUTO_STRATEGY_COMMAND = 'auto_strategy_command'
     SNAPSHOT = 'SNAPSHOT'
     COMMAND = 'COMMAND'
     QUOTES = 'QUOTES'
@@ -48,7 +52,7 @@ class Request:
         aware(self.deadline)
         if self.schema_version != 2 or not isinstance(self.environment, Environment) or not isinstance(self.operation, Operation):
             raise DomainError('validation_failed', 'protocol version/types')
-        if self.operation is Operation.COMMAND and not isinstance(self.command, UiCommand):
+        if self.operation in (Operation.COMMAND, Operation.BUILD_AUTO_STRATEGY, Operation.AUTO_STRATEGY_COMMAND) and not isinstance(self.command, UiCommand):
             raise DomainError('validation_failed', 'missing command')
         if self.operation is Operation.QUOTES and not isinstance(self.quotes, QuoteBatch):
             raise DomainError('validation_failed', 'missing quote batch')
@@ -81,6 +85,7 @@ class Response:
     market_status: MarketTerminalStatus | None = None
     market_selected: str = ''
     alerts: AlertSnapshot | None = None
+    candidates: tuple[CandidateSummaryView, ...] = ()
 
 
 register(Operation, Request, Response, Metrics, QuoteBatch)

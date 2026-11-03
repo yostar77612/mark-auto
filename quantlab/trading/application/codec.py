@@ -54,7 +54,7 @@ def _encode(value: object, depth: int = 0) -> object:
             'fields': {
                 f.name: _encode(getattr(value, f.name), depth + 1)
                 for f in fields(value)
-                if not (legacy_research and f.name == 'daily_basis' and getattr(value, f.name) is None)
+                if f.init and not (legacy_research and f.name == 'daily_basis' and getattr(value, f.name) is None)
             },
         }
     raise DomainError('validation_failed', 'unsupported wire value')
