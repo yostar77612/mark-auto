@@ -950,6 +950,12 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tools/import_official_daily.py` | 215 | tooling | `tools/import_official_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/strategy_research_feedback.py` | 122 | presentation | `desktop_app/features/trading/strategy_research_feedback.py` | Strategy research progress, exact-target results and navigation-only next steps |
 | `desktop_app/strings/strategy_research_feedback.py` | 17 | shared | `desktop_app/strings/strategy_research_feedback.py` | Strategy research progress, exact-target results and navigation-only next steps |
+| `desktop_app/features/trading/auto_strategy_rows.py` | 248 | presentation | `desktop_app/features/trading/auto_strategy_rows.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
+| `desktop_app/features/trading/build_auto_dialog.py` | 99 | presentation | `desktop_app/features/trading/build_auto_dialog.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
+| `desktop_app/features/trading/promotion_panel.py` | 159 | presentation | `desktop_app/features/trading/promotion_panel.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
+| `desktop_app/strings/m3_ui.py` | 89 | shared | `desktop_app/strings/m3_ui.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
+| `quantlab/trading/application/auto_strategy_service.py` | 143 | application | `quantlab/trading/application/auto_strategy_service.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
+| `quantlab/trading/runtime/auto_strategy.py` | 72 | composition | `quantlab/trading/runtime/auto_strategy.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -499,6 +499,8 @@
   "refresh_data_prerequisite",
   "refresh_diagnostics",
   "refresh_diagnostics_prerequisite",
+  "research_build_auto_strategy_button",
+  "research_build_auto_strategy_button_prerequisite",
   "research_mode_explanation",
   "research_mode_status",
   "restore_backup",
