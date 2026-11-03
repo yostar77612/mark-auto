@@ -139,6 +139,9 @@ def _run(dataset,spec,config):
     if config.settlement_mode not in ('unsettled_pnl','daily_mtm'): raise ValidationError('unsupported settlement mode')
     if not dataset.bars: raise ValidationError('empty dataset')
     contracts={b.contract_id for b in dataset.bars}
+    # Bar also represents stock signals; this accounting engine remains TMF-only.
+    for contract in contracts:
+        validate_contract(contract)
     for contract,expiry in config.instrument_expiries.items():
         validate_contract(contract); validate_date(expiry)
     groups=defaultdict(dict)

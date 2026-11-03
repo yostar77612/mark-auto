@@ -5,7 +5,7 @@ No rule translation, market-data access, execution, or strategy mutation lives h
 
 from datetime import timezone
 
-from quantlab.core import Bar, StrategySpec, ValidationError, canonical_json, validate_contract
+from quantlab.core import Bar, StrategySpec, ValidationError, canonical_json, validate_signal_contract
 from quantlab.research import candidate_fingerprint, validate_dsl
 from quantlab.strategies import generate_signals
 from quantlab.strict_json import loads
@@ -40,7 +40,7 @@ class V1SignalSource(SignalSource):
         spec = validated_spec(signal_spec_json)
         try:
             # Validate even an empty history; no unsupported instrument can slip through.
-            validate_contract(contract_ref)
+            validate_signal_contract(contract_ref)
             mapped = tuple(
                 Bar(
                     timestamp=bar.starts_at.astimezone(timezone.utc),
