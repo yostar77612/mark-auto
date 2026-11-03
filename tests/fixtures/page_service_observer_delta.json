@@ -409,6 +409,61 @@
             "symbol": "OfficialDailyCacheTests.test_public_cache_probe_revision_change_is_a_miss_without_revalidation"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_stock_signal_research.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "research.OfficialDailyStockSource",
+            "symbol": "StockSignalStudyTests.run_fake"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_stock_signal_research.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "research.OfficialDailyStockSource",
+            "symbol": "StockSignalStudyTests.test_execution_parameters_cannot_be_misrepresented_as_signal_only_research"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_stock_signal_research.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "research.OfficialDailyStockSource",
+            "symbol": "StockSignalStudyTests.test_insufficient_range_tpex_and_wrong_instrument_fail_before_source_read"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_stock_signal_research.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "research.OfficialDailyStockSource",
+            "symbol": "StockSignalStudyTests.test_long_only_projects_real_negative_states_without_changing_shared_signals"
+          },
+          "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m3_stock_signal_research.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "research.OfficialDailyStockSource",
+            "symbol": "StockSignalStudyTests.test_revision_or_shared_source_change_cannot_return_artifact"
+          },
+          "count": 1
         }
       ]
     },
