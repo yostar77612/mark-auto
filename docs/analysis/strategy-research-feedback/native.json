@@ -1,0 +1,107 @@
+{
+  "platform": "windows",
+  "order_commands": 0,
+  "data": "Offline typed result fixtures; no official download claimed",
+  "captures": [
+    {
+      "name": "pending",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\n\u7814\u7a76\u4e2d\u2026",
+      "next": "",
+      "pending": true
+    },
+    {
+      "name": "pending",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\n\u7814\u7a76\u4e2d\u2026",
+      "next": "",
+      "pending": true
+    },
+    {
+      "name": "local",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u7814\u7a76\u901a\u904e\n\u8cc7\u6599\u4f86\u6e90\uff1a\u672c\u6a5f\u5408\u6210\u8cc7\u6599\uff08\u50c5\u4f9b\u6a21\u64ec\u7814\u7a76\uff09",
+      "next": "\u56de\u5230\u6e05\u55ae\u555f\u7528",
+      "pending": false
+    },
+    {
+      "name": "local",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u7814\u7a76\u901a\u904e\n\u8cc7\u6599\u4f86\u6e90\uff1a\u672c\u6a5f\u5408\u6210\u8cc7\u6599\uff08\u50c5\u4f9b\u6a21\u64ec\u7814\u7a76\uff09",
+      "next": "\u56de\u5230\u6e05\u55ae\u555f\u7528",
+      "pending": false
+    },
+    {
+      "name": "official",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u7814\u7a76\u901a\u904e\n\u8cc7\u6599\u4f86\u6e90\uff1a\u5b98\u65b9\u65e5 K",
+      "next": "\u56de\u5230\u6e05\u55ae\u555f\u7528",
+      "pending": false
+    },
+    {
+      "name": "official",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u7814\u7a76\u901a\u904e\n\u8cc7\u6599\u4f86\u6e90\uff1a\u5b98\u65b9\u65e5 K",
+      "next": "\u56de\u5230\u6e05\u55ae\u555f\u7528",
+      "pending": false
+    },
+    {
+      "name": "validated",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u898f\u5247\u9a57\u8b49\u901a\u904e\uff1b\u5c1a\u672a\u5b8c\u6210\u7814\u7a76\n\u8cc7\u6599\u4f86\u6e90\uff1a\u5c1a\u672a\u4f7f\u7528\u7814\u7a76\u8cc7\u6599",
+      "next": "\u7e7c\u7e8c\u7814\u7a76\u6240\u9078\u7b56\u7565",
+      "pending": false
+    },
+    {
+      "name": "validated",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u898f\u5247\u9a57\u8b49\u901a\u904e\uff1b\u5c1a\u672a\u5b8c\u6210\u7814\u7a76\n\u8cc7\u6599\u4f86\u6e90\uff1a\u5c1a\u672a\u4f7f\u7528\u7814\u7a76\u8cc7\u6599",
+      "next": "\u7e7c\u7e8c\u7814\u7a76\u6240\u9078\u7b56\u7565",
+      "pending": false
+    },
+    {
+      "name": "failed",
+      "size": [
+        1366,
+        768
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u672a\u901a\u904e\n\u8cc7\u6599\u4f86\u6e90\uff1a\u672a\u77e5\n\u9694\u96e2\u7814\u7a76\u7a0b\u5e8f\u4e2d\u65b7\u6216\u672a\u56de\u50b3\u53ef\u9a57\u8b49\u7d50\u679c\u3002 \u4fdd\u7559\u539f\u7b56\u7565\u8207\u4ea4\u6613\u72c0\u614b\uff1b\u6838\u5c0d\u672c\u6a5f\u8a3a\u65b7\u5f8c\u660e\u78ba\u91cd\u8a66\uff0c\u4e0d\u6703\u4f7f\u7528\u90e8\u5206\u7e3e\u6548\u3002",
+      "next": "\u91cd\u8a66",
+      "pending": false
+    },
+    {
+      "name": "failed",
+      "size": [
+        1920,
+        1061
+      ],
+      "text": "Local strategy\uff5c\u7248\u672c 1\uff1a\u672a\u901a\u904e\n\u8cc7\u6599\u4f86\u6e90\uff1a\u672a\u77e5\n\u9694\u96e2\u7814\u7a76\u7a0b\u5e8f\u4e2d\u65b7\u6216\u672a\u56de\u50b3\u53ef\u9a57\u8b49\u7d50\u679c\u3002 \u4fdd\u7559\u539f\u7b56\u7565\u8207\u4ea4\u6613\u72c0\u614b\uff1b\u6838\u5c0d\u672c\u6a5f\u8a3a\u65b7\u5f8c\u660e\u78ba\u91cd\u8a66\uff0c\u4e0d\u6703\u4f7f\u7528\u90e8\u5206\u7e3e\u6548\u3002",
+      "next": "\u91cd\u8a66",
+      "pending": false
+    }
+  ]
+}

@@ -110,6 +110,7 @@ class TradingWindow(QMainWindow):
         strategy_error_texts=None,
         style_strategy_table=None,
         style_automatic_controls=None,
+        research_status_factory=None,
     ):
         super().__init__(parent)
         self.facade = facade
@@ -121,6 +122,7 @@ class TradingWindow(QMainWindow):
         self.strategy_error_texts = strategy_error_texts or {}
         self.style_strategy_table = style_strategy_table
         self.style_automatic_controls = style_automatic_controls
+        self.research_status_factory = research_status_factory
         self._operation: _Operation | None = None
         self._priority_operation: _Operation | None = None
         self._rendered_version: tuple[int, int, int] | None = None
@@ -250,6 +252,8 @@ class TradingWindow(QMainWindow):
         operation.finished.connect(self._finished)
         if command is not None:
             self._feedback(ui_text('v2.working'))
+        if self.strategy_controls.research_feedback is not None:
+            self.strategy_controls.research_feedback.started(command, operation)
         operation.start()
 
     def _completed(self, state: UiState, receipt: UiReceipt | None) -> None:

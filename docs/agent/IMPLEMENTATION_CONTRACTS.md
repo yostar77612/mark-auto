@@ -7889,3 +7889,15 @@ fresh status remains connected; connection loss retains disconnected guidance.
 No call sequence, retry, automatic execution, order action or IPC shape changes.
 Strings phase71/orders3108–3110; evidence:
 docs/analysis/connection-failures/verification.md.
+
+## Strategy research feedback presentation (2026-11-03)
+
+Admitted RESEARCH/VALIDATE workers have visible in-tab progress and disable both
+submit controls until completion. Accepted research reports exact target/version
+and returned evidence source; validation alone explicitly still requires research.
+Failures render injected ERROR_TABLE reason and next step without raw details.
+Context changes hide old results; stale/unknown outcomes cannot offer activation.
+Next actions navigate/focus only, retaining original activation/LIVE/confirmation
+gates. Composition injects existing AsyncStatus; commands/lifecycle/IPC stay intact.
+Strings phase72/orders3111–3123; evidence:
+docs/analysis/strategy-research-feedback/verification.md.
