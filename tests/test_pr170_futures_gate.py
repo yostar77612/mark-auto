@@ -87,18 +87,17 @@ class FuturesGateTests(unittest.TestCase):
         state = run_campaign(data, config=config, generator=FixtureGenerator(), output_dir=self.root / 'ok' / 'campaign')
         self.assertIn('status', state)
 
-    @unittest.expectedFailure
-    def test_direct_validate_dataset_and_run_campaign_gap_pending_g3_owner_approval(self):
-        """quantlab/data.py and quantlab/research.py are G3-locked (docs/CONTRIBUTING.md,
-        tests/test_m3_signal_identity.py pins their blobs). Their own gates need an owner-approved
-        edit; until then only the callers above are guarded. This flips to an unexpected success
-        (remove the marker) once validate_dataset/_campaign_config call validate_contract."""
+    def test_direct_validate_dataset_and_run_campaign_refuse_stock_ids(self):
+        """Owner-approved G3 edit: the gates themselves (not only their callers) are TMF-only."""
         data, config = test_research.inputs()
         stock = as_stock(data)
         with self.assertRaises(ValidationError):
             validate_dataset(stock)
+        output = self.root / 'direct' / 'campaign'
         with self.assertRaises(ValidationError):
-            run_campaign(stock, config=config, generator=FixtureGenerator(), output_dir=self.root / 'direct' / 'campaign')
+            run_campaign(stock, config=config, generator=FixtureGenerator(), output_dir=output)
+        self.assertFalse(output.exists())
+        self.assertEqual(sorted(path.name for path in self.root.rglob('*.sqlite3')), [])
 
 
 if __name__ == '__main__':

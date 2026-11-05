@@ -7,6 +7,7 @@ import unittest
 from tests.layered_source_fixtures import original_adapter_text
 from tests.core_split_source_fixtures import before_core_split
 from tests.m3_stock_source_fixtures import reviewed_prior_source
+from tests.pr170_review_source_fixtures import reviewed_prior_source as review_prior_source
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = {
@@ -35,6 +36,9 @@ class FunctionLengthTests(unittest.TestCase):
                 if filename in ('quantlab/core.py', 'quantlab/backtest.py'):
                     # M3-9 pins approved current bytes before checking unchanged historical hashes.
                     source = reviewed_prior_source(filename, source.encode('utf-8')).decode('utf-8')
+                if filename in ('quantlab/research.py', 'quantlab/data.py'):
+                    # Owner-approved PR #170 review gate: recover the exact pre-edit source first.
+                    source = review_prior_source(filename, source.encode('utf-8')).decode('utf-8')
                 if filename in ('quantlab/research.py', 'quantlab/assistant/adapters/chatgpt/auth.py'):
                     source = before_core_split(filename, source)
                 if filename == 'quantlab/assistant/adapters/chatgpt/provider.py':

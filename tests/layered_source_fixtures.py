@@ -136,6 +136,11 @@ def reviewed_source_bytes(root: Path, name: str, *, current=False) -> bytes:
         from tests.m3_stock_source_fixtures import prior_source_bytes
 
         return prior_source_bytes('quantlab/' + name.rsplit('/', 1)[-1])
+    if name in ('research.py', 'data.py', 'quantlab/research.py', 'quantlab/data.py'):
+        # PR #170 review: owner-approved TMF gate edit; historical profiles keep pre-edit bytes.
+        from tests.pr170_review_source_fixtures import prior_source_bytes as review_prior
+
+        return review_prior('quantlab/' + name.rsplit('/', 1)[-1])
     if name not in HASHES:
         return (root / name).read_bytes()
     path = Path(__file__).resolve().parent / 'fixtures' / 'layered_paths' / (name + '.gz')

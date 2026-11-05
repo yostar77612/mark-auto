@@ -30,7 +30,7 @@ from quantlab.saved_candidate_pool import (
     SCALAR_SIWC_ANALYSIS_PROFILE_V1,
     CLEANUP_TRANSPORT_PROFILE_V1,
     CLEANUP_SIWC_ANALYSIS_PROFILE_V1,
-    STOCK_SIGNAL_PROFILE_V1,
+    STOCK_SIGNAL_PROFILE_V2,
     SUPPORTED_PRODUCERS,
 )
 from quantlab.research_core.domain.saved_pool import SavedCandidatePoolError
@@ -463,7 +463,7 @@ class SavedCandidatePoolTests(unittest.TestCase):
         state = run_campaign(self.original, config=config, generator=FixtureGenerator(), output_dir=folder, holdout_registry_path=self.registry)
         self.assertEqual(state['status'], 'completed')
         self.assertEqual(state['attempts'][0]['status'], 'evaluated')
-        self.assertEqual(state['binding']['engine_source_hashes'], STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], STOCK_SIGNAL_PROFILE_V2['engine_source_hashes'])
         before = (folder / 'campaign.json').read_bytes()
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
         self.assertEqual(len(admission.candidate_pool), 1)
@@ -811,9 +811,9 @@ class SavedCandidatePoolTests(unittest.TestCase):
         import quantlab.research as research
 
         actual = {
-            name: content_hash((Path(research.__file__).parent / name).read_text(encoding='utf-8')) for name in STOCK_SIGNAL_PROFILE_V1['engine_source_hashes']
+            name: content_hash((Path(research.__file__).parent / name).read_text(encoding='utf-8')) for name in STOCK_SIGNAL_PROFILE_V2['engine_source_hashes']
         }
-        self.assertEqual(actual, STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'])
+        self.assertEqual(actual, STOCK_SIGNAL_PROFILE_V2['engine_source_hashes'])
         self.assertEqual(content_hash(research.PROMPT), TRANSPORT_VERIFIER_PRODUCER['prompt_template_hash'])
 
     def test_transport_verifier_fixture_and_compatible_profiles_are_canonical_without_rewrites(self):
@@ -966,14 +966,14 @@ class SavedCandidatePoolTests(unittest.TestCase):
         import quantlab.research as research
 
         actual = {
-            name: content_hash((Path(research.__file__).parent / name).read_text(encoding='utf-8')) for name in STOCK_SIGNAL_PROFILE_V1['engine_source_hashes']
+            name: content_hash((Path(research.__file__).parent / name).read_text(encoding='utf-8')) for name in STOCK_SIGNAL_PROFILE_V2['engine_source_hashes']
         }
         for old, new in ((SCALAR_TRANSPORT_PROFILE_V1, CLEANUP_TRANSPORT_PROFILE_V1), (SCALAR_SIWC_ANALYSIS_PROFILE_V1, CLEANUP_SIWC_ANALYSIS_PROFILE_V1)):
             self.assertEqual(new['engine_source_hashes']['backtest.py'], '83b423487c002a533fa5d92de4d53369380b7de8cbad0c181725363573017c91')
             expected_current = dict(new['engine_source_hashes'])
-            expected_current['research.py'] = STOCK_SIGNAL_PROFILE_V1['engine_source_hashes']['research.py']
+            expected_current['research.py'] = STOCK_SIGNAL_PROFILE_V2['engine_source_hashes']['research.py']
             for name in ('core.py', 'backtest.py', 'research_core/domain/receipts.py'):
-                expected_current[name] = STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'][name]
+                expected_current[name] = STOCK_SIGNAL_PROFILE_V2['engine_source_hashes'][name]
             self.assertEqual(expected_current, actual)
             self.assertNotEqual(old['engine_source_hashes']['research.py'], actual['research.py'])
             restored = to_dict(new)
@@ -1090,9 +1090,9 @@ class SavedCandidatePoolTests(unittest.TestCase):
 
     def test_genuine_current_fixture_campaign_to_saved_walk_forward_no_hash_relabelling(self):
         folder, reference, state = self.produce_current()
-        self.assertEqual(state['binding']['engine_source_hashes'], STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'])
+        self.assertEqual(state['binding']['engine_source_hashes'], STOCK_SIGNAL_PROFILE_V2['engine_source_hashes'])
         admission = self.admit(source_campaign_dir=folder, source_campaign_ref=reference, authoritative_registry_path=self.registry)
-        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_3_0_campaign_stock_signal_v1')
+        self.assertEqual(admission.admission['producer']['protocol'], 'mark_auto_0_3_0_campaign_stock_signal_v2')
         self.assertEqual(admission.admission['source_campaign_ref'], reference)
         self.assertEqual(admission.admission['source_campaign_id'], state['campaign_id'])
         self.assertEqual(len(admission.candidate_pool), 15)

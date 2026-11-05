@@ -64,5 +64,11 @@ fail-closed 驗證及不隱式重試全部保留；Paper 30 s、smoke 40 s、每
   `price_series` 共用。`stock_signal_dataset` 保留為逐日定義，測試以它作 oracle。
 - `Bar` 接受股票身分後，期貨入口不能再以建構 `Bar` 當作 TMF 閘門。新增 `quantlab/futures_gate.py`，
   由 `reporting.load_dataset`、`walk_forward._validate_source`（任何預留之前）與研究作業的 campaign
-  入口呼叫。`data.validate_dataset`、`research._campaign_config` 屬 G3 鎖定檔，需擁有者核准才能加入
-  同樣檢查；在核准前，直接呼叫這兩個函式的缺口由 expected-failure 測試記錄，而非被隱藏。
+  入口呼叫。
+- 擁有者已核准（本次審查，2026-11）對 G3 鎖定檔 `data.py`、`research.py` 各加入一個最小檢查：
+  `validate_dataset` 逐根 bar 呼叫 `validate_contract`，`_campaign_config` 對每個不同的合約身分呼叫
+  `validate_contract`（均在任何預留或寫入之前）。行為只收緊，TMF 路徑不變。依 CONTRIBUTING 新增獨立
+  current profile `STOCK_SIGNAL_PROFILE_V2`（僅協定名、`research.py` 引擎雜湊與 `data.py` 結果雜湊
+  不同於 V1）；V1 與其餘 30 個歷史字面區塊逐位元組保留，歷史測試改用封存的審查前位元組
+  （`tests/fixtures/pr170_review_prior_sources.json.gz`）。`test_m3_signal_identity` 的核准 blob 清單
+  新增這兩個檔案的精確 blob，並不放寬其他任何鎖定檔。

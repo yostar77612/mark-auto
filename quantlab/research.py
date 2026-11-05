@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Callable, Protocol
 from urllib.parse import urlsplit
 
-from .core import BacktestConfig, Dataset, StrategySpec, ValidationError, canonical_json, content_hash, to_dict
+from .core import BacktestConfig, Dataset, StrategySpec, ValidationError, canonical_json, content_hash, to_dict, validate_contract
 from .strategies import builtin_strategies, validate_strategy
 from .backtest import run_backtest
 
@@ -491,6 +491,10 @@ def demo_campaign_config(dataset: Dataset, backtest_config: BacktestConfig) -> d
 
 
 def _campaign_config(dataset, config):
+    # Bar also carries stock signal identities; this futures campaign must refuse
+    # them before any range reservation or other irreversible action.
+    for contract in {bar.contract_id for bar in dataset.bars}:
+        validate_contract(contract)
     if dataset.manifest.get('data_hash') != content_hash(dataset.bars):
         raise ValidationError('Source data hash missing or mismatched')
     if dataset.quality.get('valid') is not True or dataset.manifest.get('validation_status') != 'valid':

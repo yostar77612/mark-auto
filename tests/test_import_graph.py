@@ -243,6 +243,7 @@ class ImportGraphTests(unittest.TestCase):
                 'quantlab.configuration',
                 'quantlab.strategies',
                 'quantlab.data',
+                'quantlab.futures_gate',
                 'quantlab.windows_paths',
                 'quantlab.runtime_support',
             },

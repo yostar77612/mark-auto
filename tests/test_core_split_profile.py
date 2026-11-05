@@ -17,6 +17,8 @@ from quantlab.assistant.domain.source_components import SOURCE_COMPONENTS
 from quantlab.core import content_hash, to_dict
 from tests.core_split_source_fixtures import CURRENT_SOURCES, layered_source_bytes
 from tests.m3_stock_source_fixtures import reviewed_prior_source
+from tests.pr170_review_source_fixtures import prior_source_bytes as prior_review_source
+from tests.pr170_review_source_fixtures import reviewed_prior_source as review_prior_source
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = pools.CORE_SPLIT_SIWC_PROFILE_V1
@@ -44,7 +46,13 @@ def frozen_blocks(raw):
 
 def prior_result_hashes(sources):
     return {
-        name: hashlib.sha256(reviewed_prior_source('quantlab/' + name, raw) if name in ('core.py', 'backtest.py') else raw).hexdigest()
+        name: hashlib.sha256(
+            reviewed_prior_source('quantlab/' + name, raw)
+            if name in ('core.py', 'backtest.py')
+            else review_prior_source('quantlab/' + name, raw)
+            if name == 'data.py'
+            else raw
+        ).hexdigest()
         for name, raw in sources.items()
     }
 
@@ -55,7 +63,7 @@ class CoreSplitProfileTests(unittest.TestCase):
         self.assertEqual(dict(SOURCE_COMPONENTS), CURRENT_SOURCES)
         self.assertEqual(len(SOURCE_COMPONENTS), len(CURRENT_SOURCES))
         self.assertEqual(PROFILE['protocol'], 'mark_auto_0_2_2_campaign_core_split_siwc_v1')
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 31)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 32)
         self.assertIs(pools.SUPPORTED_PRODUCERS[29], PROFILE)
         self.assertEqual(PROFILE['provider_modes'], ['fixture', 'openai_compatible', 'chatgpt_plan'])
         for mode in ('fixture', 'openai_compatible'):
@@ -92,6 +100,8 @@ class CoreSplitProfileTests(unittest.TestCase):
             raw = (
                 layered_source_bytes('quantlab/' + name).replace(b'\r\n', b'\n')
                 if name in ('core.py', 'backtest.py')
+                else prior_review_source('quantlab/research.py').replace(b'\r\n', b'\n')
+                if name == 'research.py'
                 else (ROOT / 'quantlab' / name).read_bytes().replace(b'\r\n', b'\n')
             )
             for body in (raw, raw.replace(b'\n', b'\r\n')):
@@ -131,7 +141,7 @@ class CoreSplitProfileTests(unittest.TestCase):
         baseline = frozen_blocks(layered_source_bytes('quantlab/saved_candidate_pool.py'))
         current = frozen_blocks((ROOT / 'quantlab/saved_candidate_pool.py').read_bytes())
         self.assertEqual(len(baseline), 29)
-        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1', 'STOCK_SIGNAL_PROFILE_V1'})
+        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1', 'STOCK_SIGNAL_PROFILE_V1', 'STOCK_SIGNAL_PROFILE_V2'})
         for name, block in baseline.items():
             with self.subTest(name=name):
                 allowed = (block, block.replace(b'\n', b'\r\n'))

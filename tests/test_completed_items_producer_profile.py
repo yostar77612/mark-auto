@@ -44,10 +44,10 @@ class CompletedItemsProducerProfileTests(unittest.TestCase):
 
     def test_new_literal_sources_match_current_engine_and_lf_crlf_provider(self):
         self.assertEqual(
-            {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.STOCK_SIGNAL_PROFILE_V1['engine_source_hashes']},
-            pools.STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'],
+            {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.STOCK_SIGNAL_PROFILE_V2['engine_source_hashes']},
+            pools.STOCK_SIGNAL_PROFILE_V2['engine_source_hashes'],
         )
-        for index, implementation in enumerate(pools.STOCK_SIGNAL_PROFILE_V1['chatgpt_plan_implementations']):
+        for index, implementation in enumerate(pools.STOCK_SIGNAL_PROFILE_V2['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = reviewed_source_bytes(ROOT, name, current=True).replace(b'\r\n', b'\n')
                 if index and name in ('desktop_chatgpt_auth.py', 'desktop_chatgpt_provider.py'):

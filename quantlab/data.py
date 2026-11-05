@@ -205,6 +205,8 @@ def validate_dataset(dataset):
     previous = {}
     for bar in dataset.bars:
         bar.__post_init__()
+        # Bar also carries stock signal identities; every futures data gate stays TMF-only.
+        validate_contract(bar.contract_id)
         if bar.contract_id in previous and bar.timestamp < previous[bar.contract_id]:
             raise ValidationError('overlapping or unsorted bars')
         previous[bar.contract_id] = bar.end
