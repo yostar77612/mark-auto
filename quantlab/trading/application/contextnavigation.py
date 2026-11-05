@@ -94,6 +94,17 @@ class CompositeFacade:
                 raise DomainError('state_conflict', 'context changed during series read')
         return page
 
+    def candidates(self):
+        # Candidate references belong to the selected engine context, never to
+        # the market-only connection host.
+        with self._lock:
+            facade, context_id, epoch = self._current, self._context_id, self._epoch
+        catalogue = facade.candidates()
+        with self._lock:
+            if (facade, context_id, epoch) != (self._current, self._context_id, self._epoch):
+                raise DomainError('state_conflict', 'context changed during candidate read')
+        return catalogue
+
     def symbol_directory(self):
         with self._lock:
             return (self._connection or self._current).symbol_directory()

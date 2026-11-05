@@ -1,5 +1,7 @@
 """Frozen strategy list and reference-only candidate selection, isolated from AI."""
 
+import logging
+
 from PySide6.QtCore import QThread, Qt, Signal
 from PySide6.QtWidgets import QComboBox, QHeaderView, QHBoxLayout, QLabel, QTableWidget, QVBoxLayout, QWidget
 
@@ -8,6 +10,9 @@ from desktop_app.features.trading.promotion_panel import PromotionPanel
 from desktop_app.features.trading.widgets import button, label, rows, selected_id
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction
+from quantlab.trading.domain.validation import DomainError
+
+_LOG = logging.getLogger(__name__)
 
 
 STAGE_KEYS = {'BACKTEST': 'm3.stage_backtest', 'BROKER_SIM': 'm3.stage_sim', 'LIVE_APPROVED': 'm3.stage_live_approved'}
@@ -75,6 +80,7 @@ def summary_text(views):
 class _Candidates(QThread):
     loaded = Signal(object)
     unavailable = Signal()
+    failed = Signal()
 
     def __init__(self, facade, parent):
         super().__init__(parent)
@@ -83,8 +89,15 @@ class _Candidates(QThread):
     def run(self):
         try:
             candidates = self.facade.candidates()
-        except Exception:
+        except DomainError:
+            # A typed refusal (for example candidate_unavailable) is the only
+            # condition that means "no candidates".
             self.unavailable.emit()
+        except Exception as exc:
+            # Programming or transport errors must not look like an empty
+            # catalogue. Log only the type: messages may contain private paths.
+            _LOG.error('candidate catalogue read failed: %s', type(exc).__name__)
+            self.failed.emit()
         else:
             self.loaded.emit(candidates)
 
@@ -172,6 +185,7 @@ class AutoStrategiesWidget(QWidget):
         self.worker = _Candidates(self.host.facade, self)
         self.worker.loaded.connect(self.loaded)
         self.worker.unavailable.connect(self.unavailable)
+        self.worker.failed.connect(self.catalogue_failed)
         self.worker.finished.connect(self.finished)
         self.worker.start()
 
@@ -191,6 +205,11 @@ class AutoStrategiesWidget(QWidget):
         self.candidates.clear()
         self.build_button.setEnabled(False)
         self.status.set_state('empty', message=ui_text('m3.candidates_unavailable'))
+
+    def catalogue_failed(self):
+        self.candidates.clear()
+        self.build_button.setEnabled(False)
+        self.status.set_state('empty', message=ui_text('v2.connection_failed'))
 
     def finished(self):
         worker, self.worker = self.worker, None
