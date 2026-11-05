@@ -47,6 +47,11 @@ def layered_source_bytes(path):
 
 
 def before_core_split(path, source):
+    if path in ('quantlab/research.py', 'quantlab/saved_candidate_pool.py'):
+        # Owner-approved PR #171 review edit: recover the exact pre-edit source, whose identity is pinned below.
+        from tests.pr171_review_source_fixtures import reviewed_prior_source as review_prior
+
+        source = review_prior(path, source.encode('utf-8')).decode('utf-8')
     raw = (FIXTURES / 'core_split_pins.json').read_bytes().replace(b'\r\n', b'\n')
     if hashlib.sha256(raw).hexdigest() != '21a4180c82ef250a713361f108a7927d73cd600fddf157eab24fc578dfd7a6bb':
         raise ValueError('Exact current source/projection pins changed')

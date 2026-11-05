@@ -14,8 +14,9 @@ from unittest.mock import patch
 
 from quantlab import research
 from quantlab import saved_candidate_pool as pools
-from quantlab.core import Dataset, content_hash
+from quantlab.core import Dataset, content_hash, to_dict
 from quantlab.research_core.domain.saved_pool import SavedCandidatePoolError
+from tests.pr171_review_source_fixtures import prior_source_bytes
 from tests.saved_pool_fixtures import make_saved_source
 from tests.test_research import inputs
 
@@ -58,7 +59,7 @@ class CampaignExposureTests(unittest.TestCase):
                 holdout_registry_path=self.registry,
             )
 
-    def admit(self, state, folder=None, original=None):
+    def admit(self, state, folder=None, original=None, registry=None):
         original = original or self.data
         folder = folder or self.folder
         return pools.admit_saved_campaign_pool(
@@ -67,7 +68,7 @@ class CampaignExposureTests(unittest.TestCase):
             original_dataset=original,
             original_dataset_ref='synthetic-original',
             first_training_timestamp=original.bars[-1].end + timedelta(days=1),
-            authoritative_registry_path=self.registry,
+            authoritative_registry_path=registry or self.registry,
         )
 
     def test_union_is_committed_before_first_protected_evaluation(self):
@@ -83,7 +84,7 @@ class CampaignExposureTests(unittest.TestCase):
         self.assertEqual(state['status'], 'completed')
         self.assertEqual(observed, ['previously_consumed'] * 4)
         self.assertEqual(state['holdout_registry']['holdout_hash'], content_hash(self.protected.bars))
-        self.assertEqual(self.admit(state).admission['producer'], pools.E1_EXPOSURE_PROFILE_V1)
+        self.assertEqual(self.admit(state).admission['producer'], pools.E1_EXPOSURE_PROFILE_V2)
         with closing(sqlite3.connect(self.registry)) as db:
             self.assertEqual(db.execute('SELECT count(*) FROM reservations').fetchone()[0], 1)
 
@@ -139,14 +140,15 @@ class CampaignExposureTests(unittest.TestCase):
         self.assertEqual(reserve.call_args.args[0].bars, self.protected.bars)
 
     def test_new_profile_rejects_holdout_only_reservation_even_if_internally_consistent(self):
-        folder, _, original, state = make_saved_source(
-            self.root / 'forged',
-            producer=pools.E1_EXPOSURE_PROFILE_V1,
-            registry_path=self.registry,
-            candidates=1,
-        )
-        with self.assertRaises(SavedCandidatePoolError):
-            self.admit(state, folder, original)
+        for index, producer in enumerate((pools.E1_EXPOSURE_PROFILE_V1, pools.E1_EXPOSURE_PROFILE_V2)):
+            folder, _, original, state = make_saved_source(
+                self.root / f'forged{index}',
+                producer=producer,
+                registry_path=self.root / f'forged{index}.sqlite3',
+                candidates=1,
+            )
+            with self.assertRaises(SavedCandidatePoolError):
+                self.admit(state, folder, original, registry=self.root / f'forged{index}.sqlite3')
 
     def test_historical_holdout_only_profile_admits_without_retroactive_oos_claim(self):
         folder, _, original, state = make_saved_source(
@@ -180,15 +182,24 @@ class CampaignExposureTests(unittest.TestCase):
             for node in ast.parse(raw).body
             if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'freeze'
         ]
-        self.assertEqual(len(blocks), 31)
+        self.assertEqual(len(blocks), 32)
         self.assertEqual(hashlib.sha256(b''.join(blocks[:30])).hexdigest(), 'ee8714e467ca21e8840158757bc9ea85d7502551c746f4b20270bf45a244c8f9')
         profile = pools.E1_EXPOSURE_PROFILE_V1
         self.assertEqual(content_hash(profile), '77997c24313d2a0e6ed1c111ffa17411d85b5f3b02b8b83e3b334895dc63115c')
+        # V1 describes research.py as it was BEFORE the owner-approved PR #171 review edit.
         expected = dict(pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'])
-        expected['research.py'] = content_hash(Path(research.__file__).read_text(encoding='utf-8'))
+        expected['research.py'] = content_hash(prior_source_bytes('quantlab/research.py').decode('utf-8'))
         self.assertEqual(profile['engine_source_hashes'], expected)
         self.assertEqual(profile['result_source_hash_variants'], pools.CORE_SPLIT_SIWC_PROFILE_V1['result_source_hash_variants'])
         self.assertIs(pools.SUPPORTED_PRODUCERS[30], profile)
+        # V2 changes only the protocol name and the research.py engine identity.
+        following = pools.E1_EXPOSURE_PROFILE_V2
+        restored = to_dict(following)
+        restored['protocol'] = profile['protocol']
+        restored['engine_source_hashes']['research.py'] = profile['engine_source_hashes']['research.py']
+        self.assertEqual(restored, to_dict(profile))
+        self.assertEqual(following['engine_source_hashes']['research.py'], content_hash(Path(research.__file__).read_text(encoding='utf-8')))
+        self.assertIs(pools.SUPPORTED_PRODUCERS[31], following)
 
 
 if __name__ == '__main__':

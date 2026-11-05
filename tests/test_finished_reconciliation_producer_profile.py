@@ -26,7 +26,7 @@ class FinishedReconciliationProducerProfileTests(unittest.TestCase):
     def test_all_twenty_one_earlier_profiles_keep_exact_identity(self):
         self.assertEqual([content_hash(p) for p in pools.SUPPORTED_PRODUCERS[:21]], HISTORICAL_HASHES + R1_HASHES)
         self.assertEqual(pools.SUPPORTED_PRODUCERS[21:22], (SIWC,))
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 31)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 32)
         with self.assertRaises(TypeError):
             SIWC['protocol'] = 'rewritten'
 
@@ -40,12 +40,12 @@ class FinishedReconciliationProducerProfileTests(unittest.TestCase):
 
     def test_new_literal_sources_match_current_engine_and_lf_crlf_provider(self):
         self.assertEqual(
-            {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.E1_EXPOSURE_PROFILE_V1['engine_source_hashes']},
-            pools.E1_EXPOSURE_PROFILE_V1['engine_source_hashes'],
+            {name: content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')) for name in pools.E1_EXPOSURE_PROFILE_V2['engine_source_hashes']},
+            pools.E1_EXPOSURE_PROFILE_V2['engine_source_hashes'],
         )
         # Headerless-stream re-pin: current provider bytes now match the newest profile; this
         # profile's own literals stay pinned by test_stream_content_type_producer_profile.
-        latest = pools.E1_EXPOSURE_PROFILE_V1
+        latest = pools.E1_EXPOSURE_PROFILE_V2
         for index, implementation in enumerate(latest['chatgpt_plan_implementations']):
             for name, digest in implementation['source_sha256'].items():
                 raw = reviewed_source_bytes(ROOT, name, current=True).replace(b'\r\n', b'\n')

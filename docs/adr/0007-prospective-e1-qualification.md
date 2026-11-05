@@ -94,7 +94,7 @@ execution-data admission remain separate integration responsibilities.
 The owner's 2026-11-01 D1 decision is unchanged: production orders disabled by default.
 This protocol neither enables orders nor changes LIVE authorization.
 
-## Review follow-up (PR #171 cloud review)
+### Review follow-up (PR #171 cloud review)
 
 Changed design decisions, all of which keep the window consumed and never refund it:
 
@@ -126,9 +126,12 @@ Changed design decisions, all of which keep the window consumed and never refund
   shared check in `e1_protocol`. Each module keeps its own `sample_count` rule: the
   evaluator requires `1..max_bars` and then equality with the dataset's trade days, the
   reader requires equality with the frozen calendar's trade days.
-- **Not applied (G3-locked `research.py`):** `run_campaign` does not catch `ResourceTimeout`/busy from
-  `_reserve_holdout`, and the OOS+holdout protected range is defined in two places
-  (`research.py`, `saved_candidate_pool.py`). Fixing either edits `research.py`, which the G3
-  baseline test and the producer-profile tests pin; it needs owner approval and a new current
-  profile (CONTRIBUTING). `tests/test_pr171_campaign_reservation.py` records the requested behaviour
-  as expected failures (and pins today's reservation derivation) until then.
+- **research.py (owner-approved G3 edit):** `run_campaign` now catches `ResourceTimeout` and a busy/locked
+  registry from `_reserve_holdout`, ends as `budget_exhausted` with a warning and `elapsed_seconds`, and
+  saves, like walk-forward; no state is left `running`. The OOS+holdout protected range has one shared
+  definition, `research.protected_range`, used by `run_campaign` and saved-pool admission, so the
+  `reservation_id`/`holdout_hash` derivation cannot drift. Per CONTRIBUTING a new append-only profile
+  `E1_EXPOSURE_PROFILE_V2` (protocol name and `research.py` engine hash only) is added; V1 and all
+  earlier literal blocks stay byte-identical, and admission treats V1 and V2 as the union-reserving
+  profiles. Historical tests use the archived pre-edit bytes (`tests/fixtures/pr171_review_prior_sources.json.gz`)
+  and the G3 baseline test lists the new exact `research.py` blob.

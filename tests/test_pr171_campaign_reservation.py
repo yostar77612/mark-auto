@@ -51,7 +51,6 @@ class CampaignReservationTests(unittest.TestCase):
         self.assertEqual(rows[0][1], content_hash(protected.bars))
         self.assertEqual(rows[0][0], state['holdout_registry']['reservation_id'])
 
-    @unittest.expectedFailure
     def test_reservation_deadline_ends_the_campaign_as_budget_exhausted(self):
         state, saved = self.run_with(ResourceTimeout('Range reservation exceeded experiment deadline'))
         self.assertEqual(state['status'], 'budget_exhausted')
@@ -59,7 +58,6 @@ class CampaignReservationTests(unittest.TestCase):
         self.assertIn('elapsed_seconds', saved)
         self.assertTrue(saved['warnings'])
 
-    @unittest.expectedFailure
     def test_registry_busy_ends_the_campaign_as_budget_exhausted(self):
         state, saved = self.run_with(busy())
         self.assertEqual(saved['status'], 'budget_exhausted')
@@ -68,7 +66,6 @@ class CampaignReservationTests(unittest.TestCase):
         with self.assertRaises(sqlite3.OperationalError):
             self.run_with(sqlite3.OperationalError('disk I/O error'))
 
-    @unittest.expectedFailure
     def test_one_shared_definition_of_the_protected_range(self):
         splits = research._campaign_config(self.data, self.config)
         union = research.protected_range(splits, union=True)

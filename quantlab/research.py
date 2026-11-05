@@ -490,6 +490,14 @@ def demo_campaign_config(dataset: Dataset, backtest_config: BacktestConfig) -> d
             'ranking': {'metric': 'net_pnl', 'minimum': '0', 'min_trades': 0}}
 
 
+def protected_range(splits, *, union):
+    """The one definition of the range a campaign reserves: OOS+holdout (E1 exposure profile) or holdout only.
+
+    reservation_id and holdout_hash are derived from this exact Dataset by _reserve_holdout.
+    """
+    return Dataset(splits['oos'].bars + splits['holdout'].bars, {}, {}) if union else splits['holdout']
+
+
 def _campaign_config(dataset, config):
     if dataset.manifest.get('data_hash') != content_hash(dataset.bars):
         raise ValidationError('Source data hash missing or mismatched')
@@ -922,10 +930,21 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
         if selected:
             # Consume both protected splits atomically before either is evaluated.
             # Existing registry rows retain their historical holdout-only meaning.
-            protected = Dataset(splits['oos'].bars + splits['holdout'].bars, {}, {})
-            reservation = _reserve_holdout(protected, registry_path=registry_path,
-                campaign_id=campaign_id, selection_hash=state['selection_hash'],
-                output_dir=output_dir, deadline=deadline)
+            protected = protected_range(splits, union=True)
+            try:
+                reservation = _reserve_holdout(protected, registry_path=registry_path,
+                    campaign_id=campaign_id, selection_hash=state['selection_hash'],
+                    output_dir=output_dir, deadline=deadline)
+            except (ResourceTimeout, sqlite3.OperationalError) as exc:
+                busy = getattr(exc, 'sqlite_errorcode', None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
+                if not isinstance(exc, ResourceTimeout) and not busy:
+                    raise
+                # Nothing was reserved: stop like the in-evaluation budget path, never leave 'running'.
+                state['status'] = 'budget_exhausted'
+                state['warnings'].append('Range reservation could not complete within the experiment deadline')
+                state['elapsed_seconds'] = prior_elapsed + time.monotonic() - started
+                save(state)
+                return state
             state['holdout_registry'] = reservation
             state['holdout_status'] = reservation['status']
             if reservation['status'] == 'previously_consumed':

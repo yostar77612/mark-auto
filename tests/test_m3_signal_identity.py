@@ -114,7 +114,9 @@ class SignalIdentityTests(unittest.TestCase):
         self.assertEqual(len(locked), 30)
         # ADR 0007 records the owner-approved E1 exposure accounting change.
         # Other G3 sources retain their exact original baseline.
-        approved = {'quantlab/research.py': '885f4f4c659801cda1e26d9b6b39ebf487801e56'}
+        # PR #171 review: the owner then approved a further minimal research.py edit (campaign
+        # reservation deadline handling and the shared protected_range); this is its exact blob.
+        approved = {'quantlab/research.py': '58a59ddfc352851e2bbf3183d076bea3dd038a7e'}
         for path in locked:
             with self.subTest(path=path):
                 baseline_object = approved.get(path, f'0b7606658947c48457d23f3bd25e0f8dde33c3a7:{path}')
