@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock
 
-from quantlab.trading.application.auto_strategy_service import auto_strategy_views
+from quantlab.trading.application.auto_strategy_service import auto_strategy_views, compact_record
 from quantlab.trading.application.auto_strategy_views import BuildDialogOptions
 from quantlab.trading.application.codec import dumps, loads
 from quantlab.trading.application.contracts import AutoStrategyCommand, UiAction, UiCommand
@@ -67,7 +67,8 @@ class M3IntegrationTests(unittest.TestCase):
     def test_record_build_is_engine_state_envelope_and_sequential(self):
         with self.engine.lock:
             self.engine.auto_service().record_built(self.row, now=self.engine.clock.now())
-        self.assertEqual(self.engine.state.auto_strategies, (self.row,))
+        # The engine projection is bounded: the trade list is replaced by its digest.
+        self.assertEqual(self.engine.state.auto_strategies, (compact_record(self.row),))
         for event in self.engine.journal.replay():
             state = loads(event.payload)
             self.assertIsInstance(state, AppState)

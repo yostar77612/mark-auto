@@ -66,6 +66,14 @@ def invalidate_daily_projection(state, keys):
 
 def compact_daily_projection(engine, state):
     """Pure startup/controller projection; a closed saved engine needs no first write."""
+    from .auto_strategy_service import compact_auto_projection
+
+    # The auto-strategy tuples are bounded in every environment and are also the
+    # migration path for journals written before they were compacted.
+    return compact_auto_projection(_compact_daily_projection(engine, state))
+
+
+def _compact_daily_projection(engine, state):
     from .daily_closes import _changed, _hash
 
     if engine.configuration.environment is not Environment.BROKER_SIMULATION:

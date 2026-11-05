@@ -11,9 +11,11 @@ from typing import TYPE_CHECKING
 from .auto_strategy_views import AutoStrategyView, PromotionProgressView
 from .codec import loads
 from .contracts import AutoBuildRequest, AutoStrategyCommand, UiAction, UiCommand
-from .promotion_service import AutoStrategyEvent, PromotionService
-from quantlab.trading.domain.models import Environment
-from quantlab.trading.domain.promotion import PauseReason, RunState, Stage, TransitionContext, Trigger, evaluate_drift, next_stage, thresholds_for
+from .promotion_service import AutoStrategyEvent, AutoStrategyRecord, PromotionEvaluation, PromotionService, needs_restart_pause, paused_record
+from .signal_research import compact_evidence
+from .state import ACTIVE
+from quantlab.trading.domain.models import Environment, Market
+from quantlab.trading.domain.promotion import PauseReason, Stage, Trigger, TransitionContext, evaluate_drift, next_stage, thresholds_for
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.storage import StoredEvent
 
@@ -33,6 +35,36 @@ AUTO_STRATEGY_ACTIONS = frozenset(
 )
 
 
+def compact_record(row: AutoStrategyRecord) -> AutoStrategyRecord:
+    """Engine-state form of a record: the full trade list is replaced by its digest."""
+    evidence = compact_evidence(row.evidence)
+    return row if evidence is row.evidence else replace(row, evidence=evidence)
+
+
+def _epoch(item: PromotionEvaluation):
+    return item.strategy_id, item.version, item.observation_started_on, item.observation_started_at
+
+
+def compact_evaluations(items: tuple[PromotionEvaluation, ...]) -> tuple[PromotionEvaluation, ...]:
+    """Keep only the newest evaluation of each strategy/version/observation epoch."""
+    latest: dict[tuple, PromotionEvaluation] = {}
+    for item in items:
+        key = _epoch(item)
+        if key not in latest or item.trade_date >= latest[key].trade_date:
+            latest[key] = item
+    kept = {id(item) for item in latest.values()}
+    return tuple(item for item in items if id(item) in kept)
+
+
+def compact_auto_projection(state: 'AppState') -> 'AppState':
+    """Bounded, idempotent projection. Also migrates journals written before compaction."""
+    records = tuple(compact_record(row) for row in state.auto_strategies)
+    evaluations = compact_evaluations(state.auto_promotion_evaluations)
+    if all(a is b for a, b in zip(records, state.auto_strategies)) and evaluations == state.auto_promotion_evaluations:
+        return state
+    return replace(state, auto_strategies=records, auto_promotion_evaluations=evaluations)
+
+
 class _EngineProjectionJournal:
     def __init__(self, engine: 'TradingEngine') -> None:
         self.engine = engine
@@ -47,13 +79,14 @@ class _EngineProjectionJournal:
         row = event.record
         key = row.auto.strategy_id, row.auto.version
         existing = engine.state.auto_strategies
+        row = compact_record(row)
         records = tuple(row if (old.auto.strategy_id, old.auto.version) == key else old for old in existing)
         if not any((old.auto.strategy_id, old.auto.version) == key for old in existing):
             records = (*records, row)
         evaluations = engine.state.auto_promotion_evaluations
         if event.evaluation is not None:
             item = event.evaluation
-            evaluations = (*evaluations, item)
+            evaluations = compact_evaluations((*evaluations, item))
         engine.fence()
         engine._persist(kind, replace(engine.state, auto_strategies=records, auto_promotion_evaluations=evaluations))
         # A sequence receipt for the lifecycle service, not a second durable event.
@@ -71,12 +104,8 @@ def promotion_service(engine: 'TradingEngine') -> PromotionService:
 
 
 def restarted_auto_records(records, environment):
-    return tuple(
-        replace(row, eligible=False, state=next_stage(row.state, Trigger.AUTO_PAUSE, TransitionContext(environment, pause_reason=PauseReason.RESTART)))
-        if row.state.stage is not Stage.BACKTEST and row.state.run_state is RunState.RUNNING
-        else row
-        for row in records
-    )
+    # The same rule PromotionService applies when it replays a journal.
+    return tuple(paused_record(row, environment, PauseReason.RESTART) if needs_restart_pause(row) else row for row in records)
 
 
 def execute_auto_strategy(engine: 'TradingEngine', command: UiCommand) -> str:
@@ -93,6 +122,10 @@ def execute_auto_strategy(engine: 'TradingEngine', command: UiCommand) -> str:
             raise DomainError('state_conflict', 'auto build account mismatch')
         if engine.auto_runtime is None:
             raise DomainError('candidate_unavailable')
+        # The account must be able to trade the TMF index future this build
+        # freezes (local-stock, for example, only has STOCK).
+        if Market.INDEX_FUTURE not in engine.gateways[request.account_ref].inspect(request.account_ref).markets:
+            raise DomainError('capability_missing', 'account does not support index futures')
         engine.auto_runtime.build(request, service)
         return request.strategy_id
     intent = command.auto_strategy
@@ -120,7 +153,7 @@ def execute_auto_strategy(engine: 'TradingEngine', command: UiCommand) -> str:
             raise DomainError('auto_exit_required')
         if any(
             (order.plan.strategy_id, order.plan.strategy_version) == (intent.strategy_id, intent.version)
-            and order.status.value in ('SUBMITTING', 'ACCEPTED', 'PARTIALLY_FILLED', 'CANCEL_PENDING', 'UNKNOWN')
+            and order.status in ACTIVE
             for order in engine.state.orders
         ):
             raise DomainError('auto_exit_required')

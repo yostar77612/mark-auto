@@ -11,7 +11,7 @@ synchronous operation through the existing M2 worker deadline/cancellation path
 (15-minute job budget); this standalone function does not enforce that deadline.
 """
 
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from hashlib import sha256
@@ -49,10 +49,13 @@ class ExecutionEvidence:
     allocated_amount: Decimal
     trade_directions: tuple[Side, ...]
     partition: str = 'TRAINING'
+    # Bounded engine projection: when `trades` is dropped, these identify it.
+    trades_digest: str = ''
+    trade_count: int = 0
 
     @property
     def completed_trades(self) -> int:
-        return len(self.trades)
+        return len(self.trades) or self.trade_count
 
 
 def _json_value(value):
@@ -257,3 +260,18 @@ def research_auto_strategy(
         allocated_amount,
         directions,
     )
+
+
+def compact_evidence(evidence: ExecutionEvidence) -> ExecutionEvidence:
+    """Bounded form of the evidence: trade rows are replaced by a content digest.
+
+    The full evidence stays reproducible from the frozen dataset (`dataset_id`,
+    `result_hash`); equality of two compact forms still detects any change in the
+    dropped rows. Idempotent for an already compact value.
+    """
+    if not evidence.trades and not evidence.trade_directions and evidence.trades_digest:
+        return evidence
+    from .codec import dumps
+
+    digest = sha256(dumps((evidence.trades, evidence.trade_directions)).encode()).hexdigest()
+    return replace(evidence, trades=(), trade_directions=(), trades_digest=digest, trade_count=len(evidence.trades))

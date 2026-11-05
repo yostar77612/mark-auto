@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from .codec import dumps, loads, register
 from .research import ResearchTrade
-from .signal_research import ExecutionEvidence
+from .signal_research import ExecutionEvidence, compact_evidence
 from quantlab.trading.domain.models import Environment, HoldingKind, Side
 from quantlab.trading.domain.promotion import (
     Check,
@@ -151,6 +151,17 @@ register(
 )
 
 
+def needs_restart_pause(row: AutoStrategyRecord) -> bool:
+    """A simulated/approved version that is still RUNNING must never resume by itself."""
+    return row.state.stage is not Stage.BACKTEST and row.state.run_state is RunState.RUNNING
+
+
+def paused_record(row: AutoStrategyRecord, environment: Environment, reason: PauseReason) -> AutoStrategyRecord:
+    """The one rule turning a record into its PAUSED form (owner pauses use the owner trigger)."""
+    trigger = Trigger.OWNER_PAUSE if reason is PauseReason.MANUAL else Trigger.AUTO_PAUSE
+    return replace(row, state=next_stage(row.state, trigger, TransitionContext(environment, pause_reason=reason)), eligible=False)
+
+
 class PromotionService:
     def __init__(self, journal: Journal, environment: Environment, *, now: datetime) -> None:
         aware(now, 'now')
@@ -158,6 +169,7 @@ class PromotionService:
         self.environment = environment
         self._records: dict[tuple[str, int], AutoStrategyRecord] = {}
         self._evaluations: dict[tuple[str, int, date], PromotionVerdict] = {}
+        self._latest_evaluated: dict[tuple[str, int], date] | None = None
         events = journal.replay()
         self._sequence = events[-1].sequence if events else 0
         for event in events:
@@ -167,7 +179,7 @@ class PromotionService:
                     raise DomainError('validation_failed', 'auto event schema')
                 self._restore(event.kind, payload)
         for record in tuple(self._records.values()):
-            if record.state.stage is not Stage.BACKTEST and record.state.run_state is RunState.RUNNING:
+            if needs_restart_pause(record):
                 self.pause(record.auto.strategy_id, record.auto.version, PauseReason.RESTART, now=now)
 
     @classmethod
@@ -189,6 +201,12 @@ class PromotionService:
         service.journal, service.environment, service._sequence = journal, environment, sequence
         service._records = {(row.auto.strategy_id, row.auto.version): row for row in records}
         service._evaluations = {(item.strategy_id, item.version, item.trade_date): item.verdict for item in evaluations}
+        # The engine keeps only the newest evaluation per observation epoch, so
+        # an older date can no longer be proven unevaluated: refuse it.
+        service._latest_evaluated = {}
+        for item in evaluations:
+            key = item.strategy_id, item.version
+            service._latest_evaluated[key] = max(item.trade_date, service._latest_evaluated.get(key, item.trade_date))
         return service
 
     def _restore(self, kind: str, event: AutoStrategyEvent) -> None:
@@ -200,7 +218,7 @@ class PromotionService:
             row.account_ref != previous.account_ref
             or row.execution_instrument_id != previous.execution_instrument_id
             or row.candidate != previous.candidate
-            or replace(row.evidence, source_digest=previous.source_digest, result_hash=previous.result_hash) != previous.evidence
+            or compact_evidence(replace(row.evidence, source_digest=previous.source_digest, result_hash=previous.result_hash)) != compact_evidence(previous.evidence)
         ):
             raise DomainError('auto_frozen', 'replay changed a frozen version')
         item = event.evaluation
@@ -289,6 +307,8 @@ class PromotionService:
         row = self.record(strategy_id, version)
         if not row.permits_new_entries:
             raise DomainError('stage_transition_denied', 'evaluation requires running simulation')
+        if self._latest_evaluated is not None and trade_date < self._latest_evaluated.get((strategy_id, version), trade_date):
+            raise DomainError('validation_failed', 'evaluation date precedes a retained evaluation')
         if observation_started_on != row.observation_started_on or trade_date < observation_started_on:
             raise DomainError('validation_failed', 'observation epoch mismatch')
         trading_date(trade_date)
@@ -301,15 +321,13 @@ class PromotionService:
         self._require_sim()
         row = self.record(strategy_id, version)
         result = evaluate_drift(row.expectation.max_drawdown_pct, observed_drawdown_pct, thresholds_for(row.auto.thresholds_version))
-        if result.paused and row.state.stage is not Stage.BACKTEST and row.state.run_state is RunState.RUNNING:
+        if result.paused and needs_restart_pause(row):
             self.pause(strategy_id, version, PauseReason.DRIFT, now=now)
         return result
 
     def pause(self, strategy_id: str, version: int, reason: PauseReason = PauseReason.MANUAL, *, now: datetime) -> AutoStrategyRecord:
         row = self.record(strategy_id, version)
-        trigger = Trigger.OWNER_PAUSE if reason is PauseReason.MANUAL else Trigger.AUTO_PAUSE
-        state = next_stage(row.state, trigger, TransitionContext(self.environment, pause_reason=reason))
-        return self._write('auto_paused', replace(row, state=state, eligible=False), now)
+        return self._write('auto_paused', paused_record(row, self.environment, reason), now)
 
     def resume(self, strategy_id: str, version: int, *, trade_date: date, reconciled: bool, cause_cleared: bool, now: datetime) -> AutoStrategyRecord:
         row = self.record(strategy_id, version)
@@ -327,12 +345,12 @@ class PromotionService:
         if (evidence.strategy_id, evidence.version, evidence.frozen_hash) != (strategy_id, version, row.auto.frozen_hash):
             raise DomainError('auto_evidence_changed', 'execution evidence version mismatch')
         if evidence.behavior_hash != row.behavior_hash:
-            if row.state.stage is not Stage.BACKTEST and row.state.run_state is RunState.RUNNING:
+            if needs_restart_pause(row):
                 return self.pause(strategy_id, version, PauseReason.EVIDENCE_CHANGED, now=now)
             raise DomainError('auto_evidence_changed', 'execution behavior changed')
-        elif replace(evidence, source_digest=row.source_digest, result_hash=row.result_hash) != row.evidence:
+        elif compact_evidence(replace(evidence, source_digest=row.source_digest, result_hash=row.result_hash)) != compact_evidence(row.evidence):
             raise DomainError('auto_evidence_changed', 'same behavior hash with different execution evidence')
         updated = replace(row, evidence=evidence)
-        if evidence == row.evidence:
+        if compact_evidence(evidence) == compact_evidence(row.evidence):
             return row
         return self._write('auto_evidence_refreshed', updated, now)
