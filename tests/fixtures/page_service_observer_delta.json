@@ -464,6 +464,17 @@
             "symbol": "StockSignalStudyTests.test_revision_or_shared_source_change_cannot_return_artifact"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_pr170_stock_research_perf.py",
+            "kind": "patch.object",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "research.OfficialDailyStockSource",
+            "symbol": "run"
+          },
+          "count": 1
         }
       ]
     },

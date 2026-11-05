@@ -56,7 +56,7 @@ v1 研究／Paper 的真實委託禁令不變。OOS 一次性消耗、不可逆�
 fail-closed 驗證及不隱式重試全部保留；Paper 30 s、smoke 40 s、每 job 15 min
 上限不放寬。
 
-## 審查後續（PR #170 cloud review）
+### 審查後續（PR #170 cloud review）
 
 - 逐日決策的結果不變（位元相同），但實作改為每個「除權息進入視野」的區段只重建一次調整後價格、
   `Bar` 與累進資料雜湊，並對該區段執行一次共用 `generate_signals`（其因果性已由前綴測試固定）。

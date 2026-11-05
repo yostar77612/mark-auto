@@ -327,6 +327,13 @@ def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> b
         from tests.m3_stock_source_fixtures import reviewed_prior_source
 
         return reviewed_prior_source(logical, current)
+    if logical in ('quantlab/research.py', 'quantlab/data.py'):
+        # Owner-approved PR #170 review gate: recover the exact pre-edit bytes first.
+        from tests.pr170_review_source_fixtures import reviewed_prior_source as review_prior
+
+        current = review_prior(logical, current)
+        if logical == 'quantlab/data.py':
+            return current
     if logical in ('desktop_chatgpt_auth.py', 'quantlab/research.py'):
         from tests.core_split_source_fixtures import before_core_split
 
