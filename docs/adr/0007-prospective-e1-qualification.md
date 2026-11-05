@@ -126,3 +126,9 @@ Changed design decisions, all of which keep the window consumed and never refund
   shared check in `e1_protocol`. Each module keeps its own `sample_count` rule: the
   evaluator requires `1..max_bars` and then equality with the dataset's trade days, the
   reader requires equality with the frozen calendar's trade days.
+- **Not applied (G3-locked `research.py`):** `run_campaign` does not catch `ResourceTimeout`/busy from
+  `_reserve_holdout`, and the OOS+holdout protected range is defined in two places
+  (`research.py`, `saved_candidate_pool.py`). Fixing either edits `research.py`, which the G3
+  baseline test and the producer-profile tests pin; it needs owner approval and a new current
+  profile (CONTRIBUTING). `tests/test_pr171_campaign_reservation.py` records the requested behaviour
+  as expected failures (and pins today's reservation derivation) until then.
