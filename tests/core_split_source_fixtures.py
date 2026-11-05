@@ -55,6 +55,11 @@ def before_core_split(path, source):
         from tests.m3_stock_source_fixtures import reviewed_prior_source
 
         source = reviewed_prior_source(path, source.encode('utf-8')).decode('utf-8')
+    if path == 'quantlab/research.py':
+        # Owner-approved PR #170 review gate: pin the new bytes, continue from the exact pre-edit source.
+        from tests.pr170_review_source_fixtures import reviewed_prior_source as review_prior
+
+        source = review_prior(path, source.encode('utf-8')).decode('utf-8')
     raw = (FIXTURES / 'core_split_pins.json').read_bytes().replace(b'\r\n', b'\n')
     if hashlib.sha256(raw).hexdigest() != '21a4180c82ef250a713361f108a7927d73cd600fddf157eab24fc578dfd7a6bb':
         raise ValueError('Exact current source/projection pins changed')

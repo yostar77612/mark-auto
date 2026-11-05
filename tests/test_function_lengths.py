@@ -36,7 +36,7 @@ class FunctionLengthTests(unittest.TestCase):
                 if filename in ('quantlab/core.py', 'quantlab/backtest.py'):
                     # M3-9 pins approved current bytes before checking unchanged historical hashes.
                     source = reviewed_prior_source(filename, source.encode('utf-8')).decode('utf-8')
-                if filename in ('quantlab/research.py', 'quantlab/data.py'):
+                if filename == 'quantlab/data.py':
                     # Owner-approved PR #170 review gate: recover the exact pre-edit source first.
                     source = review_prior_source(filename, source.encode('utf-8')).decode('utf-8')
                 if filename in ('quantlab/research.py', 'quantlab/assistant/adapters/chatgpt/auth.py'):

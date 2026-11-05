@@ -327,13 +327,11 @@ def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> b
         from tests.m3_stock_source_fixtures import reviewed_prior_source
 
         return reviewed_prior_source(logical, current)
-    if logical in ('quantlab/research.py', 'quantlab/data.py'):
-        # Owner-approved PR #170 review gate: recover the exact pre-edit bytes first.
+    if logical == 'quantlab/data.py':
+        # Owner-approved PR #170 review gate: recover the exact pre-edit bytes.
         from tests.pr170_review_source_fixtures import reviewed_prior_source as review_prior
 
-        current = review_prior(logical, current)
-        if logical == 'quantlab/data.py':
-            return current
+        return review_prior(logical, current)
     if logical in ('desktop_chatgpt_auth.py', 'quantlab/research.py'):
         from tests.core_split_source_fixtures import before_core_split
 
@@ -400,6 +398,12 @@ def historical_campaign_hash(value):
 def historical_walk_forward_source(source):
     """Undo only the exact reviewed lazy validation import/argument move."""
     source = source.replace('\r\n', '\n')
+    # PR #170 review: undo exactly the TMF-only gate (one import, one call) before pinning.
+    gate_import = 'from .futures_gate import require_futures_dataset\n'
+    gate_call = '    # Bar also carries stock signal ids; refuse them before any reservation.\n    require_futures_dataset(dataset)\n'
+    if source.count(gate_import) != 1 or source.count(gate_call) != 1:
+        raise ValueError('Reviewed futures gate edit changed')
+    source = source.replace(gate_import, '', 1).replace(gate_call, '', 1)
     if hashlib.sha256(source.encode()).hexdigest() != '38e18c7c775d6da3bd23e69cb77336b2bee03826e7f3763a6ce02b92617cc318':
         raise ValueError('Unreviewed walk-forward source drift')
     source = source.replace(
