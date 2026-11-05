@@ -5,7 +5,6 @@ from quantlab.trading.domain.signal_strategy import CandidateEvidence
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime import e1_protocol as protocol
 from quantlab.trading.runtime import e1_store as store
-from quantlab.verdict import LEVELS
 
 BINDING_KEYS = {'data_hash', 'source_hash', 'calendar_hash', 'capture_hash', 'source_type', 'bar_count', 'evaluation_started_at'}
 RECEIPT_KEYS = {'protocol', 'reference', 'plan_hash', 'dataset_binding_hash', 'source_digest', 'completed_at', 'outcome', 'receipt_hash'}
@@ -44,14 +43,8 @@ def _verify_completion(db, reference, plan, binding, receipt, calendar):
     if binding['capture_hash'] != content_hash(captures) or not started <= completed <= protocol.utc_now():
         protocol.refuse()
     outcome = receipt['outcome']
-    if (
-        type(outcome) is not dict
-        or set(outcome) != {'verdict', 'sample_count', 'result_hash'}
-        or outcome['verdict'] not in LEVELS
-        or type(outcome['sample_count']) is not int
-        or outcome['sample_count'] != len({row['trade_date'] for row in calendar.sessions})
-        or not protocol.is_hash(outcome['result_hash'])
-    ):
+    # Shared structure; here the sample count must equal the frozen calendar's trade days.
+    if not protocol.valid_outcome_shape(outcome) or outcome['sample_count'] != len({row['trade_date'] for row in calendar.sessions}):
         protocol.refuse()
     if outcome['verdict'] == 'statistical_edge' and outcome['sample_count'] < protocol.POLICY['minimum_observations']:
         protocol.refuse()
@@ -82,7 +75,9 @@ def read_e1_summaries(workspace, *, registry_path):
                 if stored['source_digest'] != current or stored.get('evidence_mode') != 'production':
                     continue
                 plan, _, binding, receipt = store.load(db, reference, workspace)
-                calendar, _ = protocol.validate_plan(plan, workspace=workspace, registry=registry)
+                # stored['source_digest'] == current == RUNTIME_SOURCE_DIGEST was verified above,
+                # so do not re-read and re-hash every source file once per plan.
+                calendar, _ = protocol.validate_plan(plan, workspace=workspace, registry=registry, current_sources=False)
                 if len(evidence) >= 1000:
                     protocol.refuse()
                 outcome, completed = _verify_completion(db, reference, plan, binding, receipt, calendar)

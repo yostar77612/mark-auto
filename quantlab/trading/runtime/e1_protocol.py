@@ -18,6 +18,7 @@ from quantlab.trading.domain.validation import DomainError, identity
 from quantlab.trading.domain.automatic_calendar import TMF_OPEN, TMF_CLOSE, TMF_EXPIRY_CLOSE
 from quantlab.trading.runtime.v1_signal_source import canonical_spec_json, spec_fingerprint, validated_spec
 from quantlab.value_bounds import _bounded_value
+from quantlab.verdict import LEVELS
 
 PROTOCOL = 'm3-prospective-e1-v1'
 SOURCE_URL = 'https://openapi.taifex.com.tw/v1/DailyMarketReportFut'
@@ -85,6 +86,20 @@ PLAN_KEYS = {
 
 def refuse():
     raise DomainError('candidate_unavailable')
+
+
+OUTCOME_KEYS = frozenset(('verdict', 'sample_count', 'result_hash'))
+
+
+def valid_outcome_shape(value):
+    """The structure of a minimal E1 outcome. Callers add their own sample_count semantics."""
+    return (
+        type(value) is dict
+        and set(value) == OUTCOME_KEYS
+        and value['verdict'] in LEVELS
+        and type(value['sample_count']) is int
+        and is_hash(value['result_hash'])
+    )
 
 
 def utc_now():

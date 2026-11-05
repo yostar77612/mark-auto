@@ -213,15 +213,22 @@ class E1QualificationTests(unittest.TestCase):
         self.fetch.assert_not_called()
         self.assertEqual(self.state(ref)[1], 'reserved')
 
-    def test_capture_failure_is_redacted_terminal_and_never_refunded(self):
+    def test_transient_capture_failure_is_redacted_retryable_and_never_refunded(self):
+        # PR #171 review: a fetch/projection failure writes nothing, so the outcome is known.
+        # The plan returns to its admitted state (was: terminal 'failed'); the window stays consumed.
         ref = self.freeze()
         self.fetch.side_effect = OSError('synthetic-private-source-payload')
         self.unavailable(lambda: self.host.capture(ref, network_authorized=True))
-        self.assertEqual(self.state(ref)[1], 'failed')
+        self.assertEqual(self.state(ref)[1], 'reserved')
         self.unavailable(lambda: self.host.capture(ref, network_authorized=True))
-        self.assertEqual(self.fetch.call_count, 1)
+        self.assertEqual(self.fetch.call_count, 2)
+        self.assertNotIn('synthetic-private-source-payload', str(self.state(ref)))
         self.unavailable(self.freeze)
         self.assertEqual(self.summaries(), ())
+        self.fetch.side_effect = None
+        self.fetch.return_value = self.raw
+        self.capture(ref)
+        self.assertEqual(self.state(ref)[1], 'captured')
 
     def test_conflicting_official_source_revision_fails_without_overwriting_capture(self):
         ref = self.freeze()
@@ -364,14 +371,33 @@ class E1QualificationTests(unittest.TestCase):
         with patch.object(qualification, '_run_bounded', side_effect=worker):
             self.host.evaluate(ref)
 
-    def test_incomplete_or_invalid_session_set_never_evaluates(self):
+    def test_incomplete_session_set_never_evaluates_but_stays_admitted(self):
+        # PR #171 review: an unmet precondition changes nothing (was: terminal 'failed').
         ref = self.freeze()
         self.fetch.return_value = json.dumps(json.loads(self.raw)[:-1]).encode()
         self.capture(ref)
         with patch.object(qualification, '_run_bounded') as worker:
             self.unavailable(lambda: self.host.evaluate(ref))
             worker.assert_not_called()
+        self.assertEqual(self.state(ref)[1], 'captured')
+        self.assertEqual(self.summaries(), ())
+        # The missing session arrives later through another explicit capture; then it evaluates.
+        self.fetch.return_value = self.raw
+        self.capture(ref)
+        with patch.object(qualification, '_run_bounded', side_effect=mock_outcome):
+            self.assertIsNone(self.host.evaluate(ref))
+        self.assertEqual(self.state(ref)[1], 'completed')
+
+    def test_inconsistent_captured_rows_never_evaluate_and_are_terminal(self):
+        ref = self.freeze()
+        self.capture(ref)
+        with database(self.registry) as db:
+            db.execute('UPDATE e1_captures SET digest=? WHERE reference=? AND slot=0', ('0' * 64, ref))
+        with patch.object(qualification, '_run_bounded') as worker:
+            self.unavailable(lambda: self.host.evaluate(ref))
+            worker.assert_not_called()
         self.assertEqual(self.state(ref)[1], 'failed')
+        self.assertEqual(self.summaries(), ())
 
     def test_synthetic_mode_exercises_real_bounded_engine_but_never_qualifies(self):
         ref = self.freeze(evidence_mode='synthetic_validation')

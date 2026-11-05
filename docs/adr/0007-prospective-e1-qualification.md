@@ -33,11 +33,12 @@ remains unavailable. The protocol does not backfill or certify historical result
 - Explicit later host capture calls fetch only the fixed TAIFEX daily-report HTTPS
   endpoint. Redirects, alternate endpoints, imported files, caller-supplied result
   objects and provider/model callbacks are not production source admission paths.
-  The fetch has a 10-second timeout and 8-MiB bound, makes one request and never
-  retries implicitly. Immutable planned-session captures are local only. Conflicting
-  revisions or failed captures terminate the plan without releasing its window.
-  An exclusive in-flight capture state prevents evaluation until acquisition is
-  quiescent. Only sessions closed before request start can be captured.
+  The fetch uses the verified trust anchors, no proxies, a 10-second socket timeout, a
+  30-second total deadline and an 8-MiB bound, makes one request and never retries
+  implicitly (see "Review follow-up"). Immutable planned-session captures are local only.
+  Conflicting revisions, unknown outcomes and write failures terminate the plan without
+  releasing its window. An exclusive in-flight capture state prevents evaluation until
+  acquisition is quiescent. Only sessions closed before request start can be captured.
 - After ALL planned sessions have been captured, the exact dataset/capture/calendar
   hashes and a single evaluation-attempt marker commit before scoring. One bounded
   host subprocess runs the original backtest engine on the one frozen specification
@@ -92,3 +93,36 @@ execution-data admission remain separate integration responsibilities.
 
 The owner's 2026-11-01 D1 decision is unchanged: production orders disabled by default.
 This protocol neither enables orders nor changes LIVE authorization.
+
+## Review follow-up (PR #171 cloud review)
+
+Changed design decisions, all of which keep the window consumed and never refund it:
+
+- **Transient acquisition failures are retryable.** `capture` still claims `capturing`
+  before the request (exclusivity is unchanged). A fetch or projection failure writes
+  nothing and its outcome is known, so the plan returns to its prior `reserved`/`captured`
+  state and a later explicit host call may capture again. Previously every such failure
+  made the plan terminal `failed`. Unchanged and still terminal: a conflicting revision of
+  stored data, any write failure, a crash or restart (the plan stays `capturing`, which
+  nothing resumes), and a shutdown request (`KeyboardInterrupt`/`SystemExit`: the
+  `failed` accounting is recorded and the exception is re-raised, not converted).
+- **Evaluation preconditions do not consume the plan.** Sessions still open, or planned
+  captures incomplete, leave the plan `reserved`/`captured`. Captured rows that are present
+  but inconsistent (digest, import or calendar validation) can never become valid because
+  captures are immutable: they remain terminal. The single attempt is claimed
+  (`evaluating`) only once the exact dataset is built, and everything after that
+  (worker, timeout, outcome check, receipt write) stays terminal.
+- **Registry lock contention is waited out.** Every E1 connection waits up to 10 seconds,
+  like research `_reserve_holdout`, with the per-statement work budget starting after the
+  lock is held. A lock timeout before a claim changes nothing; during the capture write it
+  is a known, rolled-back outcome and retryable. Previously `timeout=0` turned any
+  concurrent writer into an immediate failure.
+- **The source request is built like `market_providers.fetch_official`:**
+  `tls_trust.build_trust_context`, `ProxyHandler({})`, no redirects, and the shared total
+  deadline handler. The response row bound is `market_providers.MAX_ROWS` (the endpoint
+  returns all products, both sessions and spreads), not a TMF-sized limit; malformed TMF
+  rows are still refused.
+- The reader hashes the 22 source files once per listing; the outcome structure is one
+  shared check in `e1_protocol`. Each module keeps its own `sample_count` rule: the
+  evaluator requires `1..max_bars` and then equality with the dataset's trade days, the
+  reader requires equality with the frozen calendar's trade days.

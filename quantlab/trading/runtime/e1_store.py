@@ -13,6 +13,10 @@ from quantlab.trading.runtime.e1_protocol import calendar_for, decode, is_hash, 
 from quantlab.trading.runtime import e1_protocol as protocol
 from quantlab.windows_paths import native_path, sqlite_uri
 
+# Ordinary lock contention (for example a research job inside _reserve_holdout, which waits up
+# to 10 s) is waited out here too; it is never an immediate, terminal E1 failure.
+BUSY_SECONDS = 10.0
+STATEMENT_SECONDS = 5.0
 SCHEMA = {
     'reservations': 'CREATE TABLE IF NOT EXISTS reservations (reservation_id TEXT PRIMARY KEY, holdout_hash TEXT NOT NULL, campaign_id TEXT NOT NULL, selection_hash TEXT NOT NULL, source_directory TEXT NOT NULL)',
     'coverage': 'CREATE TABLE IF NOT EXISTS coverage (reservation_id TEXT NOT NULL, contract_id TEXT NOT NULL, start TEXT NOT NULL, end TEXT NOT NULL, PRIMARY KEY(reservation_id,contract_id))',
@@ -57,16 +61,19 @@ def connection(registry, *, write=False, create=False):
     if create:
         registry.parent.mkdir(parents=True, exist_ok=True)
     mode = 'rwc' if create else 'rw' if write else 'ro'
-    with closing(sqlite3.connect(sqlite_uri(registry) + '?mode=' + mode, uri=True, timeout=0)) as db:
+    with closing(sqlite3.connect(sqlite_uri(registry) + '?mode=' + mode, uri=True, timeout=BUSY_SECONDS)) as db:
         db.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, 2_000_000)
-        deadline = time.monotonic() + 5
-        db.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
         db.execute('PRAGMA trusted_schema=OFF')
-        db.execute('PRAGMA busy_timeout=0')
+        db.execute('PRAGMA busy_timeout=' + str(int(BUSY_SECONDS * 1000)))
         if not write:
             db.execute('PRAGMA query_only=ON')
         db.execute('BEGIN IMMEDIATE' if write else 'BEGIN')
         try:
+            # Take the lock (bounded wait) before the per-statement budget starts, so the
+            # budget measures work, not time spent waiting for another connection.
+            db.execute('SELECT 1 FROM sqlite_master LIMIT 1').fetchone()
+            deadline = time.monotonic() + STATEMENT_SECONDS
+            db.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
             if create:
                 for sql in SCHEMA.values():
                     db.execute(sql)
@@ -77,6 +84,11 @@ def connection(registry, *, write=False, create=False):
         finally:
             if db.in_transaction:
                 db.rollback()
+
+
+def is_lock_contention(exc):
+    """True for a busy/locked database: nothing was written and the call may be repeated."""
+    return isinstance(exc, sqlite3.OperationalError) and getattr(exc, 'sqlite_errorcode', None) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
 
 
 def reserve(registry, workspace, plan):

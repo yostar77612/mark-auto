@@ -7,10 +7,12 @@ mock the transport; the application has no fixture producer or fallback endpoint
 import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+import time
+from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from quantlab.core import canonical_json, content_hash
 from quantlab.data import import_taifex, validate_dataset
+from quantlab.market_providers import MAX_ROWS, TAIFEX_URL, TOTAL_TIMEOUT, _DeadlineHTTPSHandler
 from quantlab.strict_json import loads
 from quantlab.trading.runtime.e1_protocol import SOURCE_URL, calendar_for, is_hash, refuse, timestamp
 
@@ -25,12 +27,26 @@ class _NoRedirect(HTTPRedirectHandler):
 
 
 def fetch_daily():
-    """One bounded request, no retry, credentials, user parameters or logging."""
+    """One bounded request, no retry, credentials, user parameters or logging.
+
+    Same endpoint as market_providers.fetch_official(TAIFEX_URL), so it is built the same
+    way: verified trust anchors (tls_trust), no proxies, no redirects and a total deadline
+    that also interrupts a drip-fed header or body (not only each socket operation).
+    """
+    if SOURCE_URL != TAIFEX_URL:
+        refuse()
+    deadline = time.monotonic() + TOTAL_TIMEOUT
+    handler = _DeadlineHTTPSHandler(deadline)
     request = Request(SOURCE_URL, headers={'Accept': 'application/json', 'User-Agent': 'MarkAuto-E1/1'})
-    with build_opener(_NoRedirect()).open(request, timeout=10) as response:
-        if response.status != 200 or response.geturl() != SOURCE_URL or response.headers.get_content_type() != 'application/json':
+    try:
+        with build_opener(ProxyHandler({}), _NoRedirect(), handler).open(request, timeout=10) as response:
+            if response.status != 200 or response.geturl() != SOURCE_URL or response.headers.get_content_type() != 'application/json':
+                refuse()
+            raw = response.read(MAX_RESPONSE_BYTES + 1)
+        if time.monotonic() >= deadline:
             refuse()
-        raw = response.read(MAX_RESPONSE_BYTES + 1)
+    finally:
+        handler.cleanup()
     if not raw or len(raw) > MAX_RESPONSE_BYTES:
         refuse()
     return raw
@@ -40,7 +56,9 @@ def projected_rows(raw, plan, request_started_at):
     if type(raw) is not bytes or not 0 < len(raw) <= MAX_RESPONSE_BYTES:
         refuse()
     rows = loads(raw.decode('utf-8-sig'))
-    if type(rows) is not list or len(rows) > 10000:
+    # The endpoint returns every futures product, both sessions and spreads: use the same
+    # bound as market_providers (and the byte bound above), not a TMF-sized one.
+    if type(rows) is not list or len(rows) > MAX_ROWS:
         refuse()
     calendar = calendar_for(plan)
     keys = {(row['trade_date'].replace('-', ''), SESSIONS[row['session']]): index for index, row in enumerate(calendar.sessions)}
@@ -59,10 +77,15 @@ def projected_rows(raw, plan, request_started_at):
     return selected, hashlib.sha256(raw).hexdigest()
 
 
+def complete(plan, captures):
+    """Every planned session has its immutable capture, in order (nothing else is checked)."""
+    return [row[0] for row in captures] == list(range(len(calendar_for(plan).sessions)))
+
+
 def captured_dataset(plan, captures):
     """Only the durable, host-captured exact planned sessions enter evaluation."""
     calendar = calendar_for(plan)
-    if [row[0] for row in captures] != list(range(len(calendar.sessions))):
+    if not complete(plan, captures):
         refuse()
     payload = []
     bindings = []

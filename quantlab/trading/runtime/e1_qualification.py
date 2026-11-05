@@ -14,7 +14,8 @@ from quantlab.trading.runtime import e1_protocol as protocol
 from quantlab.trading.runtime import e1_source as source
 from quantlab.trading.runtime import e1_store as store
 from quantlab.trading.runtime.v1_signal_source import validated_spec
-from quantlab.verdict import LEVELS, judge
+from quantlab.verdict import judge
+import sqlite3
 import time
 
 
@@ -28,14 +29,9 @@ def _evaluate(dataset, spec_json, config):
 
 
 def _outcome(value):
-    if (
-        type(value) is not dict
-        or set(value) != {'verdict', 'sample_count', 'result_hash'}
-        or value['verdict'] not in LEVELS
-        or type(value['sample_count']) is not int
-        or not 1 <= value['sample_count'] <= protocol.POLICY['max_bars']
-        or not protocol.is_hash(value['result_hash'])
-    ):
+    # Shared structure; at evaluation time the count must also be 1..max_bars (and, in
+    # evaluate(), equal the dataset's trade days). The reader checks the frozen calendar.
+    if not protocol.valid_outcome_shape(value) or not 1 <= value['sample_count'] <= protocol.POLICY['max_bars']:
         protocol.refuse()
     return value
 
@@ -79,54 +75,94 @@ class E1QualificationHost:
         except Exception:
             pass
 
+    def _release(self, reference, status):
+        """Return a claimed-but-unwritten capture to its admitted state; True when done.
+
+        Only for failures that wrote nothing and whose outcome is known (transient fetch or
+        projection problems, lock contention). The planned window stays consumed either way.
+        """
+        try:
+            with store.connection(self.registry, write=True) as db:
+                db.execute("UPDATE e1_plans SET status=? WHERE reference=? AND status='capturing'", (status, reference))
+            return True
+        except Exception:
+            return False
+
     def capture(self, reference, *, network_authorized=False):
         """One explicit fetch; append immutable planned sessions, never overwrite.
 
         A no-new-session response does not evaluate or retry evaluation. Each
         later acquisition is a new explicit host call, with the same frozen plan.
+
+        The plan is claimed ('capturing') before the request so capture stays exclusive.
+        If the fetch or projection then fails with nothing written, the outcome is known and
+        the plan returns to its prior state, so a later explicit call may retry. A crash, an
+        interrupt, a write failure or a conflicting revision leaves/makes it terminal.
         """
         if network_authorized is not True:
             protocol.refuse()
-        claimed = False
+        claimed, prior = False, None
         try:
             plan, _, _, _ = self._load(reference, statuses=('reserved', 'captured'))
             with store.connection(self.registry, write=True) as db:
                 _, status, _, _ = store.load(db, reference, self.workspace)
                 if status not in ('reserved', 'captured'):
                     protocol.refuse()
-                claimed = True
-                db.execute("UPDATE e1_plans SET status='capturing' WHERE reference=?", (reference,))
-            request_started_at = protocol.utc_now()
-            raw = source.fetch_daily()
-            captured_at = protocol.utc_now()
-            if captured_at < request_started_at:
-                protocol.refuse()
-            selected, response_digest = source.projected_rows(raw, plan, request_started_at)
-            with store.connection(self.registry, write=True) as db:
-                _, status, _, _ = store.load(db, reference, self.workspace)
-                if status != 'capturing':
+                prior = status
+                db.execute("UPDATE e1_plans SET status='capturing' WHERE reference=? AND status=?", (reference, status))
+            claimed = True
+            try:
+                request_started_at = protocol.utc_now()
+                raw = source.fetch_daily()
+                captured_at = protocol.utc_now()
+                if captured_at < request_started_at:
                     protocol.refuse()
-                for slot, row in selected.items():
-                    prior = db.execute('SELECT payload FROM e1_captures WHERE reference=? AND slot=?', (reference, slot)).fetchone()
-                    if prior is not None:
-                        if protocol.decode(prior[0])['row'] != row:
-                            protocol.refuse()
-                        continue
-                    payload = {'row': row, 'response_digest': response_digest}
-                    db.execute(
-                        'INSERT INTO e1_captures VALUES (?,?,?,?,?)',
-                        (reference, slot, canonical_json(payload), protocol.text_time(captured_at), content_hash(payload)),
-                    )
-                db.execute("UPDATE e1_plans SET status='captured' WHERE reference=?", (reference,))
-        except BaseException:
+                selected, response_digest = source.projected_rows(raw, plan, request_started_at)
+            except Exception:
+                claimed = not self._release(reference, prior)
+                raise
+            try:
+                with store.connection(self.registry, write=True) as db:
+                    _, status, _, _ = store.load(db, reference, self.workspace)
+                    if status != 'capturing':
+                        protocol.refuse()
+                    for slot, row in selected.items():
+                        prior_capture = db.execute('SELECT payload FROM e1_captures WHERE reference=? AND slot=?', (reference, slot)).fetchone()
+                        if prior_capture is not None:
+                            if protocol.decode(prior_capture[0])['row'] != row:
+                                protocol.refuse()
+                            continue
+                        payload = {'row': row, 'response_digest': response_digest}
+                        db.execute(
+                            'INSERT INTO e1_captures VALUES (?,?,?,?,?)',
+                            (reference, slot, canonical_json(payload), protocol.text_time(captured_at), content_hash(payload)),
+                        )
+                    db.execute("UPDATE e1_plans SET status='captured' WHERE reference=?", (reference,))
+            except sqlite3.OperationalError as exc:
+                # The single write transaction rolled back, so a busy/locked registry wrote nothing.
+                if store.is_lock_contention(exc):
+                    claimed = not self._release(reference, prior)
+                raise
+        except Exception:
             if claimed:
                 self._fail(reference)
             raise DomainError('candidate_unavailable') from None
+        except BaseException:
+            # Shutdown requests keep the unknown-state accounting but are never swallowed.
+            if claimed:
+                self._fail(reference)
+            raise
 
     def evaluate(self, reference):
-        """Consume a single attempt before starting; no resume/retry of unknown work."""
+        """Consume a single attempt before starting; no resume/retry of unknown work.
+
+        Preconditions are checked first, so an unmet one (sessions still open, captures
+        incomplete) changes nothing and the plan stays admitted. Captured rows that are
+        present but inconsistent can never become valid (captures are immutable): terminal.
+        The attempt is claimed ('evaluating') only once the exact dataset is built.
+        """
         started = time.monotonic()
-        claimed = False
+        claimed = inconsistent = False
         try:
             plan, calendar, config, _ = self._load(reference, statuses=('reserved', 'captured'))
             if max(row['end'] for row in calendar.sessions) > protocol.utc_now():
@@ -135,11 +171,20 @@ class E1QualificationHost:
                 _, status, _, _ = store.load(db, reference, self.workspace)
                 if status not in ('reserved', 'captured'):
                     protocol.refuse()
-                claimed = True
                 captures = db.execute('SELECT slot,payload,captured_at,digest FROM e1_captures WHERE reference=? ORDER BY slot', (reference,)).fetchall()
-                dataset, dataset_binding = source.captured_dataset(plan, captures)
+                if not source.complete(plan, captures):
+                    protocol.refuse()
+                try:
+                    dataset, dataset_binding = source.captured_dataset(plan, captures)
+                except Exception:
+                    inconsistent = True
+                    raise
                 dataset_binding['evaluation_started_at'] = protocol.text_time(protocol.utc_now())
-                db.execute("UPDATE e1_plans SET status='evaluating',dataset_binding=? WHERE reference=?", (canonical_json(dataset_binding), reference))
+                db.execute(
+                    "UPDATE e1_plans SET status='evaluating',dataset_binding=? WHERE reference=? AND status IN ('reserved','captured')",
+                    (canonical_json(dataset_binding), reference),
+                )
+            claimed = True
             # Exact input dataset and one-attempt state are durable BEFORE scoring.
             outcome = _outcome(
                 _run_bounded(
@@ -174,10 +219,14 @@ class E1QualificationHost:
                     protocol.refuse()
                 # Atomic terminal receipt, never a replaceable UI/export sidecar.
                 db.execute("UPDATE e1_plans SET status='completed',receipt=? WHERE reference=?", (canonical_json(receipt), reference))
+        except Exception:
+            if claimed or inconsistent:
+                self._fail(reference)
+            raise DomainError('candidate_unavailable') from None
         except BaseException:
             if claimed:
                 self._fail(reference)
-            raise DomainError('candidate_unavailable') from None
+            raise
 
     def cancel(self, reference):
         try:

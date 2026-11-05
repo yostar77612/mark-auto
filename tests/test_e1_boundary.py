@@ -1,15 +1,18 @@
 """Dynamic synthetic sentinels and host-source boundary regressions for E1."""
 
 import ast
+from contextlib import closing
 from dataclasses import asdict
 from io import StringIO
 import json
 from pathlib import Path
 import secrets
+import sqlite3
 import unittest
 from unittest.mock import Mock, patch
+from urllib.request import ProxyHandler
 
-from quantlab import agent_tools, agent_read_tools, research
+from quantlab import agent_tools, agent_read_tools, market_providers, research
 from quantlab.assistant_chat import ChatDispatcher
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime import e1_source as source
@@ -107,6 +110,12 @@ class E1BoundaryTests(unittest.TestCase):
         self.assertNotIn(marker, str(f.state(ref)))
 
 
+def capture_count(registry):
+    """Number of immutable captures currently stored (read-only probe)."""
+    with closing(sqlite3.connect(registry)) as db:
+        return db.execute('SELECT COUNT(*) FROM e1_captures').fetchone()[0]
+
+
 class OfficialCaptureBoundaryTests(unittest.TestCase):
     def test_exact_https_origin_and_content_type_are_required_without_redirects(self):
         response = Mock()
@@ -118,9 +127,17 @@ class OfficialCaptureBoundaryTests(unittest.TestCase):
         response.read.return_value = b'[]'
         opener = Mock()
         opener.open.return_value = response
-        with patch.object(source, 'build_opener', return_value=opener) as build:
+        with (
+            patch.object(source, 'build_opener', return_value=opener) as build,
+            patch.object(market_providers, 'build_trust_context', wraps=market_providers.build_trust_context) as trust,
+        ):
             self.assertEqual(source.fetch_daily(), b'[]')
-            self.assertIsInstance(build.call_args.args[0], source._NoRedirect)
+            # Same construction as market_providers.fetch_official: no proxies, no redirects,
+            # verified trust anchors and a total deadline handler (PR #171 review).
+            handlers = build.call_args.args
+            self.assertEqual([type(handler) for handler in handlers], [ProxyHandler, source._NoRedirect, source._DeadlineHTTPSHandler])
+            self.assertEqual(handlers[0].proxies, {})
+            trust.assert_called_once_with()
             request = opener.open.call_args.args[0]
             self.assertEqual(request.full_url, protocol.SOURCE_URL)
             self.assertIsNone(request.data)
@@ -142,7 +159,9 @@ class OfficialCaptureBoundaryTests(unittest.TestCase):
             f.fetch.return_value = json.dumps(rows + rows[:1]).encode()
             f.now = fixtures.AFTER
             f.unavailable(lambda: f.host.capture(ref, network_authorized=True))
-            self.assertEqual(f.state(ref)[1], 'failed')
+            # PR #171 review: a malformed response writes nothing, so the plan stays admitted.
+            self.assertEqual(f.state(ref)[1], 'reserved')
+            self.assertEqual(capture_count(f.registry), 0)
         finally:
             f.doCleanups()
 
