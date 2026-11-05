@@ -156,15 +156,25 @@ class StockSignalStudyTests(unittest.TestCase):
         cal = calendar(tuple(bar.trade_date for bar in history.bars))
         store = SimpleNamespace(verification_revision=1)
         clock = SimpleNamespace(now=lambda: history.observed_at + timedelta(days=1))
-        seen = []
+        calls = []
 
         def shared(bars, spec):
             actual = generate_signals(bars, spec)
-            seen.append(actual[-1].target_position if actual else 0)
+            calls.append((bars, actual))
             return actual
 
         with patch.object(research.OfficialDailyStockSource, 'history', return_value=history), patch.object(research, 'generate_signals', side_effect=shared):
             result = research.research_stock_signals(store, 'TWSE:2330', cal, first, through, canonical_json(specs()[-1]), clock=clock)
+        # The shared callable runs once per adjustment horizon (here: no events, so once
+        # over the complete history); each decision day sees the signals up to its own bar.
+        self.assertEqual(len(calls), 1)
+        bars, actual = calls[0]
+        seen = []
+        for index in range(len(bars)):
+            known = [p for p in actual if p.timestamp <= bars[index].end]
+            seen.append(known[-1].target_position if known else 0)
+            # Causality: the prefix run is exactly the full run restricted to that bar.
+            self.assertEqual(generate_signals(bars[: index + 1], specs()[-1]), tuple(known))
         self.assertEqual(set(seen), {-1, 0, 1})
         self.assertEqual(tuple(row['target'] for row in result.targets), tuple(max(0, value) for value in seen))
 

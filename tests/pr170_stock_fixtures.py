@@ -47,10 +47,13 @@ def synthetic_history(count, *, events=(), first=date(2010, 1, 4), instrument=IN
             actions.append(CorporateAction(instrument, ex, previous, reference, digest, url))
     history = OfficialDailyHistory(instrument, tuple(bars), tuple(actions), datetime(2099, 1, 1, tzinfo=timezone.utc), 'b' * 64)
     # The request window must span five calendar years; one calendar-only trailing day provides that.
-    through = max(days[-1], first.replace(year=first.year + 5) + timedelta(days=7))
-    through += timedelta(days=(7 - through.weekday()) % 7 if through.weekday() >= 5 else 0)
+    through = max(days[-1], first.replace(year=first.year + 5)) + timedelta(days=1)
+    while through.weekday() >= 5:
+        through += timedelta(days=1)
     sessions = tuple(
-        TradingSession(day, datetime(day.year, day.month, day.day, 1, 0, tzinfo=timezone.utc), datetime(day.year, day.month, day.day, 5, 30, tzinfo=timezone.utc))
+        TradingSession(
+            day, datetime(day.year, day.month, day.day, 1, 0, tzinfo=timezone.utc), datetime(day.year, day.month, day.day, 5, 30, tzinfo=timezone.utc)
+        )
         for day in (*days, through)
     )
     return history, TradingCalendar('synthetic', 'v1', 'synthetic', sessions), through

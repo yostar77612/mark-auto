@@ -104,6 +104,24 @@ def _digest(rows) -> str:
 
 
 @decimal_operation
+def adjust_bars(bars: tuple[DailyStockBar, ...], events: tuple[CorporateAction, ...], *, adjusted: bool = True) -> tuple[DailyStockBar, ...]:
+    """Backward-adjust `bars` by `events` (already ordered by ex-date and inside the horizon).
+
+    The single arithmetic definition shared by price_series and incremental
+    point-in-time readers: every result is bit-identical to a price_series call.
+    """
+    result = []
+    for bar in bars:
+        factor = Decimal('1')
+        if adjusted:
+            for event in events:
+                if bar.trade_date < event.ex_date:
+                    factor *= event.reference_price / event.previous_close
+        result.append(replace(bar, open=bar.open * factor, high=bar.high * factor, low=bar.low * factor, close=bar.close * factor))
+    return tuple(result)
+
+
+@decimal_operation
 def price_series(bars: tuple[DailyStockBar, ...], events: tuple[CorporateAction, ...], *, adjusted: bool = True, as_of: date | None = None) -> StockPriceSeries:
     """Only events inside the observation horizon affect past research prices."""
     if not bars or tuple(sorted(bars, key=lambda b: b.trade_date)) != bars or len({b.trade_date for b in bars}) != len(bars):
@@ -129,12 +147,5 @@ def price_series(bars: tuple[DailyStockBar, ...], events: tuple[CorporateAction,
             for e in events
         ]
     )
-    result = []
-    for bar in bars:
-        factor = Decimal('1')
-        if adjusted:
-            for event in events:
-                if bar.trade_date < event.ex_date:
-                    factor *= event.reference_price / event.previous_close
-        result.append(replace(bar, open=bar.open * factor, high=bar.high * factor, low=bar.low * factor, close=bar.close * factor))
+    result = adjust_bars(bars, events, adjusted=adjusted)
     return StockPriceSeries(tuple(result), 'ADJUSTED' if adjusted else 'RAW', ADJUSTMENT_METHOD if adjusted else 'none', events_digest, raw_digest)

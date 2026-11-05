@@ -4,14 +4,15 @@ The official source verifies local payload bytes and complete calendar/event
 coverage. Every decision uses its own full, point-in-time adjusted history.
 """
 
+from bisect import bisect_left
 from dataclasses import dataclass
 from datetime import timedelta, timezone
 from hashlib import sha256
 from pathlib import Path
 from time import monotonic
 
-from quantlab.core import Bar, Dataset, content_hash, freeze, validate_signal_contract, ValidationError
-from quantlab.trading.domain.stock_history import price_series
+from quantlab.core import Bar, Dataset, canonical_json, content_hash, freeze, validate_signal_contract, ValidationError
+from quantlab.trading.domain.stock_history import adjust_bars, price_series
 from quantlab.trading.domain.validation import DomainError, trading_date
 from quantlab.trading.runtime.official_daily_source import OfficialDailyStockSource
 from quantlab.trading.runtime.provenance import compute_profile
@@ -83,6 +84,91 @@ def stock_signal_dataset(history, calendar, through) -> Dataset:
     return Dataset(bars, manifest, {'valid': True, 'errors': [], 'missing_intervals': 0})
 
 
+def _decision_targets(history, calendar, spec, checkpoint):
+    """Targets for every raw DAY, equal to `stock_signal_dataset` + `generate_signals` per day.
+
+    The per-day definition rebuilds the whole point-in-time history for each day.
+    Between two days on which an official event first enters the observation
+    horizon the adjusted history only grows by one unadjusted bar, so every day's
+    dataset is a prefix of one series. This reads each such segment once:
+    adjusted bars, Bars and the running data hash are built once per segment and
+    shared by its days, and the shared signal callable is run once over the
+    segment (it is causal: the prefix result is its signals up to that bar).
+    Nothing after a decision day ever enters that day's adjustment or hash.
+    """
+    raws = history.bars
+    dates = [bar.trade_date for bar in raws]
+    # The checks price_series makes on its whole input at the first decision.
+    if tuple(sorted(raws, key=lambda bar: bar.trade_date)) != raws or len(set(dates)) != len(dates):
+        raise DomainError('validation_failed', 'ordered unique daily history required')
+    instrument = raws[0].instrument_id
+    if any(event.instrument_id != instrument for event in history.events):
+        raise DomainError('validation_failed', 'single instrument required')
+    if len({event.ex_date for event in history.events}) != len(history.events):
+        raise DomainError('validation_failed', 'one combined official event per date')
+    events = sorted((event for event in history.events if dates[0] < event.ex_date), key=lambda event: event.ex_date)
+    # An event takes part from the first decision day on or after its ex-date.
+    entry = [bisect_left(dates, event.ex_date) for event in events]
+    starts = sorted({0, *(index for index in entry if index < len(raws))})
+    ends = [*starts[1:], len(raws)]
+    sessions = {}
+    for session in calendar.sessions:
+        if session.kind == 'DAY':
+            sessions.setdefault(session.trade_date, session)
+    known_days = {session.trade_date for session in calendar.sessions}
+    targets = []
+    for lo, stop in zip(starts, ends):
+        checkpoint()
+        active = tuple(event for event, index in zip(events, entry) if index <= lo)
+        adjusted = adjust_bars(raws[:stop], active)
+        bars = []
+        for bar in adjusted:
+            if bar.instrument_id != instrument:
+                raise DomainError('validation_failed', 'single instrument required')
+            if bar.trade_date not in known_days:
+                raise DomainError('calendar_missing', bar.trade_date.isoformat())
+            if bar.trade_date not in sessions:
+                raise DomainError('calendar_missing', 'day session missing')
+            session = sessions[bar.trade_date]
+            bars.append(
+                Bar(
+                    session.opens_at.astimezone(timezone.utc),
+                    session.closes_at.astimezone(timezone.utc),
+                    bar.trade_date.isoformat(),
+                    'day',
+                    history.instrument_id,
+                    bar.open,
+                    bar.high,
+                    bar.low,
+                    bar.close,
+                    bar.volume,
+                    history.source_digest,
+                )
+            )
+        bars = tuple(bars)
+        # canonical_json(tuple(bars)) == '[' + ','.join(canonical_json(bar)) + ']'
+        running = sha256(b'[')
+        for index, bar in enumerate(bars[:lo]):
+            running.update((b',' if index else b'') + canonical_json(bar).encode('utf-8'))
+        shared = all(a.end < b.end for a, b in zip(bars, bars[1:]))
+        signals = generate_signals(bars, spec) if shared else None
+        position, target = 0, 0
+        for index in range(lo, stop):
+            checkpoint()
+            running.update((b',' if index else b'') + canonical_json(bars[index]).encode('utf-8'))
+            digest = running.copy()
+            digest.update(b']')
+            if signals is None:  # equal bar ends cannot be told apart by timestamp
+                current = generate_signals(bars[: index + 1], spec)
+                target = max(0, current[-1].target_position) if current else 0
+            else:
+                while position < len(signals) and signals[position].timestamp <= bars[index].end:
+                    target = max(0, signals[position].target_position)
+                    position += 1
+            targets.append({'at': bars[index].end, 'target': target, 'signal_data_hash': digest.hexdigest()})
+    return targets
+
+
 def _source_identity():
     root = Path(__file__).resolve().parents[2]
     # The v2 profile alone does not cover the shared v1 callable and its admission.
@@ -129,13 +215,11 @@ def research_stock_signals(
     history = OfficialDailyStockSource(store, clock).history(instrument_id, calendar, through=through, start=start)
     if not 1 <= len(history.bars) <= MAX_BARS or len(history.events) > MAX_BARS:
         raise DomainError('official_stock_coverage_missing', 'bounded stock history required')
-    targets = []
-    for raw in history.bars:
-        checkpoint()
-        dataset = stock_signal_dataset(history, calendar, raw.trade_date)
-        signals = generate_signals(dataset.bars, spec)
-        target = max(0, signals[-1].target_position) if signals else 0
-        targets.append({'at': dataset.bars[-1].end, 'target': target, 'signal_data_hash': dataset.manifest['data_hash']})
+    targets = _decision_targets(history, calendar, spec, checkpoint)
+    # The last decision's dataset (and its evidence) comes from the per-day definition.
+    dataset = stock_signal_dataset(history, calendar, history.bars[-1].trade_date)
+    if targets[-1]['signal_data_hash'] != dataset.manifest['data_hash'] or targets[-1]['at'] != dataset.bars[-1].end:
+        raise DomainError('source_invalid_evidence', 'stock signal projection disagrees with its dataset')
     checkpoint()
     if store.verification_revision != revision or _source_identity() != identity:
         raise DomainError('source_invalid_evidence', 'stock input or signal source changed during research')
