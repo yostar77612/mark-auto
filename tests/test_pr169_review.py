@@ -33,8 +33,9 @@ class CompositeCandidatesTests(unittest.TestCase):
 
     def setUp(self):
         self.port = navigation_support.NavigationStub()
-        self.port.facades['local'] = CatalogueView(*self.port.facades['local'].state.environment and (
-            self.port.facades['local'].state.environment, 'local-stock', 90, 'LOCAL_BOOK'))
+        self.port.facades['local'] = CatalogueView(
+            *self.port.facades['local'].state.environment and (self.port.facades['local'].state.environment, 'local-stock', 90, 'LOCAL_BOOK')
+        )
         self.facade = CompositeFacade(self.port, 'local', self.port.facades['local'])
 
     def test_real_composite_delegates_candidates_to_selected_context(self):
@@ -80,6 +81,28 @@ class CompositeCandidatesTests(unittest.TestCase):
             self.assertNotIn(ui_text('m3.candidates_unavailable'), text)
             self.assertNotIn('programming error', text)
             self.assertFalse(controls.build_button.isEnabled())
+        finally:
+            window.close()
+            window.deleteLater()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
+    def test_quote_ticks_do_not_redraw_auto_strategy_table(self):
+        from dataclasses import replace
+        from unittest.mock import patch
+
+        state = replace(self.facade.snapshot(), auto_strategies=(view(),))
+        window = TradingWindow(self.facade, state, research_status_factory=AsyncStatus)
+        window.poll.stop()
+        window.setProperty('allow_close_for_tests', True)
+        try:
+            with patch.object(window.auto_strategies, 'render', wraps=window.auto_strategies.render) as render:
+                window.apply_state(replace(state, quote_revision=state.quote_revision + 1))
+                window.apply_state(replace(state, quote_revision=state.quote_revision + 2))
+                self.assertEqual(render.call_count, 0)
+                window.apply_state(replace(state, version=state.version + 1))
+                self.assertEqual(render.call_count, 1)
+                window.apply_state(replace(state, version=state.version + 1, context_epoch=state.context_epoch + 1))
+                self.assertEqual(render.call_count, 2)
         finally:
             window.close()
             window.deleteLater()

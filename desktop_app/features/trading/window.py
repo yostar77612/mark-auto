@@ -628,7 +628,10 @@ class TradingWindow(QMainWindow):
             return
         state_changed = self._rendered_version is None or self._rendered_version[:2] != render_version[:2]
         self._rendered_version = render_version
-        self.auto_strategies.render(state)
+        if state_changed:
+            # Quote ticks only move quote_revision; the strategy table and its
+            # candidate scope depend on the version/context stamp alone.
+            self.auto_strategies.render(state)
         render_tables(self, state, state_changed=state_changed)
         self.strategy_controls.render(state)
         self.manual_controls.render(state)

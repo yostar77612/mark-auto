@@ -150,7 +150,12 @@ class EngineTests(unittest.TestCase):
         self.engine.auto_runtime = runtime
         version = self.engine.state.version
         with self.assertRaises(DomainError) as error:
-            execute_auto_strategy(self.engine, self.command(UiAction.BUILD_AUTO_STRATEGY, account_ref='local-stock', auto_strategy=None, auto_build=replace(build_request(), account_ref='local-stock')))
+            execute_auto_strategy(
+                self.engine,
+                self.command(
+                    UiAction.BUILD_AUTO_STRATEGY, account_ref='local-stock', auto_strategy=None, auto_build=replace(build_request(), account_ref='local-stock')
+                ),
+            )
         self.assertEqual(error.exception.code, 'capability_missing')
         runtime.build.assert_not_called()
         self.assertEqual(self.engine.state.version, version)
@@ -158,7 +163,9 @@ class EngineTests(unittest.TestCase):
     def test_build_proceeds_for_futures_account(self):
         runtime = Mock()
         self.engine.auto_runtime = runtime
-        execute_auto_strategy(self.engine, self.command(UiAction.BUILD_AUTO_STRATEGY, auto_strategy=None, auto_build=replace(build_request(), account_ref='local-futures')))
+        execute_auto_strategy(
+            self.engine, self.command(UiAction.BUILD_AUTO_STRATEGY, auto_strategy=None, auto_build=replace(build_request(), account_ref='local-futures'))
+        )
         runtime.build.assert_called_once()
 
     def test_retire_refuses_every_active_order_status(self):

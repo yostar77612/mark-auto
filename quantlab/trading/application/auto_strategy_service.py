@@ -15,7 +15,7 @@ from .promotion_service import AutoStrategyEvent, AutoStrategyRecord, PromotionE
 from .signal_research import compact_evidence
 from .state import ACTIVE
 from quantlab.trading.domain.models import Environment, Market
-from quantlab.trading.domain.promotion import PauseReason, Stage, Trigger, TransitionContext, evaluate_drift, next_stage, thresholds_for
+from quantlab.trading.domain.promotion import PauseReason, Trigger, TransitionContext, evaluate_drift, next_stage, thresholds_for
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.storage import StoredEvent
 
@@ -152,8 +152,7 @@ def execute_auto_strategy(engine: 'TradingEngine', command: UiCommand) -> str:
         if any((lot.strategy_id, lot.strategy_version) == (intent.strategy_id, intent.version) and lot.quantity for lot in engine.state.positions):
             raise DomainError('auto_exit_required')
         if any(
-            (order.plan.strategy_id, order.plan.strategy_version) == (intent.strategy_id, intent.version)
-            and order.status in ACTIVE
+            (order.plan.strategy_id, order.plan.strategy_version) == (intent.strategy_id, intent.version) and order.status in ACTIVE
             for order in engine.state.orders
         ):
             raise DomainError('auto_exit_required')

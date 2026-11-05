@@ -218,7 +218,8 @@ class PromotionService:
             row.account_ref != previous.account_ref
             or row.execution_instrument_id != previous.execution_instrument_id
             or row.candidate != previous.candidate
-            or compact_evidence(replace(row.evidence, source_digest=previous.source_digest, result_hash=previous.result_hash)) != compact_evidence(previous.evidence)
+            or compact_evidence(replace(row.evidence, source_digest=previous.source_digest, result_hash=previous.result_hash))
+            != compact_evidence(previous.evidence)
         ):
             raise DomainError('auto_frozen', 'replay changed a frozen version')
         item = event.evaluation
