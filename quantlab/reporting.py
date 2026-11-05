@@ -6,6 +6,7 @@ import csv
 import os
 import tempfile
 
+from .futures_gate import require_futures_dataset
 from .core import Bar, Dataset, Fill, Signal, BacktestResult, CostSpec, BacktestConfig, ValidationError, canonical_json, content_hash, to_dict
 
 from . import strict_json
@@ -104,6 +105,8 @@ def load_dataset(path):
             row[key] = Decimal(row[key])
         bars.append(Bar(**row))
     dataset = Dataset(tuple(bars), payload['manifest'], payload['quality'])
+    # Bar also carries stock signal ids; a futures dataset file must be TMF only.
+    require_futures_dataset(dataset)
     manifest = dataset.manifest
     if manifest.get('data_hash') != content_hash(dataset.bars):
         raise ValidationError('Dataset bar hash mismatch')

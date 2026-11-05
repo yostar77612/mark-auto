@@ -23,6 +23,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Callable
 
+from .futures_gate import require_futures_dataset
 from .core import BacktestConfig, Dataset, StrategySpec, ValidationError, canonical_json, content_hash, freeze, to_dict
 from .value_bounds import _bounded_number, _exact_number, _bounded_value
 from .paper_replay import _require_wal_runtime, _require_local_wal_path
@@ -223,6 +224,8 @@ def _validate_source(dataset, plan):
     plan.__post_init__()
     if not dataset.bars or len(dataset.bars) > plan.max_bars:
         raise ValidationError('Source bar resource budget exceeded')
+    # Bar also carries stock signal ids; refuse them before any reservation.
+    require_futures_dataset(dataset)
     _bounded_value(dataset.manifest)
     _bounded_value(dataset.quality)
     source_bytes = 0

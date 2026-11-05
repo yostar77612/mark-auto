@@ -55,3 +55,14 @@
 v1 研究／Paper 的真實委託禁令不變。OOS 一次性消耗、不可逆預算、受限 AST、
 fail-closed 驗證及不隱式重試全部保留；Paper 30 s、smoke 40 s、每 job 15 min
 上限不放寬。
+
+## 審查後續（PR #170 cloud review）
+
+- 逐日決策的結果不變（位元相同），但實作改為每個「除權息進入視野」的區段只重建一次調整後價格、
+  `Bar` 與累進資料雜湊，並對該區段執行一次共用 `generate_signals`（其因果性已由前綴測試固定）。
+  任一決策日仍只使用當日以前已進入視野的事件；調整算術由 `stock_history.adjust_bars` 與
+  `price_series` 共用。`stock_signal_dataset` 保留為逐日定義，測試以它作 oracle。
+- `Bar` 接受股票身分後，期貨入口不能再以建構 `Bar` 當作 TMF 閘門。新增 `quantlab/futures_gate.py`，
+  由 `reporting.load_dataset`、`walk_forward._validate_source`（任何預留之前）與研究作業的 campaign
+  入口呼叫。`data.validate_dataset`、`research._campaign_config` 屬 G3 鎖定檔，需擁有者核准才能加入
+  同樣檢查；在核准前，直接呼叫這兩個函式的缺口由 expected-failure 測試記錄，而非被隱藏。

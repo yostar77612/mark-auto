@@ -3,6 +3,7 @@
 from quantlab.research_core.ports.ui_operations import UiOperationPorts
 from pathlib import Path
 from decimal import Decimal
+from quantlab.futures_gate import require_futures_dataset
 from quantlab.core import Dataset, StrategySpec, ValidationError, content_hash, to_dict
 from quantlab.research_core.application.ui_operations.assistant import plan_provider
 from quantlab.research_core.application.ui_operations.binding_policy import provider_binding_options
@@ -101,6 +102,7 @@ def _handle_ui_campaign(ports: UiOperationPorts, payload, paths, root, *, emit=N
     else:
         generator = campaign_generator(ports, paths, options)
     name = content_hash({'dataset': data.manifest['data_hash'], 'config': config, 'provider': provider_binding_options(options)})
+    require_futures_dataset(data)  # before any registry or output path is touched
     return run_campaign(
         data,
         config=config,

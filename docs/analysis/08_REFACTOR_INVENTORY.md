@@ -190,6 +190,7 @@ Composition 包含根目錄 launchers、桌面 bootstrap 與既有 `quantlab/tra
 | `quantlab/download_import.py` | 177 | application | `quantlab/research_core/application/download_import.py` | 下載與嚴格匯入流程協調；E 按責任抽取；匯入違規見第 3 節；`import_settings`，`quantlab/download_import.py:18` |
 | `quantlab/downloads.py` | 250 | infrastructure | `quantlab/downloads.py` | 官方 HTTP 與 archive 下載；R4 無違規／超大觸發，原址保留；`official_url`，`quantlab/downloads.py:38` |
 | `quantlab/errors.py` | 182 | shared | `quantlab/errors.py` | 固定錯誤碼與共用例外；R4 無違規／超大觸發，原址保留；`RecoveryError`，`quantlab/errors.py:11` |
+| `quantlab/futures_gate.py` | 17 | domain | `quantlab/futures_gate.py` | PR #170 review: TMF-only dataset gate (Bar also carries stock signal ids); new module, existing rows and layer rules retained. |
 | `quantlab/idea_research.py` | 662 | application | `quantlab/research_core/application/idea_research.py` | 搜尋、擷取與候選採用流程；混有 IdeaStore；E 按責任抽取；匯入違規見第 3 節；`new_task`，`quantlab/idea_research.py:98` |
 | `quantlab/idea_search.py` | 354 | infrastructure | `quantlab/idea_search.py` | Responses stream 邊界與搜尋結果處理；R4 無違規／超大觸發，原址保留；`SearchUnavailable`，`quantlab/idea_search.py:39` |
 | `quantlab/idea_sources.py` | 136 | shared | `quantlab/idea_sources.py` | 固定網址與封鎖設定；R4 無違規／超大觸發，原址保留；`quantlab/idea_sources.py:1` |

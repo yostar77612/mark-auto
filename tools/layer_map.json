@@ -106,6 +106,7 @@
     "quantlab/download_import.py": "application",
     "quantlab/downloads.py": "infrastructure",
     "quantlab/errors.py": "shared",
+    "quantlab/futures_gate.py": "domain",
     "quantlab/idea_research.py": "application",
     "quantlab/idea_search.py": "infrastructure",
     "quantlab/idea_sources.py": "shared",
