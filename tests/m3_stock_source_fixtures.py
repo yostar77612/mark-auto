@@ -9,7 +9,7 @@ ARCHIVE_SHA256 = '32b78b3424371a1f4e1684cd8e53b0b48cc719cefe0b551369e67d61cf19bc
 CURRENT_SHA256 = {
     'quantlab/backtest.py': 'b30ad2909f70682e7076862253f3f0d1748640d96d16c84252c1fb02e91a44ea',
     'quantlab/core.py': 'b508d19fd2eee49adf49dc612c4c4aad74a0b2f68c27b3c5cdaed7dad3f92c81',
-    'quantlab/saved_candidate_pool.py': '5fe7c7f99b55360a9829f13c58770f860a06dd06959ad2be3266ffb04e7d496b',
+    'quantlab/saved_candidate_pool.py': '7d58d4123d23a9a195c15c03cd5b7bed14a927a3c040457aa9d7e530f2490c49',
 }
 
 

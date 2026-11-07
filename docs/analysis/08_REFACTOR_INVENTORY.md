@@ -958,6 +958,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/strings/m3_ui.py` | 89 | shared | `desktop_app/strings/m3_ui.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
 | `quantlab/trading/application/auto_strategy_service.py` | 143 | application | `quantlab/trading/application/auto_strategy_service.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
 | `quantlab/trading/runtime/auto_strategy.py` | 72 | composition | `quantlab/trading/runtime/auto_strategy.py` | M3-4/5 owner-intent integration and reference-only UI; LIVE hard-disabled |
+| `quantlab/trading/runtime/e1_protocol.py` | 250 | composition | `quantlab/trading/runtime/e1_protocol.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/e1_qualification.py` | 186 | composition | `quantlab/trading/runtime/e1_qualification.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/e1_reader.py` | 105 | composition | `quantlab/trading/runtime/e1_reader.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/e1_source.py` | 100 | composition | `quantlab/trading/runtime/e1_source.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/e1_store.py` | 141 | composition | `quantlab/trading/runtime/e1_store.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
