@@ -78,6 +78,7 @@ def _allowed(layer: str, target: str) -> bool:
             or any(
                 _within(target, PREFIX + module)
                 for module in (
+                    'application.auto_strategy_views',
                     'application.market_settings',
                     'application.symbol_search',
                     'application.alert_contracts',

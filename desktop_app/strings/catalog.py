@@ -249,6 +249,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[71])
 # Lane research feedback: visible progress, evidence and explicit next steps.
 ZH_TW.update(_ZH_TW_CHUNKS[72])
 
+# Lane M3: frozen signal strategies and owner-only promotion intent.
+ZH_TW.update(_ZH_TW_CHUNKS[73])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

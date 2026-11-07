@@ -32,7 +32,10 @@ class DownloadImportContractTests(unittest.TestCase):
         # M4a's three explicit additions do not alter the historical inventory.
         m4a_names = ('autostart_enabled', 'download_and_install_update', 'download_and_install_update_prerequisite')
         self.assertLessEqual(set(m4a_names), set(actual))
-        historical = [name for name in actual if name not in (*NAMES, *m1_names, *m4a_names)]
+        m3_names = json.loads((ROOT / 'm3_candidate_ui_delta.json').read_text(encoding='utf-8'))['widget_names_added']
+        self.assertEqual(m3_names, ['research_build_auto_strategy_button', 'research_build_auto_strategy_button_prerequisite'])
+        self.assertLessEqual(set(m3_names), set(actual))
+        historical = [name for name in actual if name not in (*NAMES, *m1_names, *m4a_names, *m3_names)]
         self.assertEqual(digest(historical), '366408108c0ac5de96107c5f3129f1b28753e6e1a02ca0c69e5f1098a3ae82e6')
 
     def test_historical_characterization_and_service_inventory_are_not_regenerated(self):

@@ -46,8 +46,18 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         raise DomainError('state_conflict', 'expired command envelope')
     if request.environment is not bundle.launch.environment or request.account_ref not in bundle.account_refs:
         raise DomainError('capability_missing', 'explicit running account/environment required')
+    if request.operation is Operation.LIST_CANDIDATES:
+        return Response(request.request_id, candidates=bundle.candidates())
+    if request.operation in (Operation.BUILD_AUTO_STRATEGY, Operation.AUTO_STRATEGY_COMMAND):
+        from quantlab.trading.application.auto_strategy_service import AUTO_STRATEGY_ACTIONS
+
+        action = request.command.action
+        if (request.operation is Operation.BUILD_AUTO_STRATEGY and action is not UiAction.BUILD_AUTO_STRATEGY) or (
+            request.operation is Operation.AUTO_STRATEGY_COMMAND and (action not in AUTO_STRATEGY_ACTIONS or action is UiAction.BUILD_AUTO_STRATEGY)
+        ):
+            raise DomainError('validation_failed', 'auto operation/action mismatch')
     if request.operation is Operation.SNAPSHOT:
-        state = bundle.snapshot(request.account_ref) if bundle.launch.sinopac else bundle.snapshot()
+        state = bundle.snapshot(request.account_ref)
         return Response(request.request_id, state=replace(state, account_ref=request.account_ref) if bundle.launch.sinopac else state)
     if request.operation is Operation.MARKET_SERIES:
         if bundle.market_terminal is not None and bundle.market_terminal.active:
@@ -70,7 +80,7 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         return Response(request.request_id, market_selected=bundle.market_terminal.selected)
     if request.operation is Operation.ALERTS:
         return Response(request.request_id, alerts=bundle.alerts.execute(request.alert))
-    if request.operation is Operation.COMMAND:
+    if request.operation in (Operation.COMMAND, Operation.BUILD_AUTO_STRATEGY, Operation.AUTO_STRATEGY_COMMAND):
         if not isinstance(request.command.action, UiAction):
             raise DomainError('validation_failed', 'typed UI action required')
         if type(request.command.manual_no_admission) is not bool:
@@ -87,11 +97,19 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
             receipt = bundle.execute(denied)
             state = bundle.snapshot(request.account_ref)
             return Response(request.request_id, state=replace(state, account_ref=request.account_ref), receipt=receipt)
+        from quantlab.trading.application.auto_strategy_service import AUTO_STRATEGY_ACTIONS
+
+        if request.command.action in AUTO_STRATEGY_ACTIONS:
+            command = request.command
+            if command.account_ref != request.account_ref or command.environment is not request.environment:
+                raise DomainError('state_conflict', 'auto command differs from authenticated envelope')
+            if command.auto_build is not None and command.auto_build.account_ref != request.account_ref:
+                raise DomainError('state_conflict', 'auto build differs from authenticated account')
         if request.command.action.value == 'connect_read_only':
             receipt = bundle.connect_read_only(request.command)
         else:
             receipt = bundle.execute(request.command)
-        state = bundle.snapshot(request.account_ref) if bundle.launch.sinopac else bundle.snapshot()
+        state = bundle.snapshot(request.account_ref)
         return Response(request.request_id, state=replace(state, account_ref=request.account_ref) if bundle.launch.sinopac else state, receipt=receipt)
     if request.operation is Operation.QUOTES:
         if len(request.quotes.items) > 1000:

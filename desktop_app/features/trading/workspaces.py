@@ -269,6 +269,10 @@ def _strategy_page(self) -> None:
     research_layout.addStretch()
     self.strategy_tabs.addTab(listing, ui_text('v2.strategies'))
     self.strategy_tabs.addTab(research, ui_text('v2.research'))
+    from desktop_app.features.trading.auto_strategy_rows import AutoStrategiesWidget
+
+    self.auto_strategies = AutoStrategiesWidget(self)
+    self.strategy_tabs.addTab(self.auto_strategies, ui_text('m3.overview_card'))
     layout.addWidget(self.strategy_tabs)
 
 

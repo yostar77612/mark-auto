@@ -65,6 +65,8 @@ class DashboardWidget(QWidget):
         layout.addWidget(self.today)
         self.strategy_summary = self._label('overview_strategy_summary', ui_text('v2.strategies'))
         layout.addWidget(self.strategy_summary)
+        self.auto_summary = self._label('overview_auto_card', ui_text('m3.overview_card'))
+        layout.addWidget(self.auto_summary)
         self.strategy_setup = button('m2t.empty_strategy', 'dashboard_new_strategy', role='primary')
         layout.addWidget(self.strategy_setup)
         self.strategies = self._table(
@@ -171,6 +173,9 @@ class DashboardWidget(QWidget):
                             item.setText(cells[column])
 
     def render(self, state: UiState, *, state_changed: bool) -> None:
+        from desktop_app.features.trading.auto_strategy_rows import summary_text
+
+        self.auto_summary.setText(ui_text('forms.readable.named_value').format(ui_text('m3.overview_card'), summary_text(state.auto_strategies)))
         self.render_market(state, tables_current=not state_changed)
         rows(self.positions, display.position_rows(state))
         if not state_changed:
