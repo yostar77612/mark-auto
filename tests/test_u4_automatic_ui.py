@@ -63,7 +63,34 @@ class AutomaticUiTests(unittest.TestCase):
             stop.click()
         self.assertEqual(self.facade.commands, [])
 
+    def test_local_engine_shows_its_own_state_and_hides_broker_only_buttons(self):
+        controls = self.window.automatic_controls
+        self.apply(issues=('risk_rejected',))
+        self.assertIn(ui_text('dashboard.status.engine').format(''), controls.header.text())
+        self.assertIn('risk_rejected', controls.header.text())
+        self.assertNotIn('重新啟動', controls.header.text())
+        self.assertTrue(controls.header_resume.isHidden())
+        for status, _, reconcile, resume in controls.panels:
+            self.assertNotIn('重新啟動', status.text())
+            self.assertIn('risk_rejected', status.text())
+            self.assertTrue(reconcile.isHidden() and resume.isHidden())
+        self.apply(environment=Environment.BROKER_SIMULATION)
+        self.assertFalse(controls.header_resume.isHidden())
+        for _, _, reconcile, resume in controls.panels:
+            self.assertFalse(reconcile.isHidden() or resume.isHidden())
+
+    def test_local_step_is_available_from_the_strategy_page(self):
+        step = self.window.strategy_step
+        self.assertFalse(step.isHidden())
+        self.assertTrue(step.isEnabled())
+        step.click()
+        self.drain()
+        self.assertEqual([command.action for command in self.facade.commands][-1:], [UiAction.STEP])
+        self.apply(environment=Environment.BROKER_SIMULATION)
+        self.assertTrue(step.isHidden())
+
     def test_pause_reason_visible_in_header_overview_and_trading(self):
+        self.apply(environment=Environment.BROKER_SIMULATION)
         controls = self.window.automatic_controls
         self.assertIn('已暫停', controls.header.text())
         self.assertIn('重新啟動', controls.header.text())
@@ -183,7 +210,7 @@ class AutomaticUiTests(unittest.TestCase):
     def test_normal_daily_wait_is_neutral_and_does_not_request_resume(self):
         target = datetime(2026, 11, 3, 1, 0, tzinfo=timezone.utc)
         automatic = replace(self.window.state.automatic, state='WAITING_SESSION', reasons=('daily_waiting_session',), next_session_at=target)
-        self.apply(automatic=automatic)
+        self.apply(automatic=automatic, environment=Environment.BROKER_SIMULATION)
         controls = self.window.automatic_controls
         self.assertIn(ui_text('u4.waiting_session'), controls.header.text())
         self.assertEqual(controls.header.property('status'), 'neutral')

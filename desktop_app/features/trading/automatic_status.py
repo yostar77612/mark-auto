@@ -146,9 +146,15 @@ class AutomaticControls:
         for card, (caption, value) in zip(self.cards, values):
             card.setText(caption + '\n' + value)
         paused = state.automatic.state == 'PAUSED_WAITING_RESUME'
-        status = ui_text('u4.paused') if paused else ui_text('u4.waiting_session') if state.automatic.state == 'WAITING_SESSION' else ui_text('u4.running')
-        reasons = '\n'.join(error_next(code, self.window) for code in state.automatic.reasons)
-        explanation = self.window.strategy_error_texts.get(state.automatic.reasons[0], (ui_text('watch.unknown'), ''))[0] if state.automatic.reasons else ''
+        if state.environment is Environment.LOCAL:
+            # The automatic pause state belongs to the broker-simulation engine; its restart pause is stale on the local engine.
+            status = ui_text('dashboard.status.engine').format(state_label(state.engine_state))
+            reasons = '\n'.join(state.issues)
+            explanation = state.issues[0] if state.issues else ''
+        else:
+            status = ui_text('u4.paused') if paused else ui_text('u4.waiting_session') if state.automatic.state == 'WAITING_SESSION' else ui_text('u4.running')
+            reasons = '\n'.join(error_next(code, self.window) for code in state.automatic.reasons)
+            explanation = self.window.strategy_error_texts.get(state.automatic.reasons[0], (ui_text('watch.unknown'), ''))[0] if state.automatic.reasons else ''
         self.header.setText(status + ('\n' + explanation.splitlines()[0] if explanation else ''))
         self.header.setToolTip(reasons)
         self.header.setAccessibleName(status + ' ' + reasons)
@@ -182,11 +188,17 @@ class AutomaticControls:
             if state.automatic.state == 'WAITING_SESSION'
             else ui_text('u4.running')
         )
+        # The AUTO_* commands exist only on the broker-simulation engine; the local engine is reconciled and resumed
+        # from the strategy controls ("對帳並查看異常" / "對帳後恢復新倉"), so these buttons would only be refused there.
+        broker = state.environment is not Environment.LOCAL
+        self.header_resume.setVisible(broker)
         self.header_resume.setEnabled(can_resume)
         self.header_resume.setToolTip(resume_hint)
         for label, evaluation, reconcile, resume in self.panels:
             label.setText(status + ('\n' + reasons if reasons else ''))
             evaluation.setText(details)
+            reconcile.setVisible(broker)
+            resume.setVisible(broker)
             resume.setEnabled(can_resume)
             resume.setToolTip(resume_hint)
         view = next((item for item in state.preflight if item.account_ref == state.account_ref and item.trade_date.isoformat() == state.trading_day), None)

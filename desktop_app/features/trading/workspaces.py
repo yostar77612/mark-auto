@@ -217,6 +217,7 @@ def _strategy_page(self) -> None:
             ('u3.disable', 'disable_strategy_button', lambda: self.strategy_controls.manage(UiAction.DISABLE_STRATEGY)),
             ('u3.delete', 'delete_strategy_button', lambda: self.strategy_controls.manage(UiAction.DELETE_STRATEGY)),
             ('u3.go_research', 'go_strategy_research', lambda: self.strategy_controls.research()),
+            ('v2.local_step', 'strategy_step', lambda: self.command(UiAction.STEP)),
         ),
     )
     for name in ('disable_strategy_button', 'delete_strategy_button'):
