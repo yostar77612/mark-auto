@@ -1,0 +1,42 @@
+{
+  "baseline_commit": "c447ba4da6f7dcd356a73f4b1f3cdd5b1b397e45",
+  "source": "synthetic TRAINING-only; generated before ADR 0007 core edits",
+  "rows": [
+    {
+      "strategy": "trend-v1",
+      "candidate_fingerprint": "083f0848715575b923f4bb24e423378aa2e035abe3780ba8bc308587dbb59576",
+      "spec_hash": "b7570aa9692cdcc5b46538fb11882d9b510814aa7019452653f24aee4695a82c",
+      "behavior_hash": "d4c70a91d9dc35212889ce4096c6b9f05c1201209638a68c6b395e850b2077ce"
+    },
+    {
+      "strategy": "mean_reversion-v1",
+      "candidate_fingerprint": "450a9bbf0531b178e3bd628ffc12f4bf0ffcbf4fe3e598c6c5d1ba1031bee999",
+      "spec_hash": "8a9eb3d54f45eccfc1fb80afc7134b13a4599cb184486726c697c6d7c73b5166",
+      "behavior_hash": "8c44b77616d5977310ddd54d8d34804d5e808c6e3a8b5d5e74a2e12a6dc0c097"
+    },
+    {
+      "strategy": "channel_breakout-v1",
+      "candidate_fingerprint": "f1b8c6150377edea06e4ca8da1dd72dc6c29dd5a828cedbb5c0e3ae3f39eeb8a",
+      "spec_hash": "72308af205c829657919b2bcbec313706b07adf0ed9b4f8b87e3b2f61a3a0ced",
+      "behavior_hash": "cdd655cd0abbba9d0d13f9aaf3c31d0ab2c0c09b15712593d0fbb51180fbab0d"
+    },
+    {
+      "strategy": "momentum-v1",
+      "candidate_fingerprint": "e1b980a2159deb35470d39244195dd56bc8af91eaf77b3f30b5f71689a5818f0",
+      "spec_hash": "97296ae03addc46c20fd873ef2c868c1c62142771d6ae97c4a521d360990e65d",
+      "behavior_hash": "c205f0a3972185bc8290786e2addcac26d324b1765a625e4214b05dc6ae91e84"
+    },
+    {
+      "strategy": "volatility_compression-v1",
+      "candidate_fingerprint": "c866820fef2906432d2b6e223f2186a70582262bdec57c94319a9806477d6f4a",
+      "spec_hash": "6581184ce29bbfa4b0513e9f6cf364757c9c43495390cf5e55f984a2f7ec8e62",
+      "behavior_hash": "3eaf3c434a3cfe76f7a4733973f9a6af2ef71f35dc2932cbe8301ca1724202cc"
+    },
+    {
+      "strategy": "stock-scope-ast",
+      "candidate_fingerprint": "77e2aab7de9455252817c9ddab1474d30d10acb3dac6a5795d522183bdfed8cf",
+      "spec_hash": "0601d5f16d5b13faf097468dfb4e8ba58c666242660deed34abc6e26c2790639",
+      "behavior_hash": "a45d46f526544123f74026b166c30cb3d5a6f9be60682f41e3b19cec03ce9c72"
+    }
+  ]
+}

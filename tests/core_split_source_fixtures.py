@@ -41,12 +41,20 @@ def layered_source_bytes(path):
     archive = json.loads(raw)
     if path in archive:
         return archive[path].encode('utf-8')
-    if path in {'quantlab/provider.py', 'quantlab/core.py', 'quantlab/strategies.py', 'quantlab/backtest.py'}:
+    if path in {'quantlab/core.py', 'quantlab/backtest.py'}:
+        from tests.m3_stock_source_fixtures import prior_source_bytes
+
+        return prior_source_bytes(path)
+    if path in {'quantlab/provider.py', 'quantlab/strategies.py'}:
         return (Path(__file__).resolve().parents[1] / path).read_bytes().replace(b'\r\n', b'\n')
     raise KeyError(path)
 
 
 def before_core_split(path, source):
+    if path == 'quantlab/saved_candidate_pool.py':
+        from tests.m3_stock_source_fixtures import reviewed_prior_source
+
+        source = reviewed_prior_source(path, source.encode('utf-8')).decode('utf-8')
     raw = (FIXTURES / 'core_split_pins.json').read_bytes().replace(b'\r\n', b'\n')
     if hashlib.sha256(raw).hexdigest() != '21a4180c82ef250a713361f108a7927d73cd600fddf157eab24fc578dfd7a6bb':
         raise ValueError('Exact current source/projection pins changed')

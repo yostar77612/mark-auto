@@ -42,7 +42,7 @@ class AtomicReplaceProducerProfileTests(unittest.TestCase):
             (pools.LONG_PATH_SIWC_PROFILE_V1, pools.ATOMIC_REPLACE_SIWC_PROFILE_V1),
         ):
             actual = {name: content_hash((root / 'quantlab' / name).read_text(encoding='utf-8')) for name in new['engine_source_hashes']}
-            self.assertEqual(actual, {name: pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'][name] for name in actual})
+            self.assertEqual(actual, {name: pools.STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'][name] for name in actual})
             self.assertEqual(new['engine_source_hashes']['research.py'], 'c6d3f1b4b13154c1bf90e6be5a664ac390edc20fb5c544dd909485dfe5fe2ae6')
             restored = to_dict(new)
             restored['protocol'] = old['protocol']

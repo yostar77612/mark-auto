@@ -16,6 +16,7 @@ from quantlab.assistant.adapters.chatgpt.provenance import implementation_proven
 from quantlab.assistant.domain.source_components import SOURCE_COMPONENTS
 from quantlab.core import content_hash, to_dict
 from tests.core_split_source_fixtures import CURRENT_SOURCES, layered_source_bytes
+from tests.m3_stock_source_fixtures import reviewed_prior_source
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILE = pools.CORE_SPLIT_SIWC_PROFILE_V1
@@ -41,14 +42,21 @@ def frozen_blocks(raw):
     }
 
 
+def prior_result_hashes(sources):
+    return {
+        name: hashlib.sha256(reviewed_prior_source('quantlab/' + name, raw) if name in ('core.py', 'backtest.py') else raw).hexdigest()
+        for name, raw in sources.items()
+    }
+
+
 class CoreSplitProfileTests(unittest.TestCase):
     def test_exact_new_profile_and_complete_source_set(self):
         self.assertEqual(content_hash(PROFILE), '556e130985bac86253a10d22c68a171e06fa169ca1f6c254384db61e6ac1b2c4')
         self.assertEqual(dict(SOURCE_COMPONENTS), CURRENT_SOURCES)
         self.assertEqual(len(SOURCE_COMPONENTS), len(CURRENT_SOURCES))
         self.assertEqual(PROFILE['protocol'], 'mark_auto_0_2_2_campaign_core_split_siwc_v1')
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 30)
-        self.assertIs(pools.SUPPORTED_PRODUCERS[-1], PROFILE)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 31)
+        self.assertIs(pools.SUPPORTED_PRODUCERS[29], PROFILE)
         self.assertEqual(PROFILE['provider_modes'], ['fixture', 'openai_compatible', 'chatgpt_plan'])
         for mode in ('fixture', 'openai_compatible'):
             value = binding()
@@ -81,14 +89,18 @@ class CoreSplitProfileTests(unittest.TestCase):
         expected_keys = {'research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py', 'research_core/domain/receipts.py'}
         self.assertEqual(set(PROFILE['engine_source_hashes']), expected_keys)
         for name, expected in PROFILE['engine_source_hashes'].items():
-            raw = (ROOT / 'quantlab' / name).read_bytes().replace(b'\r\n', b'\n')
+            raw = (
+                layered_source_bytes('quantlab/' + name).replace(b'\r\n', b'\n')
+                if name in ('core.py', 'backtest.py')
+                else (ROOT / 'quantlab' / name).read_bytes().replace(b'\r\n', b'\n')
+            )
             for body in (raw, raw.replace(b'\n', b'\r\n')):
                 with io.TextIOWrapper(io.BytesIO(body), encoding='utf-8') as stream:
                     self.assertEqual(content_hash(stream.read()), expected)
         previous = pools.LAYERED_PATHS_SIWC_PROFILE_V1
         self.assertEqual(PROFILE['result_source_hashes'], previous['result_source_hashes'])
         self.assertEqual(PROFILE['result_source_hash_variants'], previous['result_source_hash_variants'])
-        actual_results = {name: hashlib.sha256((ROOT / 'quantlab' / name).read_bytes()).hexdigest() for name in PROFILE['result_source_hashes']}
+        actual_results = prior_result_hashes({name: (ROOT / 'quantlab' / name).read_bytes() for name in PROFILE['result_source_hashes']})
         self.assertIn(actual_results, PROFILE['result_source_hash_variants'])
         original = layered_source_bytes('quantlab/research.py').decode()
         current = (ROOT / 'quantlab/research_core/domain/receipts.py').read_text(encoding='utf-8')
@@ -103,11 +115,23 @@ class CoreSplitProfileTests(unittest.TestCase):
 
         self.assertIs(research._validated_receipt_snapshot, _validated_receipt_snapshot)
 
+    def test_prior_result_projection_preserves_lf_and_crlf_complete_tuples(self):
+        variants = []
+        for newline in (b'\n', b'\r\n'):
+            sources = {}
+            for name in PROFILE['result_source_hashes']:
+                path = 'quantlab/' + name
+                sources[name] = (ROOT / path).read_bytes().replace(b'\r\n', b'\n').replace(b'\n', newline)
+            variants.append(prior_result_hashes(sources))
+        self.assertEqual(variants, PROFILE['result_source_hash_variants'])
+        mixed = {**variants[1], 'core.py': variants[0]['core.py'], 'backtest.py': variants[0]['backtest.py']}
+        self.assertNotIn(mixed, PROFILE['result_source_hash_variants'])
+
     def test_historical_blocks_are_byte_identical_and_one_byte_mutation_fails(self):
         baseline = frozen_blocks(layered_source_bytes('quantlab/saved_candidate_pool.py'))
         current = frozen_blocks((ROOT / 'quantlab/saved_candidate_pool.py').read_bytes())
         self.assertEqual(len(baseline), 29)
-        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1'})
+        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1', 'STOCK_SIGNAL_PROFILE_V1'})
         for name, block in baseline.items():
             with self.subTest(name=name):
                 allowed = (block, block.replace(b'\n', b'\r\n'))

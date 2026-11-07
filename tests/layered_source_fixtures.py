@@ -132,6 +132,10 @@ def reviewed_source_bytes(root: Path, name: str, *, current=False) -> bytes:
         from tests.core_split_source_fixtures import CURRENT_SOURCES
 
         return (root / CURRENT_SOURCES.get(name, name)).read_bytes()
+    if name in ('core.py', 'backtest.py', 'quantlab/core.py', 'quantlab/backtest.py'):
+        from tests.m3_stock_source_fixtures import prior_source_bytes
+
+        return prior_source_bytes('quantlab/' + name.rsplit('/', 1)[-1])
     if name not in HASHES:
         return (root / name).read_bytes()
     path = Path(__file__).resolve().parent / 'fixtures' / 'layered_paths' / (name + '.gz')
@@ -210,6 +214,10 @@ def historical_ui_environment():
             return original_import(name, globals, locals, fromlist, level)
 
         def source_bytes(path):
+            if path in (root / 'quantlab/core.py', root / 'quantlab/backtest.py'):
+                from tests.m3_stock_source_fixtures import reviewed_prior_source
+
+                return reviewed_prior_source(path.relative_to(root).as_posix(), original_read(path))
             if path == root / 'quantlab/research.py':
                 from tests.core_split_source_fixtures import before_core_split
 
@@ -227,6 +235,10 @@ def historical_ui_environment():
 
         def source_text(path, *args, **kwargs):
             source = original_text(path, *args, **kwargs)
+            if path in (root / 'quantlab/core.py', root / 'quantlab/backtest.py'):
+                from tests.m3_stock_source_fixtures import reviewed_prior_source
+
+                return reviewed_prior_source(path.relative_to(root).as_posix(), source.encode('utf-8')).decode('utf-8')
             if path == root / 'quantlab/research.py':
                 from tests.core_split_source_fixtures import before_core_split
 
@@ -306,6 +318,10 @@ def project_page_service_lines(result):
 def mechanically_restored_source(root: Path, logical: str, baseline: bytes) -> bytes:
     """Read actual current bytes and undo only the reviewed B mechanical adapters."""
     current = (root / physical_path(logical)).read_bytes()
+    if logical in ('quantlab/core.py', 'quantlab/backtest.py'):
+        from tests.m3_stock_source_fixtures import reviewed_prior_source
+
+        return reviewed_prior_source(logical, current)
     if logical in ('desktop_chatgpt_auth.py', 'quantlab/research.py'):
         from tests.core_split_source_fixtures import before_core_split
 

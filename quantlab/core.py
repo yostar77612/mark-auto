@@ -85,6 +85,13 @@ def validate_contract(value):
         raise ValidationError("invalid contract month") from None
 
 
+def validate_signal_contract(value):
+    """Signal identity only; stock support does not authorize futures accounting."""
+    if isinstance(value, str) and re.fullmatch(r"(?:TWSE|TPEX):[0-9]{4,6}", value):
+        return
+    validate_contract(value)
+
+
 def validate_int(value, name, minimum=None):
     if type(value) is not int or (minimum is not None and value < minimum):
         raise ValidationError(f"{name} must be integer" + (f" >= {minimum}" if minimum is not None else ""))
@@ -184,11 +191,17 @@ class Bar:
         if self.end <= self.timestamp:
             raise ValidationError("bar end must follow start")
         validate_date(self.trade_date, 'trade_date')
-        validate_contract(self.contract_id)
+        validate_signal_contract(self.contract_id)
+        stock = self.contract_id.startswith(('TWSE:', 'TPEX:'))
         if self.session not in ('day', 'night'):
             raise ValidationError("invalid session")
+        if stock and self.session != 'day':
+            raise ValidationError("stock signal bars require day session")
         for name in ('open', 'high', 'low', 'close'):
-            validate_decimal(getattr(self, name), name, Decimal('1'), tick=True)
+            value = getattr(self, name)
+            validate_decimal(value, name, Decimal('0') if stock else Decimal('1'), tick=not stock)
+            if stock and value <= 0:
+                raise ValidationError("stock signal prices must be positive")
         if self.low > min(self.open, self.close) or self.high < max(self.open, self.close) or self.low > self.high:
             raise ValidationError("inconsistent OHLC")
         validate_int(self.volume, 'volume', 0)
@@ -254,7 +267,7 @@ class Signal:
 
     def __post_init__(self):
         validate_utc(self.timestamp)
-        validate_contract(self.contract_id)
+        validate_signal_contract(self.contract_id)
         validate_int(self.target_position, 'target_position')
 
 
