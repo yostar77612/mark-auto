@@ -22,6 +22,9 @@ class WalkForwardResults(QWidget):
         self.build_auto.setProperty('role', 'primary')
         self.build_auto.setEnabled(False)
         self.build_auto.setToolTip(ui_text('m3.candidates_unavailable'))
+        from desktop_app.features.trading.auto_strategy_rows import SHOW_AI_STRATEGY
+
+        self.build_auto.setVisible(SHOW_AI_STRATEGY)
         layout.addWidget(self.build_auto)
         self.set_result({})
 
