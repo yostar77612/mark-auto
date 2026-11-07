@@ -533,6 +533,14 @@ def style_strategy_table(window):
         set_financial_item(window.strategies, item, strategy.today_pnl)
         if strategy.today_pnl is None:
             item.setForeground(QColor(theme_colors(window.strategies)['disabled_text']))
+    for row, strategy in enumerate(window.state.auto_strategies):
+        table = window.auto_strategies.table
+        colours = theme_colors(table)
+        stage, status = table.item(row, 3), table.item(row, 5)
+        if stage is not None:
+            stage.setForeground(QColor(colours['neutral' if strategy.stage.value == 'BACKTEST' else 'success']))
+        if status is not None:
+            status.setForeground(QColor(colours['warning' if strategy.run_state.value == 'PAUSED' else 'neutral']))
 
 
 def style_automatic_controls(window, state):

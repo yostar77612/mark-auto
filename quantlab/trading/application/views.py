@@ -69,6 +69,8 @@ def snapshot(engine: 'TradingEngine') -> UiState:
     from quantlab.trading.domain.risk import AccountRiskLimits
     from .account_risk import account_net_mark, account_position_count, m2_account_refs
 
+    from .auto_strategy_service import auto_strategy_views
+
     state = engine.state
     verified = _financial_facts_current(engine)
     tracks = {(track.strategy_id, track.version): track for track in state.performance_tracks}
@@ -352,6 +354,7 @@ def snapshot(engine: 'TradingEngine') -> UiState:
         synthetic_data=state.environment is Environment.LOCAL,
         issues=issues,
         strategies=strategies,
+        auto_strategies=auto_strategy_views(state),
         positions=tuple(positions),
         orders=tuple(
             OrderView(

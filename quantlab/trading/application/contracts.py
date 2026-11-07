@@ -13,6 +13,9 @@ from quantlab.trading.domain.validation import DomainError, identity, integer
 from quantlab.trading.domain.strategy import StrategyParameters
 from quantlab.trading.domain.strategy import StrategyDefaults as StrategyDefaults, strategy_defaults as strategy_defaults
 from quantlab.trading.domain.risk import AccountRiskLimits
+from .auto_strategy_views import AutoStrategyView, CandidateSummaryView
+from quantlab.trading.domain.signal_strategy import SizingRule as SizingRule, SizingKind as SizingKind
+from .candidate_intake import AutoBuildRequest as AutoBuildRequest
 from .preflight import PreflightView
 from .automatic_state import EvaluationStatus
 from .broker_settings import BrokerReadiness, BrokerSettings
@@ -107,6 +110,11 @@ class MarketSeriesPage:
 
 
 class UiAction(str, Enum):
+    BUILD_AUTO_STRATEGY = 'build_auto_strategy'
+    PAUSE_AUTO_STRATEGY = 'pause_auto_strategy'
+    RESUME_AUTO_STRATEGY = 'resume_auto_strategy'
+    RETIRE_AUTO_STRATEGY = 'retire_auto_strategy'
+    APPROVE_LIVE_INTENT = 'approve_live_intent'
     AUTO_RESUME = 'auto_resume'
     AUTO_RECONCILE = 'auto_reconcile'
     DECLARE_DAILY_NOT_SENT = 'declare_daily_not_sent'
@@ -189,6 +197,23 @@ class DailyNotSentForm:
 
 
 @dataclass(frozen=True)
+class AutoStrategyCommand:
+    """Version-bound owner intent; never an execution-enablement flag."""
+
+    strategy_id: str
+    version: int
+    frozen_hash: str
+    confirmed: bool = False
+
+    def __post_init__(self) -> None:
+        identity(self.strategy_id)
+        identity(self.frozen_hash)
+        integer(self.version, 'auto strategy version', 1)
+        if type(self.confirmed) is not bool:
+            raise DomainError('validation_failed', 'explicit confirmation required')
+
+
+@dataclass(frozen=True)
 class UiCommand:
     action: UiAction
     expected_version: int
@@ -217,6 +242,8 @@ class UiCommand:
     strategy_parameters: StrategyParameters | None = None
     account_risk: AccountRiskLimits | None = None
     daily_not_sent: DailyNotSentForm | None = None
+    auto_build: AutoBuildRequest | None = None
+    auto_strategy: AutoStrategyCommand | None = None
 
 
 @dataclass(frozen=True)
@@ -467,9 +494,12 @@ class UiState:
     account_risks: tuple[AccountRiskView, ...] = ()
     preflight: tuple[PreflightView, ...] = ()
     automatic: AutomaticView = AutomaticView()
+    auto_strategies: tuple[AutoStrategyView, ...] = ()
 
 
 class TradingFacade(Protocol):
+    def candidates(self) -> tuple[CandidateSummaryView, ...]: ...
+
     def snapshot(self) -> UiState: ...
 
     def execute(self, command: UiCommand) -> UiReceipt: ...

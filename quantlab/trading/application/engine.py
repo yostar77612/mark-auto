@@ -66,6 +66,7 @@ class TradingEngine:
         self.automatic_entry_check = automatic_entry_check
         self.daily_signal_source = daily_signal_source
         self.daily_signal_cached_only = False
+        self.auto_runtime = None
         if historical_bars is not None and (type(historical_bars) is not dict or len(historical_bars) > len(catalog.instruments)):
             raise DomainError('validation_failed', 'bounded typed market history mapping required')
         self.history: dict[str, tuple[CompletedBar, ...]] = {}
@@ -118,6 +119,8 @@ class TradingEngine:
             strategies.append(record)
         from .daily_retention import compact_daily_projection
 
+        from .auto_strategy_service import restarted_auto_records
+
         restarted = replace(
             self.state,
             orders=pending,
@@ -126,11 +129,23 @@ class TradingEngine:
             reconciled=False,
             engine_closed=False,
             automatic=restart_automatic_state(self.state.automatic),
+            auto_strategies=restarted_auto_records(self.state.auto_strategies, self.configuration.environment),
         )
         self._persist('startup_reconciliation_required', compact_daily_projection(self, restarted))
         from .sessions import synchronize_session
 
         synchronize_session(self)
+
+    def auto_service(self):
+        """Fresh M3 lifecycle projection using this engine's single durable writer."""
+        from .auto_strategy_service import promotion_service
+
+        return promotion_service(self)
+
+    def execute_auto_strategy(self, command) -> str:
+        from .auto_strategy_service import execute_auto_strategy
+
+        return execute_auto_strategy(self, command)
 
     def _persist(self, kind: str, proposed: AppState) -> None:
         value = replace(proposed, version=self.state.version + 1, events=(*self.state.events[-199:], kind))

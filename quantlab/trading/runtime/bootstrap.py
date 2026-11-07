@@ -236,6 +236,15 @@ class RuntimeBundle:
             return tuple(self.engine.gateways)
         return (self.launch.account_ref,)
 
+    def candidates(self):
+        from .auto_strategy import attach_auto_runtime
+
+        with self.lock, self.engine.lock if self.engine is not None else nullcontext():
+            attach_auto_runtime(self)
+            if self.engine is None:
+                raise DomainError('candidate_unavailable')
+            return self.engine.auto_runtime.candidates()
+
     def snapshot(self, account_ref: str | None = None) -> UiState:
         with self.lock, self.engine.lock if self.engine is not None else nullcontext():
             self._expire_connection()
@@ -257,6 +266,7 @@ class RuntimeBundle:
             )
             return replace(
                 state,
+                auto_strategies=tuple(row for row in state.auto_strategies if row.account_ref == (account_ref or state.account_ref)),
                 watchlist=(
                     self.market_terminal.watchlist
                     if terminal_state
@@ -416,6 +426,9 @@ class RuntimeBundle:
                 if receipt.accepted:
                     self.version_offset += 1
                 return receipt
+            from .auto_strategy import attach_auto_runtime
+
+            attach_auto_runtime(self)
             facade, offset = self.facade, self.version_offset
             current = facade.snapshot().version + offset
             if command.expected_version != current:
