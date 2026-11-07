@@ -118,5 +118,8 @@ class StrategyResearchFeedback:
             (self.window.deploy_button if self.window.deploy_button.isEnabled() else self.window.strategies).setFocus()
 
     def continue_research(self):
+        # The button says 'continue research': it selects the validated target and runs the
+        # read-only research for it (no order path), instead of only moving focus.
         if self.select_target():
             self.window.research_button.setFocus()
+            self.window._strategy_action(UiAction.RESEARCH)
