@@ -620,7 +620,9 @@ class TradingWindow(QMainWindow):
         refresh_context_header(self, state)
         refresh_trading_environment(self, state)
         self.manual_controls.render(state)
-        self.overview_step.setEnabled(state.environment == Environment.LOCAL)
+        for step in (self.overview_step, self.strategy_step):
+            step.setEnabled(state.environment == Environment.LOCAL)
+        self.strategy_step.setVisible(state.environment == Environment.LOCAL)
         self.add_context_button.setVisible(bool(state.contexts))
         render_version = self._stamp(state)
         if self._rendered_version == render_version and not freshness_changed:

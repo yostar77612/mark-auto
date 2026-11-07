@@ -79,6 +79,16 @@ class AutomaticUiTests(unittest.TestCase):
         for _, _, reconcile, resume in controls.panels:
             self.assertFalse(reconcile.isHidden() or resume.isHidden())
 
+    def test_local_step_is_available_from_the_strategy_page(self):
+        step = self.window.strategy_step
+        self.assertFalse(step.isHidden())
+        self.assertTrue(step.isEnabled())
+        step.click()
+        self.drain()
+        self.assertEqual([command.action for command in self.facade.commands][-1:], [UiAction.STEP])
+        self.apply(environment=Environment.BROKER_SIMULATION)
+        self.assertTrue(step.isHidden())
+
     def test_pause_reason_visible_in_header_overview_and_trading(self):
         self.apply(environment=Environment.BROKER_SIMULATION)
         controls = self.window.automatic_controls
