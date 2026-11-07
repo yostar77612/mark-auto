@@ -1,4 +1,4 @@
-# ADR 0007: Prospective, host-owned E1 qualification
+# ADR 0008: Prospective, host-owned E1 qualification
 
 日期: 2026-11-03
 狀態: Accepted (implementation under the owner's E1 and OOS-accounting authorization)

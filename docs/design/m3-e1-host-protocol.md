@@ -1,7 +1,7 @@
 # M3 E1 trusted-host implementation contract
 
 Protocol: `m3-prospective-e1-v1`. Decision and limits:
-[ADR 0007](../adr/0007-prospective-e1-qualification.md).
+[ADR 0008](../adr/0008-prospective-e1-qualification.md).
 This replaces neither historical research results nor the display-only WF verdict.
 
 ## Host interface

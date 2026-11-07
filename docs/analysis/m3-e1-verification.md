@@ -7,7 +7,7 @@ market-data request was run, and no real broker/account/order/LIVE action occurr
 ## Implementation and review
 
 The host-only E1 producer/reader and ordinary campaign exposure accounting are
-specified in [ADR 0007](../adr/0007-prospective-e1-qualification.md) and the
+specified in [ADR 0008](../adr/0008-prospective-e1-qualification.md) and the
 [host protocol](../design/m3-e1-host-protocol.md). Independent review identified
 and verified fixes for future-date relabeling, reservation commit timing, redirect
 admission, capture/evaluation concurrency, stale-source history and acquisition
