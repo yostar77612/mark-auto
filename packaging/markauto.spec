@@ -60,7 +60,14 @@ analysis = Analysis(
            (str(root / 'quantlab' / 'research_analysis.py'), 'quantlab'),
            (str(root / 'quantlab' / 'indicators.py'), 'quantlab'),
            (str(root / 'quantlab' / 'provider.py'), 'quantlab'),
-           (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab')]
+           (str(root / 'quantlab' / 'manual_exchange.py'), 'quantlab'),
+           # Prospective E1 source identities must remain verifiable when frozen.
+           (str(root / 'quantlab' / 'significance.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'verdict.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'configuration.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'strict_json.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'value_bounds.py'), 'quantlab'),
+           (str(root / 'quantlab' / 'windows_paths.py'), 'quantlab')]
           # v2 profiles verify these exact source bytes in the frozen runtime.
           + [(str(p), p.parent.relative_to(root).as_posix())
              for p in sorted((root / 'quantlab' / 'trading').rglob('*.py'))]

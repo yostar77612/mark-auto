@@ -1275,8 +1275,9 @@ CORE_SPLIT_SIWC_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_2_2_campaign_core_
                                   'backtest.py': '6295ed2e256cb494b43af550e438583b288f494b07fb86db91ef35f82246d91e'}],
  'provider_modes': ['fixture', 'openai_compatible', 'chatgpt_plan']})
 
+# Current producer: stock signal sources plus the prospective-E1 research change; its campaigns reserve the OOS and holdout union.
 STOCK_SIGNAL_PROFILE_V1 = freeze({'protocol': 'mark_auto_0_3_0_campaign_stock_signal_v1',
- 'engine_source_hashes': {'research.py': '2bd7b48e2852d901170b7b237a0f02bea25528f345f3034497db9bec9a45b9df',
+ 'engine_source_hashes': {'research.py': 'b32cf67a0cb77da83bebe244fc588b19902859969a2acd493edea9f3c7ca2c76',
                           'provider.py': '0b5fdbd36823ac665df6c54b90fad0761eaf885c5b3b45467f7cbe78b32f980d',
                           'core.py': 'ea8c059ea17632384d63df75bf36c3ac2aa32eab50982fea764c34ec2ea1f824',
                           'strategies.py': '7fb84c7638a744aae714463db6aebd96aebd32702feb021a550dca6f40e721b0',
@@ -1457,8 +1458,12 @@ def admit_saved_campaign_pool(*, source_campaign_dir: Path, source_campaign_ref:
             _validate_chatgpt_provider(provider, state, producer)
         else:
             _validate_legacy_receipts(provider, state, current_schema=current_schema)
-        _validate_source_selection(state, config, by_id, splits, producer)
-        registry_identity = _validate_source_registry(state, splits['holdout'], authoritative_registry_path)
+        # Reservation semantics come from the audited producer, never a source flag.
+        protected = splits['holdout']
+        if producer['protocol'] == STOCK_SIGNAL_PROFILE_V1['protocol']:
+            protected = Dataset(splits['oos'].bars + splits['holdout'].bars, {}, {})
+        _validate_source_selection(state, config, by_id, splits, producer, protected)
+        registry_identity = _validate_source_registry(state, protected, authoritative_registry_path)
         return _saved_pool_snapshot(state, source_campaign_ref, original_dataset_ref, binding,
                                     original_dataset, first_event, last_event, first_training_timestamp,
                                     registry_identity, producer, provider, provenance, pool)

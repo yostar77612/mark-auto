@@ -464,6 +464,17 @@
             "symbol": "StockSignalStudyTests.test_revision_or_shared_source_change_cannot_return_artifact"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_e1_qualification.py",
+            "kind": "assignment",
+            "name": "config",
+            "occurrence": 1,
+            "receiver": "self",
+            "symbol": "E1QualificationTests.setUp"
+          },
+          "count": 1
         }
       ]
     },

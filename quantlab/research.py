@@ -920,14 +920,18 @@ def run_campaign(dataset: Dataset, *, config: dict, generator: Generator, output
             save(state)
             return state
         if selected:
-            reservation = _reserve_holdout(splits['holdout'], registry_path=registry_path,
-                campaign_id=campaign_id, selection_hash=state['selection_hash'], output_dir=output_dir)
+            # Consume both protected splits atomically before either is evaluated.
+            # Existing registry rows retain their historical holdout-only meaning.
+            protected = Dataset(splits['oos'].bars + splits['holdout'].bars, {}, {})
+            reservation = _reserve_holdout(protected, registry_path=registry_path,
+                campaign_id=campaign_id, selection_hash=state['selection_hash'],
+                output_dir=output_dir, deadline=deadline)
             state['holdout_registry'] = reservation
             state['holdout_status'] = reservation['status']
             if reservation['status'] == 'previously_consumed':
                 state['holdout_consumed'] = True
                 state['status'] = 'blocked_previously_consumed_holdout'
-                state['warnings'].append('This holdout overlaps data already consumed by a workspace campaign; no new OOS/holdout evaluation was performed.')
+                state['warnings'].append('This OOS/holdout range overlaps data already consumed by a workspace campaign; no new OOS/holdout evaluation was performed.')
                 save(state)
                 return state
             state['holdout_consumed'] = True
