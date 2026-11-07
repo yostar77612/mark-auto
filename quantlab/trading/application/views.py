@@ -269,7 +269,7 @@ def snapshot(engine: 'TradingEngine') -> UiState:
                 unrealized,
                 costs,
                 track.max_drawdown if track else None,
-                ','.join(str(engine.calendar.age(p.entry_trade_date, state.trading_day)) for p in related),
+                ','.join(str(engine.calendar.age(p.entry_trade_date, state.trading_day)) for p in related if p.quantity),
                 'COMPLETE' if track and track.history_complete else 'LEGACY_UNKNOWN',
                 track.last_at.isoformat() if track else '',
                 attributed_pnl=track.equity if track and track.history_complete else None,
