@@ -59,6 +59,12 @@ def before_core_split(path, source):
     if hashlib.sha256(raw).hexdigest() != '21a4180c82ef250a713361f108a7927d73cd600fddf157eab24fc578dfd7a6bb':
         raise ValueError('Exact current source/projection pins changed')
     pins = json.loads(raw)
-    if hashlib.sha256(source.replace('\r\n', '\n').encode()).hexdigest() != pins['current_text_sha256'][path]:
+    # Reviewed E1 exposure changes have their own exact projection identities.
+    # Keep the historical archive and original core-split pins unchanged.
+    e1_pins = {
+        'quantlab/research.py': '8f2ae7697762d9257cc761c428416334fe1c91267493d4d7d2e44542e4d86402',
+    }
+    expected = e1_pins.get(path, pins['current_text_sha256'][path])
+    if hashlib.sha256(source.replace('\r\n', '\n').encode()).hexdigest() != expected:
         raise ValueError('Unreviewed current source drift')
     return layered_source_bytes(path).decode('utf-8')

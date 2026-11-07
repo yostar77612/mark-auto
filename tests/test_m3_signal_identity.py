@@ -112,10 +112,12 @@ class SignalIdentityTests(unittest.TestCase):
         locked_section = contributing.split('The G3 locked file set', 1)[1].split('The owner approved relocation', 1)[0]
         locked = re.findall(r'^- `([^`]+)`', locked_section, re.MULTILINE)
         self.assertEqual(len(locked), 30)
-        # ADR 0007 owner approval is limited to these exact two source blobs.
+        # ADR 0007 owner approval (stock signals 2026-11-07 and prospective E1 2026-11-07) is
+        # limited to these exact three source blobs.
         approved = {
             'quantlab/core.py': '9a3b354037633b5f883a971aba0c5713a8eb82ee',
             'quantlab/backtest.py': '87ea5d2d67b3efc152754d97ba9360f7ae5282f9',
+            'quantlab/research.py': '885f4f4c659801cda1e26d9b6b39ebf487801e56',
         }
         for path in locked:
             with self.subTest(path=path):

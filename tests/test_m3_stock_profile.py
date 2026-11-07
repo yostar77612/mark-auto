@@ -36,7 +36,7 @@ class StockProfileTests(unittest.TestCase):
         self.assertIs(pools.SUPPORTED_PRODUCERS[-1], PROFILE)
 
     def test_exact_current_profile_changes_only_authorized_source_identities(self):
-        self.assertEqual(content_hash(PROFILE), 'd4195daaffb6a4888686e8ab15f27703f30eeec8841c65cdd48db8e5bbd1f67f')
+        self.assertEqual(content_hash(PROFILE), '2adad40bc8d95363c6ec121756b6621f457df416fa10519a7d8a95acd82480e9')
         previous = pools.CORE_SPLIT_SIWC_PROFILE_V1
         restored = to_dict(PROFILE)
         restored['protocol'] = previous['protocol']
@@ -45,6 +45,8 @@ class StockProfileTests(unittest.TestCase):
             restored['result_source_hashes'][name] = previous['result_source_hashes'][name]
             for index, variant in enumerate(restored['result_source_hash_variants']):
                 variant[name] = previous['result_source_hash_variants'][index][name]
+        # The prospective-E1 reservation change (research.py) is the one other reviewed source change.
+        restored['engine_source_hashes']['research.py'] = previous['engine_source_hashes']['research.py']
         self.assertEqual(restored, previous)
         for name, expected in PROFILE['engine_source_hashes'].items():
             self.assertEqual(content_hash((ROOT / 'quantlab' / name).read_text(encoding='utf-8')), expected)

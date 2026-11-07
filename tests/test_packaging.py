@@ -172,6 +172,11 @@ class PackagingTests(unittest.TestCase):
             self.assertIn(name, captured['hiddenimports'])
         for name in ('core.py', 'data.py', 'strategies.py', 'backtest.py', 'research.py', 'provider.py'):
             self.assertIn((str(ROOT / 'quantlab' / name), 'quantlab'), datas)
+        from quantlab.trading.runtime.e1_protocol import SOURCE_FILES
+
+        for name in SOURCE_FILES:
+            path = Path('quantlab') / name
+            self.assertIn((str(ROOT / path), path.parent.as_posix()), datas)
         harness = (ROOT / 'packaging/test_installer.ps1').read_text()
         self.assertIn('Get-FileHash $shipped', harness)
         for name in ('backtest_completed', 'campaign_completed', 'paper_completed', 'performance-observation.json'):

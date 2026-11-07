@@ -11,6 +11,7 @@ from desktop_app.bootstrap import create_operation_ports as _c_create_operation_
 
 import ast
 from contextlib import contextmanager
+import copy
 import importlib.util
 import inspect
 import json
@@ -45,11 +46,41 @@ NEW_OPERATIONS = ('ui_paper_cancel_all', 'ui_capital_scenario', 'ui_idea_researc
 def golden_observations():
     """B6 historical observations; A2 has its own result assertion below."""
     observations = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']
-    return {
+    historical = {
         name: {key: value for key, value in entry.items() if key not in {'source', 'review', 'precision'}}
         for name, entry in observations.items()
         if name not in NEW_OPERATIONS
     }
+    return e1_exposure_expectations(historical)
+
+
+def e1_exposure_delta():
+    """Exactly four reviewed expectation leaves; never rewrite observed results."""
+    changes = json.loads((FIXTURES / 'ui_operations_e1_exposure_delta.json').read_text(encoding='utf-8'))
+    if content_hash(changes) != '3de278ca5f051f0f501d73c1a709cb6b9cb9ff180d7c0fee0e7c080d1dc64073':
+        raise ValueError('Reviewed E1 exposure delta changed')
+    paths = {
+        (name, 'result', 'holdout_registry', key)
+        for name in ('campaign_fixture', 'campaign_subscription_fixture')
+        for key in ('holdout_hash', 'reservation_id')
+    }
+    if len(changes) != 4 or {tuple(row['path']) for row in changes} != paths:
+        raise ValueError('Reviewed E1 exposure paths changed')
+    return changes
+
+
+def e1_exposure_expectations(historical):
+    """Add union-reservation expectations without changing the frozen B6 fixture."""
+    expected = copy.deepcopy(historical)
+    for row in e1_exposure_delta():
+        node = expected
+        for key in row['path'][:-1]:
+            node = node[key]
+        key = row['path'][-1]
+        if node[key] != row['old']:
+            raise ValueError('Historical E1 exposure leaf changed')
+        node[key] = row['new']
+    return expected
 
 
 @contextmanager
@@ -414,6 +445,70 @@ def exercise(execute):
 
 
 class RegistryTests(unittest.TestCase):
+    def assert_e1_exposure_identities(self, observations):
+        for row in e1_exposure_delta():
+            node = observations
+            for key in row['path']:
+                node = node[key]
+            self.assertEqual(node, row['new'], row['path'])
+
+    def test_e1_exposure_delta_matches_independent_synthetic_identities(self):
+        historical = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']
+        unchanged = copy.deepcopy(historical)
+        expected = e1_exposure_expectations(historical)
+        changes = {tuple(row['path']): row for row in e1_exposure_delta()}
+        for name, count in (('campaign_fixture', 240), ('campaign_subscription_fixture', 241)):
+            bars = synthetic_dataset(count).bars
+            # Independent documented demo cuts: holdout starts at 85%, OOS at
+            # 70%. Do not use production split/reservation helpers as the oracle.
+            for version, start in (('old', count * 85 // 100), ('new', count * 7 // 10)):
+                protected = bars[start:]
+                coverage = {}
+                for contract in {bar.contract_id for bar in protected}:
+                    matching = [bar for bar in protected if bar.contract_id == contract]
+                    coverage[contract] = (
+                        min(bar.timestamp for bar in matching).strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                        max(bar.end for bar in matching).strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                    )
+                bars_hash = content_hash(protected)
+                identities = {'holdout_hash': bars_hash, 'reservation_id': content_hash({'bars_hash': bars_hash, 'coverage': coverage})}
+                for key, value in identities.items():
+                    with self.subTest(campaign=name, version=version, key=key):
+                        self.assertEqual(changes[(name, 'result', 'holdout_registry', key)][version], value)
+        self.assert_e1_exposure_identities(expected)
+        # Reverse only the four explicit leaves; every other golden leaf remains
+        # exact, and the caller's historical object is never mutated.
+        for row in changes.values():
+            node = expected
+            for key in row['path'][:-1]:
+                node = node[key]
+            node[row['path'][-1]] = row['old']
+        self.assertEqual(expected, unchanged)
+        self.assertEqual(historical, unchanged)
+
+    def test_e1_exposure_delta_rejects_tampered_hashes_and_paths(self):
+        historical = json.loads((FIXTURES / 'ui_operations_golden.json').read_text(encoding='utf-8'))['observations']
+        for row in e1_exposure_delta():
+            changed = copy.deepcopy(historical)
+            node = changed
+            for key in row['path'][:-1]:
+                node = node[key]
+            node[row['path'][-1]] = '0' * 64
+            with self.subTest(path=row['path']), self.assertRaisesRegex(ValueError, 'Historical E1 exposure leaf changed'):
+                e1_exposure_expectations(changed)
+            observed = e1_exposure_expectations(historical)
+            node = observed
+            for key in row['path'][:-1]:
+                node = node[key]
+            node[row['path'][-1]] = row['old']
+            with self.subTest(path=row['path'], stale_observation=True), self.assertRaises(AssertionError):
+                self.assert_e1_exposure_identities(observed)
+        for field, value in (('new', '0' * 64), ('path', ['campaign_fixture', 'result', 'selection_hash'])):
+            changes = e1_exposure_delta()
+            changes[0][field] = value
+            with patch.object(Path, 'read_text', return_value=json.dumps(changes)), self.assertRaisesRegex(ValueError, 'Reviewed E1 exposure delta changed'):
+                e1_exposure_delta()
+
     def test_all_scenarios_ignore_host_profile_and_remembered_login(self):
         expected = portable_paths(golden_observations())
         original_environment = dict(os.environ)
@@ -481,6 +576,9 @@ class RegistryTests(unittest.TestCase):
 
     def test_operation_coverage_and_golden_parity(self):
         observed = exercise(ui.execute_ui_operation)
+        # Union reservation identities are platform-independent, so retain this
+        # exact check even where the Windows source-byte golden is not compared.
+        self.assert_e1_exposure_identities(observed)
         # Explicit operation -> test callable coverage table, including guarded paths.
         coverage = {operation: self.test_operation_coverage_and_golden_parity for operation in observed if operation in _c_ui_UI_OPERATIONS}
         self.assertEqual(set(coverage), _c_ui_UI_OPERATIONS)

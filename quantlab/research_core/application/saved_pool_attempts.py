@@ -252,7 +252,7 @@ def _collect_source_attempts(state, config, splits, current_schema, provider, bi
     return pool, provenance, by_id
 
 
-def _validate_source_selection(state, config, by_id, splits, producer):
+def _validate_source_selection(state, config, by_id, splits, producer, protected):
     selected = state['selected']
     if type(selected) is not list or len(selected) > len(config['families']):
         _fail('Invalid source selection evidence')
@@ -293,7 +293,7 @@ def _validate_source_selection(state, config, by_id, splits, producer):
             or state.get('holdout_selection_hash') != state['selection_hash']
             or type(state.get('holdout_registry')) is not dict
             or state['holdout_registry'].get('status') != 'reserved_consumed'
-            or state['holdout_registry'].get('holdout_hash') != content_hash(splits['holdout'].bars)
+            or state['holdout_registry'].get('holdout_hash') != content_hash(protected.bars)
         ):
             _fail('Invalid source consumed holdout evidence')
     elif (

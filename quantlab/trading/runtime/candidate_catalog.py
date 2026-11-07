@@ -1,15 +1,14 @@
 """Read-only E1 projection; never load research/OOS payloads to infer qualification.
 
-The current research journal has no authoritative per-candidate E1 summary.
-Its display-only walk-forward verdict combines fold winners and is not such a
-summary. Consequently the default reader fails closed. A composition-owned
-reader may be supplied only when it validates authoritative research summaries
-(including source binding and one-time consumption) before returning E1 values.
-It must not return raw research records, OOS values or final-holdout values.
+Legacy research/WF journals are not authoritative per-candidate E1 summaries.
+The host may supply its explicit bootstrap qualification registry to read the
+versioned prospective E1 protocol. With no authority configured, fail closed.
+Never infer qualification from display verdicts or copied research exports.
 """
 
 from collections.abc import Callable
 from pathlib import Path
+from functools import partial
 import sqlite3
 
 from quantlab.trading.domain.promotion import PromotionThresholds
@@ -36,8 +35,20 @@ class ResearchWorkspaceCandidateCatalog:
     lock. No locks are acquired and no research state is created or modified.
     """
 
-    def __init__(self, workspace: Path, *, read_validated_summaries: ValidatedSummaryReader = _unavailable_summaries) -> None:
+    def __init__(
+        self,
+        workspace: Path,
+        *,
+        read_validated_summaries: ValidatedSummaryReader = _unavailable_summaries,
+        qualification_registry: Path | None = None,
+    ) -> None:
         self._workspace = Path(workspace)
+        if qualification_registry is not None:
+            if read_validated_summaries is not _unavailable_summaries:
+                raise DomainError('candidate_unavailable')
+            from quantlab.trading.runtime.e1_reader import read_e1_summaries
+
+            read_validated_summaries = partial(read_e1_summaries, registry_path=Path(qualification_registry))
         self._read_validated_summaries = read_validated_summaries
 
     def _check_workspace(self) -> None:

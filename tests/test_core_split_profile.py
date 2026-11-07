@@ -89,6 +89,9 @@ class CoreSplitProfileTests(unittest.TestCase):
         expected_keys = {'research.py', 'provider.py', 'core.py', 'strategies.py', 'backtest.py', 'research_core/domain/receipts.py'}
         self.assertEqual(set(PROFILE['engine_source_hashes']), expected_keys)
         for name, expected in PROFILE['engine_source_hashes'].items():
+            if name == 'research.py':
+                # Reviewed prospective-E1 reservation change; the current producer carries its identity.
+                expected = pools.STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'][name]
             raw = (
                 layered_source_bytes('quantlab/' + name).replace(b'\r\n', b'\n')
                 if name in ('core.py', 'backtest.py')
