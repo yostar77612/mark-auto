@@ -6,6 +6,7 @@ inventories broker holdings as managed lots, or simulates an exchange response.
 
 from dataclasses import replace
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import TYPE_CHECKING, Callable
 
 from .events import poll_events, reconcile, validate_observation
@@ -31,6 +32,26 @@ def _attention(engine: 'TradingEngine', code: str) -> None:
         raise DomainError('journal_failed', 'decision journal is unavailable')
     if code not in engine.state.issues or not engine.state.stopped:
         engine._persist('decision_requires_attention', replace(engine.state, stopped=True, issues=tuple(sorted(set((*engine.state.issues, code))))))
+
+
+def fit_risk_budget(engine: 'TradingEngine', record: 'StrategyRecord', spec, price, stop, quantity: int) -> int:
+    """Largest whole-unit size whose loss at the stop fits the strategy's isolated risk budget.
+
+    Sizing by amount alone could pick a size the engine's isolated-budget check then
+    refuses with risk_rejected, which stops the whole engine; size to the budget instead.
+    """
+    budget = record.form.allocation * record.form.risk_fraction
+    owned = sum(
+        (
+            r.risk
+            for r in engine.reservations()
+            if any(o.order_id == r.reservation_id and o.plan.strategy_id == record.strategy_id for o in engine.state.orders)
+        ),
+        Decimal('0'),
+    )
+    while quantity > 0 and owned + engine.fees.loss_at_stop(spec, price, stop, quantity, record.form.direction) > budget:
+        quantity -= spec.lot_size
+    return max(quantity, 0)
 
 
 def _attempt(engine: 'TradingEngine', operation: Callable[[], object]) -> None:
@@ -126,6 +147,9 @@ def _entry_decision(
         if not quantity:
             raise DomainError('strategy_size_insufficient')
         stop = spec.round_price(price * (1 - record.parameters.stop_fraction * sign), up=sign < 0)
+        quantity = fit_risk_budget(engine, record, spec, price, stop, quantity)
+        if not quantity:
+            raise DomainError('strategy_size_insufficient')
         engine.update_strategy(replace(record, recent_signal='ENTRY'), 'strategy_signal_evaluated')
     now = engine.clock.now()
     plan = OrderPlan(
