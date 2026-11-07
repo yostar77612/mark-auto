@@ -106,15 +106,16 @@ class StrategyResearchFeedbackTests(unittest.TestCase):
         self.assertIn(ui_text('research.feedback.official'), self.feedback.status.label.text())
         self.assertNotIn(ui_text('research.feedback.local'), self.feedback.status.label.text())
 
-    def test_validation_success_requires_research_and_next_does_not_run_it(self):
+    def test_validation_success_requires_research_and_next_runs_only_that_readonly_research(self):
         with self.held(UiAction.VALIDATE, evidence='NONE'):
             pass
         self.assertIn(ui_text('research.feedback.validated'), self.feedback.status.label.text())
         self.assertIn(ui_text('research.feedback.no_data'), self.feedback.status.label.text())
         self.assertFalse(self.window.deploy_button.isEnabled())
         self.feedback.status.action.click()
-        self.assertIs(self.window.focusWidget(), self.window.research_button)
-        self.assertEqual([command.action for command in self.facade.commands], [UiAction.VALIDATE])
+        self.drain()
+        self.assertEqual([command.action for command in self.facade.commands], [UiAction.VALIDATE, UiAction.RESEARCH])
+        self.assertEqual(self.facade.commands[-1].target_id, self.feedback.target)
 
     def test_rejection_uses_error_table_reason_and_next_step_without_private_message(self):
         with self.held(accepted=False, code='research_worker_failed'):
