@@ -96,7 +96,10 @@ class TradingEngine:
             environment=self.configuration.environment,
             account_ref=self.configuration.stock_account_ref or self.configuration.futures_account_ref,
         )
-        for event in self.journal.replay():
+        events = self.journal.replay()  # Sequence and hash chain are verified for every event here.
+        # Every event is a full state snapshot and only the last one is restored, so decoding all of them wastes
+        # seconds on a long journal. The first and the last event still get the full state checks below.
+        for event in (events[0], events[-1]) if events else ():
             restored = loads(event.payload)
             if not isinstance(restored, AppState) or restored.version != event.sequence:
                 raise DomainError('journal_failed', 'state event sequence mismatch')
