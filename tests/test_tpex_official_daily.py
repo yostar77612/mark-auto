@@ -10,9 +10,6 @@ import unittest
 from quantlab.trading.adapters.official.daily_signal_events import daily_event_scope, parse_daily_signal_events
 from quantlab.trading.adapters.official.stock_data import daily_url, events_url, parse_daily, parse_events, tpex_events_url
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.runtime.official_daily_source import _source_scope
-from quantlab.trading.runtime.stock_history import validate_stock_url
-from tools.import_official_daily import import_official_daily
 
 FIXTURES = Path(__file__).parent / 'fixtures' / 'tpex_official'
 EVENTS = (FIXTURES / 'events_20250602_20250613.json').read_bytes()
@@ -30,6 +27,8 @@ def altered(raw: bytes, change) -> bytes:
 
 class TpexDailyTests(unittest.TestCase):
     def test_urls_use_the_current_official_endpoints_and_are_admitted(self):
+        from quantlab.trading.runtime.stock_history import validate_stock_url
+
         url = daily_url(STOCK, date(2025, 6, 1))
         self.assertTrue(url.startswith('https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock?'))
         self.assertEqual(validate_stock_url(url), url)
@@ -42,6 +41,8 @@ class TpexDailyTests(unittest.TestCase):
         self.assertEqual(daily_event_scope(EVENT_URL), (date(2025, 6, 2), date(2025, 6, 14)))
 
     def test_retired_and_stock_filtered_endpoints_are_refused(self):
+        from quantlab.trading.runtime.stock_history import validate_stock_url
+
         retired = 'https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_result.php?l=zh-tw&d=114/06&stkno=6788'
         filtered = EVENT_URL + '&stkno=6788'  # the official site ignores a stock filter, so it must not be trusted
         for url in (retired, filtered, EVENT_URL.replace('www.tpex.org.tw', 'www.example.com')):
@@ -71,6 +72,8 @@ class TpexDailyTests(unittest.TestCase):
             parse_daily(torn, STOCK, date(2025, 6, 1))
 
     def test_source_scope_recognises_both_tpex_requests(self):
+        from quantlab.trading.runtime.official_daily_source import _source_scope
+
         self.assertEqual(_source_scope(daily_url(STOCK, date(2025, 6, 1)), STOCK), ('daily', date(2025, 6, 1), None))
         self.assertEqual(_source_scope(EVENT_URL, STOCK), ('global_events', date(2025, 6, 2), date(2025, 6, 14)))
         with self.assertRaises(ValueError):
@@ -97,6 +100,8 @@ class TpexDailyTests(unittest.TestCase):
                 parse_daily_signal_events(raw, 'TPEX:6488', EVENT_URL)
 
     def test_the_importer_downloads_and_publishes_a_tpex_stock_atomically(self):
+        from tools.import_official_daily import import_official_daily
+
         responses = {daily_url(STOCK, date(2025, 6, 1)): JUNE, EVENT_URL: EVENTS}
         requested = []
 
