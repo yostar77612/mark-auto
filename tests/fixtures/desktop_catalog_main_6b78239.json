@@ -3220,7 +3220,9 @@
       "assistant.claude_consent_title": "同意本次 Claude Code 請求（未驗證）",
       "assistant.claude_consent_body": "本次輸入文字會交給這台電腦上已登入的 Claude Code，並送到 Anthropic，使用你的 Claude 訂閱額度。不傳送歷史、資料集、金鑰或檔案，Claude Code 也不會被允許使用任何工具。請勿輸入憑證、樣本外或最終保留資料。是否同意本次網路請求？",
       "assistant.claude_unavailable": "找不到這台電腦上的 Claude Code；請先安裝並登入後再試。",
-      "assistant.claude_login_required": "Claude Code 尚未登入；請先在終端機執行 claude 並完成登入。"
+      "assistant.claude_login_required": "Claude Code 尚未登入；請先在終端機執行 claude 並完成登入。",
+      "m2m.need_connection": "尚未連到「券商模擬」。目前若顯示「正式環境」，只能看行情、不能模擬下單。請到「設定」頁把連線環境選為「券商模擬」，再按「儲存並連線」。",
+      "m2m.need_account": "還沒選擇帳戶。請到「設定」頁的「選擇帳戶」勾選要使用的帳戶，再回到這裡對帳。"
     }
   },
   "aliases": {
@@ -7769,6 +7771,8 @@
       "assistant.claude_consent_body": "本次輸入文字會交給這台電腦上已登入的 Claude Code，並送到 Anthropic，使用你的 Claude 訂閱額度。不傳送歷史、資料集、金鑰或檔案，Claude Code 也不會被允許使用任何工具。請勿輸入憑證、樣本外或最終保留資料。是否同意本次網路請求？",
       "assistant.claude_unavailable": "找不到這台電腦上的 Claude Code；請先安裝並登入後再試。",
       "assistant.claude_login_required": "Claude Code 尚未登入；請先在終端機執行 claude 並完成登入。",
+      "m2m.need_connection": "尚未連到「券商模擬」。目前若顯示「正式環境」，只能看行情、不能模擬下單。請到「設定」頁把連線環境選為「券商模擬」，再按「儲存並連線」。",
+      "m2m.need_account": "還沒選擇帳戶。請到「設定」頁的「選擇帳戶」勾選要使用的帳戶，再回到這裡對帳。",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12313,7 +12317,9 @@
     "assistant.claude_consent_title",
     "assistant.claude_consent_body",
     "assistant.claude_unavailable",
-    "assistant.claude_login_required"
+    "assistant.claude_login_required",
+    "m2m.need_connection",
+    "m2m.need_account"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

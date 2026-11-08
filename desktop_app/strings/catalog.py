@@ -258,6 +258,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[74])
 # Lane Claude Code assistant: optional inference through the locally installed Claude Code.
 ZH_TW.update(_ZH_TW_CHUNKS[75])
 
+# Lane manual connection guidance: say what to do while the broker simulation is not connected.
+ZH_TW.update(_ZH_TW_CHUNKS[76])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.
