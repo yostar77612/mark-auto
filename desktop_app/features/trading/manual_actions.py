@@ -41,6 +41,7 @@ class ManualActions:
         self.form.submit.clicked.connect(self._submit)
         self.form.test_order.clicked.connect(self._test)
         self.form.positions_button.clicked.connect(lambda: window.navigation.setCurrentRow(2))
+        self.form.connect_button.clicked.connect(lambda: window.navigation.setCurrentRow(5))
         self.cancel.clicked.connect(lambda: self._mutate(False))
         self.amend.clicked.connect(lambda: self._mutate(True))
         self.form.instrument.currentIndexChanged.connect(self._changed)

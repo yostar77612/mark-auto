@@ -95,7 +95,10 @@ from .strategy_risk_hint import ENTRIES as _part_strategy_risk_hint
 
 from .assistant_claude_code import ENTRIES as _part_assistant_claude_code
 
+from .m2_manual_connection import ENTRIES as _part_m2_manual_connection
+
 PARTS = (
+    _part_m2_manual_connection,
     _part_assistant_claude_code,
     _part_strategy_risk_hint,
     _part_m3_ui,

@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QSpinBox, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QGridLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QSpinBox, QVBoxLayout
 
 from desktop_app.features.trading.page_help import HelpText
 from desktop_app.features.trading.widgets import button, label
@@ -21,6 +21,12 @@ class ManualForm(QGroupBox):
         self.status = label('m2m.not_ready')
         self.status.setObjectName('manual_status')
         layout.addWidget(self.status)
+        # Not connected to the broker simulation: one click to the place where that is done.
+        self.connect_button = QPushButton(ui_text('m2m.open_connection'))
+        self.connect_button.setAccessibleName(ui_text('m2m.open_connection'))
+        self.connect_button.setMinimumHeight(36)
+        self.connect_button.setVisible(False)
+        layout.addWidget(self.connect_button)
         book = QHBoxLayout()
         self.capital = QLineEdit()
         self.capital.setMaximumWidth(150)

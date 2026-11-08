@@ -603,3 +603,27 @@ class ManualUiTests(unittest.TestCase):
                 self.drain()
                 self.assertTrue(field.hasFocus(), 'focus left the field after a background refresh')
             self.assertEqual(field.text(), '12345')
+
+    def test_not_connected_to_broker_simulation_says_what_to_do_and_jumps_to_connection(self):
+        # Owner situation: only the production (quotes-only) connection exists, so the simulation book has no connection.
+        self.assertFalse(self.form.connect_button.isVisibleTo(self.form))
+        state = replace(self.window.state, version=9, manual=ManualTradingView(reasons=('not_connected',)))
+        self.window.apply_state(state)
+        self.app.processEvents()
+        self.assertTrue(self.form.connect_button.isVisibleTo(self.form))
+        self.assertIn(ui_text('m2m.need_connection'), self.form.status.text())
+        self.assertNotIn(ui_text('m2m.not_ready'), self.form.status.text().splitlines()[1])
+        for widget in (self.form.preview_button, self.form.submit, self.form.prepare):
+            self.assertFalse(widget.isEnabled())
+        self.form.connect_button.click()
+        self.assertEqual(self.window.navigation.currentRow(), 5)
+        self.window.apply_state(replace(state, version=10, manual=ManualTradingView(reasons=('accounts_not_selected',))))
+        self.assertIn(ui_text('m2m.need_account'), self.form.status.text())
+
+    def test_command_answer_stays_visible_next_to_open_issues(self):
+        self.window.apply_state(replace(self.window.state, version=11, issues=('一項待處理',)))
+        self.window._feedback('對帳沒有完成')
+        self.window.apply_state(replace(self.window.state, version=12))
+        text = self.window.notice.text()
+        self.assertIn('對帳沒有完成', text)
+        self.assertIn('一項待處理', text)

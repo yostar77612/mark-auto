@@ -967,6 +967,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/strings/assistant_claude_code.py` | 20 | shared | `desktop_app/strings/assistant_claude_code.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/research_core/adapters/workspace_archive.py` | 208 | infrastructure | `quantlab/research_core/adapters/workspace_archive.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `tools/archive_workspace.py` | 61 | tooling | `tools/archive_workspace.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/strings/m2_manual_connection.py` | 11 | shared | `desktop_app/strings/m2_manual_connection.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -61,6 +61,8 @@ def preview_text(preview):
 
 def reason_text(code):
     reasons = {
+        'not_connected': ui_text('m2m.need_connection'),
+        'accounts_not_selected': ui_text('m2m.need_account'),
         'manual_book_not_enabled': ui_text('m2m.need_book'),
         'manual_confirmation_required': ui_text('m2m.need_confirmation'),
         'manual_account_observation_required': ui_text('m2m.need_observation'),
@@ -105,6 +107,7 @@ def render_manual(controller, state):
     form, manual = controller.form, state.manual
     simulation = state.environment is Environment.BROKER_SIMULATION
     form.setVisible(simulation)
+    form.connect_button.setVisible(simulation and not controller.matches(state))
     _role(controller.window.reconcile_button, 'secondary' if simulation else 'primary')
     _role(form.submit, 'primary' if simulation else 'secondary')
     scope_changed = controller.scope != manual.scope

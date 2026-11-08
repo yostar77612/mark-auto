@@ -614,9 +614,9 @@ class TradingWindow(QMainWindow):
             )
         else:
             self.summary.setText(ui_text('v2.summary_unknown_line').format(state.allocated_cash, state_label(state.quote_status)))
-        self.notice.setText(
-            ui_text('v2.issue_summary').format(len(state.issues), state.issues[0]) if state.issues else self._last_feedback or ui_text('v2.no_issues')
-        )
+        # A command's answer must stay visible next to the open issues instead of being replaced by them.
+        issue_line = ui_text('v2.issue_summary').format(len(state.issues), state.issues[0]) if state.issues else ''
+        self.notice.setText(' / '.join(part for part in (self._last_feedback, issue_line) if part) or ui_text('v2.no_issues'))
         refresh_context_header(self, state)
         refresh_trading_environment(self, state)
         self.manual_controls.render(state)
