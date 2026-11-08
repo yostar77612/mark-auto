@@ -5,10 +5,35 @@ from contextlib import closing
 from hashlib import sha256
 from pathlib import Path
 import sqlite3
+import zlib
 from uuid import uuid4
 
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.ports.storage import Fence, StoredEvent
+
+
+SCHEMA_VERSION = 3  # 2: every payload is plain text; 3: large payloads may be stored compressed
+COMPRESSED = b'MAZ1'
+COMPRESS_FROM_BYTES = 1024
+MAX_PAYLOAD_BYTES = 4 * 1024 * 1024
+
+
+def pack(payload: str):
+    """Large payloads are stored zlib-compressed; the hash chain always covers the plain text."""
+    raw = payload.encode('utf-8')
+    return COMPRESSED + zlib.compress(raw, 6) if len(raw) >= COMPRESS_FROM_BYTES else payload
+
+
+def unpack(stored) -> str:
+    if type(stored) is str:
+        return stored  # schema-2 rows and small payloads
+    if type(stored) is bytes and stored.startswith(COMPRESSED):
+        inflater = zlib.decompressobj()
+        raw = inflater.decompress(stored[len(COMPRESSED) :], MAX_PAYLOAD_BYTES + 1)
+        if len(raw) > MAX_PAYLOAD_BYTES or inflater.unconsumed_tail or not inflater.eof:
+            raise ValueError('compressed payload size')
+        return raw.decode('utf-8')
+    raise ValueError('unknown payload encoding')
 
 
 class Ledger:
@@ -38,11 +63,16 @@ class Ledger:
         self._db.execute('PRAGMA synchronous=FULL')
         self._db.executescript('''
             CREATE TABLE IF NOT EXISTS metadata(schema_version INTEGER NOT NULL);
-            INSERT INTO metadata SELECT 2 WHERE NOT EXISTS(SELECT 1 FROM metadata);
+            INSERT INTO metadata SELECT 3 WHERE NOT EXISTS(SELECT 1 FROM metadata);
             CREATE TABLE IF NOT EXISTS owner(scope TEXT PRIMARY KEY, owner TEXT NOT NULL, generation INTEGER NOT NULL, expires REAL NOT NULL);
             CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY, kind TEXT NOT NULL, payload TEXT NOT NULL, previous_hash TEXT NOT NULL, digest TEXT NOT NULL);
         ''')
-        if self._db.execute('SELECT schema_version FROM metadata').fetchall() != [(2,)]:
+        found = self._db.execute('SELECT schema_version FROM metadata').fetchall()
+        if found == [(2,)]:
+            # Old rows stay as they are; only new large rows are compressed. Builds that predate version 3
+            # refuse this file with 'unsupported ledger schema' instead of misreading it.
+            self._db.execute('UPDATE metadata SET schema_version=3')
+        elif found != [(SCHEMA_VERSION,)]:
             raise DomainError('validation_failed', 'unsupported ledger schema')
         self.fence = self._acquire(now)
 
@@ -90,7 +120,7 @@ class Ledger:
             raise
 
     def append(self, kind: str, payload: str, now: datetime, *, expected_sequence: int) -> StoredEvent:
-        if not kind or type(payload) is not str or len(payload.encode()) > 4 * 1024 * 1024:
+        if not kind or type(payload) is not str or len(payload.encode()) > MAX_PAYLOAD_BYTES:
             raise DomainError('validation_failed', 'invalid journal event')
         self._begin()
         try:
@@ -100,7 +130,7 @@ class Ledger:
             if sequence != expected_sequence + 1:
                 raise DomainError('state_conflict', 'journal version changed')
             digest = sha256(f'{sequence}\n{kind}\n{previous}\n{payload}'.encode()).hexdigest()
-            self._db.execute('INSERT INTO events VALUES(?,?,?,?,?)', (sequence, kind, payload, previous, digest))
+            self._db.execute('INSERT INTO events VALUES(?,?,?,?,?)', (sequence, kind, pack(payload), previous, digest))
             self._db.commit()
             return StoredEvent(sequence, kind, payload, previous, digest)
         except BaseException:
@@ -111,7 +141,10 @@ class Ledger:
         result = []
         previous = '0' * 64
         for row in self._db.execute('SELECT seq,kind,payload,previous_hash,digest FROM events ORDER BY seq'):
-            item = StoredEvent(*row)
+            try:
+                item = StoredEvent(row[0], row[1], unpack(row[2]), row[3], row[4])
+            except (ValueError, zlib.error):
+                raise DomainError('journal_failed', 'journal integrity mismatch') from None
             expected = sha256(f'{item.sequence}\n{item.kind}\n{previous}\n{item.payload}'.encode()).hexdigest()
             if item.sequence != len(result) + 1 or item.previous_hash != previous or item.digest != expected:
                 raise DomainError('journal_failed', 'journal integrity mismatch')
