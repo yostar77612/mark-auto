@@ -24,6 +24,7 @@
   "app_header",
   "appearance_convention",
   "appearance_theme",
+  "assistant_claude_model",
   "assistant_completions",
   "assistant_context_usage",
   "assistant_effort",

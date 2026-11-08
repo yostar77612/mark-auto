@@ -32,10 +32,13 @@ BANNED_CALLS = {"eval", "exec", "compile", "__import__"}
 # is additionally restricted to the explicit adapter loader's function body.
 V2_SDK_LOADER = 'quantlab/trading/adapters/shioaji/sdk_loader.py'
 V2_PROCESS_OWNER = 'quantlab/trading/runtime/context_client.py'
+# The assistant's Claude Code source launches the user's own Claude Code once per consented question (owner choice
+# 2026-11-08); this one adapter may import subprocess, nothing else may.
+V2_CLAUDE_CODE = 'quantlab/assistant/adapters/claude_code/reply.py'
 
 
 def v2_import_allowance(node: ast.AST, label: str, sdk_loader_body: set[int]) -> set[str]:
-    if label == V2_PROCESS_OWNER:
+    if label in (V2_PROCESS_OWNER, V2_CLAUDE_CODE):
         return {'subprocess'}
     if label == V2_SDK_LOADER and id(node) in sdk_loader_body and isinstance(node, ast.Import) and all(item.name == 'shioaji' for item in node.names):
         return {'shioaji'}
