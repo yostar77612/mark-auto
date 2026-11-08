@@ -95,7 +95,10 @@ from .strategy_risk_hint import ENTRIES as _part_strategy_risk_hint
 
 from .assistant_claude_code import ENTRIES as _part_assistant_claude_code
 
+from .strategy_explain import ENTRIES as _part_strategy_explain
+
 PARTS = (
+    _part_strategy_explain,
     _part_assistant_claude_code,
     _part_strategy_risk_hint,
     _part_m3_ui,

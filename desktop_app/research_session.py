@@ -199,6 +199,7 @@ class UnifiedResearch(QObject):
         self.panel = ResearchPanel(trading)
         trading.pages.addWidget(self.panel)
         trading.legacy_requested.connect(self.show)
+        trading.assistant_prompt_requested.connect(self.ask_assistant)
         trading.chatgpt_button.clicked.connect(lambda: self.show('connection'))
         trading.cancel_research_button.clicked.connect(self.cancel_research)
         self.panel.page_requested.connect(self.show)
@@ -327,6 +328,13 @@ class UnifiedResearch(QObject):
                 QTimer.singleShot(0, self._focus_assistant)
         finally:
             self._routing = False
+
+    def ask_assistant(self, prompt):
+        """Show the assistant with a question already typed in; the user still chooses the source and sends it."""
+        self.show('assistant')
+        if self._host is not None:
+            self._host.settings_page.assistant_panel.input.setText(prompt)
+            self._focus_assistant()
 
     def _research_navigated(self, index):
         if self._routing or self._host is None:

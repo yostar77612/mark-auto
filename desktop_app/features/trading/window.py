@@ -92,6 +92,7 @@ class _Operation(QThread):
 
 class TradingWindow(QMainWindow):
     legacy_requested = Signal(str)
+    assistant_prompt_requested = Signal(str)
     close_ui_requested = Signal()
 
     def __init__(

@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import patch
 import unittest
 
@@ -153,6 +154,63 @@ class StrategyManagementUiTests(unittest.TestCase):
         self.window.go_strategy_research.click()
         self.assertEqual(self.window.strategy_tabs.currentIndex(), 1)
         self.assertEqual(self.facade.commands, [])
+
+    def test_ai_button_prefills_a_question_about_the_selected_strategy_without_sending_anything(self):
+        strategy = self.select(parameters=StrategyParameters('1d', Decimal('0.03'), Decimal('100000')), state='RESEARCHED', evidence='fixture-only')
+        asked, legacy = [], []
+        self.window.assistant_prompt_requested.connect(asked.append)
+        self.window.legacy_requested.connect(legacy.append)
+        self.window.ai_assistant_button.click()
+        (prompt,) = asked
+        self.assertEqual(legacy, [])
+        self.assertLessEqual(len(prompt), 1000)
+        for fact in (strategy.name, strategy.instrument_id, '60,000', '3', '100,000'):
+            self.assertIn(fact, prompt)
+        self.assertIn(ui_text('assistant.explain_check_entry_over_allocation'), prompt)
+        self.assertEqual(self.facade.commands, [])  # nothing runs; the user still chooses a source and sends it
+
+    def test_ai_button_without_a_selected_strategy_just_opens_the_assistant(self):
+        self.window.strategies.clearSelection()
+        asked, legacy = [], []
+        self.window.assistant_prompt_requested.connect(asked.append)
+        self.window.legacy_requested.connect(legacy.append)
+        self.window.ai_assistant_button.click()
+        self.assertEqual((asked, legacy), ([], ['assistant']))
+
+    def test_explain_checks_flag_each_unreasonable_setting_and_stay_quiet_otherwise(self):
+        from desktop_app.features.trading.strategy_explain import check_codes, explain_prompt
+
+        good = self.select(parameters=StrategyParameters('1d', Decimal('0.03'), Decimal('50000')), state='RESEARCHED', evidence='ok')
+        self.assertEqual(check_codes(good, None, Decimal('20')), ())
+        self.assertIn(ui_text('assistant.explain_check_none'), explain_prompt(self.window.state, good))
+        cases = {
+            'unresearched': replace(good, state='RULE_VALID'),
+            'entry_over_allocation': replace(good, parameters=replace(good.parameters, entry_amount=Decimal('90000'))),
+            'stop_tight': replace(good, parameters=replace(good.parameters, stop_fraction=Decimal('0.005'))),
+            'stop_wide': replace(good, parameters=replace(good.parameters, stop_fraction=Decimal('0.15'))),
+        }
+        for code, strategy in cases.items():
+            with self.subTest(code):
+                self.assertIn(code, check_codes(strategy, None, Decimal('20')))
+        self.assertIn('allocation_below_lot', check_codes(good, None, Decimal('70')))  # one lot costs 70,000 > 60,000
+        self.assertIn('risk_below_lot', check_codes(replace(good, risk_fraction=Decimal('0.001')), None, Decimal('20')))
+        losing = SimpleNamespace(net_pnl=Decimal('-1000'), costs=Decimal('600'))
+        self.assertIn('costs', check_codes(good, losing, Decimal('20')))
+        self.assertNotIn('costs', check_codes(good, SimpleNamespace(net_pnl=Decimal('-1000'), costs=Decimal('100')), Decimal('20')))
+
+    def test_the_unified_window_prefills_the_assistant_input_but_does_not_send(self):
+        from desktop_app.research_session import UnifiedResearch
+        from PySide6.QtWidgets import QLineEdit
+
+        field = QLineEdit()
+        shown = []
+        stand_in = SimpleNamespace(
+            show=shown.append,
+            _host=SimpleNamespace(settings_page=SimpleNamespace(assistant_panel=SimpleNamespace(input=field))),
+            _focus_assistant=lambda: None,
+        )
+        UnifiedResearch.ask_assistant(stand_in, 'prefilled question')
+        self.assertEqual((shown, field.text()), (['assistant'], 'prefilled question'))
 
     def test_unchanged_poll_keeps_missing_evidence_and_empty_selection_disabled(self):
         self.select(state='DRAFT', evidence='NONE')

@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QLabel
 
 from desktop_app.features.trading.labels import policy_label
 from desktop_app.features.trading.widgets import selected_id
+from desktop_app.features.trading.strategy_explain import explain_prompt
 from desktop_app.features.trading.strategy_research_feedback import StrategyResearchFeedback
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction
@@ -54,6 +55,14 @@ class StrategyControls:
         state = state or self.window.state
         identity = selected_id(self.window.strategies)
         return next((item for item in state.strategies if f'{item.strategy_id}:{item.version}' == identity), None)
+
+    def ask_ai(self):
+        """Open the assistant; with a strategy selected, prefill (never send) a question about it."""
+        strategy = self.selected()
+        if strategy is None:
+            self.window.legacy_requested.emit('assistant')
+        else:
+            self.window.assistant_prompt_requested.emit(explain_prompt(self.window.state, strategy))
 
     @staticmethod
     def stamp(state):
