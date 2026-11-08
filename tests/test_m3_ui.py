@@ -270,6 +270,18 @@ class M3UiTests(unittest.TestCase):
         for reason in PauseReason:
             self.assertNotIn(reason.value, state_text(view(run_state=RunState.PAUSED, pause_reason=reason)))
 
+    def test_ai_strategy_surfaces_are_hidden_while_parked(self):
+        from desktop_app.components.result_panels import WalkForwardResults
+        from desktop_app.features.trading.auto_strategy_rows import SHOW_AI_STRATEGY
+
+        self.assertFalse(SHOW_AI_STRATEGY)
+        tabs = self.window.strategy_tabs
+        self.assertFalse(tabs.isTabVisible(tabs.indexOf(self.window.auto_strategies)))
+        self.assertTrue(self.window.dashboard.auto_summary.isHidden())
+        results = WalkForwardResults()
+        self.assertTrue(results.build_auto.isHidden())
+        results.deleteLater()
+
     def test_research_display_verdict_never_enables_build(self):
         from desktop_app.components.result_panels import WalkForwardResults
 

@@ -9,8 +9,10 @@ from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
+from quantlab.trading.application import engine as engine_module
 from quantlab.trading.application.contracts import StrategyForm, StrategyParameters, UiAction, UiCommand
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, Side
 from quantlab.trading.runtime.bootstrap import build_runtime
@@ -24,7 +26,7 @@ class LocalEngineLifecycleTests(unittest.TestCase):
         self.temp = TemporaryDirectory(dir=Path.cwd())
         self.addCleanup(self.temp.cleanup)
         self.bundle = build_runtime(RuntimeLaunch(Path(self.temp.name)))
-        self.addCleanup(self.bundle.close)
+        self.addCleanup(lambda: self.bundle.close())
 
     def request(self, operation, command=None):
         return _dispatch(
@@ -74,6 +76,48 @@ class LocalEngineLifecycleTests(unittest.TestCase):
         self.assertEqual(final.issues, ())
         self.assertTrue(final.orders, 'the activated strategy never placed a simulated order')
         self.assertTrue(all(order.filled for order in final.orders))
+
+    def test_performance_holding_days_cover_only_open_positions(self):
+        parameters = StrategyParameters('1d', Decimal('0.03'), Decimal('100000'))
+        reference = self.act(UiAction.CREATE_TYPED_STRATEGY, strategy=self.form(), strategy_parameters=parameters).reference
+        for action in (UiAction.VALIDATE, UiAction.RESEARCH, UiAction.DEPLOY):
+            self.act(action, reference)
+        self.act(UiAction.RECONCILE)
+        self.act(UiAction.CHECK_PREFLIGHT, account_ref='local-stock')
+        self.act(UiAction.RESUME)
+        for _ in range(20):
+            self.act(UiAction.STEP)
+        final = self.state()
+        lots = self.bundle.engine.state.positions
+        open_lots = [lot for lot in lots if lot.quantity]
+        self.assertGreater(len(lots), len(open_lots), 'scenario must include closed lots')
+        ages = [age for age in final.performance[0].holding_days.split(',') if age]
+        self.assertEqual(len(ages), len(open_lots))
+
+    def test_reopening_a_long_journal_restores_the_same_state_decoding_only_two_snapshots(self):
+        parameters = StrategyParameters('1d', Decimal('0.03'), Decimal('100000'))
+        reference = self.act(UiAction.CREATE_TYPED_STRATEGY, strategy=self.form(), strategy_parameters=parameters).reference
+        for action in (UiAction.VALIDATE, UiAction.RESEARCH, UiAction.DEPLOY):
+            self.act(action, reference)
+        self.act(UiAction.RECONCILE)
+        self.act(UiAction.CHECK_PREFLIGHT, account_ref='local-stock')
+        self.act(UiAction.RESUME)
+        for _ in range(20):
+            self.act(UiAction.STEP)
+        before = self.state()
+        snapshots = {event.payload for event in self.bundle.engine.journal.replay()}
+        self.assertGreater(len(snapshots), 50)
+        self.bundle.close()
+        decoded = []
+        real_loads = engine_module.loads
+        with patch.object(engine_module, 'loads', side_effect=lambda text: (decoded.append(text), real_loads(text))[1]):
+            self.bundle = build_runtime(RuntimeLaunch(Path(self.temp.name)))
+        self.assertLessEqual(len([text for text in decoded if text in snapshots]), 2)
+        after = self.state()
+        held = lambda state: [(p.instrument_id, p.quantity) for p in state.positions]
+        placed = lambda state: [(o.order_id, o.filled, o.state) for o in state.orders]
+        self.assertEqual((after.trading_day, placed(after), held(after)), (before.trading_day, placed(before), held(before)))
+        self.assertEqual(after.performance[0].net_pnl, before.performance[0].net_pnl)
 
 
 if __name__ == '__main__':

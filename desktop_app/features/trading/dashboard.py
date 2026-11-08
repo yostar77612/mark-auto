@@ -66,6 +66,9 @@ class DashboardWidget(QWidget):
         self.strategy_summary = self._label('overview_strategy_summary', ui_text('v2.strategies'))
         layout.addWidget(self.strategy_summary)
         self.auto_summary = self._label('overview_auto_card', ui_text('m3.overview_card'))
+        from desktop_app.features.trading.auto_strategy_rows import SHOW_AI_STRATEGY
+
+        self.auto_summary.setVisible(SHOW_AI_STRATEGY)
         layout.addWidget(self.auto_summary)
         self.strategy_setup = button('m2t.empty_strategy', 'dashboard_new_strategy', role='primary')
         layout.addWidget(self.strategy_setup)
