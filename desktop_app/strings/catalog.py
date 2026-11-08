@@ -252,6 +252,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[72])
 # Lane M3: frozen signal strategies and owner-only promotion intent.
 ZH_TW.update(_ZH_TW_CHUNKS[73])
 
+# Lane wizard risk hint: stock size limited by the isolated risk budget.
+ZH_TW.update(_ZH_TW_CHUNKS[74])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.
