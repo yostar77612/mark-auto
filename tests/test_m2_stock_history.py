@@ -61,7 +61,7 @@ class OfficialStockTests(unittest.TestCase):
         bar = parse_daily(raw, 'TPEX:6488', START)[0]
         self.assertEqual(bar.volume, 1234)
         self.assertEqual(bar.instrument_id, 'TPEX:6488')
-        self.assertIn('stkno=6488', daily_url('TPEX:6488', START))
+        self.assertIn('/afterTrading/tradingStock?code=6488', daily_url('TPEX:6488', START))
 
     def test_missing_invalid_duplicate_and_wrong_month_are_not_fabricated(self):
         good = json.loads(native())

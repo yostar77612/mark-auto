@@ -4,7 +4,7 @@ The schema fixtures are synthetic, not evidence that a live exchange endpoint
 was queried. An unsupported or incomplete response fails the complete refresh.
 """
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 import json
@@ -32,9 +32,19 @@ def daily_url(instrument_id: str, month: date) -> str:
     exchange, code = stock_identity(instrument_id)
     if exchange == 'TWSE':
         return 'https://www.twse.com.tw/exchangeReport/STOCK_DAY?' + urlencode({'response': 'json', 'date': month.strftime('%Y%m01'), 'stockNo': code})
-    return 'https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_result.php?' + urlencode(
-        {'l': 'zh-tw', 'd': f'{month.year - 1911:03d}/{month.month:02d}', 'stkno': code}
-    )
+    return 'https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock?' + urlencode({'code': code, 'date': month.strftime('%Y/%m/01'), 'response': 'json'})
+
+
+TPEX_EVENT_PATH = '/web/stock/exright/dailyquo/exDailyQ_result.php'
+
+
+def _roc_text(day: date) -> str:
+    return f'{day.year - 1911:03d}/{day.month:02d}/{day.day:02d}'
+
+
+def tpex_events_url(start: date, end: date) -> str:
+    """The official TPEx endpoint ignores any stock filter and always answers for the whole market; end is exclusive."""
+    return 'https://www.tpex.org.tw' + TPEX_EVENT_PATH + '?' + urlencode({'l': 'zh-tw', 'd': _roc_text(start), 'ed': _roc_text(end - timedelta(days=1))})
 
 
 def events_url(instrument_id: str, start: date, end: date) -> str:
@@ -43,14 +53,7 @@ def events_url(instrument_id: str, start: date, end: date) -> str:
         return 'https://www.twse.com.tw/exchangeReport/TWT48U?' + urlencode(
             {'response': 'json', 'startDate': start.strftime('%Y%m%d'), 'endDate': end.strftime('%Y%m%d'), 'stockNo': code}
         )
-    return 'https://www.tpex.org.tw/web/stock/exright/dailyquo/exDailyQ_result.php?' + urlencode(
-        {
-            'l': 'zh-tw',
-            'd': f'{start.year - 1911:03d}/{start.month:02d}/{start.day:02d}',
-            'ed': f'{end.year - 1911:03d}/{end.month:02d}/{end.day:02d}',
-            'stkno': code,
-        }
-    )
+    return tpex_events_url(start, end)
 
 
 def _pairs(items):
@@ -69,7 +72,7 @@ def _document(raw: bytes) -> dict:
         result = json.loads(raw.decode('utf-8-sig'), object_pairs_hook=_pairs, parse_constant=lambda _: (_ for _ in ()).throw(ValueError('nonfinite')))
         if type(result) is not dict:
             raise ValueError('object required')
-        if 'stat' in result and result['stat'] != 'OK':
+        if 'stat' in result and str(result['stat']).upper() != 'OK':  # TWSE says OK, TPEx says ok
             raise ValueError('official result not OK')
         return result
     except (ValueError, UnicodeError, RecursionError):
@@ -101,6 +104,8 @@ def _table(body: dict, *, tpex: bool = False) -> tuple[list, list]:
             raise ValueError('one native table required')
         body = body['tables'][0]
     fields, rows = body['fields'], body['data']
+    if 'totalCount' in body and body['totalCount'] != len(rows):
+        raise ValueError('native row count not attested')
     if type(fields) is not list or len(fields) != len(set(fields)) or any(type(f) is not str for f in fields):
         raise ValueError('unique column names required')
     return fields, rows
@@ -122,11 +127,15 @@ def parse_daily(raw: bytes, instrument_id: str, month: date) -> tuple[DailyStock
     digest = sha256(raw).hexdigest()
     try:
         fields, rows = _table(body, tpex=exchange == 'TPEX')
-        volume_key = '成交股數' if exchange == 'TWSE' else '成交仟股'
+        # TPEx counts thousand shares (the current schema calls them lots of 1,000), never single shares.
+        volume_key = '成交股數' if exchange == 'TWSE' else '成交張數' if '成交張數' in fields else '成交仟股'
+        day_key = '日 期' if '日 期' in fields else '日期'
         prices = ('開盤價', '最高價', '最低價', '收盤價') if exchange == 'TWSE' else ('開盤', '最高', '最低', '收盤')
+        if exchange == 'TPEX' and body.get('code', stock_identity(instrument_id)[1]) != stock_identity(instrument_id)[1]:
+            raise ValueError('response stock mismatch')
         result = []
         for row in _rows(fields, rows):
-            day = _day(row['日期'])
+            day = _day(row[day_key])
             if (day.year, day.month) != (month.year, month.month):
                 raise ValueError('response month mismatch')
             volume = _number(row[volume_key]) * (1 if exchange == 'TWSE' else 1000)
@@ -141,7 +150,14 @@ def parse_daily(raw: bytes, instrument_id: str, month: date) -> tuple[DailyStock
 
 
 def parse_events(raw: bytes, instrument_id: str, start: date, end: date, source_url: str) -> tuple[CorporateAction, ...]:
-    _, code = stock_identity(instrument_id)
+    exchange, code = stock_identity(instrument_id)
+    if exchange == 'TPEX':
+        from .daily_signal_events import parse_daily_signal_events
+
+        try:
+            return parse_daily_signal_events(raw, instrument_id, source_url)
+        except DomainError:
+            raise DomainError('official_stock_invalid', 'event response rejected; old history retained') from None
     body = _document(raw)
     digest = sha256(raw).hexdigest()
     try:

@@ -12,10 +12,12 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
+from quantlab.trading.adapters.official.daily_signal_events import daily_event_scope, parse_daily_signal_events
+from quantlab.trading.adapters.official.stock_data import daily_url, events_url, parse_daily, parse_events, tpex_events_url
 from quantlab.trading.adapters.storage.kline_store import KlineStore
 from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.runtime.official_daily_source import OfficialDailyStockSource
+from quantlab.trading.runtime.official_daily_source import OfficialDailyStockSource, _source_scope
 from quantlab.trading.runtime.stock_history import validate_stock_url
 from tools import import_official_daily as tool
 
@@ -233,12 +235,12 @@ class OfficialDailyImportTests(unittest.TestCase):
 
         self.refuse(manifest=self.changed_manifest(lambda body: None, file_change=change_file))
 
-    def test_unknown_venue_is_not_promoted_to_verified_twse_global_coverage(self):
+    def test_unknown_venue_is_refused_before_any_input_io(self):
         with (
             patch.object(tool, 'load_manifest', side_effect=AssertionError('unsupported venue must be refused before input IO')),
             self.assertRaises(DomainError),
         ):
-            tool.import_official_daily(self.cache, 'TPEX:6488', START, END, manifest=self.manifest, clock=lambda: NOW)
+            tool.import_official_daily(self.cache, 'EMERGING:6488', START, END, manifest=self.manifest, clock=lambda: NOW)
         self.assertFalse(self.cache.exists())
 
     def test_invalid_refresh_leaves_existing_sqlite_facts_unchanged(self):
@@ -325,6 +327,123 @@ class OfficialDailyImportTests(unittest.TestCase):
         with closing(KlineStore(self.cache)) as store:
             rows = store.daily_history('TWSE:6225', START, END)
             self.assertEqual((len(rows.bars), rows.bars[-1].close, rows.events), (9, Decimal('11.65'), ()))
+
+
+TPEX_FIXTURES = Path(__file__).parent / 'fixtures' / 'tpex_official'
+TPEX_EVENTS = (TPEX_FIXTURES / 'events_20250602_20250613.json').read_bytes()
+TPEX_JUNE = (TPEX_FIXTURES / 'daily_6788_202506.json').read_bytes()
+TPEX_MAY = (TPEX_FIXTURES / 'daily_6788_202505.json').read_bytes()
+TPEX_STOCK = 'TPEX:6788'
+TPEX_EVENT_URL = tpex_events_url(date(2025, 6, 2), date(2025, 6, 14))
+
+
+def tpex_altered(raw: bytes, change) -> bytes:
+    body = json.loads(raw.decode('utf-8-sig'))
+    change(body)
+    return json.dumps(body, ensure_ascii=False).encode()
+
+
+class TpexDailyTests(unittest.TestCase):
+    def test_urls_use_the_current_official_endpoints_and_are_admitted(self):
+        url = daily_url(TPEX_STOCK, date(2025, 6, 1))
+        self.assertTrue(url.startswith('https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock?'))
+        self.assertEqual(validate_stock_url(url), url)
+        self.assertEqual(
+            TPEX_EVENT_URL,
+            'https://www.tpex.org.tw/web/stock/exright/dailyquo/exDailyQ_result.php?l=zh-tw&d=114%2F06%2F02&ed=114%2F06%2F13',
+        )
+        self.assertEqual(events_url(TPEX_STOCK, date(2025, 6, 2), date(2025, 6, 14)), TPEX_EVENT_URL)
+        self.assertEqual(validate_stock_url(TPEX_EVENT_URL), TPEX_EVENT_URL)
+        self.assertEqual(daily_event_scope(TPEX_EVENT_URL), (date(2025, 6, 2), date(2025, 6, 14)))
+
+    def test_retired_and_stock_filtered_endpoints_are_refused(self):
+        retired = 'https://www.tpex.org.tw/web/stock/aftertrading/daily_trading_info/st43_result.php?l=zh-tw&d=114/06&stkno=6788'
+        filtered = TPEX_EVENT_URL + '&stkno=6788'  # the official site ignores a stock filter, so it must not be trusted
+        for url in (retired, filtered, TPEX_EVENT_URL.replace('www.tpex.org.tw', 'www.example.com')):
+            with self.assertRaises(DomainError):
+                validate_stock_url(url)
+
+    def test_monthly_bars_are_parsed_in_shares(self):
+        bars = parse_daily(TPEX_JUNE, TPEX_STOCK, date(2025, 6, 1))
+        self.assertEqual(len(bars), 21)
+        first, last = bars[0], bars[-1]
+        self.assertEqual(
+            (first.trade_date, first.open, first.high, first.low, first.close), (date(2025, 6, 2), *map(Decimal, ('213.00', '220.00', '210.50', '211.00')))
+        )
+        self.assertEqual(first.volume, 954_000)
+        self.assertEqual((last.trade_date, last.close, last.volume), (date(2025, 6, 30), Decimal('240.50'), 2_317_000))
+        self.assertEqual(parse_daily(TPEX_MAY, TPEX_STOCK, date(2025, 5, 1))[0].trade_date, date(2025, 5, 2))
+
+    def test_a_response_for_another_stock_or_month_is_rejected(self):
+        with self.assertRaises(DomainError):
+            parse_daily(TPEX_JUNE, 'TPEX:6789', date(2025, 6, 1))
+        with self.assertRaises(DomainError):
+            parse_daily(TPEX_JUNE, TPEX_STOCK, date(2025, 5, 1))
+
+    def test_a_row_count_that_is_not_attested_is_rejected(self):
+        torn = tpex_altered(TPEX_JUNE, lambda body: body['tables'][0]['data'].pop())
+        with self.assertRaises(DomainError):
+            parse_daily(torn, TPEX_STOCK, date(2025, 6, 1))
+
+    def test_source_scope_recognises_both_tpex_requests(self):
+        self.assertEqual(_source_scope(daily_url(TPEX_STOCK, date(2025, 6, 1)), TPEX_STOCK), ('daily', date(2025, 6, 1), None))
+        self.assertEqual(_source_scope(TPEX_EVENT_URL, TPEX_STOCK), ('global_events', date(2025, 6, 2), date(2025, 6, 14)))
+        with self.assertRaises(ValueError):
+            _source_scope(TPEX_EVENT_URL, 'TWSE:2330')  # another exchange's host
+
+    def test_whole_market_events_give_the_stocks_event_and_prove_no_event_for_others(self):
+        events = parse_daily_signal_events(TPEX_EVENTS, TPEX_STOCK, TPEX_EVENT_URL)
+        self.assertEqual(len(events), 1)
+        self.assertEqual((events[0].ex_date, events[0].previous_close, events[0].reference_price), (date(2025, 6, 2), Decimal('225.00'), Decimal('215.00')))
+        self.assertEqual(parse_events(TPEX_EVENTS, TPEX_STOCK, date(2025, 6, 2), date(2025, 6, 14), TPEX_EVENT_URL), events)
+        self.assertEqual(parse_daily_signal_events(TPEX_EVENTS, 'TPEX:6488', TPEX_EVENT_URL), ())
+
+    def test_an_unverifiable_event_response_never_counts_as_no_event(self):
+        cases = {
+            'range not attested': tpex_altered(TPEX_EVENTS, lambda b: b.update(date='20250602~20250612')),
+            'not ok': tpex_altered(TPEX_EVENTS, lambda b: b.update(stat='error')),
+            'row count not attested': tpex_altered(TPEX_EVENTS, lambda b: b['tables'][0]['data'].pop()),
+            'outside range': tpex_altered(TPEX_EVENTS, lambda b: b['tables'][0]['data'][0].__setitem__(0, '114/07/01')),
+            'duplicate row': tpex_altered(
+                TPEX_EVENTS, lambda b: (b['tables'][0]['data'].append(b['tables'][0]['data'][0]), b['tables'][0].update(totalCount=45))
+            ),
+            'missing reference price': tpex_altered(TPEX_EVENTS, lambda b: b['tables'][0]['data'][0].__setitem__(4, '0.00')),
+        }
+        for name, raw in cases.items():
+            with self.subTest(name), self.assertRaises(DomainError):
+                parse_daily_signal_events(raw, 'TPEX:6488', TPEX_EVENT_URL)
+
+    def test_the_importer_downloads_and_publishes_a_tpex_stock_atomically(self):
+        responses = {daily_url(TPEX_STOCK, date(2025, 6, 1)): TPEX_JUNE, TPEX_EVENT_URL: TPEX_EVENTS}
+        requested = []
+
+        def transport(url):
+            requested.append(url)
+            return responses[url]
+
+        with TemporaryDirectory() as temp:
+            result = tool.import_official_daily(
+                Path(temp) / 'klines.sqlite3',
+                TPEX_STOCK,
+                date(2025, 6, 2),
+                date(2025, 6, 14),
+                consent_download=True,
+                archive=Path(temp) / 'archive',
+                transport=transport,
+                clock=lambda: datetime(2025, 6, 20, tzinfo=timezone.utc),
+            )
+            self.assertEqual((result['status'], result['bars'], result['events']), ('IMPORTED', 10, 1))
+            self.assertEqual(sorted(requested), sorted(responses))
+            self.assertEqual(len(list((Path(temp) / 'archive').glob('*.json'))), 3)  # two payloads and the manifest
+            again = tool.import_official_daily(
+                Path(temp) / 'klines.sqlite3',
+                TPEX_STOCK,
+                date(2025, 6, 2),
+                date(2025, 6, 14),
+                manifest=Path(temp) / 'archive' / 'manifest.json',
+                clock=lambda: datetime(2025, 6, 21, tzinfo=timezone.utc),
+            )
+            self.assertEqual((again['bars'], again['events']), (10, 1))  # replayable offline from the archive
 
 
 if __name__ == '__main__':

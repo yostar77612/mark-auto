@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 
-from quantlab.trading.adapters.official.stock_data import daily_url, events_url, parse_daily, parse_events, StockDataSource
+from quantlab.trading.adapters.official.stock_data import daily_url, events_url, parse_daily, parse_events, StockDataSource, tpex_events_url
 from quantlab.trading.adapters.storage.kline_store import KlineStore
 from quantlab.trading.adapters.official.daily_signal_events import daily_event_scope, parse_daily_signal_events
 from quantlab.trading.application.stock_history import StockHistorySync
@@ -281,15 +281,18 @@ class OfficialDailySourceTests(unittest.TestCase):
         self.store.batch = replace(batch, payloads=(daily, batch.payloads[1]))
         self.assertEqual(self.read().bars, batch.bars)
 
-    def test_tpex_native_thousand_share_schema_uses_same_read_only_contract(self):
-        instrument = 'TPEX:6488'
-        raw = json.dumps({'aaData': [['109/01/02', '1.234', '123.4', '100', '102', '98', '100', '0', '10']]}).encode()
-        daily = OfficialPayload(daily_url(instrument, FIRST.replace(day=1)), sha256(raw).hexdigest(), raw)
-        empty = document(EVENT_FIELDS, [])
-        event = OfficialPayload(events_url(instrument, FIRST, THROUGH), sha256(empty).hexdigest(), empty)
-        batch = OfficialStockBatch(instrument, FIRST, THROUGH, parse_daily(raw, instrument, FIRST), (), (daily, event))
-        value = self.read(store=CachedStore(batch), instrument=instrument, through=FIRST)
-        self.assertEqual(value.bars[0].volume, 1234)
+    def test_recorded_tpex_stock_and_whole_market_events_use_the_same_read_only_contract(self):
+        instrument, first, through = 'TPEX:6788', date(2025, 6, 10), date(2025, 6, 11)
+        tpex = Path(__file__).parent / 'fixtures/tpex_official'
+        raw, event_raw = (tpex / 'daily_6788_202506.json').read_bytes(), (tpex / 'events_20250602_20250613.json').read_bytes()
+        daily = OfficialPayload(daily_url(instrument, first.replace(day=1)), sha256(raw).hexdigest(), raw)
+        event = OfficialPayload(tpex_events_url(date(2025, 6, 2), date(2025, 6, 14)), sha256(event_raw).hexdigest(), event_raw)
+        bars = tuple(bar for bar in parse_daily(raw, instrument, first.replace(day=1)) if first <= bar.trade_date <= through)
+        batch = OfficialStockBatch(instrument, first, through + timedelta(days=1), bars, (), (daily, event))
+        self.now = datetime(2025, 6, 12, 0, 30, tzinfo=timezone.utc)
+        value = self.read(store=CachedStore(batch), instrument=instrument, through=through, start=first, dates=calendar((first, through)))
+        self.assertEqual([(bar.trade_date, bar.volume) for bar in value.bars], [(date(2025, 6, 10), 490_000), (date(2025, 6, 11), 582_000)])
+        self.assertEqual(value.events, ())  # the whole-market response proves no event for 6788 on these days
 
     def test_recorded_real_thin_stock_is_not_a_claim_of_missing_event_negative_evidence(self):
         raw = (FIXTURES / 'twse_6225_202506.json').read_bytes()
