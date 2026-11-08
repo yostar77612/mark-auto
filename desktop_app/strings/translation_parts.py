@@ -93,7 +93,10 @@ from .m3_ui import ENTRIES as _part_m3_ui
 
 from .strategy_risk_hint import ENTRIES as _part_strategy_risk_hint
 
+from .assistant_claude_code import ENTRIES as _part_assistant_claude_code
+
 PARTS = (
+    _part_assistant_claude_code,
     _part_strategy_risk_hint,
     _part_m3_ui,
     _part_strategy_research_feedback,
