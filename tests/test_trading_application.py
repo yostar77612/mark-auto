@@ -711,5 +711,113 @@ class DashboardApplicationTests(unittest.TestCase):
         self.assertEqual((view.strategies[0].today_order_count, view.strategies[0].today_pnl, view.today_fill_count), (0, D('0'), 0))
 
 
+class LedgerCompressionTests(unittest.TestCase):
+    """Large journal payloads are stored compressed; the hash chain and every reader keep seeing plain text."""
+
+    NOW = datetime(2026, 11, 8, 1, tzinfo=timezone.utc)
+    BIG = '{"orders":[' + ','.join('{"id":"order-%05d","state":"FILLED","price":"10.05"}' % n for n in range(4000)) + ']}'
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.path = Path(self.directory.name).resolve() / 'ledger.sqlite'
+        self.clock = self.NOW
+
+    def rows(self):
+        import sqlite3
+
+        db = sqlite3.connect(self.path)
+        try:
+            return db.execute('SELECT seq, payload FROM events ORDER BY seq').fetchall(), db.execute('SELECT schema_version FROM metadata').fetchall()
+        finally:
+            db.close()
+
+    def test_large_payloads_are_compressed_small_ones_are_not_and_replay_is_exact(self):
+        ledger = Ledger(self.path, 'compression', self.NOW)
+        ledger.append('small', '{"a":1}', self.NOW, expected_sequence=0)
+        ledger.append('large', self.BIG, self.NOW, expected_sequence=1)
+        self.assertEqual([event.payload for event in ledger.replay()], ['{"a":1}', self.BIG])
+        ledger.close()
+        rows, version = self.rows()
+        self.assertEqual(version, [(3,)])
+        self.assertIsInstance(rows[0][1], str)
+        self.assertIsInstance(rows[1][1], bytes)
+        self.assertLess(len(rows[1][1]), len(self.BIG.encode()) / 8)
+        reopened = Ledger(self.path, 'compression', self.NOW + timedelta(seconds=60))
+        self.assertEqual([event.payload for event in reopened.replay()], ['{"a":1}', self.BIG])
+        reopened.close()
+
+    def test_a_schema_2_file_opens_keeps_its_old_rows_and_chains_new_compressed_rows(self):
+        import sqlite3
+        from hashlib import sha256
+
+        db = sqlite3.connect(self.path)
+        db.executescript(
+            '''
+            CREATE TABLE metadata(schema_version INTEGER NOT NULL);
+            INSERT INTO metadata VALUES(2);
+            CREATE TABLE owner(scope TEXT PRIMARY KEY, owner TEXT NOT NULL, generation INTEGER NOT NULL, expires REAL NOT NULL);
+            CREATE TABLE events(seq INTEGER PRIMARY KEY, kind TEXT NOT NULL, payload TEXT NOT NULL, previous_hash TEXT NOT NULL, digest TEXT NOT NULL);
+            '''
+        )
+        previous = '0' * 64
+        for sequence, payload in ((1, self.BIG), (2, '{"b":2}')):
+            digest = sha256(f'{sequence}\nold\n{previous}\n{payload}'.encode()).hexdigest()
+            db.execute('INSERT INTO events VALUES(?,?,?,?,?)', (sequence, 'old', payload, previous, digest))
+            previous = digest
+        db.commit()
+        db.close()
+        ledger = Ledger(self.path, 'compression', self.NOW)
+        ledger.append('new', self.BIG, self.NOW, expected_sequence=2)
+        self.assertEqual([event.payload for event in ledger.replay()], [self.BIG, '{"b":2}', self.BIG])
+        ledger.close()
+        rows, version = self.rows()
+        self.assertEqual(version, [(3,)])
+        self.assertEqual([type(payload) for _, payload in rows], [str, str, bytes])  # nothing old was rewritten
+
+    def test_tampered_or_hostile_compressed_rows_fail_closed(self):
+        import sqlite3
+        import zlib
+
+        ledger = Ledger(self.path, 'compression', self.NOW)
+        ledger.append('large', self.BIG, self.NOW, expected_sequence=0)
+        ledger.close()
+        rows, _ = self.rows()
+        good = rows[0][1]
+        bad = {
+            'flipped byte': good[:-5] + bytes([good[-5] ^ 1]) + good[-4:],
+            'truncated': good[:-20],
+            'unknown encoding': b'XXXX' + good[4:],
+            'decompression bomb': b'MAZ1' + zlib.compress(b'0' * (5 * 1024 * 1024)),
+        }
+        for name, payload in bad.items():
+            with self.subTest(name):
+                db = sqlite3.connect(self.path)
+                db.execute('UPDATE events SET payload=? WHERE seq=1', (payload,))
+                db.commit()
+                db.close()
+                self.clock += timedelta(minutes=5)
+                reader = Ledger(self.path, 'compression', self.clock)
+                with self.assertRaises(DomainError) as caught:
+                    reader.replay()
+                self.assertEqual(caught.exception.code, 'journal_failed')
+                reader.close()
+                db = sqlite3.connect(self.path)
+                db.execute('UPDATE events SET payload=? WHERE seq=1', (good,))
+                db.commit()
+                db.close()
+
+    def test_a_newer_schema_than_this_build_knows_is_refused(self):
+        import sqlite3
+
+        Ledger(self.path, 'compression', self.NOW).close()
+        db = sqlite3.connect(self.path)
+        db.execute('UPDATE metadata SET schema_version=4')
+        db.commit()
+        db.close()
+        with self.assertRaises(DomainError):
+            Ledger(self.path, 'compression', self.NOW + timedelta(minutes=5))
+
+
 if __name__ == '__main__':
     unittest.main()
