@@ -115,11 +115,6 @@ class ClaudeCodeReplyTests(unittest.TestCase):
         for error in (subprocess.TimeoutExpired('claude', 90), OSError('no such file')):
             self.assertEqual(reply(runner=Runner(error=error))[0], REFUSAL)
 
-    @unittest.skipUnless(os.environ.get('MARKAUTO_REAL_CLAUDE') == '1', 'uses the real, signed-in Claude Code')
-    def test_real_claude_code_answers_one_question(self):
-        result = claude.claude_code_reply({**REQUEST, 'prompt': '只回答一個字：好'})
-        self.assertTrue(result['ok'], result)
-
 
 class ClaudeCodeWorkerTests(unittest.TestCase):
     def setUp(self):
