@@ -18,7 +18,7 @@ from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.adapters.official.daily_signal_events import parse_daily_signal_events
-from quantlab.trading.adapters.official.stock_data import MAX_BYTES, StockDataSource, parse_daily, stock_identity
+from quantlab.trading.adapters.official.stock_data import MAX_BYTES, StockDataSource, parse_daily, stock_identity, tpex_events_url
 from quantlab.trading.adapters.storage.kline_store import KlineStore
 from quantlab.trading.application.stock_history import StockHistorySync
 from quantlab.trading.domain.validation import DomainError
@@ -32,7 +32,10 @@ MAX_TOTAL_BYTES = 64 * 1024 * 1024
 def _scope(payload):
     parts = urlsplit(payload.source_url)
     query = parse_qs(parts.query, strict_parsing=True)
-    instrument = 'TWSE:' + query['stockNo'][0] if 'stockNo' in query else 'TWSE:2330'
+    # A whole-market event response names no stock; the host alone selects the venue.
+    venue = 'TPEX' if parts.netloc == 'www.tpex.org.tw' else 'TWSE'
+    code = (query.get('stockNo') or query.get('code') or ['2330' if venue == 'TWSE' else '6488'])[0]
+    instrument = f'{venue}:{code}'
     stock_identity(instrument)
     return instrument, _source_scope(payload.source_url, instrument)
 
@@ -100,16 +103,20 @@ class OfficialDailyImportSource:
         return tuple(row for row in events if start <= row.ex_date < end), payload
 
 
-def daily_events_url(start: date, end: date) -> str:
+def daily_events_url(start: date, end: date, venue: str = 'TWSE') -> str:
+    if venue == 'TPEX':
+        return tpex_events_url(start, end)
     return f'https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate={start:%Y%m%d}&endDate={end - timedelta(days=1):%Y%m%d}&response=json'
 
 
 def _monthly_identity(payload, instrument_id):
     # The native response identifies its stock independently of the request URL.
     # parse_daily has already checked bounded JSON/native rows before this read.
-    title = json.loads(payload.raw.decode('utf-8-sig')).get('title')
+    body = json.loads(payload.raw.decode('utf-8-sig'))
     code = stock_identity(instrument_id)[1]
-    if not isinstance(title, str) or not re.search(r'(?<!\d)' + code + r'(?!\d)', title):
+    title = body.get('title')
+    named = isinstance(title, str) and re.search(r'(?<!\d)' + code + r'(?!\d)', title)
+    if not named and body.get('code') != code:  # TPEx names the stock in a top-level code field
         raise DomainError('official_stock_invalid', 'monthly response stock identity differs')
 
 
@@ -124,7 +131,7 @@ class _DownloadSource:
         return rows, payload
 
     def events(self, instrument_id, start, end):
-        url = daily_events_url(start, end)
+        url = daily_events_url(start, end, stock_identity(instrument_id)[0])
         raw = self.transport(url)
         return parse_daily_signal_events(raw, instrument_id, url), OfficialPayload(url, sha256(raw).hexdigest(), raw)
 
@@ -160,8 +167,7 @@ def import_official_daily(
     clock=None,
 ):
     """Validate all inputs first, then publish one atomic RAW daily/event batch."""
-    if stock_identity(instrument_id)[0] != 'TWSE':
-        raise DomainError('official_stock_invalid', 'this importer requires verified TWSE TWT49U evidence')
+    stock_identity(instrument_id)  # Only listed (TWSE) and OTC (TPEX) stocks have verified official schemas.
     if manifest is None and consent_download is not True:
         raise DomainError('official_stock_consent_required')
     if manifest is None and (archive is None or archive.exists()):

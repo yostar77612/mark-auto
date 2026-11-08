@@ -233,12 +233,12 @@ class OfficialDailyImportTests(unittest.TestCase):
 
         self.refuse(manifest=self.changed_manifest(lambda body: None, file_change=change_file))
 
-    def test_unknown_venue_is_not_promoted_to_verified_twse_global_coverage(self):
+    def test_unknown_venue_is_refused_before_any_input_io(self):
         with (
             patch.object(tool, 'load_manifest', side_effect=AssertionError('unsupported venue must be refused before input IO')),
             self.assertRaises(DomainError),
         ):
-            tool.import_official_daily(self.cache, 'TPEX:6488', START, END, manifest=self.manifest, clock=lambda: NOW)
+            tool.import_official_daily(self.cache, 'EMERGING:6488', START, END, manifest=self.manifest, clock=lambda: NOW)
         self.assertFalse(self.cache.exists())
 
     def test_invalid_refresh_leaves_existing_sqlite_facts_unchanged(self):
