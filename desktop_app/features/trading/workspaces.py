@@ -262,7 +262,7 @@ def _strategy_page(self) -> None:
             ('v2.validate', 'validate_button', lambda: self._strategy_action(UiAction.VALIDATE)),
             ('v2.research', 'research_button', lambda: self._strategy_action(UiAction.RESEARCH)),
             ('v2.legacy_research', 'legacy_research_button', lambda: self.legacy_requested.emit('strategy')),
-            ('unified.page.assistant', 'ai_assistant_button', lambda: self.legacy_requested.emit('assistant')),
+            ('unified.page.assistant', 'ai_assistant_button', lambda: self.strategy_controls.ask_ai()),
         ),
     )
     self.strategy_controls = StrategyControls(self, listing_layout, research_layout)
