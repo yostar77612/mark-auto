@@ -16,6 +16,7 @@ from quantlab.agent_read_tools import ReadContext
 from quantlab.agent_tools import _refusal
 from quantlab.research_core.adapters.job_process import _WindowsProcessTree
 from quantlab.assistant.application.context_usage import context_usage
+from quantlab.assistant.ports.reply import reply_provider
 
 
 def host_context(root):
@@ -163,11 +164,15 @@ class ReplyProcess:
     def start(self, request):
         if self.active:
             raise ValueError
+        provider = request.get('provider')
+        target, seconds = (_worker, 30) if provider is None else reply_provider(provider) or (None, 0)
+        if target is None:
+            raise ValueError('reply provider is not configured')
         context = mp.get_context('spawn')
         self.receiver, sender = context.Pipe(duplex=False)
         self.gate = context.Event()
-        self.process = context.Process(target=_worker, args=(sender, self.gate, request, self.bootstrap))
-        self.deadline = self.clock() + 30
+        self.process = context.Process(target=target, args=(sender, self.gate, request, self.bootstrap))
+        self.deadline = self.clock() + seconds
         try:
             self.process.start()
             if sys.platform == 'win32':

@@ -2,7 +2,7 @@
 
 import unittest
 
-from tools.quality_gate import V2_PROCESS_OWNER, V2_SDK_LOADER, python_findings
+from tools.quality_gate import V2_CLAUDE_CODE, V2_PROCESS_OWNER, V2_SDK_LOADER, python_findings
 from tools.check_trading_architecture import check_source
 
 
@@ -60,6 +60,19 @@ class V2ImportBoundaryTests(unittest.TestCase):
     def test_process_import_is_only_for_the_one_runtime_owner(self):
         self.assertEqual(python_findings('import subprocess', V2_PROCESS_OWNER, research=True), [])
         for label in ('quantlab/research.py', 'quantlab/trading/domain/new.py', 'quantlab/trading/runtime/other.py', V2_SDK_LOADER):
+            with self.subTest(label=label):
+                self.assertTrue(python_findings('import subprocess', label, research=True))
+
+    def test_the_claude_code_adapter_may_import_subprocess_and_nothing_else_it_may_not(self):
+        self.assertEqual(python_findings('import subprocess', V2_CLAUDE_CODE, research=True), [])
+        for source in ('import pickle', 'import shioaji', 'import trader', "eval('1')", "exec('1')", "__import__('subprocess')"):
+            with self.subTest(source=source):
+                self.assertTrue(python_findings(source, V2_CLAUDE_CODE, research=True))
+        for label in (
+            'quantlab/assistant/adapters/claude_code/other.py',
+            'quantlab/assistant/adapters/chatgpt/provider.py',
+            'desktop_app/claude_code_composition.py',
+        ):
             with self.subTest(label=label):
                 self.assertTrue(python_findings('import subprocess', label, research=True))
 
