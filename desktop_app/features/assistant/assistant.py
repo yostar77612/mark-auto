@@ -64,7 +64,6 @@ class AssistantPanel(QWidget):
         layout.addWidget(self.send)
         self.models = ModelControls(self, layout)
         self.claude_model = QComboBox()
-        self.claude_model.setObjectName('assistant_claude_model')
         self.claude_model.setAccessibleName(ui_text('assistant.claude_model'))
         for alias, key in (('haiku', 'assistant.claude_haiku'), ('sonnet', 'assistant.claude_sonnet'), ('opus', 'assistant.claude_opus')):
             self.claude_model.addItem(ui_text(key), alias)
