@@ -10,6 +10,10 @@ from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction
 
 
+# AI-built strategies are parked (owner decision 2026-11-08: AI is an assistant, not a strategy generator). The
+# code stays; this one switch hides every AI-strategy surface in the desktop UI.
+SHOW_AI_STRATEGY = False
+
 STAGE_KEYS = {'BACKTEST': 'm3.stage_backtest', 'BROKER_SIM': 'm3.stage_sim', 'LIVE_APPROVED': 'm3.stage_live_approved'}
 PAUSE_KEYS = {
     'DRIFT': 'm3.pause_drift',
