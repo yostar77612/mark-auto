@@ -236,6 +236,7 @@
     "quantlab/research_core/ports/jobs.py": "application",
     "quantlab/research_core/ports/__init__.py": "application",
     "desktop_app/connection_composition.py": "composition",
+    "desktop_app/claude_code_composition.py": "composition",
     "quantlab/assistant/application/connection_contracts.py": "application",
     "quantlab/assistant/application/connection_controller.py": "application",
     "quantlab/assistant/application/context_usage.py": "application",

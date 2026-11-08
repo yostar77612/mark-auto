@@ -147,4 +147,5 @@ class ModelControls:
         self.usage.setText(ui_text('assistant.context_unknown') if values is None else ui_text('assistant.context_usage').format(*values))
 
     def update_send(self, *_, idle=False):
-        self.panel.send.setEnabled((idle or not self.panel.worker.active) and self.model.count() > 0)
+        claude = self.panel.mode.currentData() == 'claude_code'
+        self.panel.send.setEnabled((idle or not self.panel.worker.active) and (self.model.count() > 0 or claude))

@@ -22,8 +22,10 @@ from desktop_app.smoke.runner import run_smoke
 
 
 from desktop_app.connection_composition import configure as configure_connection
+from desktop_app.claude_code_composition import configure as configure_claude_code
 
 configure_connection()
+configure_claude_code()
 
 
 def _prepare_startup_workspace(paths, backups):

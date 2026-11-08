@@ -31,6 +31,7 @@ class AssistantPanel(QWidget):
         self.mode = QComboBox()
         self.mode.addItem(ui_text('assistant.fixture'), 'fixture')
         self.mode.addItem(ui_text('assistant.chatgpt'), 'chatgpt')
+        self.mode.addItem(ui_text('assistant.claude_code'), 'claude_code')
         self.mode.setAccessibleName(ui_text('assistant.source'))
         layout.addWidget(self.mode)
         self.transcript = QPlainTextEdit()
@@ -62,11 +63,18 @@ class AssistantPanel(QWidget):
         self.send.setAccessibleName(ui_text('assistant.send'))
         layout.addWidget(self.send)
         self.models = ModelControls(self, layout)
+        self.claude_model = QComboBox()
+        self.claude_model.setAccessibleName(ui_text('assistant.claude_model'))
+        for alias, key in (('haiku', 'assistant.claude_haiku'), ('sonnet', 'assistant.claude_sonnet'), ('opus', 'assistant.claude_opus')):
+            self.claude_model.addItem(ui_text(key), alias)
+        layout.addWidget(self.claude_model)
         self.manifest = ManifestDetails(self.dispatcher, self)
         layout.addWidget(self.manifest)
         self.model = self.models.model
         self.effort = self.models.effort
         self.mode.currentIndexChanged.connect(self.models.update_send)
+        self.mode.currentIndexChanged.connect(self._mode_changed)
+        self._mode_changed()
         for name, widget in (
             ('assistant_panel', self),
             ('assistant_mode', self.mode),
@@ -86,15 +94,22 @@ class AssistantPanel(QWidget):
         self.timer.setInterval(50)
         self.timer.timeout.connect(self.poll)
 
+    def _mode_changed(self, *_):
+        claude = self.mode.currentData() == 'claude_code'
+        self.claude_model.setVisible(claude)
+        for widget in (self.models.model, self.models.effort, self.models.empty, self.models.usage):
+            widget.setVisible(not claude)
+
     def _permission_changed(self):
         self.dispatcher.permission = self.permissions.mode
 
     def _consent(self):
+        claude = self.mode.currentData() == 'claude_code'
         return (
             QMessageBox.question(
                 self,
-                ui_text('assistant.consent_title'),
-                ui_text('assistant.consent_body'),
+                ui_text('assistant.claude_consent_title' if claude else 'assistant.consent_title'),
+                ui_text('assistant.claude_consent_body' if claude else 'assistant.consent_body'),
                 QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel,
                 QMessageBox.StandardButton.Cancel,
             )
@@ -109,8 +124,8 @@ class AssistantPanel(QWidget):
         del self._transcript_entries[:-MAX_ROWS]
         self.refresh_transcript()
 
-    def reply(self, text, *, chatgpt=False, thinking=''):
-        label = ui_text('assistant.chatgpt') if chatgpt else ui_text('assistant.fixture')
+    def reply(self, text, *, chatgpt=False, thinking='', claude=False):
+        label = ui_text('assistant.claude_code') if claude else ui_text('assistant.chatgpt') if chatgpt else ui_text('assistant.fixture')
         self.append_transcript(label + '\n' + text + '\n' + ui_text('assistant.disclaimer'))
         self.thinking.source = thinking[:8192]
         self.thinking.toggle.setChecked(False)
@@ -126,21 +141,26 @@ class AssistantPanel(QWidget):
             fold.setParent(None)
             fold.deleteLater()
 
-    def error_reply(self, *, chatgpt=False):
-        self.reply(ERROR_TABLE['agent_tool_refused'].explanation, chatgpt=chatgpt)
+    def error_reply(self, *, chatgpt=False, claude=False, code=''):
+        known = code in ('claude_unavailable', 'claude_login_required')
+        text = ui_text('assistant.' + code) if known else ERROR_TABLE['agent_tool_refused'].explanation
+        self.reply(text, chatgpt=chatgpt, claude=claude)
 
     def submit(self):
         prompt = self.input.text().strip()
         if not prompt or self.worker.active:
             return
-        remote = self.mode.currentData() == 'chatgpt'
+        claude = self.mode.currentData() == 'claude_code'
+        remote = self.mode.currentData() == 'chatgpt' or claude
         if remote and not self.ask_consent():
             return
-        if self.model.count() == 0:
+        if self.model.count() == 0 and not claude:
             self.error_reply(chatgpt=remote)
             return
         selection = {}
-        if remote:
+        if claude:
+            selection = {'provider': 'claude_code', 'model': self.claude_model.currentData()}
+        elif remote:
             try:
                 slug, effort = self.models.validate()
                 selection = {'model': slug}
@@ -152,7 +172,7 @@ class AssistantPanel(QWidget):
         try:
             prompt = resolve_references(prompt, self.dispatcher)
         except ValueError:
-            self.reply(ERROR_TABLE['agent_reference_not_found'].explanation, chatgpt=remote)
+            self.reply(ERROR_TABLE['agent_reference_not_found'].explanation, chatgpt=remote and not claude, claude=claude)
             return
         self.completions.close()
         tool_request = not remote and prompt.startswith('/tool ')
@@ -169,21 +189,19 @@ class AssistantPanel(QWidget):
                 self.reply(ui_text('assistant.fixture_research'))
             return
         controller = getattr(self.host, 'chatgpt_controller', None)
+        self._pending_claude = claude
         try:
             self.models.set_usage(None)
-            self._reply_binding = (getattr(controller, 'active_registration', None), selection['model'])
-            self.worker.start(
-                {
-                    'consent': True,
-                    'prompt': prompt,
-                    'registration': getattr(controller, 'active_registration', None),
-                    **selection,
-                }
-            )
+            if claude:
+                request = {'consent': True, 'prompt': prompt, **selection}
+            else:
+                self._reply_binding = (getattr(controller, 'active_registration', None), selection['model'])
+                request = {'consent': True, 'prompt': prompt, 'registration': getattr(controller, 'active_registration', None), **selection}
+            self.worker.start(request)
             self.send.setEnabled(False)
             self.timer.start()
         except Exception:
-            self.error_reply(chatgpt=True)
+            self.error_reply(chatgpt=not claude, claude=claude)
 
     def poll(self):
         result = self.worker.poll()
@@ -191,7 +209,13 @@ class AssistantPanel(QWidget):
             return
         self.timer.stop()
         self.models.update_send(idle=True)
-        if result.get('ok') is True and type(result.get('text')) is str:
+        claude = getattr(self, '_pending_claude', False)
+        if claude:
+            if result.get('ok') is True and type(result.get('text')) is str:
+                self.reply(result['text'], claude=True)
+            else:
+                self.error_reply(claude=True, code=result.get('code', ''))
+        elif result.get('ok') is True and type(result.get('text')) is str:
             controller = getattr(self.host, 'chatgpt_controller', None)
             binding = (getattr(controller, 'active_registration', None), self.model.currentData())
             self.models.set_usage(result.get('context_usage') if binding == getattr(self, '_reply_binding', None) else None)
@@ -205,7 +229,8 @@ class AssistantPanel(QWidget):
         self.worker.cancel()
         self.models.update_send(idle=True)
         if pending:
-            self.error_reply(chatgpt=True)
+            claude = getattr(self, '_pending_claude', False)
+            self.error_reply(chatgpt=not claude, claude=claude)
 
     def hideEvent(self, event):
         self.cancel()
