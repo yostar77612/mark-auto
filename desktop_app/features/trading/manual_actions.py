@@ -54,6 +54,10 @@ class ManualActions:
     def busy(self):
         return self.window._operation is not None or self.window._priority_operation is not None
 
+    def command_running(self):
+        """A user command is in flight. The one-second background refresh (no command) is not one."""
+        return any(item is not None and item.command is not None for item in (self.window._operation, self.window._priority_operation))
+
     def matches(self, state):
         return self.window._engine_reachable and scope_matches(state, state.manual.scope)
 

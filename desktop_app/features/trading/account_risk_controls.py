@@ -64,9 +64,13 @@ class AccountRiskControls:
         if view is not None:
             limits = view.limits
             values = self.drafts.get(self.key, (str(limits.daily_loss_fraction * 100), str(limits.max_order_notional), limits.max_positions))
-            self.daily.setText(values[0])
-            self.order.setText(values[1])
-            self.positions.setValue(values[2])
+            # Rewriting an identical value would still move the caret to the end of what the user is editing.
+            if self.daily.text() != values[0]:
+                self.daily.setText(values[0])
+            if self.order.text() != values[1]:
+                self.order.setText(values[1])
+            if self.positions.value() != values[2]:
+                self.positions.setValue(values[2])
             self.details.setText(
                 ui_text('u4.account_limits').format(f'{view.daily_loss_limit:,.0f}', view.position_count)
                 + '\n'

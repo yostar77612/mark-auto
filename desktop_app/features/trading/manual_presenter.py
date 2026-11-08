@@ -168,7 +168,9 @@ def render_manual(controller, state):
     ready = simulation and controller.matches(state) and not controller.busy() and not unresolved
     if manual.confirmed:
         form.capital.setText('' if manual.capital is None else str(manual.capital))
-    form.capital.setEnabled(ready and not manual.confirmed)
+    # Typing must survive the background refresh: disabling a focused field makes Qt move the focus to the next button.
+    editable = simulation and controller.matches(state) and not controller.command_running() and not unresolved
+    form.capital.setEnabled(editable and not manual.confirmed)
     next_text = (
         ui_text('m2t.open_strategy')
         if state.environment is Environment.LOCAL
@@ -180,7 +182,7 @@ def render_manual(controller, state):
         empty.next.setText(next_text)
         empty.next.setAccessibleName(next_text)
     for widget in (form.instrument, form.side, form.quantity, form.price, form.stop):
-        widget.setEnabled(ready)
+        widget.setEnabled(editable)
     form.prepare.setEnabled(ready and manual.can_prepare and not manual.confirmed)
     form.test_order.setEnabled(ready and manual.can_test)
     form.preview_button.setEnabled(ready and manual.can_preview and instrument is not None and instrument.tradable and not stock_sell)
