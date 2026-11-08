@@ -585,3 +585,21 @@ class ManualUiTests(unittest.TestCase):
             ('risk_rejected', 'm2m.risk_rejected'),
         ):
             self.assertEqual(reason_text(code), ui_text(key), code)
+
+    def test_typing_in_the_order_form_survives_the_background_refresh(self):
+        # The one-second poll runs a read-only refresh; it must not disable the fields the user is typing in.
+        self.window.show()
+        self.app.processEvents()
+        form = self.window.manual_controls.form
+        for field in (form.price, form.stop):
+            field.clear()
+            field.setFocus()
+            self.app.processEvents()
+            self.assertTrue(field.hasFocus() and field.isEnabled())
+            for digit in '12345':
+                QTest.keyClick(field, Qt.Key(ord(digit)))
+                self.window.refresh()
+                self.assertTrue(field.isEnabled(), 'a refresh in flight disabled the field the user is typing in')
+                self.drain()
+                self.assertTrue(field.hasFocus(), 'focus left the field after a background refresh')
+            self.assertEqual(field.text(), '12345')
