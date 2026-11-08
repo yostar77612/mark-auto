@@ -75,6 +75,23 @@ class LocalEngineLifecycleTests(unittest.TestCase):
         self.assertTrue(final.orders, 'the activated strategy never placed a simulated order')
         self.assertTrue(all(order.filled for order in final.orders))
 
+    def test_performance_holding_days_cover_only_open_positions(self):
+        parameters = StrategyParameters('1d', Decimal('0.03'), Decimal('100000'))
+        reference = self.act(UiAction.CREATE_TYPED_STRATEGY, strategy=self.form(), strategy_parameters=parameters).reference
+        for action in (UiAction.VALIDATE, UiAction.RESEARCH, UiAction.DEPLOY):
+            self.act(action, reference)
+        self.act(UiAction.RECONCILE)
+        self.act(UiAction.CHECK_PREFLIGHT, account_ref='local-stock')
+        self.act(UiAction.RESUME)
+        for _ in range(20):
+            self.act(UiAction.STEP)
+        final = self.state()
+        lots = self.bundle.engine.state.positions
+        open_lots = [lot for lot in lots if lot.quantity]
+        self.assertGreater(len(lots), len(open_lots), 'scenario must include closed lots')
+        ages = [age for age in final.performance[0].holding_days.split(',') if age]
+        self.assertEqual(len(ages), len(open_lots))
+
 
 if __name__ == '__main__':
     unittest.main()
