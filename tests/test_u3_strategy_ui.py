@@ -102,6 +102,21 @@ class TypedStrategyWizardTests(unittest.TestCase):
         self.assertIn('1 張', self.wizard.options.size_hint.text())
         self.assertIn('未含費用', self.wizard.options.size_hint.text())
 
+    def test_stock_sizing_is_limited_by_the_isolated_risk_budget(self):
+        quote = replace(self.wizard.state.markets[0], price=Decimal('40'))
+        self.wizard.options.state = replace(self.wizard.state, markets=(quote, *self.wizard.state.markets[1:]))
+        options = self.wizard.options
+        self.wizard.allocation.setText('200000')
+        options.entry_amount.setText('200000')
+        options.stop.setText('3')
+        self.wizard.risk.setCurrentIndex(0)  # 2% of 200000 = 4000; loss per 40,000 lot at a 3% stop = 1200
+        self.assertEqual(options.size_hint.text(), ui_text('u3.stock_size_risk_limited').format(3, 5))
+        options.stop.setText('12')  # 4800 per lot > 4000 budget: not even one lot fits
+        self.assertEqual(options.size_hint.text(), ui_text('u3.stock_size_none'))
+        options.stop.setText('1')  # 400 per lot: funding, not risk, is the limit again
+        self.assertIn('5 張', options.size_hint.text())
+        self.assertNotIn(ui_text('u3.stock_size_none'), options.size_hint.text())
+
     def test_tmf_contracts_near_month_and_conservative_margin_are_explicit(self):
         self.select_kind(HoldingKind.INTRADAY)
         parameters = self.wizard.options.parameters()

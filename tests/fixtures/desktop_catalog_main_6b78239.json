@@ -3209,7 +3209,9 @@
       "m3.strategy_name": "自動策略 {0}（第 {1} 版）",
       "m3.progress_waiting": "尚未評估",
       "m3.approval_unavailable": "尚未達到完整模擬與績效門檻；請先累積模擬紀錄。",
-      "m3.fingerprint_pending": "建成前將由引擎核驗候選；凍結指紋會在建成後顯示。"
+      "m3.fingerprint_pending": "建成前將由引擎核驗候選；凍結指紋會在建成後顯示。",
+      "u3.stock_size_risk_limited": "受單筆風險限制，約 {0} 張（資金可買 {1} 張）；只做整張。",
+      "u3.stock_size_none": "約 0 張：依目前配置金額、風險比例與停損，不足一張不下單；請提高配置金額或風險比例，或縮小停損。"
     }
   },
   "aliases": {
@@ -7747,6 +7749,8 @@
       "m3.progress_waiting": "尚未評估",
       "m3.approval_unavailable": "尚未達到完整模擬與績效門檻；請先累積模擬紀錄。",
       "m3.fingerprint_pending": "建成前將由引擎核驗候選；凍結指紋會在建成後顯示。",
+      "u3.stock_size_risk_limited": "受單筆風險限制，約 {0} 張（資金可買 {1} 張）；只做整張。",
+      "u3.stock_size_none": "約 0 張：依目前配置金額、風險比例與停損，不足一張不下單；請提高配置金額或風險比例，或縮小停損。",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12280,7 +12284,9 @@
     "m3.strategy_name",
     "m3.progress_waiting",
     "m3.approval_unavailable",
-    "m3.fingerprint_pending"
+    "m3.fingerprint_pending",
+    "u3.stock_size_risk_limited",
+    "u3.stock_size_none"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

@@ -45,6 +45,8 @@ class StrategyOptions:
         wizard.instrument.currentIndexChanged.connect(self.refresh_size)
         wizard.allocation.textChanged.connect(self.refresh_size)
         self.entry_amount.textChanged.connect(self.refresh_size)
+        self.stop.textChanged.connect(self.refresh_size)
+        wizard.risk.currentIndexChanged.connect(self.refresh_size)
         self.contracts.valueChanged.connect(self.refresh_size)
 
     def products(self):
@@ -142,6 +144,16 @@ class StrategyOptions:
             self.instrument_rule.currentData() if self.wizard.market.currentData() == Market.INDEX_FUTURE else 'EXACT',
         )
 
+    def _risk_lots(self, allocation, lot_cost):
+        """Whole lots whose loss at the stop fits allocation x risk fraction (the engine sizes the same way)."""
+        try:
+            stop = Decimal(self.stop.text()) / 100
+        except InvalidOperation:
+            return 10**9  # No stop typed yet; the funded size is shown.
+        if not stop.is_finite() or stop <= 0:
+            return 10**9
+        return int(allocation * self.wizard.risk.currentData() // (lot_cost * stop))
+
     def refresh_size(self):
         wizard = self.wizard
         try:
@@ -159,8 +171,15 @@ class StrategyOptions:
             if quote is None or quote.price is None:
                 self.size_hint.setText(ui_text('u3.stock_size_unknown'))
             else:
-                lots = int(min(amount, allocation) // (quote.price * 1000))
-                self.size_hint.setText(ui_text('u3.stock_size').format(lots) + ' ' + ui_text('u3.whole_lot_only'))
+                lot_cost = quote.price * 1000
+                funded = int(min(amount, allocation) // lot_cost)
+                lots = min(funded, self._risk_lots(allocation, lot_cost))
+                if not lots:
+                    self.size_hint.setText(ui_text('u3.stock_size_none'))
+                elif lots < funded:
+                    self.size_hint.setText(ui_text('u3.stock_size_risk_limited').format(lots, funded))
+                else:
+                    self.size_hint.setText(ui_text('u3.stock_size').format(lots) + ' ' + ui_text('u3.whole_lot_only'))
         else:
             instrument = next((item for item in self.state.manual.instruments if item.instrument_id == identity), None)
             margin = instrument.margin_per_contract if instrument is not None else None

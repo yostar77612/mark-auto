@@ -91,7 +91,10 @@ from .m4a_maintenance import ENTRIES as _part_m4a_maintenance
 
 from .m3_ui import ENTRIES as _part_m3_ui
 
+from .strategy_risk_hint import ENTRIES as _part_strategy_risk_hint
+
 PARTS = (
+    _part_strategy_risk_hint,
     _part_m3_ui,
     _part_strategy_research_feedback,
     _part_connection_failures,
