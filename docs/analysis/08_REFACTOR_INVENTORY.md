@@ -965,6 +965,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/runtime/e1_store.py` | 141 | composition | `quantlab/trading/runtime/e1_store.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/strings/strategy_risk_hint.py` | 6 | shared | `desktop_app/strings/strategy_risk_hint.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/strings/assistant_claude_code.py` | 20 | shared | `desktop_app/strings/assistant_claude_code.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/research_core/adapters/workspace_archive.py` | 208 | infrastructure | `quantlab/research_core/adapters/workspace_archive.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `tools/archive_workspace.py` | 61 | tooling | `tools/archive_workspace.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import stat
 import tempfile
+from types import SimpleNamespace
 import unittest
 from tests.native_capabilities import symlinks_available, SYMLINK_REASON
 from unittest.mock import Mock, patch
@@ -305,6 +306,161 @@ class AutomaticBackupTests(unittest.TestCase):
                 self.auto.claim_due(quiescent=True)
         with self.assertRaises(RuntimeSafetyError):
             self.auto.complete(archive='unknown.zip', status='success')
+
+
+class WorkspaceArchiveTests(unittest.TestCase):
+    """The pre-migration archive copies every byte, verifies it, and refuses anything unsafe."""
+
+    def setUp(self):
+        from quantlab.research_core.adapters import workspace_archive as archive
+
+        self.archive = archive
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.base = Path(self.directory.name).resolve()
+        self.boot, self.trading, self.out = self.base / 'boot', self.base / 'trading', self.base / 'out'
+        for relative, data in (
+            ('credentials/token.bin', b'\x00opaque\xff'),
+            ('control-v1/registry.sqlite', b'SQLite control'),
+            ('control-v1/registry.sqlite-wal', b'wal bytes'),
+            ('state-v1/.hidden-unknown', b'kept even though nobody listed it'),
+            ('state-v1/settings.json', b'{"a": 1}'),
+        ):
+            path = self.boot / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+        (self.trading / 'market').mkdir(parents=True)
+        (self.trading / 'trading-v2.sqlite').write_bytes(b'ledger' * 1000)
+        (self.trading / 'market' / 'klines.sqlite3').write_bytes(b'bars')
+        self.sources = {'bootstrap': self.boot, 'trading': self.trading}
+
+    def snapshot(self):
+        return {
+            str(path.relative_to(self.base)): (path.read_bytes(), path.stat().st_mtime_ns)
+            for root in self.sources.values()
+            for path in root.rglob('*')
+            if path.is_file()
+        }
+
+    def test_every_file_is_copied_exactly_verified_and_the_sources_are_untouched(self):
+        before = self.snapshot()
+        manifest = self.archive.create_archive(self.sources, self.out)
+        self.assertEqual(manifest['file_count'], 7)
+        self.assertEqual(manifest['total_bytes'], sum(len(data) for data, _ in before.values()))
+        for entry in manifest['entries']:
+            copied = (self.out / 'files' / entry['label'] / entry['path']).read_bytes()
+            original = (self.sources[entry['label']] / entry['path']).read_bytes()
+            self.assertEqual(copied, original)
+        kinds = {e['path']: e['kind'] for e in manifest['entries']}
+        self.assertEqual(
+            (kinds['control-v1/registry.sqlite'], kinds['control-v1/registry.sqlite-wal'], kinds['state-v1/.hidden-unknown']),
+            ('sqlite', 'sqlite-sidecar', 'file'),
+        )
+        self.assertEqual(self.archive.verify_archive(self.out)['file_count'], 7)
+        self.assertEqual(self.snapshot(), before)  # nothing read-only was changed, not even a timestamp
+
+    def test_unsafe_requests_are_refused_and_leave_no_destination(self):
+        unsafe = {
+            'destination exists': (self.sources, self.out, 'destination_exists'),
+            'destination inside a source': (self.sources, self.trading / 'archive', 'destination_overlaps_source'),
+            'source inside the destination': (self.sources, self.base, 'destination_overlaps_source'),
+            'relative destination': (self.sources, Path('relative-archive'), 'path_not_local_absolute'),
+            'network destination': (self.sources, Path('//server/share/archive'), 'path_not_local_absolute'),
+            'missing source': ({'bootstrap': self.base / 'nowhere'}, self.base / 'a2', 'source_missing'),
+            'bad label': ({'../x': self.boot}, self.base / 'a3', 'bad_source_label'),
+        }
+        self.out.mkdir()
+        for name, (sources, destination, code) in unsafe.items():
+            with self.subTest(name), self.assertRaises(self.archive.ArchiveError) as caught:
+                self.archive.create_archive(sources, destination)
+            self.assertEqual(caught.exception.code, code)
+        self.assertEqual(list(self.out.iterdir()), [])  # the pre-existing destination was not touched
+        self.assertFalse((self.base / 'a2').exists() or (self.base / 'a3').exists())
+
+    def test_links_are_refused(self):
+        with patch.object(self.archive, '_is_link', side_effect=lambda path: path.name == 'settings.json'):
+            with self.assertRaises(self.archive.ArchiveError) as caught:
+                self.archive.create_archive(self.sources, self.out)
+        self.assertEqual(caught.exception.code, 'link_refused')
+        self.assertFalse(self.out.exists())
+
+    def test_too_little_free_space_is_refused_instead_of_archiving_part_of_the_workspace(self):
+        with patch.object(self.archive.shutil, 'disk_usage', return_value=SimpleNamespace(free=1024)):
+            with self.assertRaises(self.archive.ArchiveError) as caught:
+                self.archive.create_archive(self.sources, self.out)
+        self.assertEqual(caught.exception.code, 'not_enough_space')
+        self.assertFalse(self.out.exists())
+
+    def test_a_file_that_changes_while_it_is_copied_fails_the_run_and_removes_the_partial_archive(self):
+        real = self.archive._copy_and_hash
+        victim = self.trading / 'trading-v2.sqlite'
+
+        def copy_then_write(source, target):
+            digest = real(source, target)
+            if source == victim.resolve():
+                victim.write_bytes(victim.read_bytes() + b'a live writer appended this')
+            return digest
+
+        with patch.object(self.archive, '_copy_and_hash', side_effect=copy_then_write):
+            with self.assertRaises(self.archive.ArchiveError) as caught:
+                self.archive.create_archive(self.sources, self.out)
+        self.assertEqual(caught.exception.code, 'source_changed_during_archive')
+        self.assertFalse(self.out.exists())
+
+    def test_cancelling_between_files_removes_only_the_partial_archive(self):
+        calls = []
+
+        def cancel_second():
+            calls.append(1)
+            return len(calls) == 2
+
+        before = self.snapshot()
+        with self.assertRaises(self.archive.ArchiveError) as caught:
+            self.archive.create_archive(self.sources, self.out, cancelled=cancel_second)
+        self.assertEqual(caught.exception.code, 'cancelled')
+        self.assertFalse(self.out.exists())
+        self.assertEqual(self.snapshot(), before)
+
+    def test_verification_detects_a_changed_missing_or_extra_archived_file(self):
+        self.archive.create_archive(self.sources, self.out)
+        victim = self.out / 'files' / 'bootstrap' / 'state-v1' / 'settings.json'
+        original = victim.read_bytes()
+        victim.write_bytes(original.replace(b'1', b'2'))
+        with self.assertRaises(self.archive.ArchiveError) as caught:
+            self.archive.verify_archive(self.out)
+        self.assertEqual(caught.exception.code, 'archive_verification_failed')
+        victim.write_bytes(original)
+        extra = self.out / 'files' / 'bootstrap' / 'extra.bin'
+        extra.write_bytes(b'x')
+        with self.assertRaises(self.archive.ArchiveError) as caught:
+            self.archive.verify_archive(self.out)
+        self.assertEqual(caught.exception.code, 'archive_files_differ_from_manifest')
+        extra.unlink()
+        victim.unlink()
+        with self.assertRaises(self.archive.ArchiveError):
+            self.archive.verify_archive(self.out)
+
+    def test_the_command_line_tool_reports_only_counts_or_a_stable_refusal(self):
+        import io
+        from contextlib import redirect_stdout
+        from tools import archive_workspace
+
+        sources = ['--source', f'bootstrap={self.boot}', '--source', f'trading={self.trading}']
+        destination = ['--destination', str(self.out)]
+        runs = (
+            (destination + sources, 'ARCHIVED', 0),
+            (destination + ['--verify'], 'VERIFIED', 0),
+            (destination + sources + ['--dry-run'], 'DRY_RUN', 0),
+            (destination + sources, 'REFUSED', 2),  # archiving again onto the existing archive
+        )
+        for arguments, status, exit_code in runs:
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                code = archive_workspace.main(arguments)
+            report = json.loads(buffer.getvalue())
+            self.assertEqual((report['status'], code), (status, exit_code))
+        self.assertEqual(report['code'], 'destination_exists')
+        self.assertEqual(set(report), {'status', 'code'})  # never a path or file content
 
 
 if __name__ == '__main__':
