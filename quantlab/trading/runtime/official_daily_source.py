@@ -10,7 +10,7 @@ from threading import Lock
 from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
-from quantlab.trading.adapters.official.stock_data import daily_url, events_url, parse_daily, parse_events, stock_identity
+from quantlab.trading.adapters.official.stock_data import TPEX_EVENT_PATH, daily_url, events_url, parse_daily, parse_events, stock_identity
 from quantlab.trading.adapters.official.daily_signal_events import daily_event_scope, parse_daily_signal_events
 from quantlab.trading.domain.calendar import TradingCalendar
 from quantlab.trading.domain.daily_signal_data import OfficialDailyHistory
@@ -29,11 +29,6 @@ def _query(url):
     return parsed, {name: value[0] for name, value in values.items()}
 
 
-def _roc_day(value):
-    year, month, day = map(int, value.split('/'))
-    return date(year + 1911, month, day)
-
-
 def _source_scope(url, instrument_id):
     """Admit only endpoints and exact request identities understood by the parser."""
     venue, _ = stock_identity(instrument_id)
@@ -41,24 +36,18 @@ def _source_scope(url, instrument_id):
     host = 'www.twse.com.tw' if venue == 'TWSE' else 'www.tpex.org.tw'
     if parsed.netloc != host:
         raise ValueError('source exchange mismatch')
-    daily_paths = (
-        ('/exchangeReport/STOCK_DAY', '/rwd/zh/afterTrading/STOCK_DAY') if venue == 'TWSE' else ('/web/stock/aftertrading/daily_trading_info/st43_result.php',)
-    )
+    daily_paths = ('/exchangeReport/STOCK_DAY', '/rwd/zh/afterTrading/STOCK_DAY') if venue == 'TWSE' else ('/www/zh-tw/afterTrading/tradingStock',)
     if parsed.path in daily_paths:
-        month = datetime.strptime(query['date'], '%Y%m%d').date() if venue == 'TWSE' else _roc_day(query['d'] + '/01')
+        month = datetime.strptime(query['date'], '%Y%m%d' if venue == 'TWSE' else '%Y/%m/%d').date()
         if month.day != 1 or query != _query(daily_url(instrument_id, month))[1]:
             raise ValueError('daily request identity mismatch')
         return 'daily', month, None
-    if venue == 'TWSE' and parsed.path in ('/rwd/zh/exRight/TWT49U', '/exchangeReport/TWT49U'):
+    if parsed.path in (('/rwd/zh/exRight/TWT49U', '/exchangeReport/TWT49U') if venue == 'TWSE' else (TPEX_EVENT_PATH,)):
         first, last = daily_event_scope(url)
         return 'global_events', first, last
-    event_path = '/exchangeReport/TWT48U' if venue == 'TWSE' else '/web/stock/exright/dailyquo/exDailyQ_result.php'
-    if parsed.path != event_path:
+    if venue != 'TWSE' or parsed.path != '/exchangeReport/TWT48U':
         raise ValueError('unsupported official endpoint')
-    if venue == 'TWSE':
-        first, last = (datetime.strptime(query[key], '%Y%m%d').date() for key in ('startDate', 'endDate'))
-    else:
-        first, last = (_roc_day(query[key]) for key in ('d', 'ed'))
+    first, last = (datetime.strptime(query[key], '%Y%m%d').date() for key in ('startDate', 'endDate'))
     if first >= last or query != _query(events_url(instrument_id, first, last))[1]:
         raise ValueError('event request identity mismatch')
     return 'events', first, last

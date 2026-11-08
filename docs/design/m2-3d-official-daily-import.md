@@ -3,7 +3,8 @@
 `tools/import_official_daily.py` 將官方 RAW 日 K 與完整 TWT49U 事件回應寫入既有
 SQLite 行情快取。這是使用者明確執行的工具；行情輪詢、自動策略週期與畫面快照
 均不會下載。工具不登入券商、不讀金鑰、不啟用 CA，也沒有下單或恢復自動交易功能。
-目前只支援具有已驗證 TWT49U schema 的 TWSE；不把櫃買資料當成上市資料使用。
+支援上市（TWSE，使用 TWT49U）與上櫃（TPEX，使用櫃買中心全市場區間除權息 exDailyQ）；兩者各有自己的已驗證 schema，不把一個市場的回應當成另一個市場的證據。
+上櫃個股日成交使用現行 `www/zh-tw/afterTrading/tradingStock`（舊 `st43_result.php` 已被官方導向錯誤頁）；櫃買除權息端點會忽略個股參數、永遠回傳全市場，所以只接受不帶 `stkno` 的全市場請求，並要求回應日期範圍與 `totalCount` 都與請求相符，才把「查無該股」視為沒有事件。
 
 ## 使用前
 

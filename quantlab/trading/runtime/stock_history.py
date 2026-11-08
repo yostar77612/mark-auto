@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl, urlsplit
 from urllib.request import Request, build_opener, ProxyHandler
 
 from quantlab.market_providers import _DeadlineHTTPSHandler, _NoRedirect
-from quantlab.trading.adapters.official.stock_data import MAX_BYTES, StockDataSource
+from quantlab.trading.adapters.official.stock_data import MAX_BYTES, TPEX_EVENT_PATH, StockDataSource, tpex_events_url
 from quantlab.trading.adapters.official.daily_signal_events import daily_event_scope
 from quantlab.trading.application.stock_history import StockHistorySync
 from quantlab.trading.domain.validation import DomainError
@@ -19,13 +19,7 @@ from quantlab.trading.domain.validation import DomainError
 _ENDPOINTS = {
     ('www.twse.com.tw', '/exchangeReport/STOCK_DAY'): {'response': 'json', 'date': r'\d{8}', 'stockNo': r'\d{4,6}'},
     ('www.twse.com.tw', '/exchangeReport/TWT48U'): {'response': 'json', 'startDate': r'\d{8}', 'endDate': r'\d{8}', 'stockNo': r'\d{4,6}'},
-    ('www.tpex.org.tw', '/web/stock/aftertrading/daily_trading_info/st43_result.php'): {'l': 'zh-tw', 'd': r'\d{3}/\d{2}', 'stkno': r'\d{4,6}'},
-    ('www.tpex.org.tw', '/web/stock/exright/dailyquo/exDailyQ_result.php'): {
-        'l': 'zh-tw',
-        'd': r'\d{3}/\d{2}/\d{2}',
-        'ed': r'\d{3}/\d{2}/\d{2}',
-        'stkno': r'\d{4,6}',
-    },
+    ('www.tpex.org.tw', '/www/zh-tw/afterTrading/tradingStock'): {'code': r'\d{4,6}', 'date': r'\d{4}/\d{2}/01', 'response': 'json'},
 }
 
 
@@ -33,6 +27,14 @@ def validate_stock_url(url: str) -> str:
     if not isinstance(url, str) or len(url) > 512:
         raise DomainError('official_stock_invalid', 'bounded official URL required')
     parts = urlsplit(url)
+    if parts.netloc == 'www.tpex.org.tw' and parts.path == TPEX_EVENT_PATH:
+        try:
+            first, end = daily_event_scope(url)
+        except DomainError:
+            raise DomainError('official_stock_invalid', 'official event request refused') from None
+        if url != tpex_events_url(first, end):
+            raise DomainError('official_stock_invalid', 'canonical official event request required')
+        return url
     if parts.path in ('/rwd/zh/exRight/TWT49U', '/exchangeReport/TWT49U'):
         try:
             first, end = daily_event_scope(url)
