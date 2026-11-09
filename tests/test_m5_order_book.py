@@ -175,6 +175,11 @@ class OrderBookServiceTests(unittest.TestCase):
                     raise DomainError('subscription_limit_reached')
                 super().subscribe(item)
 
+            def subscribe_bidask(self, item):
+                if len(self.subscribed) - len(self.unsubscribed) + len(self.bidask_subscribed) - len(self.bidask_unsubscribed) >= self.limit:
+                    raise DomainError('subscription_limit_reached')
+                super().subscribe_bidask(item)
+
         self.session = Limited()
         self.service = MarketTerminalService(
             self.store,
