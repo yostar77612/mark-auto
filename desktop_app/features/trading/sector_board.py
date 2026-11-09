@@ -5,7 +5,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from PySide6.QtCore import Qt, QThreadPool, QTimer
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QPushButton, QSplitter, QTableWidget, QVBoxLayout, QWidget
 
 from desktop_app.features.trading.market_terminal_widgets import QuoteItem
@@ -225,11 +225,17 @@ class SectorBoardWidget(QWidget):
         self._submit(fetch, completed)
 
     # --- rendering ---------------------------------------------------------
+    def _warn(self, on):
+        """Amber status text without an inline stylesheet (theme-owned styling stays centralized)."""
+        palette = self.status.palette()
+        palette.setColor(QPalette.ColorRole.WindowText, QColor('#e67e22') if on else self.palette().color(QPalette.ColorRole.WindowText))
+        self.status.setPalette(palette)
+
     def render_failure(self):
         """The engine could not be read: show that, and never keep old numbers on screen as if they were current."""
         self.view = None
         self.status.setText(ui_text('sector.error'))
-        self.status.setStyleSheet('color: #e67e22;')
+        self._warn(True)
         self.rank.setRowCount(0)
         self.members.setRowCount(0)
         self.members_hint.setText(ui_text('sector.error'))
@@ -252,7 +258,7 @@ class SectorBoardWidget(QWidget):
             text = ui_text('sector.error') if view.state in ('OFFLINE', 'EMPTY') else text + ' · ' + ui_text('sector.refresh_failed')
             stale = True
         self.status.setText(text)
-        self.status.setStyleSheet('color: #e67e22;' if stale else '')
+        self._warn(stale)
         if view.state in ('OFFLINE', 'EMPTY'):
             self.rank.setRowCount(0)
             self.members.setRowCount(0)
