@@ -264,6 +264,9 @@ ZH_TW.update(_ZH_TW_CHUNKS[76])
 # Lane AI explain: the question prefilled for the assistant about the selected strategy.
 ZH_TW.update(_ZH_TW_CHUNKS[77])
 
+# Lane minute research: read-only day-trade research summary and guidance.
+ZH_TW.update(_ZH_TW_CHUNKS[78])
+
 RETAINED_CATALOG_KEYS = ('maintenance.checking', 'backup_inspection.required', 'help.hint.strategy', 'idea.entry_button')
 
 # Compatibility only: historical positional keys never store rendered text.

@@ -3,10 +3,12 @@
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from threading import RLock
+from types import SimpleNamespace
 import unittest
 
 from quantlab.trading.application.codec import dumps, loads
-from quantlab.trading.application.contracts import StrategyForm
+from quantlab.trading.application.contracts import StrategyForm, UiAction, UiCommand
 from quantlab.trading.application.minute_research import research_minutes, validate_minute_request
 from quantlab.trading.application.registry import initialize
 from quantlab.trading.application.research import ResearchResult, research_fingerprint
@@ -20,6 +22,7 @@ from quantlab.trading.domain.models import Environment, HoldingKind, HoldingPoli
 from quantlab.trading.domain.strategy import Rule, StrategyDefinition, StrategyParameters
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.build import synthetic_catalog
+from quantlab.trading.runtime.minute_research_command import run_minute_command
 from quantlab.trading.runtime.research_worker import ResearchJob, SpawnResearchRunner
 
 
@@ -348,3 +351,91 @@ class MinuteResearchTests(unittest.TestCase):
         self.assertEqual(result, expected)
         self.assertEqual(result.source_digest, profile.source_digest)
         self.assertTrue(runner.last_cleanup_verified)
+
+
+class MinuteCommandTests(unittest.TestCase):
+    """The read-only command: settings come from closed sessions of the current contract, nothing else changes."""
+
+    def build(self, *, environment=Environment.BROKER_SIMULATION, kind=HoldingKind.INTRADAY, typed=True, interval='5m', days=25, effective_index=0, version=7):
+        strategy, spec, calendar, _, _, _ = fixture(tuple(date(2026, 10, 1) + timedelta(days=i) for i in range(days)), length=300, opening=8 * 60 + 45)
+        parameters = StrategyParameters(interval, Decimal('0.01'), Decimal('100000'), contracts=2) if typed else None
+        record = replace(strategy, parameters=parameters, policy=replace(strategy.policy, kind=kind))
+        spec = replace(spec, effective_at=calendar.sessions[effective_index].opens_at)
+        now = calendar.sessions[-1].closes_at + timedelta(hours=1)
+        engine = SimpleNamespace(
+            lock=RLock(),
+            state=SimpleNamespace(version=version),
+            catalog=SimpleNamespace(resolve=lambda _: spec),
+            clock=SimpleNamespace(now=lambda: now),
+            strategy=lambda _: record,
+            _strategy_spec=lambda found, _: found,
+            _strategy_calendar=lambda *_: calendar,
+        )
+        calls = []
+        result = SimpleNamespace(trades=(1, 2, 3), net_pnl=Decimal('1250.50'), costs=Decimal('210'), drawdown=Decimal('300'), observations=6000)
+
+        def research(strategy, settings, **arguments):
+            calls.append((strategy, settings, arguments))
+            return SimpleNamespace(result=result)
+
+        bundle = SimpleNamespace(
+            launch=SimpleNamespace(environment=environment),
+            lock=RLock(),
+            engine=engine,
+            version_offset=0,
+            closing=False,
+            closed=False,
+            control_failed=False,
+            research_minutes=research,
+        )
+        return bundle, calls, calendar, record
+
+    def command(self, version=7):
+        return UiCommand(UiAction.RESEARCH_MINUTES, version, 'minute-fixture:1')
+
+    def test_uses_the_last_twenty_closed_sessions_and_the_frozen_interval(self):
+        bundle, calls, calendar, record = self.build()
+        receipt = run_minute_command(bundle, self.command())
+        self.assertTrue(receipt.accepted)
+        ((strategy, settings, arguments),) = calls
+        self.assertIs(strategy, record)
+        self.assertEqual((settings.first_day, settings.last_day, settings.interval), (date(2026, 10, 6), date(2026, 10, 25), '5m'))
+        self.assertEqual((settings.minimum, settings.maximum, settings.intraday, settings.historical_contract), (0, 240, True, None))
+        self.assertIs(arguments['calendar'], calendar)
+        self.assertEqual(receipt.reference, '2026-10-06|2026-10-25|5m|3|1250.5|210|300|6000')
+
+    def test_sessions_before_the_current_contract_are_not_used(self):
+        bundle, calls, _, _ = self.build(effective_index=15)
+        self.assertTrue(run_minute_command(bundle, self.command()).accepted)
+        self.assertEqual(calls[0][1].first_day, date(2026, 10, 16))
+
+    def test_too_few_sessions_refuses_without_calling_the_host(self):
+        bundle, calls, _, _ = self.build(effective_index=23)
+        receipt = run_minute_command(bundle, self.command())
+        self.assertEqual((receipt.accepted, receipt.code), (False, 'calendar_missing'))
+        self.assertEqual(calls, [])
+
+    def test_only_typed_tmf_intraday_in_the_broker_simulation_and_current_version(self):
+        for name, arguments, code in (
+            ('local environment', {'environment': Environment.LOCAL}, 'capability_missing'),
+            ('production environment', {'environment': Environment.LIVE}, 'capability_missing'),
+            ('untyped strategy', {'typed': False}, 'validation_failed'),
+            ('swing policy', {'kind': HoldingKind.SWING}, 'validation_failed'),
+            ('stale version', {'version': 8}, 'state_conflict'),
+        ):
+            bundle, calls, _, _ = self.build(**arguments)
+            with self.subTest(name):
+                receipt = run_minute_command(bundle, self.command())
+                self.assertEqual((receipt.accepted, receipt.code), (False, code))
+                self.assertEqual(calls, [])
+
+    def test_host_refusals_are_returned_as_codes_and_the_record_is_untouched(self):
+        bundle, _, _, record = self.build()
+
+        def refuse(*_, **__):
+            raise DomainError('capability_missing', 'authenticated TMF gateway required')
+
+        bundle.research_minutes = refuse
+        receipt = run_minute_command(bundle, self.command())
+        self.assertEqual((receipt.accepted, receipt.code, receipt.reference), (False, 'capability_missing', ''))
+        self.assertIs(bundle.engine.strategy('x'), record)

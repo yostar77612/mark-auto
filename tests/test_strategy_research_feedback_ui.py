@@ -17,7 +17,8 @@ from desktop_app.components.async_status import AsyncStatus
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction, UiReceipt
 from quantlab.trading.application.errors import ERROR_TABLE
-from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.models import Environment, HoldingKind, Market
+from quantlab.trading.domain.strategy import StrategyParameters
 from tests import test_trading_ui as support
 
 
@@ -217,4 +218,48 @@ class StrategyResearchFeedbackTests(unittest.TestCase):
         self.feedback.status.action.click()
         self.assertFalse(self.window.deploy_button.isEnabled())
         self.window.deploy_button.click()
+        self.assertEqual([command.action for command in self.facade.commands], [UiAction.RESEARCH])
+
+    def _minute_strategy(self):
+        strategy = replace(
+            self.window.state.strategies[0],
+            environment=Environment.BROKER_SIMULATION,
+            market=Market.INDEX_FUTURE,
+            holding_kind=HoldingKind.INTRADAY,
+            parameters=StrategyParameters('5m', Decimal('0.01'), Decimal('100000')),
+        )
+        self.facade.state = replace(self.window.state, strategies=(strategy,))
+        self.window.apply_state(self.facade.state)
+        self.window.strategies.selectRow(0)
+
+    def _research_with(self, receipt):
+        def execute(command):
+            self.facade.commands.append(command)
+            return receipt
+
+        with patch.object(self.facade, 'execute', side_effect=execute):
+            self.window.research_button.click()
+            self.drain()
+
+    def test_typed_tmf_day_trade_research_runs_minutes_and_shows_a_research_only_summary(self):
+        self._minute_strategy()
+        self._research_with(UiReceipt(True, 'completed', '', '2026-10-06|2026-10-25|5m|12|1250.5|210|300|6000'))
+        self.assertEqual([command.action for command in self.facade.commands], [UiAction.RESEARCH_MINUTES])
+        text = self.feedback.status.label.text()
+        for expected in ('12 筆交易', '1250.5', '6000', ui_text('research.minute.summary').splitlines()[1]):
+            self.assertIn(expected, text)
+        self.assertNotIn(ui_text('research.feedback.passed'), text)
+        self.assertIsNone(self.feedback.status.action.text() or None)
+
+    def test_minute_research_refusal_explains_the_missing_connection_or_days(self):
+        self._minute_strategy()
+        for code, hint in (('capability_missing', 'research.minute.need_connection'), ('calendar_missing', 'research.minute.too_few_days')):
+            with self.subTest(code=code):
+                self._research_with(UiReceipt(False, code, 'PRIVATE_PERSON SECRET'))
+                text = self.feedback.status.label.text()
+                self.assertIn(ui_text(hint), text)
+                self.assertNotIn('PRIVATE_PERSON', text)
+
+    def test_other_strategies_keep_the_ordinary_research_action(self):
+        self._research_with(UiReceipt(True, 'completed', ''))
         self.assertEqual([command.action for command in self.facade.commands], [UiAction.RESEARCH])
