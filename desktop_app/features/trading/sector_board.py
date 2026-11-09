@@ -65,7 +65,7 @@ class SectorBoardWidget(QWidget):
         self.filter, self.group_id, self.stock_id, self.period = 'all', '', '', '1m'
         self.rank_sort, self.member_sort = (2, Qt.SortOrder.DescendingOrder), (3, Qt.SortOrder.DescendingOrder)
         self.view = None
-        self._requests, self._loading, self._detail_loading, self._selecting, self._again = set(), False, False, False, False
+        self._requests, self._loading, self._detail_loading, self._selecting, self._again = set(), False, None, False, False
         self._wanted = ''
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -199,10 +199,10 @@ class SectorBoardWidget(QWidget):
         self._refresh_detail()
 
     def _refresh_detail(self):
-        if not self.stock_id or self._detail_loading or self._selecting:
+        if not self.stock_id or self._selecting or self._detail_loading == (self.stock_id, self.period):
             return
-        self._detail_loading = True
         key, period = self.stock_id, self.period
+        self._detail_loading = (key, period)
 
         def fetch():
             page = self.facade.market_series(MarketSeriesQuery(key, period))
@@ -213,7 +213,10 @@ class SectorBoardWidget(QWidget):
             return page, bars, self.facade.order_book(key)
 
         def completed(value, error):
-            self._detail_loading = False
+            if self._detail_loading == (key, period):
+                self._detail_loading = None
+            if error is not None and key == self.stock_id:
+                self.order_book.clear(ui_text('sector.error'))
             if error is None and key == self.stock_id and period == self.period:
                 page, bars, book = value
                 self.chart.set_series(series_bars(replace(page, bars=bars, offset=0)))
@@ -245,8 +248,8 @@ class SectorBoardWidget(QWidget):
             stale = view.state == 'STALE'
             if stale:
                 text += ' · ' + ui_text('sector.stale').format(view.age_seconds)
-        if view.failed and view.state in ('LIVE', 'STALE'):
-            text += ' · ' + ui_text('sector.refresh_failed')
+        if view.failed:
+            text = ui_text('sector.error') if view.state in ('OFFLINE', 'EMPTY') else text + ' · ' + ui_text('sector.refresh_failed')
             stale = True
         self.status.setText(text)
         self.status.setStyleSheet('color: #e67e22;' if stale else '')
@@ -391,6 +394,7 @@ class SectorBoardWidget(QWidget):
             self._wanted = instrument_id
             return
         if instrument_id == self.stock_id:
+            self._refresh_detail()
             return
         self.stock_id = instrument_id
         self._selecting = True
@@ -404,10 +408,13 @@ class SectorBoardWidget(QWidget):
             self._selecting = False
             wanted, self._wanted = self._wanted, ''
             if error is not None:
+                self.stock_id = ''
                 self.detail_title.setText(ui_text('sector.error'))
-            elif wanted:
+                self.chart.set_series(())
+                self.order_book.clear(ui_text('sector.error'))
+            if wanted:
                 self.select_stock(wanted)
-            else:
+            elif error is None:
                 self._refresh_detail()
 
         self._submit(lambda: self.facade.select_market_instrument(instrument_id, period), completed)
