@@ -285,7 +285,15 @@ def _market_page(self) -> None:
         content.setAccessibleName(ui_text('terminal.title'))
         layout = QVBoxLayout(content)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.market_watch, 1)
+        if self.sector_board is not None:
+            self.market_tabs = QTabWidget()
+            self.market_tabs.setObjectName('market_tabs')
+            self.market_tabs.setAccessibleName(ui_text('terminal.title'))
+            self.market_tabs.addTab(self.market_watch, ui_text('sector.tab_watch'))
+            self.market_tabs.addTab(self.sector_board, ui_text('sector.tab_board'))
+            layout.addWidget(self.market_tabs, 1)
+        else:
+            layout.addWidget(self.market_watch, 1)
         self.pages.addWidget(content)
         # Retain the historical table/route API for the host's general renderer.
         self.market_refresh_button = button('v2.refresh_market', 'market_refresh_button')

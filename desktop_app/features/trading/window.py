@@ -103,6 +103,7 @@ class TradingWindow(QMainWindow):
         parent=None,
         *,
         market_watch=None,
+        sector_board=None,
         position_columns=None,
         save_position_columns=None,
         order_columns=None,
@@ -118,6 +119,7 @@ class TradingWindow(QMainWindow):
         self.facade = facade
         self.state = initial_state
         self.market_watch = market_watch
+        self.sector_board = sector_board
         self._position_columns, self._save_position_columns = position_columns, save_position_columns
         self._order_columns, self._save_order_columns = order_columns, save_order_columns
         self._strategy_columns, self._save_strategy_columns = strategy_columns, save_strategy_columns

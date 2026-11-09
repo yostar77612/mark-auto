@@ -42,7 +42,7 @@ class SymbolDirectoryTests(unittest.TestCase):
             directory.refresh(facade, now + timedelta(hours=2))
             self.assertEqual(5, len(calls))
             self.assertEqual(items, SymbolDirectory(path).items)
-            self.assertEqual(1, json.loads(path.read_text(encoding='utf-8'))['version'])
+            self.assertEqual(2, json.loads(path.read_text(encoding='utf-8'))['version'])
             self.assertGreaterEqual(directory.refresh_seconds, 0)
             directory.refresh(facade, now + timedelta(days=1))
             self.assertEqual(10, len(calls))

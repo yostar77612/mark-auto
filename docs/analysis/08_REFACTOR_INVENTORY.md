@@ -978,6 +978,17 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/adapters/shioaji/bidask_stream.py` | 65 | infrastructure | `quantlab/trading/adapters/shioaji/bidask_stream.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/order_book_contracts.py` | 42 | application | `quantlab/trading/application/order_book_contracts.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/bidask.py` | 38 | domain | `quantlab/trading/domain/bidask.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/sector_board.py` | 376 | presentation | `desktop_app/features/trading/sector_board.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/shioaji/snapshot_poller.py` | 66 | infrastructure | `quantlab/trading/adapters/shioaji/snapshot_poller.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/sector_contracts.py` | 63 | application | `quantlab/trading/application/sector_contracts.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/sector_service.py` | 150 | application | `quantlab/trading/application/sector_service.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/concept_groups.py` | 33 | domain | `quantlab/trading/domain/concept_groups.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/industry_names.py` | 48 | domain | `quantlab/trading/domain/industry_names.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/sector.py` | 117 | domain | `quantlab/trading/domain/sector.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/ports/sector.py` | 13 | application | `quantlab/trading/ports/sector.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/sector_board.py` | 80 | composition | `quantlab/trading/runtime/sector_board.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `tools/m5_market_probe.py` | 102 | tooling | `tools/m5_market_probe.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `tools/m5_sector_snapshot.py` | 146 | tooling | `tools/m5_sector_snapshot.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

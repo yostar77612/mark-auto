@@ -11,6 +11,8 @@ from quantlab.trading.application.context import QuoteBatch
 from quantlab.trading.application.market_terminal_service import MarketTerminalStatus
 from quantlab.trading.application.history_sync import HistorySyncState
 from quantlab.trading.application.order_book_contracts import OrderBookView, TapeEntry
+from quantlab.trading.application.sector_contracts import MemberView, SectorBoardView, SectorQuery
+from quantlab.trading.domain.sector import SectorStat
 from quantlab.trading.domain.bidask import BidAskSnapshot
 from quantlab.trading.application.alert_contracts import AlertCommand, AlertSnapshot
 from quantlab.trading.ports.history import HistoryUsage
@@ -34,6 +36,7 @@ class Operation(str, Enum):
     MARKET_PREFERENCES = 'MARKET_PREFERENCES'
     ALERTS = 'ALERTS'
     ORDER_BOOK = 'ORDER_BOOK'
+    SECTOR_BOARD = 'SECTOR_BOARD'
 
 
 @dataclass(frozen=True)
@@ -48,6 +51,7 @@ class Request:
     schema_version: int = 2
     series: MarketSeriesQuery | None = None
     alert: AlertCommand | None = None
+    sector: SectorQuery | None = None
 
     def __post_init__(self) -> None:
         identity(self.request_id)
@@ -63,6 +67,8 @@ class Request:
             raise DomainError('validation_failed', 'missing series query')
         if self.operation is Operation.ALERTS and not isinstance(self.alert, AlertCommand):
             raise DomainError('validation_failed', 'missing alert command')
+        if self.operation is Operation.SECTOR_BOARD and not isinstance(self.sector, SectorQuery):
+            raise DomainError('validation_failed', 'missing sector query')
 
 
 @dataclass(frozen=True)
@@ -89,9 +95,11 @@ class Response:
     market_selected: str = ''
     alerts: AlertSnapshot | None = None
     order_book: OrderBookView | None = None
+    sector: SectorBoardView | None = None
     candidates: tuple[CandidateSummaryView, ...] = ()
 
 
 register(Operation, Request, Response, Metrics, QuoteBatch)
 register(WatchInstrument, WatchKind, HistoryUsage, HistorySyncState, MarketTerminalStatus)
 register(OrderBookView, TapeEntry, BidAskSnapshot)
+register(SectorQuery, SectorBoardView, MemberView, SectorStat)

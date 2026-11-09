@@ -82,3 +82,7 @@ def attach_terminal(bundle):
     from .market_alerts import attach_alerts
 
     attach_alerts(bundle)
+
+    from .sector_board import attach_sector
+
+    attach_sector(bundle)
