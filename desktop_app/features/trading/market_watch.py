@@ -6,7 +6,8 @@ pages always come from Application, including every selected period.
 """
 
 from dataclasses import replace
-from PySide6.QtCore import Qt, QObject, QRunnable, QThreadPool, Signal, Slot
+from threading import Thread
+from PySide6.QtCore import Qt, QObject, QRunnable, Signal, Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QHeaderView, QHBoxLayout, QVBoxLayout, QSplitter, QScrollArea, QLayout
 from desktop_app.strings.catalog import ui_text
@@ -40,6 +41,16 @@ class _Result(QObject):
             self.completed(value, error)
         self.destroyed.connect(lambda *_, item=self: _LIVE_RESULTS.discard(item))
         self.deleteLater()
+
+
+def start_request(operation, result):
+    """Run one request on a plain Python thread.
+
+    Qt's QThreadPool takes ownership of a Python QRunnable and may free the wrapper on the worker thread;
+    CI saw intermittent access violations in the first event pump after such runnables. A Python thread keeps
+    the request alive from the Python side only and delivers the answer through the queued ``ready`` signal.
+    """
+    Thread(target=_Request(operation, result).run, name='market-request', daemon=True).start()
 
 
 class _Request(QRunnable):
@@ -176,7 +187,7 @@ class MarketWatchWidget(QWidget):
         result = _Result(finish)
         self._requests.add(result)
         self.destroyed.connect(result.cancel)
-        QThreadPool.globalInstance().start(_Request(operation, result))
+        start_request(operation, result)
 
     def render(self, state):
         self.state = state
