@@ -214,6 +214,55 @@ class StoreHardeningTests(unittest.TestCase):
             SectorGroupsCommand('SET_CODES', 'x', codes=(1,))
 
 
+class RequestPumpTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from PySide6.QtWidgets import QApplication
+
+        cls.app = QApplication.instance() or QApplication([])
+
+    def wait(self, predicate):
+        import time
+
+        deadline = time.monotonic() + 3
+        while not predicate() and time.monotonic() < deadline:
+            self.app.processEvents()
+            time.sleep(0.005)
+        self.assertTrue(predicate())
+
+    def test_answers_arrive_on_the_gui_thread_and_results_are_released(self):
+        from threading import current_thread, main_thread
+
+        from desktop_app.features.trading import market_watch
+
+        seen = []
+        result = market_watch._Result(lambda value, error: seen.append((value, error, current_thread() is main_thread())))
+        market_watch.start_request(lambda: 41 + 1, result)
+        self.wait(lambda: seen)
+        self.assertEqual(seen, [(42, None, True)])
+        self.assertNotIn(result.token, market_watch._LIVE_RESULTS)
+
+    def test_errors_are_delivered_not_raised_and_cancel_drops_the_callback(self):
+        from desktop_app.features.trading import market_watch
+
+        seen = []
+        failing = market_watch._Result(lambda value, error: seen.append(type(error).__name__))
+        market_watch.start_request(lambda: 1 / 0, failing)
+        cancelled = market_watch._Result(lambda value, error: seen.append('late'))
+        cancelled.cancel()
+        market_watch.start_request(lambda: 1, cancelled)
+        self.wait(lambda: not market_watch._LIVE_RESULTS)
+        self.assertEqual(seen, ['ZeroDivisionError'])
+
+    def test_the_pump_stops_when_nothing_is_outstanding(self):
+        from desktop_app.features.trading import market_watch
+
+        result = market_watch._Result(lambda value, error: None)
+        market_watch.start_request(lambda: None, result)
+        self.wait(lambda: not market_watch._pump().timer.isActive())
+        self.assertEqual(market_watch._pump().outstanding, 0)
+
+
 class MemberMenuTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
