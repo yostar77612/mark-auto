@@ -33,7 +33,7 @@ def group_label(group) -> str:
 class SectorEditor(QDialog):
     def __init__(self, facade, directory, submit, parent=None, on_changed=lambda: None):
         super().__init__(parent)
-        self.facade, self.submit, self.on_changed = facade, submit, on_changed
+        self.facade, self.defer, self.on_changed = facade, submit, on_changed
         self.directory = {item.code: item for item in directory}
         self.view = None
         self.setObjectName('sector_editor')
@@ -79,7 +79,7 @@ class SectorEditor(QDialog):
         close = self._button('sector_editor_close', 'sector.close', self.accept)
         root.addWidget(close, 0, Qt.AlignmentFlag.AlignRight)
         self.resize(720, 480)
-        self.run(SectorGroupsCommand())
+        self.send_command(SectorGroupsCommand())
 
     def _title(self, text):
         label = QLabel(text)
@@ -94,7 +94,7 @@ class SectorEditor(QDialog):
         return button
 
     # --- engine round trip ---------------------------------------------
-    def run(self, command):
+    def send_command(self, command):
         def completed(value, error):
             if error is not None:
                 self.message.setText(ui_text('sector.editor_failed'))
@@ -104,7 +104,7 @@ class SectorEditor(QDialog):
             if command.action != 'LIST':
                 self.on_changed()
 
-        self.submit(lambda: self.facade.sector_groups(command), completed)
+        self.defer(lambda: self.facade.sector_groups(command), completed)
 
     def apply(self, view):
         selected = view.selected_id or (self.current_group().id if self.current_group() else '')
@@ -164,7 +164,7 @@ class SectorEditor(QDialog):
     def add_group(self):
         name, accepted = QInputDialog.getText(self, ui_text('sector.add'), ui_text('sector.name_prompt'))
         if accepted and name.strip():
-            self.run(SectorGroupsCommand('CREATE', name=name))
+            self.send_command(SectorGroupsCommand('CREATE', name=name))
 
     def rename_group(self):
         group = self.current_group()
@@ -172,7 +172,7 @@ class SectorEditor(QDialog):
             return
         name, accepted = QInputDialog.getText(self, ui_text('sector.rename'), ui_text('sector.name_prompt'), text=group.name)
         if accepted and name.strip() and name.strip() != group.name:
-            self.run(SectorGroupsCommand('RENAME', group.id, name))
+            self.send_command(SectorGroupsCommand('RENAME', group.id, name))
 
     def delete_group(self):
         group = self.current_group()
@@ -180,23 +180,23 @@ class SectorEditor(QDialog):
             return
         answer = QMessageBox.question(self, ui_text('sector.delete'), ui_text('sector.delete_confirm').format(group.name))
         if answer == QMessageBox.StandardButton.Yes:
-            self.run(SectorGroupsCommand('DELETE', group.id))
+            self.send_command(SectorGroupsCommand('DELETE', group.id))
 
     def restore_group(self):
         group = self.current_group()
         if group is not None:
-            self.run(SectorGroupsCommand('RESTORE', group.id))
+            self.send_command(SectorGroupsCommand('RESTORE', group.id))
 
     def add_code(self, instrument_id):
         group = self.current_group()
         code = instrument_id.split(':')[-1]
         if group is None or group.deleted or code in group.codes:
             return
-        self.run(SectorGroupsCommand('SET_CODES', group.id, codes=(*group.codes, code)))
+        self.send_command(SectorGroupsCommand('SET_CODES', group.id, codes=(*group.codes, code)))
 
     def remove_code(self):
         group, item = self.current_group(), self.members.currentItem()
         if group is None or item is None:
             return
         code = item.data(Qt.ItemDataRole.UserRole)
-        self.run(SectorGroupsCommand('SET_CODES', group.id, codes=tuple(value for value in group.codes if value != code)))
+        self.send_command(SectorGroupsCommand('SET_CODES', group.id, codes=tuple(value for value in group.codes if value != code)))
