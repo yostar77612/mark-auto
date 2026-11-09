@@ -23,20 +23,28 @@ _LIVE_RESULTS = set()
 
 
 class _Result(QObject):
-    ready = Signal(object, object)
+    # The answer travels as plain Python attributes; only a payload-free signal crosses threads, so no Python
+    # object is copied or released by Qt off the GUI thread.
+    ready = Signal()
 
     def __init__(self, completed):
         super().__init__()
         self.completed = completed
+        self.value = self.error = None
         _LIVE_RESULTS.add(self)
         self.ready.connect(self.finish)
+
+    def deliver(self, value, error):
+        self.value, self.error = value, error
+        self.ready.emit()
 
     @Slot()
     def cancel(self):
         self.completed = None
 
-    @Slot(object, object)
-    def finish(self, value, error):
+    @Slot()
+    def finish(self):
+        value, error, self.value, self.error = self.value, self.error, None, None
         if self.completed is not None:
             self.completed(value, error)
         self.destroyed.connect(lambda *_, item=self: _LIVE_RESULTS.discard(item))
@@ -62,9 +70,9 @@ class _Request(QRunnable):
         try:
             value = self.operation()
         except Exception as error:
-            self.result.ready.emit(None, error)
+            self.result.deliver(None, error)
         else:
-            self.result.ready.emit(value, None)
+            self.result.deliver(value, None)
 
 
 class MarketWatchWidget(QWidget):
