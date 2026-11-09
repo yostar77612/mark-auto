@@ -24,6 +24,13 @@ from .sdk_facade import ShioajiSDKFacade
 logger = logging.getLogger(__name__)
 
 
+def tick_side(raw: object) -> str:
+    """SDK tick_type: 1 outer (外盤, buy), 2 inner (內盤, sell), anything else undecided."""
+    value = getattr(raw, 'tick_type', 0)
+    value = getattr(value, 'value', value)
+    return {1: 'BUY', 2: 'SELL'}.get(value, 'NONE') if type(value) is int else 'NONE'
+
+
 def normalise_tick(raw: object, instrument_id: str, received_at: datetime, resolver: TradeDateResolver | None) -> Tick:
     """Validate SDK input once, including Domain Tick's ordering/session rules."""
     if resolver is None:
@@ -39,6 +46,7 @@ def normalise_tick(raw: object, instrument_id: str, received_at: datetime, resol
         trade_date,
         session,
         source='SHIOAJI',
+        side=tick_side(raw),
     )
 
 

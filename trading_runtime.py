@@ -249,7 +249,11 @@ def _run_window(
         return 1
     initial = facade.snapshot()
     layout_store = LayoutStore(
-        root or default_root(), panel_ids=PANEL_IDS, areas=('left', 'center'), file_name='market-terminal-layout-v1.json', default_layout=terminal_preset()
+        root or default_root(),
+        panel_ids=PANEL_IDS,
+        areas=('left', 'center', 'right'),
+        file_name='market-terminal-layout-v1.json',
+        default_layout=terminal_preset(),
     )
 
     def notify_alert(message):

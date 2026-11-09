@@ -43,11 +43,16 @@ def valid_name(name):
     )
 
 
-def validate_layout(value, panel_ids=PANEL_IDS, areas=AREAS):
-    """Reject structure/type surprises; clamp strictly integral size hints."""
+def validate_layout(value, panel_ids=PANEL_IDS, areas=AREAS, fill=None):
+    """Reject structure/type surprises; clamp strictly integral size hints.
+
+    ``fill`` is a default layout: panels it defines that an older saved layout lacks are added from it.
+    """
     if type(value) is not dict or set(value) != {'version', 'panels'} or type(value['version']) is not int or value['version'] != VERSION:
         return None
     panels = value['panels']
+    if type(panels) is dict and fill is not None:
+        panels = {**{key: item for key, item in fill['panels'].items() if key not in panels}, **panels}
     if type(panels) is not dict or set(panels) != set(panel_ids):
         return None
     result = {'version': VERSION, 'panels': {}}
@@ -91,11 +96,11 @@ class LayoutStore:
                 or len(value['layouts']) > MAX_LAYOUTS
             ):
                 return
-            self.current = validate_layout(value['current'], self.panel_ids, self.areas) or deepcopy(self.default_layout)
+            self.current = validate_layout(value['current'], self.panel_ids, self.areas, self.default_layout) or deepcopy(self.default_layout)
             self.layouts = {
                 name: layout
                 for name, item in value['layouts'].items()
-                if valid_name(name) and (layout := validate_layout(item, self.panel_ids, self.areas)) is not None
+                if valid_name(name) and (layout := validate_layout(item, self.panel_ids, self.areas, self.default_layout)) is not None
             }
         except (OSError, ValueError, UnicodeError, RecursionError):
             return

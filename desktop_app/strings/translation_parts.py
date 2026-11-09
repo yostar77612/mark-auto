@@ -101,7 +101,10 @@ from .m2_manual_connection import ENTRIES as _part_m2_manual_connection
 
 from .minute_research_ui import ENTRIES as _part_minute_research_ui
 
+from .m5_sector import ENTRIES as _part_m5_sector
+
 PARTS = (
+    _part_m5_sector,
     _part_minute_research_ui,
     _part_strategy_explain,
     _part_m2_manual_connection,

@@ -106,6 +106,10 @@ class CompositeFacade:
         with self._lock:
             return (self._connection or self._current).market_status()
 
+    def order_book(self, instrument_id: str):
+        with self._lock:
+            return (self._connection or self._current).order_book(instrument_id)
+
     def market_preferences(self) -> str:
         with self._lock:
             return (self._connection or self._current).market_preferences()

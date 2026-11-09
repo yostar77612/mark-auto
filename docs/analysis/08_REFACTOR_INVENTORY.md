@@ -973,6 +973,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/minute_research_feedback.py` | 31 | presentation | `desktop_app/features/trading/minute_research_feedback.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/strings/minute_research_ui.py` | 18 | shared | `desktop_app/strings/minute_research_ui.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/minute_research_command.py` | 79 | composition | `quantlab/trading/runtime/minute_research_command.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/order_book_panel.py` | 163 | presentation | `desktop_app/features/trading/order_book_panel.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/strings/m5_sector.py` | 24 | shared | `desktop_app/strings/m5_sector.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/shioaji/bidask_stream.py` | 65 | infrastructure | `quantlab/trading/adapters/shioaji/bidask_stream.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/order_book_contracts.py` | 42 | application | `quantlab/trading/application/order_book_contracts.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/bidask.py` | 38 | domain | `quantlab/trading/domain/bidask.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -117,6 +117,30 @@ class FakeFacade:
             self.temporary = ''
         return UiReceipt(True, 'completed', '')
 
+    def order_book(self, instrument_id):
+        from quantlab.trading.application.order_book_contracts import OrderBookView, TapeEntry
+        from quantlab.trading.domain.bidask import BidAskSnapshot
+
+        if instrument_id.startswith('INDEX:'):
+            return OrderBookView(instrument_id)
+        bids = tuple(Decimal('100') - Decimal('0.5') * level for level in range(5))
+        asks = tuple(Decimal('100.5') + Decimal('0.5') * level for level in range(5))
+        tape = tuple(
+            TapeEntry(NOW - timedelta(seconds=index), Decimal('100.5') if index % 2 == 0 else Decimal('100'), 1 + index, 'BUY' if index % 2 == 0 else 'SELL')
+            for index in range(12)
+        )
+        return OrderBookView(
+            instrument_id,
+            True,
+            BidAskSnapshot(instrument_id, NOW, bids, (21, 35, 18, 40, 12), asks, (9, 14, 30, 22, 17)),
+            False,
+            tape,
+            48,
+            36,
+            2,
+            NOW - timedelta(minutes=30),
+        )
+
     def market_series(self, query):
         self.queries.append(query)
         bar = LiveBar(
