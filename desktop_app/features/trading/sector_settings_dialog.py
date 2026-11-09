@@ -30,7 +30,7 @@ FIELDS = (
 class SectorAlertSettingsDialog(QDialog):
     def __init__(self, facade, params, submit, parent=None, on_saved=lambda: None):
         super().__init__(parent)
-        self.facade, self.params, self.submit, self.on_saved = facade, params, submit, on_saved
+        self.facade, self.params, self.defer, self.on_saved = facade, params, submit, on_saved
         self.setObjectName('sector_settings')
         self.setWindowTitle(ui_text('sector.settings_title'))
         self.setAccessibleName(ui_text('sector.settings_title'))
@@ -103,4 +103,4 @@ class SectorAlertSettingsDialog(QDialog):
             self.on_saved()
             self.accept()
 
-        self.submit(lambda: self.facade.sector_settings(params), completed)
+        self.defer(lambda: self.facade.sector_settings(params), completed)

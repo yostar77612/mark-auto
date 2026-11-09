@@ -358,7 +358,7 @@ class EditorDialogTests(unittest.TestCase):
 
     def test_unknown_code_is_red_with_a_reason_and_not_deleted(self):
         self.store.set_codes('builtin.a', ('2330', '8888'))
-        self.dialog.run(SectorGroupsCommand())
+        self.dialog.send_command(SectorGroupsCommand())
         item = self.dialog.members.item(1)
         self.assertIn('找不到此代號', item.text())
         self.assertEqual(item.foreground().color().name(), '#c62828')
