@@ -296,6 +296,7 @@ def _run_window(
         open_in_watch=lambda key: (window.market_tabs.setCurrentWidget(terminal), terminal.select_instrument(key)),
         add_to_watch=lambda key: terminal.add_watch(key),
     )
+    alerts.panel.select_sector = lambda group_id: (window.market_tabs.setCurrentWidget(sector_board), sector_board.select_group(group_id))
     window = TradingWindow(
         facade,
         initial,

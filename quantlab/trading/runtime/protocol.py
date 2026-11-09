@@ -20,6 +20,7 @@ from quantlab.trading.application.sector_contracts import (
     SectorQuery,
 )
 from quantlab.trading.domain.sector import SectorStat
+from quantlab.trading.domain.sector_alerts import SectorAlert, SectorAlertParams
 from quantlab.trading.domain.bidask import BidAskSnapshot
 from quantlab.trading.application.alert_contracts import AlertCommand, AlertSnapshot
 from quantlab.trading.ports.history import HistoryUsage
@@ -45,6 +46,7 @@ class Operation(str, Enum):
     ORDER_BOOK = 'ORDER_BOOK'
     SECTOR_BOARD = 'SECTOR_BOARD'
     SECTOR_GROUPS = 'SECTOR_GROUPS'
+    SECTOR_SETTINGS = 'SECTOR_SETTINGS'
 
 
 @dataclass(frozen=True)
@@ -61,6 +63,7 @@ class Request:
     alert: AlertCommand | None = None
     sector: SectorQuery | None = None
     sector_groups: SectorGroupsCommand | None = None
+    sector_params: SectorAlertParams | None = None
 
     def __post_init__(self) -> None:
         identity(self.request_id)
@@ -108,6 +111,7 @@ class Response:
     order_book: OrderBookView | None = None
     sector: SectorBoardView | None = None
     sector_groups: SectorGroupsView | None = None
+    sector_params: SectorAlertParams | None = None
     candidates: tuple[CandidateSummaryView, ...] = ()
 
 
@@ -115,4 +119,4 @@ register(Operation, Request, Response, Metrics, QuoteBatch)
 register(WatchInstrument, WatchKind, HistoryUsage, HistorySyncState, MarketTerminalStatus)
 register(OrderBookView, TapeEntry, BidAskSnapshot)
 register(SectorQuery, SectorBoardView, MemberView, SectorStat)
-register(SectorGroupsCommand, SectorGroupsView, GroupEditView)
+register(SectorGroupsCommand, SectorGroupsView, GroupEditView, SectorAlert, SectorAlertParams)

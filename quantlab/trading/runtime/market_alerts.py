@@ -1,6 +1,7 @@
 """Compose local alerts with the market session, tick stream and durable history."""
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from threading import RLock
 
 from quantlab.trading.adapters.shioaji.scanner_stream import ShioajiScannerStream
@@ -42,6 +43,51 @@ class RuntimeAlerts:
     def execute(self, command: AlertCommand) -> AlertSnapshot:
         with self.lock:
             return self.service.execute(command)
+
+    def record_sector(self, alert):
+        """A sector alert enters the same log as rule alerts; its click-through target is the group."""
+        from datetime import timedelta
+        from decimal import Decimal
+        from uuid import uuid4
+
+        from quantlab.trading.domain.alerts import AlertEvent, AlertKind
+
+        kind = AlertKind.SECTOR_BURST if alert.kind == 'BURST' else AlertKind.SECTOR_FLOW
+        eok = Decimal(10**8)
+        label = alert.at.astimezone(ZoneInfo('Asia/Taipei')).strftime('%H:%M')
+        if alert.kind == 'BURST':
+            args = (
+                label,
+                alert.group_name,
+                alert.direction,
+                f'{Decimal(alert.amount) / eok:.1f}',
+                f'{Decimal(alert.baseline) / eok:.1f}',
+                f'{alert.ratio:.1f}',
+            )
+        else:
+            args = (
+                label,
+                alert.group_name,
+                alert.direction,
+                'x',
+                str(alert.baseline),
+                f'{Decimal(alert.amount) / eok:.1f}',
+                f'{Decimal(alert.detail) / eok:.1f}',
+                str(alert.monitored),
+                str(alert.members),
+            )
+        event = AlertEvent(
+            str(uuid4()),
+            'sector.' + alert.kind.lower(),
+            kind,
+            'SECTOR:' + alert.group_id,
+            alert.at + timedelta(minutes=1),
+            alert.ratio,
+            'alert.event.' + kind.value.lower(),
+            args,
+        )
+        with self.lock:
+            self.service.record_event(event)
 
     def poll_scanner(self):
         with self.lock:

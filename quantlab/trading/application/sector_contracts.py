@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from quantlab.trading.domain.sector import LIMITS, SectorStat
+from quantlab.trading.domain.sector_alerts import SectorAlert
 from quantlab.trading.domain.validation import DomainError, aware, identity, integer
 
 STATES = ('LIVE', 'STALE', 'CLOSED', 'OFFLINE', 'EMPTY')
@@ -53,6 +54,7 @@ class SectorBoardView:
     selected_group_id: str = ''
     members: tuple[MemberView, ...] = ()
     failed: bool = False
+    alerts: tuple[SectorAlert, ...] = ()
 
     def __post_init__(self) -> None:
         if self.state not in STATES:

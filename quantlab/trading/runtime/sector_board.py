@@ -6,9 +6,12 @@ from time import monotonic
 
 from quantlab.trading.adapters.shioaji.snapshot_poller import ShioajiSnapshotSource
 from quantlab.trading.adapters.storage.sector_store import SectorGroupStore
+from quantlab.trading.adapters.storage.sector_minute_store import SectorMinuteStore
 from quantlab.trading.application.sector_group_editor import SectorGroupEditor
+from quantlab.trading.application.sector_minutes import MinuteAggregator
 from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.validation import DomainError
+from .sector_settings import SectorAlertSettings
 
 
 class SnapshotBridge:
@@ -68,6 +71,12 @@ def attach_sector(bundle):
     connection = bundle.market_connection
     store = SectorGroupStore(bundle.launch.root / 'market' / 'sector_groups.json')
     service = SectorService(lambda: connection.directory.items, SnapshotBridge(connection), lambda: datetime.now(timezone.utc), concepts=store.groups)
+    settings = SectorAlertSettings(bundle.launch.root / 'settings.json', lock=connection.settings_lock)
+    service.interval_seconds = settings.get().snapshot_seconds
+    minute_store = SectorMinuteStore((bundle.launch.root / 'market' / 'sector_minutes.sqlite3').resolve())
+    minutes = MinuteAggregator(minute_store, settings.get, service.group_name)
+    service.on_round = minutes.on_round
+    service.on_alert = bundle.alerts.record_sector
     poller = SectorPoller(service)
     old_connected, old_disconnected = connection.on_connected, connection.on_disconnected
 
@@ -81,4 +90,5 @@ def attach_sector(bundle):
 
     connection.on_connected, connection.on_disconnected = connected, disconnected
     bundle.sector, bundle.sector_poller = service, poller
+    bundle.sector_settings, bundle.sector_minute_store = settings, minute_store
     bundle.sector_groups = SectorGroupEditor(store, lambda: connection.directory.items, service.recompute)

@@ -993,6 +993,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/adapters/storage/sector_store.py` | 164 | infrastructure | `quantlab/trading/adapters/storage/sector_store.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/sector_group_editor.py` | 45 | application | `quantlab/trading/application/sector_group_editor.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/sector_groups.py` | 60 | domain | `quantlab/trading/domain/sector_groups.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/sector_settings_dialog.py` | 106 | presentation | `desktop_app/features/trading/sector_settings_dialog.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/storage/sector_minute_store.py` | 87 | infrastructure | `quantlab/trading/adapters/storage/sector_minute_store.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/sector_minutes.py` | 120 | application | `quantlab/trading/application/sector_minutes.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/sector_alerts.py` | 139 | domain | `quantlab/trading/domain/sector_alerts.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/sector_settings.py` | 41 | composition | `quantlab/trading/runtime/sector_settings.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

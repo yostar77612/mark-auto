@@ -74,6 +74,11 @@ class AlertService:
                 emitted.append(event)
         return tuple(emitted)
 
+    def record_event(self, event: AlertEvent) -> None:
+        """Log an event produced outside rule evaluation (sector alerts); same store, same bounded history."""
+        self.store.append_event(event)
+        self.events.append(event)
+
     def poll_scanner(self) -> tuple[AlertEvent, ...]:
         if self.scanner is None:
             return ()

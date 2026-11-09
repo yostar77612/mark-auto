@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.alert_contracts import AlertActions
-from quantlab.trading.domain.alerts import DEFAULT_PARAMS, SCANNER_KINDS, AlertKind, AlertRule
+from quantlab.trading.domain.alerts import DEFAULT_PARAMS, SCANNER_KINDS, SECTOR_KINDS, AlertKind, AlertRule
 from quantlab.trading.domain.validation import DomainError
 
 
@@ -43,6 +43,8 @@ KIND_LABELS = {
     AlertKind.LIMIT_DOWN: ui_text('alert.kind_limit_down'),
     AlertKind.PRICE_JUMP: ui_text('alert.kind_price_jump'),
     AlertKind.VOLUME_BURST: ui_text('alert.kind_volume_burst'),
+    AlertKind.SECTOR_BURST: ui_text('alert.kind_sector_burst'),
+    AlertKind.SECTOR_FLOW: ui_text('alert.kind_sector_flow'),
 }
 PARAM_LABELS = {
     'price': ui_text('alert.param_price'),
@@ -61,6 +63,24 @@ PARAM_LABELS = {
     'high': ui_text('alert.param_high'),
     'subtype': ui_text('alert.param_subtype'),
 }
+
+
+def event_direction(event):
+    """UP/DOWN/ANY for colouring; sector events carry it third, rule events second."""
+    index = 2 if event.kind in SECTOR_KINDS else 1
+    return event.message_args[index] if len(event.message_args) > index else 'ANY'
+
+
+def event_text(event):
+    args = list(event.message_args)
+    if event.kind in SECTOR_KINDS:
+        words = {'UP': ui_text('alert.sector_dir_up'), 'DOWN': ui_text('alert.sector_dir_down'), 'NEUTRAL': ''}
+        args[2] = words.get(args[2], '')
+        if event.kind is AlertKind.SECTOR_FLOW:
+            args[3] = ui_text('alert.sector_flow_buy') if event_direction(event) == 'UP' else ui_text('alert.sector_flow_sell')
+    return EVENT_LABELS[event.kind].format(*args)
+
+
 EVENT_LABELS = {
     AlertKind.PRICE_CROSS: ui_text('alert.event.price_cross'),
     AlertKind.CHANGE_PERCENT: ui_text('alert.event.change_percent'),
@@ -73,6 +93,8 @@ EVENT_LABELS = {
     AlertKind.LIMIT_UP: ui_text('alert.event.limit_up'),
     AlertKind.LIMIT_DOWN: ui_text('alert.event.limit_down'),
     AlertKind.PRICE_JUMP: ui_text('alert.event.price_jump'),
+    AlertKind.SECTOR_BURST: ui_text('alert.event.sector_burst'),
+    AlertKind.SECTOR_FLOW: ui_text('alert.event.sector_flow'),
     AlertKind.VOLUME_BURST: ui_text('alert.event.volume_burst'),
 }
 WARNING_LABELS = {
@@ -93,7 +115,8 @@ class AlertRuleDialog(QDialog):
         self.kind.setObjectName('alert_kind')
         self.kind.setAccessibleName(ui_text('alert.kind'))
         for kind, label in KIND_LABELS.items():
-            self.kind.addItem(label, kind)
+            if kind not in SECTOR_KINDS:
+                self.kind.addItem(label, kind)
         form.addRow(ui_text('alert.kind'), self.kind)
         self.scope = QComboBox()
         self.scope.setObjectName('alert_scope')
@@ -195,6 +218,7 @@ class AlertPanel(QWidget):
     def __init__(self, service: AlertActions, current_instrument, select_instrument, parent=None, *, instrument_name=None, notify=None, rise_fall_colors=None):
         super().__init__(parent)
         self.service, self.current_instrument, self.select_instrument = service, current_instrument, select_instrument
+        self.select_sector = None
         self.instrument_name = instrument_name or (lambda key: key)
         self.notify = notify
         self.rise_fall_colors = rise_fall_colors or (lambda: ('#ff6575', '#35cf9b'))
@@ -299,11 +323,12 @@ class AlertPanel(QWidget):
         self.table.setRowCount(len(events))
         rise, fall = self.rise_fall_colors()
         for row, event in enumerate(events):
-            detail = EVENT_LABELS[event.kind].format(*event.message_args)
+            detail = event_text(event)
+            sector = event.kind in SECTOR_KINDS
             values = (
                 event.occurred_at.astimezone(ZoneInfo('Asia/Taipei')).strftime('%H:%M:%S'),
-                event.instrument_id.split(':')[-1],
-                self.instrument_name(event.instrument_id),
+                event.message_args[1] if sector else event.instrument_id.split(':')[-1],
+                ui_text('alert.sector_label') if sector else self.instrument_name(event.instrument_id),
                 KIND_LABELS[event.kind],
                 detail,
             )
@@ -311,13 +336,13 @@ class AlertPanel(QWidget):
                 item = QTableWidgetItem(value)
                 item.setToolTip(value)
                 item.setData(Qt.ItemDataRole.UserRole, event)
-                direction = event.message_args[1] if len(event.message_args) > 1 else 'ANY'
+                direction = event_direction(event)
                 if direction in ('UP', 'DOWN'):
                     item.setForeground(QColor(rise if direction == 'UP' else fall))
                 self.table.setItem(row, col, item)
         if events and events[0].event_id != self._latest:
             event = events[0]
-            text = EVENT_LABELS[event.kind].format(*event.message_args)
+            text = event_text(event)
             self._latest = event.event_id
             self.latest_changed.emit(text)
             if self.notify is not None:
@@ -325,4 +350,8 @@ class AlertPanel(QWidget):
 
     def select_event(self, item):
         event = item.data(Qt.ItemDataRole.UserRole)
+        if event.kind in SECTOR_KINDS:
+            if self.select_sector is not None:
+                self.select_sector(event.instrument_id.split(':', 1)[1])
+            return
         self.select_instrument(event.instrument_id, event.occurred_at.astimezone(timezone.utc))

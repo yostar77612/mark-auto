@@ -25,8 +25,14 @@ class AlertKind(str, Enum):
     LIMIT_DOWN = 'LIMIT_DOWN'
     PRICE_JUMP = 'PRICE_JUMP'
     VOLUME_BURST = 'VOLUME_BURST'
+    SECTOR_BURST = 'SECTOR_BURST'
+    SECTOR_FLOW = 'SECTOR_FLOW'
 
 
+# Written by the sector board straight into the alert log; they have no user-configurable rule.
+SECTOR_KINDS = frozenset((AlertKind.SECTOR_BURST, AlertKind.SECTOR_FLOW))
+# The twelve condition kinds a user can configure, in their historical order.
+RULE_KINDS = tuple(kind for kind in AlertKind if kind not in SECTOR_KINDS)
 SCANNER_KINDS = frozenset((AlertKind.LIMIT_UP, AlertKind.LIMIT_DOWN, AlertKind.PRICE_JUMP, AlertKind.VOLUME_BURST))
 BAR_KINDS = frozenset((AlertKind.FAST_MOVE, AlertKind.VOLUME_SURGE, AlertKind.MA_CROSS, AlertKind.KD_CROSS))
 DEFAULT_PARAMS = {

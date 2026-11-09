@@ -30,6 +30,7 @@ from quantlab.research_core.adapters.market_layout import LayoutStore
 from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS
 from quantlab.trading.domain.sector import QuoteRow
+from quantlab.trading.domain.sector_alerts import SectorAlert
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 from tests.test_market_terminal_ui import FakeFacade, OTHER, STOCK
 from tools.ui_snapshot import _save_png, page_metrics
@@ -73,6 +74,13 @@ def synthetic_service():
 
     service = SectorService(lambda: stocks, Source(), lambda: NOW)
     service.refresh()
+    names = {group.id: group.name for group in BUILTIN_GROUPS}
+    for index, (group_id, direction) in enumerate((('builtin.memory', 'DOWN'), ('builtin.power', 'NEUTRAL'), ('builtin.cooling', 'UP'))):
+        service._alerts.append(
+            SectorAlert(
+                NOW - timedelta(minutes=9 - 3 * index), group_id, names[group_id], 'BURST', direction, 320_000_000, 80_000_000, Decimal('4.0'), members=7
+            )
+        )
     return service, stocks
 
 
@@ -138,7 +146,7 @@ def capture(out):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--out', type=Path, default=Path('docs/analysis/m5-2-sectors'))
+    parser.add_argument('--out', type=Path, default=Path('docs/analysis/m5-4-alerts'))
     capture(parser.parse_args().out)
 
 

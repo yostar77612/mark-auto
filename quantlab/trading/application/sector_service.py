@@ -1,5 +1,6 @@
 """Sector ranking from market-wide snapshot rounds; read-only, fail-closed on stale or missing data."""
 
+from collections import deque
 from datetime import date, datetime, time
 from threading import RLock
 from typing import Callable
@@ -7,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS, ConceptGroup
 from quantlab.trading.domain.industry_names import industry_name
+from quantlab.trading.domain.sector_alerts import SectorAlert
 from quantlab.trading.domain.sector import QuoteRow, SectorGroup, SectorStat, compute_stats, eligible_stock, sort_stats
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
@@ -52,6 +54,10 @@ class SectorService:
         self._first_limit_up: dict[str, datetime] = {}
         self._limit_day: date | None = None
         self._generation = 0
+        self.new_alerts: tuple[SectorAlert, ...] = ()
+        self._alerts: deque[SectorAlert] = deque(maxlen=200)
+        self.on_round: Callable[[datetime, tuple[SectorStat, ...]], tuple[SectorAlert, ...]] = lambda now, stats: ()
+        self.on_alert: Callable[[SectorAlert], None] = lambda alert: None
 
     def stocks(self) -> tuple[WatchInstrument, ...]:
         return tuple(item for item in self.directory() if item.kind is WatchKind.STOCK and eligible_stock(item.code))
@@ -89,6 +95,10 @@ class SectorService:
             self._groups = {group.id: group for group in groups}
             self._stats = compute_stats(groups, rows)
             self._track_limit_up(rows)
+            self.new_alerts = self.on_round(self._fetched_at, self._stats)
+            self._alerts.extend(self.new_alerts)
+        for alert in self.new_alerts:
+            self.on_alert(alert)
 
     def _track_limit_up(self, rows: dict[str, QuoteRow]) -> None:
         latest = max((row.at for row in rows.values()), default=None)
@@ -108,6 +118,10 @@ class SectorService:
             if self._rows:
                 self._groups = {group.id: group for group in groups}
                 self._stats = compute_stats(groups, self._rows)
+
+    def group_name(self, group_id: str) -> str:
+        group = self._groups.get(group_id)
+        return group.name if group is not None else group_id
 
     def disconnected(self) -> None:
         with self.lock:
@@ -141,6 +155,7 @@ class SectorService:
                 selected,
                 self._members(selected) if selected else (),
                 self._failed,
+                tuple(reversed(self._alerts)),
             )
 
     def _members(self, group_id: str) -> tuple[MemberView, ...]:
