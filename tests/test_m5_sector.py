@@ -315,6 +315,17 @@ class ServiceTests(unittest.TestCase):
             self.assertEqual(in_session(datetime(2026, 11, 9, hour, minute, tzinfo=TAIPEI)), expected)
         self.assertFalse(in_session(WEEKEND))
 
+    def test_leader_ignores_a_round_of_old_rows_and_a_future_outlier(self):
+        old = OPEN - timedelta(days=3)
+        self.rows[0] = row('2330', '9.90', 400, 'UP', at=old)
+        self.service.refresh()
+        self.assertTrue(all(member.leader_at is None for member in self.service.board('industry.24').members))
+        self.rows[0] = row('2330', '9.90', 400, 'UP', at=OPEN)
+        self.rows[1] = row('2454', '1.00', 300, '', at=OPEN + timedelta(days=1))
+        self.service.refresh()
+        members = {member.code: member for member in self.service.board('industry.24').members}
+        self.assertEqual(members['2330'].leader_at, OPEN)
+
     def test_unknown_group_selection_is_ignored(self):
         self.service.refresh()
         view = self.service.board('does-not-exist')
@@ -448,6 +459,43 @@ class BoardWidgetTests(unittest.TestCase):
         self.assertEqual(widget.stock_id, 'TWSE:2330')
         chosen.pop(0)(True, None)
         self.assertEqual(widget.stock_id, 'TWSE:2454')
+
+    def test_failed_selection_can_be_retried_and_does_not_drop_the_queued_click(self):
+        widget, service = self.make()
+        widget.render_board(service.board('industry.24'))
+        calls = []
+        widget._submit = lambda operation, completed: calls.append(completed)
+        widget.select_stock('TWSE:2330')
+        widget.select_stock('TWSE:2454')
+        calls.pop(0)(None, RuntimeError('x'))
+        self.assertEqual(widget.stock_id, 'TWSE:2454')
+        calls.pop(0)(None, RuntimeError('x'))
+        self.assertEqual(widget.stock_id, '')
+        widget.select_stock('TWSE:2454')
+        self.assertEqual((widget.stock_id, len(calls)), ('TWSE:2454', 1))
+
+    def test_stale_detail_fetch_does_not_block_the_next_stock(self):
+        widget, service = self.make()
+        widget.render_board(service.board('industry.24'))
+        calls = []
+        widget._submit = lambda operation, completed: calls.append((operation, completed))
+        widget.stock_id = 'TWSE:2330'
+        widget._refresh_detail()
+        widget.stock_id = 'TWSE:2454'
+        widget._refresh_detail()
+        self.assertEqual(len(calls), 2)
+        calls[0][1](None, RuntimeError('late'))
+        self.assertEqual(widget._detail_loading, ('TWSE:2454', '1m'))
+
+    def test_first_round_failure_is_visible_instead_of_loading_forever(self):
+        widget, service = self.make()
+        service.disconnected()
+        service.source.fail = True
+        service.refresh()
+        view = service.board()
+        self.assertEqual((view.state, view.failed), ('EMPTY', True))
+        widget.render_board(view)
+        self.assertIn('失敗', widget.status.text())
 
     def test_a_failed_selection_is_reported_not_left_blank(self):
         widget, service = self.make()

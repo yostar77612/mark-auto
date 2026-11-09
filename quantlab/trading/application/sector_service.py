@@ -102,7 +102,11 @@ class SectorService:
 
     def _track_limit_up(self, rows: dict[str, QuoteRow]) -> None:
         latest = max((row.at for row in rows.values()), default=None)
-        day = latest.astimezone(_TAIPEI).date() if latest is not None else None
+        today = self.now().astimezone(_TAIPEI).date()
+        # A stray future timestamp must not move the day; in session only today's rows can set a leader time.
+        day = min(latest.astimezone(_TAIPEI).date(), today) if latest is not None else None
+        if in_session(self.now()) and day != today:
+            day = None
         if day != self._limit_day:
             self._first_limit_up, self._limit_day = {}, day
         for code, row in rows.items():
@@ -143,7 +147,7 @@ class SectorService:
             now = self.now()
             state = self._state(now)
             if state in ('OFFLINE', 'EMPTY'):
-                return SectorBoardView(state, interval_seconds=self.interval_seconds)
+                return SectorBoardView(state, interval_seconds=self.interval_seconds, failed=self._failed)
             selected = group_id if group_id in self._groups else ''
             return SectorBoardView(
                 state,
