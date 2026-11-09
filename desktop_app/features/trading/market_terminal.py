@@ -25,6 +25,7 @@ class MarketTerminalWidget(QWidget):
         self._generation, self._series_loading, self._pending, self._busy = 0, False, False, False
         self._selecting, self._selection_pending, self._ready = False, False, False
         self._pending_retry = False
+        self._book_loading = False
         self._directory, self._history_only, self._terminal_status = tuple(FIXED_INDICES), False, None
         self._sorts, self._last_series, self._occurred_at = {}, None, None
         self._last_warning = ''
@@ -34,10 +35,10 @@ class MarketTerminalWidget(QWidget):
         self.render(state)
         self.refresh_directory(initial=True)
 
-    def _submit(self, operation, completed):
+    def _submit(self, operation, completed, *, quiet=False):
         def finish(value, error):
             self._requests.discard(result)
-            if error is not None:
+            if error is not None and not quiet:
                 self.show_message(ui_text('watch.request_error'))
             completed(value, error)
 
@@ -118,6 +119,23 @@ class MarketTerminalWidget(QWidget):
             self.refresh_directory()
         if self._ready and not self._series_loading and not self._selecting:
             self.load_series()
+        self.load_order_book()
+
+    def load_order_book(self):
+        if self._book_loading or self._selecting or not self._ready:
+            return
+        if self.state.market_connection != 'CONNECTED':
+            self.order_book.clear(ui_text('orderbook.offline'))
+            return
+        self._book_loading = True
+        key = self.current_instrument
+
+        def completed(value, error):
+            self._book_loading = False
+            if error is None and key == self.current_instrument:
+                self.order_book.render_view(value, *self.colours(self))
+
+        self._submit(lambda: self.facade.order_book(key), completed, quiet=True)
 
     def sort_quotes(self, table, column):
         previous = self._sorts.get(table)

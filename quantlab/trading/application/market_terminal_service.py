@@ -1,5 +1,6 @@
 """Watch-only subscriptions and durable chart queries, independent of execution."""
 
+from collections import deque
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta, timezone
 from threading import RLock
@@ -15,8 +16,10 @@ from quantlab.trading.ports.history import HistoryUsage, KlineStorePort, MarketS
 from .contracts import MarketSeriesPage, MarketSeriesQuery, MarketWatchView, OverviewMarketSummary
 from .history_sync import HistorySync, HistorySyncState
 from .market_terminal_views import watch_view
+from .order_book_contracts import OrderBookView, TapeEntry
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
+TAPE_LIMIT = 200
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,11 @@ class MarketTerminalService:
         self._last_connected = False
         self._await_tick: set[str] = set()
         self._ticks: dict[str, Tick] = {}
+        self._tape: dict[str, deque[TapeEntry]] = {}
+        self._tape_totals: dict[str, list[int]] = {}
+        self._tape_since: dict[str, datetime] = {}
+        self._bidask_id = ''
+        self._bidask_limited = False
         self._minutes: dict[str, MinuteState] = {}
         self._live: dict[str, tuple[LiveBar, ...]] = {}
         self._revision = 0
@@ -96,12 +104,17 @@ class MarketTerminalService:
             self.active = True
             self.subscriptions.clear()
             self.temporary_id = ''
+            self._tape.clear()
+            self._tape_totals.clear()
+            self._tape_since.clear()
+            self._bidask_id = ''
             # One instrument the broker cannot subscribe must not fail the whole connection.
             for key in (*[item.instrument_id for item in FIXED_INDICES], *self.watchlist):
                 self._try(self._subscribe, self.resolve(key))
             main = self.resolve(self.selected)
             if main.instrument_id not in self.subscriptions:
                 self._try(self._temporary, main)
+            self._sync_bidask()
             if self._has_connected:
                 self.history.reconnected(tuple(self.subscriptions.values()))
             else:
@@ -117,7 +130,53 @@ class MarketTerminalService:
             self._minutes = {key: replace(state, bar=replace(state.bar, incomplete=True)) for key, state in self._minutes.items()}
             self.subscriptions.clear()
             self.temporary_id = ''
+            self._bidask_id = ''
             self._revision += 1
+
+    def _slots(self) -> int:
+        """Tick subscriptions plus the one five-level slot, as the session counts them."""
+        return len(self.subscriptions) + (1 if self._bidask_id else 0)
+
+    def _release_bidask(self) -> None:
+        if self._bidask_id:
+            try:
+                self.session.unsubscribe_bidask(self._bidask_id)
+            except DomainError:
+                pass
+            self._bidask_id = ''
+
+    def _sync_bidask(self) -> None:
+        """Only the selected stock gets five levels; a failed or over-quota subscribe degrades quietly."""
+        self._bidask_limited = False
+        if not self.session.connected:
+            self._bidask_id = ''
+            return
+        item = self._all_instruments().get(self.selected)
+        wanted = item.instrument_id if item is not None and item.kind is WatchKind.STOCK else ''
+        if self._bidask_id != wanted:
+            self._release_bidask()
+        if wanted and wanted != self._bidask_id:
+            try:
+                self.session.subscribe_bidask(item)
+                self._bidask_id = wanted
+            except DomainError:
+                self._bidask_limited = True
+
+    def order_book(self, instrument_id: str) -> OrderBookView:
+        item = self.resolve(instrument_id)
+        with self.lock:
+            totals = self._tape_totals.get(instrument_id, [0, 0, 0])
+            return OrderBookView(
+                instrument_id,
+                supported=item.kind is WatchKind.STOCK,
+                bidask=self.session.bidask(instrument_id) if instrument_id == self._bidask_id else None,
+                bidask_limited=self._bidask_limited and instrument_id == self.selected,
+                tape=tuple(reversed(self._tape.get(instrument_id, ()))),
+                buy_volume=totals[0],
+                sell_volume=totals[1],
+                undecided_volume=totals[2],
+                since=self._tape_since.get(instrument_id),
+            )
 
     @staticmethod
     def _try(subscribe: Callable[[WatchInstrument], bool], item: WatchInstrument) -> None:
@@ -129,7 +188,7 @@ class MarketTerminalService:
     def _subscribe(self, item: WatchInstrument) -> bool:
         if item.instrument_id in self.subscriptions:
             return True
-        if len(self.subscriptions) >= self.settings.subscription_limit:
+        if self._slots() >= self.settings.subscription_limit:
             return False
         self.session.subscribe(item)
         self.subscriptions[item.instrument_id] = item
@@ -150,10 +209,16 @@ class MarketTerminalService:
             if self.temporary_id and self.temporary_id != instrument_id:
                 self.session.unsubscribe(self.temporary_id)
                 self.subscriptions.pop(self.temporary_id, None)
+                self._tape.pop(self.temporary_id, None)
+                self._tape_totals.pop(self.temporary_id, None)
+                self._tape_since.pop(self.temporary_id, None)
                 self.temporary_id = ''
             self.save_selected(instrument_id)
             self.selected = instrument_id
+            if self._bidask_id and self._bidask_id != instrument_id:
+                self._release_bidask()
             live = self._temporary(item) if self.session.connected else False
+            self._sync_bidask()
             if self.session.connected:
                 self.history.browse(item, period, instrument_id in self.watchlist)
             return live
@@ -218,12 +283,21 @@ class MarketTerminalService:
         if not update.accepted:
             return
         self._await_tick.discard(tick.instrument_id)
+        if not tick.instrument_id.startswith('INDEX:'):
+            self._record_tape(tick)
         prior = self._ticks.get(tick.instrument_id)
         if prior is None or tick.source_at >= prior.source_at:
             self._ticks[tick.instrument_id] = tick
         self._retain(update.finalized)
         self._revision += 1
         self.on_tick(tick, (*self._live.get(tick.instrument_id, ()), update.state.bar))
+
+    def _record_tape(self, tick: Tick) -> None:
+        tape = self._tape.setdefault(tick.instrument_id, deque(maxlen=TAPE_LIMIT))
+        self._tape_since.setdefault(tick.instrument_id, tick.source_at)
+        totals = self._tape_totals.setdefault(tick.instrument_id, [0, 0, 0])
+        totals[{'BUY': 0, 'SELL': 1}.get(tick.side, 2)] += tick.volume
+        tape.append(TapeEntry(tick.source_at, tick.price, tick.volume, tick.side))
 
     def _retain(self, bars: tuple[LiveBar, ...]) -> None:
         for bar in bars:
@@ -321,7 +395,7 @@ class MarketTerminalService:
     def health(self, views: tuple[MarketWatchView, ...]) -> OverviewMarketSummary:
         return OverviewMarketSummary(
             tuple(view.health for view in views),
-            len(self.subscriptions),
+            self._slots(),
             self.settings.subscription_limit,
             self.market_revision,
             any(view.health.freshness != 'LIVE' for view in views),
@@ -330,5 +404,5 @@ class MarketTerminalService:
     def status(self) -> MarketTerminalStatus:
         state = self.history.state()
         return MarketTerminalStatus(
-            self.session.connected, len(self.subscriptions), self.settings.subscription_limit, self.temporary_id, state.usage, state, self.warning_code()
+            self.session.connected, self._slots(), self.settings.subscription_limit, self.temporary_id, state.usage, state, self.warning_code()
         )

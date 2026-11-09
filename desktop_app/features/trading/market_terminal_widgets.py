@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QL
 
 from desktop_app.strings.catalog import ui_text
 from desktop_app.features.trading.market_terminal_layout import TerminalWorkspace
+from desktop_app.features.trading.order_book_panel import OrderBookPanel
 from desktop_app.features.trading.market_terminal_search import SymbolSearch
 from quantlab.trading.domain.watch import FIXED_INDICES
 from desktop_app.features.trading.market_terminal_rows import quote_values, quota_text, market_summary
@@ -121,6 +122,7 @@ def build_terminal(host, layout_store, alerts_panel, panel_factory):
     host.index_chart.setMinimumSize(100, 90)
     host.index_chart.installEventFilter(host)
     index_layout.addWidget(host.index_chart, 1)
+    host.order_book = OrderBookPanel()
     host.workspace = TerminalWorkspace(
         host,
         {
@@ -128,6 +130,7 @@ def build_terminal(host, layout_store, alerts_panel, panel_factory):
             'alerts': (ui_text('terminal.alerts'), host.alerts_content),
             'chart': (ui_text('terminal.chart'), chart_panel(host)),
             'index': (ui_text('terminal.taiex'), index),
+            'orderbook': (ui_text('orderbook.title'), host.order_book),
         },
         layout_store,
         panel_factory,

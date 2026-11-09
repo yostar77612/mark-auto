@@ -32,6 +32,7 @@ class Session:
     def __init__(self):
         self.connected = False
         self.subscribed, self.unsubscribed, self.pending, self.queries = [], [], [], []
+        self.bidask_subscribed, self.bidask_unsubscribed, self.latest_bidask = [], [], None
 
     def subscribe(self, item):
         self.subscribed.append(item.instrument_id)
@@ -51,6 +52,15 @@ class Session:
 
     def quote_details(self, instrument_id):
         return {}
+
+    def subscribe_bidask(self, item):
+        self.bidask_subscribed.append(item.instrument_id)
+
+    def unsubscribe_bidask(self, key):
+        self.bidask_unsubscribed.append(key)
+
+    def bidask(self, instrument_id):
+        return self.latest_bidask
 
     def history(self, item, start, end):
         self.queries.append((item.instrument_id, start, end))

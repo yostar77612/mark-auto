@@ -42,6 +42,15 @@ class SessionBridge:
     def drain_tick_losses(self):
         return self._session().drain_tick_losses()
 
+    def subscribe_bidask(self, instrument):
+        self._session().subscribe_bidask(instrument)
+
+    def unsubscribe_bidask(self, instrument_id):
+        self._session().unsubscribe_bidask(instrument_id)
+
+    def bidask(self, instrument_id):
+        return self._session().bidask(instrument_id) if self.connected else None
+
     def quote_details(self, instrument_id):
         if not self.connected:
             return {}

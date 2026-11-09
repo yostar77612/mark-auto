@@ -10,6 +10,8 @@ from quantlab.trading.application.contracts import MarketSeriesPage, MarketSerie
 from quantlab.trading.application.context import QuoteBatch
 from quantlab.trading.application.market_terminal_service import MarketTerminalStatus
 from quantlab.trading.application.history_sync import HistorySyncState
+from quantlab.trading.application.order_book_contracts import OrderBookView, TapeEntry
+from quantlab.trading.domain.bidask import BidAskSnapshot
 from quantlab.trading.application.alert_contracts import AlertCommand, AlertSnapshot
 from quantlab.trading.ports.history import HistoryUsage
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
@@ -31,6 +33,7 @@ class Operation(str, Enum):
     MARKET_STATUS = 'MARKET_STATUS'
     MARKET_PREFERENCES = 'MARKET_PREFERENCES'
     ALERTS = 'ALERTS'
+    ORDER_BOOK = 'ORDER_BOOK'
 
 
 @dataclass(frozen=True)
@@ -56,7 +59,7 @@ class Request:
             raise DomainError('validation_failed', 'missing command')
         if self.operation is Operation.QUOTES and not isinstance(self.quotes, QuoteBatch):
             raise DomainError('validation_failed', 'missing quote batch')
-        if self.operation in (Operation.MARKET_SERIES, Operation.MARKET_SELECT) and not isinstance(self.series, MarketSeriesQuery):
+        if self.operation in (Operation.MARKET_SERIES, Operation.MARKET_SELECT, Operation.ORDER_BOOK) and not isinstance(self.series, MarketSeriesQuery):
             raise DomainError('validation_failed', 'missing series query')
         if self.operation is Operation.ALERTS and not isinstance(self.alert, AlertCommand):
             raise DomainError('validation_failed', 'missing alert command')
@@ -85,8 +88,10 @@ class Response:
     market_status: MarketTerminalStatus | None = None
     market_selected: str = ''
     alerts: AlertSnapshot | None = None
+    order_book: OrderBookView | None = None
     candidates: tuple[CandidateSummaryView, ...] = ()
 
 
 register(Operation, Request, Response, Metrics, QuoteBatch)
 register(WatchInstrument, WatchKind, HistoryUsage, HistorySyncState, MarketTerminalStatus)
+register(OrderBookView, TapeEntry, BidAskSnapshot)

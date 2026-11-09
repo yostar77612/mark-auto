@@ -5,7 +5,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QSplitter, QToolButton, QMenu, QInputDialog
 from desktop_app.strings.catalog import ui_text
 
-PANEL_IDS = ('quotes', 'alerts', 'chart', 'index')
+PANEL_IDS = ('quotes', 'alerts', 'chart', 'index', 'orderbook')
+# Panels added after layouts were first saved; older layout files are completed with them.
+OPTIONAL_PANELS = ('orderbook',)
 
 
 def terminal_preset(name='terminal_default'):
@@ -18,6 +20,7 @@ def terminal_preset(name='terminal_default'):
             'alerts': {'area': 'left', 'position': 1, 'size': 400, 'collapsed': name == 'chart_focus'},
             'chart': {'area': 'center', 'position': 0, 'size': 700, 'collapsed': False},
             'index': {'area': 'center', 'position': 1, 'size': 300, 'collapsed': name == 'chart_focus'},
+            'orderbook': {'area': 'right', 'position': 0, 'size': 700, 'collapsed': name == 'chart_focus'},
         },
     }
 
@@ -27,7 +30,7 @@ class TerminalWorkspace:
 
     def __init__(self, dashboard, contents, store, panel_factory):
         self.dashboard, self.store = dashboard, store
-        self.area_labels = {'left': ui_text('workspace.left'), 'center': ui_text('workspace.center')}
+        self.area_labels = {'left': ui_text('workspace.left'), 'center': ui_text('workspace.center'), 'right': ui_text('workspace.right')}
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.splitter.setObjectName('terminal_panels')
         self.splitter.setAccessibleName(ui_text('terminal.title'))
@@ -38,7 +41,7 @@ class TerminalWorkspace:
             column.setAccessibleName(self.area_labels[area])
             self.splitter.addWidget(column)
             column.splitterMoved.connect(lambda position, index, selected=area: self._sizes_changed(selected))
-        self.splitter.setSizes((400, 600))
+        self.splitter.setSizes((400, 600, 320))
         self.panels = {key: panel_factory(self, key, title, content) for key, (title, content) in contents.items()}
         self.button = QToolButton()
         self.button.setText(ui_text('workspace.layouts'))

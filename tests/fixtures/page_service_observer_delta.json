@@ -475,6 +475,17 @@
             "symbol": "E1QualificationTests.setUp"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m5_order_book.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self",
+            "symbol": "OrderBookServiceTests.setUp"
+          },
+          "count": 1
         }
       ]
     },

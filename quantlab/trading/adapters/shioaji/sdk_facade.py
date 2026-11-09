@@ -188,6 +188,13 @@ class ShioajiSDKFacade:
         version = self._enum('QuoteVersion', 'v1', ('v1',))
         _callable(self._client, 'unsubscribe' if remove else 'subscribe')(contract, quote_type=kind, version=version)
 
+    def market_subscribe_bidask(self, contract: object, *, remove: bool = False) -> None:
+        if sdk_text(sdk_value(contract, 'security_type')) != 'STK':
+            raise DomainError('validation_failed', 'bidask supports stocks only')
+        kind = self._enum('QuoteType', 'bidask', ('bidask',))
+        version = self._enum('QuoteVersion', 'v1', ('v1',))
+        _callable(self._client, 'unsubscribe' if remove else 'subscribe')(contract, quote_type=kind, version=version)
+
     def usage(self) -> object:
         return _callable(self._client, 'usage')()
 

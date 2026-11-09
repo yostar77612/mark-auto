@@ -76,6 +76,9 @@ class FakeApi:
     def set_on_tick_fop_v1_callback(self, callback, **kwargs):
         self.callbacks['fop'] = callback
 
+    def set_on_bidask_stk_v1_callback(self, callback, **kwargs):
+        self.callbacks['bidask'] = callback
+
     def set_on_quote_idx_v1_callback(self, callback):
         self.callbacks['index'] = callback
 

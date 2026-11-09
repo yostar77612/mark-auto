@@ -43,11 +43,17 @@ def valid_name(name):
     )
 
 
-def validate_layout(value, panel_ids=PANEL_IDS, areas=AREAS):
-    """Reject structure/type surprises; clamp strictly integral size hints."""
+def validate_layout(value, panel_ids=PANEL_IDS, areas=AREAS, fill=None, optional=()):
+    """Reject structure/type surprises; clamp strictly integral size hints.
+
+    ``optional`` names panels added after older layouts were saved; a layout lacking only those is
+    completed from the ``fill`` default layout. Any other missing or extra panel is still rejected.
+    """
     if type(value) is not dict or set(value) != {'version', 'panels'} or type(value['version']) is not int or value['version'] != VERSION:
         return None
     panels = value['panels']
+    if type(panels) is dict and fill is not None:
+        panels = {**{key: fill['panels'][key] for key in optional if key not in panels and key in fill['panels']}, **panels}
     if type(panels) is not dict or set(panels) != set(panel_ids):
         return None
     result = {'version': VERSION, 'panels': {}}
@@ -65,8 +71,9 @@ def validate_layout(value, panel_ids=PANEL_IDS, areas=AREAS):
 
 
 class LayoutStore:
-    def __init__(self, directory=None, *, panel_ids=PANEL_IDS, areas=AREAS, file_name=FILE_NAME, default_layout=None):
+    def __init__(self, directory=None, *, panel_ids=PANEL_IDS, areas=AREAS, file_name=FILE_NAME, default_layout=None, optional_panels=()):
         self.panel_ids = tuple(panel_ids)
+        self.optional_panels = tuple(optional_panels)
         self.areas = tuple(areas)
         self.default_layout = deepcopy(default_layout) if default_layout is not None else preset('overview')
         self.path = Path(directory) / file_name if directory is not None else None
@@ -91,11 +98,13 @@ class LayoutStore:
                 or len(value['layouts']) > MAX_LAYOUTS
             ):
                 return
-            self.current = validate_layout(value['current'], self.panel_ids, self.areas) or deepcopy(self.default_layout)
+            self.current = validate_layout(value['current'], self.panel_ids, self.areas, self.default_layout, self.optional_panels) or deepcopy(
+                self.default_layout
+            )
             self.layouts = {
                 name: layout
                 for name, item in value['layouts'].items()
-                if valid_name(name) and (layout := validate_layout(item, self.panel_ids, self.areas)) is not None
+                if valid_name(name) and (layout := validate_layout(item, self.panel_ids, self.areas, self.default_layout, self.optional_panels)) is not None
             }
         except (OSError, ValueError, UnicodeError, RecursionError):
             return

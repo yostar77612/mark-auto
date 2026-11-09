@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery, UiCommand, UiReceipt, UiState
+from quantlab.trading.application.order_book_contracts import OrderBookView
 from quantlab.trading.application.registry import initialize
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
@@ -105,6 +106,12 @@ class IpcFacade:
 
     def market_status(self):
         return self.request(Operation.MARKET_STATUS).market_status
+
+    def order_book(self, instrument_id: str):
+        response = self.request(Operation.ORDER_BOOK, series=MarketSeriesQuery(instrument_id))
+        if not isinstance(response.order_book, OrderBookView):
+            raise DomainError('validation_failed', 'missing order book')
+        return response.order_book
 
     def market_preferences(self) -> str:
         return self.request(Operation.MARKET_PREFERENCES).market_selected

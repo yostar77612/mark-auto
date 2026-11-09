@@ -20,6 +20,7 @@ from quantlab.trading.ports.interfaces import Clock
 from .sdk import SecretResolver, sdk_decimal, sdk_text, sdk_time, sdk_value
 from .sdk_facade import ShioajiSDKFacade
 from .symbol_directory import SymbolDirectory
+from .bidask_stream import ShioajiBidAskStream
 from .tick_stream import ShioajiTickStream, normalise_tick
 
 TAIPEI = ZoneInfo('Asia/Taipei')
@@ -46,7 +47,7 @@ def watch_tick(raw, instrument_id, received_at, resolver):
     stamp = sdk_value(raw, 'datetime')
     if isinstance(stamp, datetime) and stamp.tzinfo is None:
         stamp = stamp.replace(tzinfo=TAIPEI)
-    normalized = SimpleNamespace(datetime=stamp, close=sdk_value(raw, 'close'), volume=sdk_value(raw, 'volume'))
+    normalized = SimpleNamespace(datetime=stamp, close=sdk_value(raw, 'close'), volume=sdk_value(raw, 'volume'), tick_type=getattr(raw, 'tick_type', 0))
     return normalise_tick(normalized, instrument_id, received_at, resolver)
 
 
@@ -77,6 +78,8 @@ class MarketSession:
         self.connected = False
         self.facade: ShioajiSDKFacade | None = None
         self.tick_stream: ShioajiTickStream | None = None
+        self.bidask_stream: ShioajiBidAskStream | None = None
+        self.bidask_subscriptions: dict[str, object] = {}
         self.subscriptions: dict[str, object] = {}
         self._quote_lock = Lock()
         self._details: dict[str, dict[str, object]] = {}
@@ -135,6 +138,8 @@ class MarketSession:
             tick_normalizer=self._watch_tick,
         )
         self.tick_stream.start()
+        self.bidask_stream = ShioajiBidAskStream(self.tick_stream.by_code)
+        self.facade.set_on_bidask_stk_v1_callback(self.bidask_stream.on_bidask)
         self.facade.set_on_quote_idx_v1_callback(self._index_quote)
 
     def _session_down(self, *args) -> None:
@@ -183,7 +188,7 @@ class MarketSession:
     def subscribe(self, instrument: WatchInstrument) -> None:
         if instrument.instrument_id in self.subscriptions:
             return
-        if len(self.subscriptions) >= self.live_settings.subscription_limit:
+        if len(self.subscriptions) + len(self.bidask_subscriptions) >= self.live_settings.subscription_limit:
             raise DomainError('subscription_limit_reached')
         try:
             contract = self._contract(instrument)
@@ -202,6 +207,39 @@ class MarketSession:
             self.tick_stream.set_active(set(self.subscriptions))
             raise DomainError('market_data_subscription_failed' if self.connected else 'market_data_not_connected') from None
 
+    def subscribe_bidask(self, instrument: WatchInstrument) -> None:
+        """Five levels cost one subscription slot, counted with the tick subscriptions."""
+        if instrument.instrument_id in self.bidask_subscriptions:
+            return
+        if instrument.kind is not WatchKind.STOCK:
+            raise DomainError('validation_failed', 'bidask supports stocks only')
+        if len(self.subscriptions) + len(self.bidask_subscriptions) >= self.live_settings.subscription_limit:
+            raise DomainError('subscription_limit_reached')
+        try:
+            contract = self._contract(instrument)
+            self.bidask_stream.by_code[instrument.code] = instrument.instrument_id
+            self.bidask_stream.set_active(set(self.bidask_subscriptions) | {instrument.instrument_id})
+            self.facade.market_subscribe_bidask(contract)
+            self.bidask_subscriptions[instrument.instrument_id] = contract
+        except Exception:
+            self.bidask_stream.set_active(set(self.bidask_subscriptions))
+            raise DomainError('market_data_subscription_failed' if self.connected else 'market_data_not_connected') from None
+
+    def unsubscribe_bidask(self, instrument_id: str) -> None:
+        contract = self.bidask_subscriptions.get(instrument_id)
+        if contract is None:
+            return
+        try:
+            self.facade.market_subscribe_bidask(contract, remove=True)
+        except Exception:
+            raise DomainError('market_data_not_connected') from None
+        finally:
+            del self.bidask_subscriptions[instrument_id]
+            self.bidask_stream.set_active(set(self.bidask_subscriptions))
+
+    def bidask(self, instrument_id: str):
+        return self.bidask_stream.latest(instrument_id) if self.connected and self.bidask_stream is not None else None
+
     def unsubscribe(self, instrument_id: str) -> None:
         contract = self.subscriptions.get(instrument_id)
         if contract is None:
@@ -219,6 +257,9 @@ class MarketSession:
         if self.tick_stream is not None:
             self.tick_stream.set_active(set())
         subscriptions, self.subscriptions = self.subscriptions, {}
+        bidasks, self.bidask_subscriptions = self.bidask_subscriptions, {}
+        if self.bidask_stream is not None:
+            self.bidask_stream.set_active(set())
         with self._quote_lock:
             self._details.clear()
         if facade is None:
@@ -226,6 +267,8 @@ class MarketSession:
         try:
             for contract in subscriptions.values():
                 facade.market_subscribe(contract, remove=True)
+            for contract in bidasks.values():
+                facade.market_subscribe_bidask(contract, remove=True)
         except Exception:
             raise DomainError('market_data_not_connected') from None
         finally:

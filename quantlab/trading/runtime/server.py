@@ -78,6 +78,8 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         return Response(request.request_id, market_status=bundle.market_terminal.status())
     if request.operation is Operation.MARKET_PREFERENCES:
         return Response(request.request_id, market_selected=bundle.market_terminal.selected)
+    if request.operation is Operation.ORDER_BOOK:
+        return Response(request.request_id, order_book=bundle.market_terminal.order_book(request.series.instrument_id))
     if request.operation is Operation.ALERTS:
         return Response(request.request_id, alerts=bundle.alerts.execute(request.alert))
     if request.operation in (Operation.COMMAND, Operation.BUILD_AUTO_STRATEGY, Operation.AUTO_STRATEGY_COMMAND):

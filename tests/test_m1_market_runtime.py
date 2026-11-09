@@ -76,7 +76,8 @@ class MarketRuntimeTests(unittest.TestCase):
         self.assertEqual(self.request(Operation.MARKET_PREFERENCES).market_selected, STOCK.instrument_id)
         self.assertTrue(self.command(UiAction.SAVE_SETTINGS, watchlist=(STOCK.instrument_id,)).accepted)
         self.assertEqual(self.bundle.snapshot().watchlist, (STOCK.instrument_id,))
-        self.assertEqual(sum(call[0] == 'subscribe' and call[1] == '2330' for call in self.api.calls), 1)
+        self.assertEqual(sum(call[0] == 'subscribe' and call[1] == '2330' and call[2] == 'tick' for call in self.api.calls), 1)
+        self.assertEqual(sum(call[0] == 'subscribe' and call[1] == '2330' and call[2] == 'bidask' for call in self.api.calls), 1)
         start = datetime(2026, 10, 30, tzinfo=timezone.utc)
         self.bundle.market_history.request(STOCK, start, start + timedelta(days=1), priority=-1)
         self.bundle.market_history.run_next()
@@ -84,7 +85,7 @@ class MarketRuntimeTests(unittest.TestCase):
         self.assertEqual(len(page.bars), 1)
         self.assertEqual(page.bars[0].start.hour, 1)
         status = self.request(Operation.MARKET_STATUS).market_status
-        self.assertEqual(status.subscription_count, 3)
+        self.assertEqual(status.subscription_count, 4)  # two indices, the watched stock and its five-level slot
         self.assertTrue(status.connected)
         self.assertEqual(self.secrets.references, ['MarkAuto/v2/broker/sinopac'])
         self.assertTrue(self.command(UiAction.DISCONNECT_MARKET_DATA).accepted)
