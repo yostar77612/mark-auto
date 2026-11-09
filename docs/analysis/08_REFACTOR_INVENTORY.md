@@ -988,7 +988,6 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/domain/sector.py` | 117 | domain | `quantlab/trading/domain/sector.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/sector.py` | 13 | application | `quantlab/trading/ports/sector.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/sector_board.py` | 80 | composition | `quantlab/trading/runtime/sector_board.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
-| `tools/m5_market_probe.py` | 102 | tooling | `tools/m5_market_probe.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `tools/m5_sector_snapshot.py` | 146 | tooling | `tools/m5_sector_snapshot.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
