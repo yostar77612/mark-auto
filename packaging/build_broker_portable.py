@@ -107,7 +107,7 @@ def main(argv=None):
     parser.add_argument('--sdk-wheel', type=Path, required=True, help='Exact downloaded 1.7.9 Windows abi3 wheel')
     parser.add_argument('--runtime', type=Path, default=ROOT / 'build/broker-python')
     parser.add_argument('--output', type=Path, default=ROOT / 'dist/broker-enabled')
-    parser.add_argument('--version', default='0.3.0')
+    parser.add_argument('--version', default='0.4.0')
     parser.add_argument('--prepare-only', action='store_true')
     parser.add_argument('--freeze-reviewed-source', action='store_true')
     args = parser.parse_args(argv)

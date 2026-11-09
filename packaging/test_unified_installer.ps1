@@ -1,5 +1,5 @@
 # Unified UI lifecycle variant. The historical v1 test_installer.ps1 stays unchanged.
-param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.3.0', [ValidatePattern('^\d+\.\d+\.\d+$')][string]$BaselineVersion = '0.0.0',
+param([ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version = '0.4.0', [ValidatePattern('^\d+\.\d+\.\d+$')][string]$BaselineVersion = '0.0.0',
       [string]$BaselineAppVersion = '', [string]$BaselineManifest = '', [string]$CandidateManifest = '',
       [switch]$CreateRecoveryHandoff,
       [ValidateSet('HostedCi','DisposableVm','PreparedHost')][string]$AcceptanceScope,
