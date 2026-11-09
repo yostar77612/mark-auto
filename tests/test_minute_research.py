@@ -94,10 +94,9 @@ class MinuteResearchTests(unittest.TestCase):
         with self.assertRaises(DomainError):
             self.bars(settings, self.rows[:-1])
 
-    def test_typed_parameters_fail_closed_for_both_minute_intervals(self):
+    def test_typed_parameters_use_frozen_interval_and_contract_count_for_both_minute_intervals(self):
         for interval in ('1m', '5m'):
-            settings = replace(self.settings, interval=interval)
-            parameters = StrategyParameters(interval, Decimal('0.01'), Decimal('100000'), contracts=3)
+            settings = replace(self.settings, interval=interval, maximum=5)
             definition = StrategyDefinition(
                 'minute-fixture',
                 1,
@@ -111,13 +110,26 @@ class MinuteResearchTests(unittest.TestCase):
                 'fixture-risk',
             )
             for rules in (None, definition):
-                legacy = replace(self.strategy, definition=rules)
+                untyped = replace(self.strategy, definition=rules)
+                base = self.run_research(settings=settings, strategy=untyped)
                 with self.subTest(interval=interval, definition=rules is not None):
-                    self.assertTrue(self.run_research(settings=settings, strategy=legacy).trades)
-                    for typed in (parameters, replace(parameters, contracts=1, instrument_rule='TMF_NEAR')):
-                        with self.assertRaisesRegex(DomainError, 'typed strategy parameters') as raised:
-                            self.run_research(settings=settings, strategy=replace(legacy, parameters=typed))
-                        self.assertEqual(raised.exception.code, 'capability_missing')
+                    self.assertTrue(base.trades)
+                    for contracts, rule in ((1, 'EXACT'), (3, 'EXACT'), (2, 'TMF_NEAR')):
+                        parameters = StrategyParameters(interval, Decimal('0.01'), Decimal('100000'), contracts=contracts, instrument_rule=rule)
+                        typed = self.run_research(settings=settings, strategy=replace(untyped, parameters=parameters))
+                        self.assertEqual(len(typed.trades), len(base.trades))
+                        for typed_trade, base_trade in zip(typed.trades, base.trades):
+                            self.assertEqual((typed_trade.entry_index, typed_trade.exit_index), (base_trade.entry_index, base_trade.exit_index))
+                            self.assertEqual(typed_trade.quantity, contracts * self.spec.lot_size)
+                            self.assertEqual(typed_trade.gross, base_trade.gross * contracts)
+                            self.assertGreaterEqual(typed_trade.costs, base_trade.costs)
+                        # The frozen parameters are part of the evidence, and the minute namespace stays separate.
+                        self.assertNotEqual(typed.fingerprint, base.fingerprint)
+                        self.assertEqual(typed.partition, 'TRAINING')
+                    mismatched = StrategyParameters('5m' if interval == '1m' else '1m', Decimal('0.01'), Decimal('100000'))
+                    with self.assertRaises(DomainError) as raised:
+                        self.run_research(settings=settings, strategy=replace(untyped, parameters=mismatched))
+                    self.assertEqual(raised.exception.code, 'validation_failed')
 
     def test_historical_applicability_preserves_evidence_and_grid_boundaries(self):
         session = self.calendar.sessions[0]
