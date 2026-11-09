@@ -6,73 +6,114 @@ pages always come from Application, including every selected period.
 """
 
 from dataclasses import replace
+from itertools import count
+from queue import Empty, SimpleQueue
 from threading import Thread
-from PySide6.QtCore import Qt, QObject, QRunnable, Signal, Slot
+from PySide6.QtCore import Qt, QObject, QRunnable, QTimer, Slot
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QWidget, QLabel, QLineEdit, QPushButton, QTableWidget, QHeaderView, QHBoxLayout, QVBoxLayout, QSplitter, QScrollArea, QLayout
+from PySide6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTableWidget,
+    QHeaderView,
+    QHBoxLayout,
+    QVBoxLayout,
+    QSplitter,
+    QScrollArea,
+    QLayout,
+)
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiAction, UiCommand
 from desktop_app.features.trading.market_watch_rows import freshness_text, header_text, quote_detail_text, watch_rows, series_bars, series_status
 from desktop_app.features.trading.widgets import rows, selected_id
 
 
-# A worker thread's _Request holds the last Python reference once the GUI thread has finished with a
-# result. Dropping it there would destroy the QObject off its own thread, so results stay registered
-# here until Qt has deleted them on the GUI thread.
-_LIVE_RESULTS = set()
+# Answers from worker threads are queued in plain Python and handed over by a GUI-thread timer: no Qt signal is
+# ever emitted from, or object released on, a worker thread (CI saw intermittent access violations with
+# QThreadPool runnables and cross-thread signals). Results stay registered until delivered.
+_LIVE_RESULTS = {}  # token -> result; touched on the GUI thread only. Workers carry just the token.
+_DONE = SimpleQueue()
+_TOKENS = count(1)
+_PUMP = None
+
+
+class _Pump(QObject):
+    """Delivers finished requests on the GUI thread; runs only while something is outstanding."""
+
+    def __init__(self):
+        super().__init__(QApplication.instance())
+        self.outstanding = 0
+        self.timer = QTimer(self)
+        self.timer.setInterval(8)
+        self.timer.timeout.connect(self.drain)
+
+    def expect(self):
+        self.outstanding += 1
+        self.timer.start()
+
+    @Slot()
+    def drain(self):
+        while True:
+            try:
+                token, value, error = _DONE.get_nowait()
+            except Empty:
+                break
+            self.outstanding -= 1
+            result = _LIVE_RESULTS.pop(token, None)
+            if result is not None:
+                result.finish(value, error)
+        if self.outstanding <= 0:
+            self.outstanding = 0
+            self.timer.stop()
+
+
+def _pump():
+    global _PUMP
+    app = QApplication.instance()
+    if _PUMP is None or _PUMP.parent() is not app:
+        _PUMP = _Pump()
+    return _PUMP
 
 
 class _Result(QObject):
-    # The answer travels as plain Python attributes; only a payload-free signal crosses threads, so no Python
-    # object is copied or released by Qt off the GUI thread.
-    ready = Signal()
-
     def __init__(self, completed):
         super().__init__()
         self.completed = completed
-        self.value = self.error = None
-        _LIVE_RESULTS.add(self)
-        self.ready.connect(self.finish)
-
-    def deliver(self, value, error):
-        self.value, self.error = value, error
-        self.ready.emit()
+        self.token = next(_TOKENS)
+        _LIVE_RESULTS[self.token] = self
+        _pump().expect()
 
     @Slot()
     def cancel(self):
         self.completed = None
 
-    @Slot()
-    def finish(self):
-        value, error, self.value, self.error = self.value, self.error, None, None
+    def finish(self, value, error):
         if self.completed is not None:
             self.completed(value, error)
-        self.destroyed.connect(lambda *_, item=self: _LIVE_RESULTS.discard(item))
         self.deleteLater()
 
 
 def start_request(operation, result):
-    """Run one request on a plain Python thread.
-
-    Qt's QThreadPool takes ownership of a Python QRunnable and may free the wrapper on the worker thread;
-    CI saw intermittent access violations in the first event pump after such runnables. A Python thread keeps
-    the request alive from the Python side only and delivers the answer through the queued ``ready`` signal.
-    """
+    """Run one request on a plain Python thread; the answer is queued for the GUI-thread pump."""
     Thread(target=_Request(operation, result).run, name='market-request', daemon=True).start()
 
 
 class _Request(QRunnable):
     def __init__(self, operation, result):
         super().__init__()
-        self.operation, self.result = operation, result
+        # Only the token goes to the worker: the QObject itself is never referenced off the GUI thread.
+        self.operation, self.token = operation, result.token
 
     def run(self):
         try:
             value = self.operation()
         except Exception as error:
-            self.result.deliver(None, error)
+            _DONE.put((self.token, None, error))
         else:
-            self.result.deliver(value, None)
+            _DONE.put((self.token, value, None))
 
 
 class MarketWatchWidget(QWidget):
