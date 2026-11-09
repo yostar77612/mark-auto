@@ -30,8 +30,10 @@ def clean_name(name: str) -> str:
 
 def clean_codes(codes: tuple[str, ...]) -> tuple[str, ...]:
     """Four-digit ordinary stock codes only; duplicates collapse, order is kept."""
+    if not isinstance(codes, tuple) or any(not isinstance(code, str) for code in codes):
+        raise DomainError('validation_failed', 'sector group codes')
     result = tuple(dict.fromkeys(codes))
-    if len(result) > MAX_CODES or any(not isinstance(code, str) or not eligible_stock(code) for code in result):
+    if len(result) > MAX_CODES or any(not eligible_stock(code) for code in result):
         raise DomainError('validation_failed', 'sector group codes')
     return result
 
