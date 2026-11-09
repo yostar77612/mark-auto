@@ -133,19 +133,28 @@ class MarketTerminalService:
             self._bidask_id = ''
             self._revision += 1
 
+    def _slots(self) -> int:
+        """Tick subscriptions plus the one five-level slot, as the session counts them."""
+        return len(self.subscriptions) + (1 if self._bidask_id else 0)
+
+    def _release_bidask(self) -> None:
+        if self._bidask_id:
+            try:
+                self.session.unsubscribe_bidask(self._bidask_id)
+            except DomainError:
+                pass
+            self._bidask_id = ''
+
     def _sync_bidask(self) -> None:
         """Only the selected stock gets five levels; a failed or over-quota subscribe degrades quietly."""
+        self._bidask_limited = False
         if not self.session.connected:
             self._bidask_id = ''
             return
         item = self._all_instruments().get(self.selected)
         wanted = item.instrument_id if item is not None and item.kind is WatchKind.STOCK else ''
-        if self._bidask_id and self._bidask_id != wanted:
-            try:
-                self.session.unsubscribe_bidask(self._bidask_id)
-            finally:
-                self._bidask_id = ''
-        self._bidask_limited = False
+        if self._bidask_id != wanted:
+            self._release_bidask()
         if wanted and wanted != self._bidask_id:
             try:
                 self.session.subscribe_bidask(item)
@@ -179,7 +188,7 @@ class MarketTerminalService:
     def _subscribe(self, item: WatchInstrument) -> bool:
         if item.instrument_id in self.subscriptions:
             return True
-        if len(self.subscriptions) >= self.settings.subscription_limit:
+        if self._slots() >= self.settings.subscription_limit:
             return False
         self.session.subscribe(item)
         self.subscriptions[item.instrument_id] = item
@@ -206,6 +215,8 @@ class MarketTerminalService:
                 self.temporary_id = ''
             self.save_selected(instrument_id)
             self.selected = instrument_id
+            if self._bidask_id and self._bidask_id != instrument_id:
+                self._release_bidask()
             live = self._temporary(item) if self.session.connected else False
             self._sync_bidask()
             if self.session.connected:
@@ -384,7 +395,7 @@ class MarketTerminalService:
     def health(self, views: tuple[MarketWatchView, ...]) -> OverviewMarketSummary:
         return OverviewMarketSummary(
             tuple(view.health for view in views),
-            len(self.subscriptions),
+            self._slots(),
             self.settings.subscription_limit,
             self.market_revision,
             any(view.health.freshness != 'LIVE' for view in views),
@@ -393,5 +404,5 @@ class MarketTerminalService:
     def status(self) -> MarketTerminalStatus:
         state = self.history.state()
         return MarketTerminalStatus(
-            self.session.connected, len(self.subscriptions), self.settings.subscription_limit, self.temporary_id, state.usage, state, self.warning_code()
+            self.session.connected, self._slots(), self.settings.subscription_limit, self.temporary_id, state.usage, state, self.warning_code()
         )

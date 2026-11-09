@@ -1,5 +1,6 @@
 """M5-1: tick side, five-level normalisation, tape buffer, bidask subscription follows selection."""
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -15,6 +16,7 @@ from quantlab.trading.application.history_sync import HistorySync
 from quantlab.trading.application.market_terminal_service import TAPE_LIMIT, MarketTerminalService
 from quantlab.trading.application.order_book_contracts import OrderBookView, TapeEntry
 from quantlab.trading.domain.bidask import BidAskSnapshot
+from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES
@@ -163,6 +165,44 @@ class OrderBookServiceTests(unittest.TestCase):
         self.session.pending = [tick('NONE', 0, 1, instrument=index, price='20000')]
         self.service.poll()
         self.assertEqual(self.service.order_book(index).tape, ())
+
+    def test_full_budget_with_the_bidask_slot_keeps_selection_and_book_consistent(self):
+        class Limited(Session):
+            limit = 4
+
+            def subscribe(self, item):
+                if len(self.subscribed) - len(self.unsubscribed) + len(self.bidask_subscribed) - len(self.bidask_unsubscribed) >= self.limit:
+                    raise DomainError('subscription_limit_reached')
+                super().subscribe(item)
+
+        self.session = Limited()
+        self.service = MarketTerminalService(
+            self.store,
+            self.history,
+            self.session,
+            lambda: (*FIXED_INDICES, STOCK, OTHER),
+            now=lambda: NOW,
+            settings=replace(LiveMarketSettings(), subscription_limit=4),
+        )
+        self.service.watchlist = (STOCK.instrument_id,)
+        self.connect(STOCK.instrument_id)
+        self.assertEqual(self.service.status().subscription_count, 4)
+        # The selected stock's ticks outrank its five levels: the old book is released first, the tick
+        # subscription succeeds, and the new book degrades to 'limited' instead of failing the selection.
+        self.assertTrue(self.service.select(OTHER.instrument_id))
+        self.assertEqual(self.session.bidask_unsubscribed, [STOCK.instrument_id])
+        self.assertEqual(self.session.bidask_subscribed, [STOCK.instrument_id])
+        self.assertTrue(self.service.order_book(OTHER.instrument_id).bidask_limited)
+
+    def test_bidask_unsubscribe_failure_still_moves_to_the_new_stock(self):
+        self.connect(STOCK.instrument_id)
+
+        def broken(key):
+            raise DomainError('market_data_not_connected')
+
+        self.session.unsubscribe_bidask = broken
+        self.service.select(OTHER.instrument_id)
+        self.assertEqual(self.session.bidask_subscribed[-1], OTHER.instrument_id)
 
     def test_dropped_temporary_stock_starts_a_fresh_tape(self):
         self.connect(STOCK.instrument_id)
