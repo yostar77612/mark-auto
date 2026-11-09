@@ -4,12 +4,12 @@ from dataclasses import replace
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from PySide6.QtCore import Qt, QThreadPool, QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QMenu, QPushButton, QSplitter, QTableWidget, QVBoxLayout, QWidget
 
 from desktop_app.features.trading.market_terminal_widgets import QuoteItem
-from desktop_app.features.trading.market_watch import _Request, _Result
+from desktop_app.features.trading.market_watch import _Result, start_request
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.order_book_panel import OrderBookPanel
 from desktop_app.strings.catalog import ui_text
@@ -174,7 +174,7 @@ class SectorBoardWidget(QWidget):
         result = _Result(finish)
         self._requests.add(result)
         self.destroyed.connect(result.cancel)
-        QThreadPool.globalInstance().start(_Request(operation, result))
+        start_request(operation, result)
 
     def showEvent(self, event):
         super().showEvent(event)
