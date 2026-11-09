@@ -81,6 +81,11 @@ def synthetic_service():
                 NOW - timedelta(minutes=9 - 3 * index), group_id, names[group_id], 'BURST', direction, 320_000_000, 80_000_000, Decimal('4.0'), members=7
             )
         )
+    service.monitor_info = lambda: (
+        ('builtin.cooling', 'builtin.power', 'builtin.memory'),
+        (('builtin.cooling', 5, 7), ('builtin.power', 5, 5), ('builtin.memory', 8, 8)),
+    )
+    service.side_ratio = lambda code: Decimal(30 + (int(code) * 7) % 60) / 100
     return service, stocks
 
 
@@ -146,7 +151,7 @@ def capture(out):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--out', type=Path, default=Path('docs/analysis/m5-4-alerts'))
+    parser.add_argument('--out', type=Path, default=Path('docs/analysis/m5-5-monitor'))
     capture(parser.parse_args().out)
 
 

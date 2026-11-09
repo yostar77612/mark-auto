@@ -2,6 +2,7 @@
 
 from collections import deque
 from datetime import date, datetime, time
+from decimal import Decimal
 from threading import RLock
 from typing import Callable
 from zoneinfo import ZoneInfo
@@ -13,7 +14,7 @@ from quantlab.trading.domain.sector import QuoteRow, SectorGroup, SectorStat, co
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 from quantlab.trading.ports.sector import SnapshotSourcePort
-from .sector_contracts import MemberView, SectorBoardView
+from .sector_contracts import MemberView, MonitorCount, SectorBoardView
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 SESSION_START, SESSION_END = time(8, 55), time(13, 35)
@@ -54,10 +55,11 @@ class SectorService:
         self._first_limit_up: dict[str, datetime] = {}
         self._limit_day: date | None = None
         self._generation = 0
-        self.new_alerts: tuple[SectorAlert, ...] = ()
         self._alerts: deque[SectorAlert] = deque(maxlen=200)
         self.on_round: Callable[[datetime, tuple[SectorStat, ...]], tuple[SectorAlert, ...]] = lambda now, stats: ()
         self.on_alert: Callable[[SectorAlert], None] = lambda alert: None
+        self.monitor_info: Callable[[], tuple[tuple[str, ...], tuple[tuple[str, int, int], ...]]] = lambda: ((), ())
+        self.side_ratio: Callable[[str], Decimal | None] = lambda code: None
 
     def stocks(self) -> tuple[WatchInstrument, ...]:
         return tuple(item for item in self.directory() if item.kind is WatchKind.STOCK and eligible_stock(item.code))
@@ -95,9 +97,12 @@ class SectorService:
             self._groups = {group.id: group for group in groups}
             self._stats = compute_stats(groups, rows)
             self._track_limit_up(rows)
-            self.new_alerts = self.on_round(self._fetched_at, self._stats)
-            self._alerts.extend(self.new_alerts)
-        for alert in self.new_alerts:
+            fetched, stats = self._fetched_at, self._stats
+        # Hooks run outside the lock: they may subscribe to ticks (SDK calls) and call back into the service.
+        alerts = self.on_round(fetched, stats)
+        with self.lock:
+            self._alerts.extend(alerts)
+        for alert in alerts:
             self.on_alert(alert)
 
     def _track_limit_up(self, rows: dict[str, QuoteRow]) -> None:
@@ -118,6 +123,17 @@ class SectorService:
             if self._rows:
                 self._groups = {group.id: group for group in groups}
                 self._stats = compute_stats(groups, self._rows)
+
+    def candidates(self, group_id: str) -> tuple[tuple[WatchInstrument, int], ...]:
+        """Members of a group that have a quote, with their turnover, for choosing what to subscribe."""
+        with self.lock:
+            group = self._groups.get(group_id)
+            if group is None:
+                return ()
+            rows = self._rows
+            codes = [code for code in dict.fromkeys(group.codes) if code in rows]
+        stocks = {item.code: item for item in self.stocks()}
+        return tuple((stocks[code], rows[code].total_amount) for code in codes if code in stocks)
 
     def group_name(self, group_id: str) -> str:
         group = self._groups.get(group_id)
@@ -145,6 +161,7 @@ class SectorService:
             if state in ('OFFLINE', 'EMPTY'):
                 return SectorBoardView(state, interval_seconds=self.interval_seconds)
             selected = group_id if group_id in self._groups else ''
+            monitored, counts = self.monitor_info()
             return SectorBoardView(
                 state,
                 max((row.at for row in self._rows.values()), default=None),
@@ -156,6 +173,8 @@ class SectorService:
                 self._members(selected) if selected else (),
                 self._failed,
                 tuple(reversed(self._alerts)),
+                monitored,
+                tuple(MonitorCount(*item) for item in counts),
             )
 
     def _members(self, group_id: str) -> tuple[MemberView, ...]:
@@ -175,6 +194,7 @@ class SectorService:
                 self._rows[code].limit,
                 limit_up.get(code),
                 code == leader,
+                self.side_ratio(code),
             )
             for code in codes
         ]

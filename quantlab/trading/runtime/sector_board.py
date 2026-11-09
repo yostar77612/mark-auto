@@ -9,6 +9,7 @@ from quantlab.trading.adapters.storage.sector_store import SectorGroupStore
 from quantlab.trading.adapters.storage.sector_minute_store import SectorMinuteStore
 from quantlab.trading.application.sector_group_editor import SectorGroupEditor
 from quantlab.trading.application.sector_minutes import MinuteAggregator
+from quantlab.trading.application.sector_monitor import SectorMonitor
 from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.validation import DomainError
 from .sector_settings import SectorAlertSettings
@@ -34,6 +35,31 @@ class SnapshotBridge:
         if session is not self._session:
             self._session, self._source = session, ShioajiSnapshotSource(session)
         return self._source.snapshots(instruments)
+
+
+class MonitorSubscriptions:
+    """Tick subscriptions on the connected session for the sector monitor."""
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def _session(self):
+        session = self.connection.session
+        if session is None or not session.connected:
+            raise DomainError('market_data_not_connected')
+        return session
+
+    def free_slots(self):
+        return max(0, self._session().free_slots())
+
+    def is_subscribed(self, instrument_id):
+        return instrument_id in self._session().subscriptions
+
+    def subscribe(self, instrument):
+        self._session().subscribe(instrument)
+
+    def unsubscribe(self, instrument_id):
+        self._session().unsubscribe(instrument_id)
 
 
 class SectorPoller:
@@ -75,7 +101,10 @@ def attach_sector(bundle):
     service.interval_seconds = settings.get().snapshot_seconds
     minute_store = SectorMinuteStore((bundle.launch.root / 'market' / 'sector_minutes.sqlite3').resolve())
     minutes = MinuteAggregator(minute_store, settings.get, service.group_name)
-    service.on_round = minutes.on_round
+    monitor = SectorMonitor(service.candidates, MonitorSubscriptions(connection), settings.get, service.group_name)
+    service.on_round = lambda now, stats: (*minutes.on_round(now, stats), *monitor.on_round(now, stats))
+    service.monitor_info, service.side_ratio = monitor.info, monitor.side_ratio
+    bundle.session_bridge.monitor = monitor
     service.on_alert = bundle.alerts.record_sector
     poller = SectorPoller(service)
     old_connected, old_disconnected = connection.on_connected, connection.on_disconnected
@@ -85,6 +114,7 @@ def attach_sector(bundle):
         poller.start()
 
     def disconnected():
+        monitor.disconnected()
         service.disconnected()
         old_disconnected()
 

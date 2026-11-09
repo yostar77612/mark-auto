@@ -21,6 +21,20 @@ class SectorQuery:
 
 
 @dataclass(frozen=True)
+class MonitorCount:
+    """Members actually receiving ticks for one monitored group."""
+
+    group_id: str
+    monitored: int
+    total: int
+
+    def __post_init__(self) -> None:
+        identity(self.group_id)
+        integer(self.monitored, 'monitored members')
+        integer(self.total, 'group members')
+
+
+@dataclass(frozen=True)
 class MemberView:
     instrument_id: str
     code: str
@@ -32,6 +46,7 @@ class MemberView:
     limit: str
     leader_at: datetime | None = None
     is_leader: bool = False
+    side_ratio: Decimal | None = None
 
     def __post_init__(self) -> None:
         identity(self.instrument_id)
@@ -55,6 +70,8 @@ class SectorBoardView:
     members: tuple[MemberView, ...] = ()
     failed: bool = False
     alerts: tuple[SectorAlert, ...] = ()
+    monitored: tuple[str, ...] = ()
+    monitor_counts: tuple[MonitorCount, ...] = ()
 
     def __post_init__(self) -> None:
         if self.state not in STATES:

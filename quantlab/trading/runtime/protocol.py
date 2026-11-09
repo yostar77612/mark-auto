@@ -14,6 +14,7 @@ from quantlab.trading.application.order_book_contracts import OrderBookView, Tap
 from quantlab.trading.application.sector_contracts import (
     GroupEditView,
     MemberView,
+    MonitorCount,
     SectorBoardView,
     SectorGroupsCommand,
     SectorGroupsView,
@@ -119,4 +120,4 @@ register(Operation, Request, Response, Metrics, QuoteBatch)
 register(WatchInstrument, WatchKind, HistoryUsage, HistorySyncState, MarketTerminalStatus)
 register(OrderBookView, TapeEntry, BidAskSnapshot)
 register(SectorQuery, SectorBoardView, MemberView, SectorStat)
-register(SectorGroupsCommand, SectorGroupsView, GroupEditView, SectorAlert, SectorAlertParams)
+register(SectorGroupsCommand, SectorGroupsView, GroupEditView, SectorAlert, SectorAlertParams, MonitorCount)

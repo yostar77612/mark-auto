@@ -3359,7 +3359,10 @@
       "sector.settings_save": "儲存",
       "sector.settings_cancel": "取消",
       "sector.settings_failed": "設定無法儲存，數值超出範圍",
-      "sector.alert_burst_text": "{0} {1} 爆量{2} 本分鐘 {3} 億（基準 {4} 億，{5} 倍）"
+      "sector.alert_burst_text": "{0} {1} 爆量{2} 本分鐘 {3} 億（基準 {4} 億，{5} 倍）",
+      "sector.monitor_mark": "●",
+      "sector.monitor_count": "監控 {0}/{1} 檔",
+      "sector.monitor_limited": "訂閱額度不足，僅監控部分成分股"
     }
   },
   "aliases": {
@@ -8047,6 +8050,9 @@
       "sector.settings_cancel": "取消",
       "sector.settings_failed": "設定無法儲存，數值超出範圍",
       "sector.alert_burst_text": "{0} {1} 爆量{2} 本分鐘 {3} 億（基準 {4} 億，{5} 倍）",
+      "sector.monitor_mark": "●",
+      "sector.monitor_count": "監控 {0}/{1} 檔",
+      "sector.monitor_limited": "訂閱額度不足，僅監控部分成分股",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12730,7 +12736,10 @@
     "sector.settings_save",
     "sector.settings_cancel",
     "sector.settings_failed",
-    "sector.alert_burst_text"
+    "sector.alert_burst_text",
+    "sector.monitor_mark",
+    "sector.monitor_count",
+    "sector.monitor_limited"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

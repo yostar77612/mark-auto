@@ -120,4 +120,7 @@ ENTRIES = (
     (78, 3356, 'sector.settings_cancel', '取消'),
     (78, 3357, 'sector.settings_failed', '設定無法儲存，數值超出範圍'),
     (78, 3358, 'sector.alert_burst_text', '{0} {1} 爆量{2} 本分鐘 {3} 億（基準 {4} 億，{5} 倍）'),
+    (78, 3359, 'sector.monitor_mark', '●'),
+    (78, 3360, 'sector.monitor_count', '監控 {0}/{1} 檔'),
+    (78, 3361, 'sector.monitor_limited', '訂閱額度不足，僅監控部分成分股'),
 )

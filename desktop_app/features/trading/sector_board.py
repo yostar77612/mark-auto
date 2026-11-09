@@ -138,6 +138,7 @@ class SectorBoardWidget(QWidget):
         self.members_title.setObjectName('sector_members_title')
         self.members_title.setAccessibleName(ui_text('sector.members_title'))
         self.members_title.setTextFormat(Qt.TextFormat.PlainText)
+        self.members_title.setWordWrap(True)
         members_layout.addWidget(self.members_title)
         members_layout.addWidget(self.members_hint)
         members_layout.addWidget(self.members, 1)
@@ -335,7 +336,8 @@ class SectorBoardWidget(QWidget):
             if self.filter != 'all' and stat.kind != self.filter:
                 continue
             breadth = Decimal(stat.up_count) / Decimal(stat.valid_count) if stat.valid_count else None
-            name = stat.name + (' · ' + ui_text('sector.few_members') if stat.valid_count and stat.valid_count < 4 else '')
+            name = (ui_text('sector.monitor_mark') + ' ' if stat.group_id in view.monitored else '') + stat.name
+            name += ' · ' + ui_text('sector.few_members') if stat.valid_count and stat.valid_count < 4 else ''
             kind = ui_text('sector.kind_industry') if stat.kind == 'INDUSTRY' else ui_text('sector.kind_concept')
             rows.append(
                 (
@@ -366,7 +368,13 @@ class SectorBoardWidget(QWidget):
             self.members_hint.show()
             return
         stat = next((item for item in view.groups if item.group_id == view.selected_group_id), None)
-        self.members_title.setText(ui_text('sector.members_of').format(stat.name if stat else ''))
+        title = ui_text('sector.members_of').format(stat.name if stat else '')
+        count = next((item for item in view.monitor_counts if item.group_id == view.selected_group_id), None)
+        if count is not None:
+            title += ' · ' + ui_text('sector.monitor_count').format(count.monitored, count.total)
+            if count.monitored < count.total:
+                title += ' · ' + ui_text('sector.monitor_limited')
+        self.members_title.setText(title)
         self.members_hint.hide()
         rows = []
         for member in view.members:
@@ -390,7 +398,12 @@ class SectorBoardWidget(QWidget):
                             None,
                         ),
                         (amount_text(member.amount), member.amount, None, None),
-                        (ui_text('sector.no_value'), None, None, None),
+                        (
+                            f'{member.side_ratio * 100:.0f}%' if member.side_ratio is not None else ui_text('sector.no_value'),
+                            member.side_ratio,
+                            None,
+                            None,
+                        ),
                     ),
                 )
             )

@@ -12,6 +12,8 @@ class SessionBridge:
 
     def __init__(self, connection):
         self.connection = connection
+        # Set by the sector board: sees every drained tick and yields slots to higher-priority users.
+        self.monitor = None
 
     @property
     def connected(self):
@@ -30,20 +32,34 @@ class SessionBridge:
     def usage(self):
         return self._session().usage() if self.connected else None
 
+    def _with_slot(self, action):
+        """Indices, the selected stock and the watchlist outrank sector monitoring for subscription slots."""
+        try:
+            action()
+        except DomainError as error:
+            if error.code != 'subscription_limit_reached' or self.monitor is None or not self.monitor.release_one():
+                raise
+            action()
+
     def subscribe(self, instrument):
-        self._session().subscribe(instrument)
+        if self.monitor is not None:
+            self.monitor.claim(instrument.instrument_id)
+        self._with_slot(lambda: self._session().subscribe(instrument))
 
     def unsubscribe(self, instrument_id):
         self._session().unsubscribe(instrument_id)
 
     def drain_ticks(self, limit):
-        return self._session().drain_ticks(limit)
+        ticks = self._session().drain_ticks(limit)
+        if self.monitor is not None and ticks:
+            self.monitor.on_ticks(ticks)
+        return ticks
 
     def drain_tick_losses(self):
         return self._session().drain_tick_losses()
 
     def subscribe_bidask(self, instrument):
-        self._session().subscribe_bidask(instrument)
+        self._with_slot(lambda: self._session().subscribe_bidask(instrument))
 
     def unsubscribe_bidask(self, instrument_id):
         self._session().unsubscribe_bidask(instrument_id)
@@ -63,11 +79,12 @@ def attach_terminal(bundle):
     connection = bundle.market_connection
     preferences = MarketTerminalSettings(bundle.launch.root / 'settings.json', lock=connection.settings_lock)
     store = KlineStore(bundle.launch.root / 'market' / 'klines.sqlite3')
-    history = HistorySync(store, SessionBridge(connection))
+    bridge = SessionBridge(connection)
+    history = HistorySync(store, bridge)
     service = MarketTerminalService(
         store,
         history,
-        SessionBridge(connection),
+        bridge,
         lambda: connection.directory.items,
         watchlist=preferences.watchlist,
         selected=preferences.selected,
@@ -79,6 +96,7 @@ def attach_terminal(bundle):
     connection.on_connected = lambda session: service.connected()
     connection.on_disconnected = service.disconnected
     bundle.market_terminal, bundle.kline_store, bundle.market_history = service, store, history
+    bundle.session_bridge = bridge
     from .market_alerts import attach_alerts
 
     attach_alerts(bundle)
