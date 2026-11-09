@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 from threading import RLock
+from time import sleep
 from uuid import uuid4
 
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS, SEED_VERSION, ConceptGroup
@@ -41,25 +42,33 @@ class SectorGroupStore:
         except FileNotFoundError:
             return self._write_initial(tuple(from_seed(group) for group in self.seed))
         except (ValueError, TypeError, KeyError, UnicodeError, DomainError):
-            self._preserve_bad_file()
-            return self._write_initial(tuple(from_seed(group) for group in self.seed))
+            defaults = tuple(from_seed(group) for group in self.seed)
+            if not self._preserve_bad_file():
+                # The damaged file could not be set aside: never overwrite it; run on the built-in list in memory.
+                self._records = defaults
+                return defaults
+            return self._write_initial(defaults)
         except OSError:
             self.warning = 'sector_groups_unreadable'
             return tuple(from_seed(group) for group in self.seed)
         if body['seed_version'] < self.seed_version:
             merged = merge_seed(records, self.seed)
             self._records = merged
-            self._save()
+            try:
+                self._save()
+            except DomainError:
+                self.warning = 'sector_groups_unwritable'
             return merged
         return records
 
-    def _preserve_bad_file(self) -> None:
+    def _preserve_bad_file(self) -> bool:
         stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+        self.warning = 'sector_groups_corrupt'
         try:
             self.path.rename(self.path.with_name(self.path.name + '.bad-' + stamp))
         except OSError:
-            pass
-        self.warning = 'sector_groups_corrupt'
+            return False
+        return True
 
     def _write_initial(self, records: tuple[GroupRecord, ...]) -> tuple[GroupRecord, ...]:
         self._records = records
@@ -89,11 +98,22 @@ class SectorGroupStore:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             temporary.write_text(json.dumps(body, ensure_ascii=False), encoding='utf-8')
-            os.replace(temporary, self.path)
+            self._replace_file(temporary)
         except OSError:
             raise DomainError('sector_groups_unwritable', 'write sector groups') from None
         finally:
             temporary.unlink(missing_ok=True)
+
+    def _replace_file(self, temporary: Path) -> None:
+        """Windows scanners can briefly hold the target; a few short retries ride that out."""
+        for attempt in range(5):
+            try:
+                os.replace(temporary, self.path)
+                return
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                sleep(0.05)
 
     def _commit(self, records: tuple[GroupRecord, ...]) -> None:
         """Memory changes only after the disk write succeeded."""
@@ -118,6 +138,11 @@ class SectorGroupStore:
             raise DomainError('validation_failed', 'sector group not found')
         return record
 
+    @staticmethod
+    def _require_live(record: GroupRecord) -> None:
+        if record.deleted:
+            raise DomainError('validation_failed', 'sector group is deleted')
+
     def _replace(self, record: GroupRecord) -> None:
         self._commit(tuple(record if item.id == record.id else item for item in self._records))
 
@@ -137,6 +162,7 @@ class SectorGroupStore:
     def rename(self, group_id: str, name: str) -> None:
         with self.lock:
             record = self._find(group_id)
+            self._require_live(record)
             name = clean_name(name)
             if any(item.name == name and item.id != group_id and not item.deleted for item in self._records):
                 raise DomainError('validation_failed', 'sector group name in use')
@@ -145,6 +171,7 @@ class SectorGroupStore:
     def set_codes(self, group_id: str, codes: tuple[str, ...]) -> None:
         with self.lock:
             record = self._find(group_id)
+            self._require_live(record)
             self._replace(GroupRecord(record.id, record.name, clean_codes(codes), record.builtin, record.builtin or record.edited, record.deleted))
 
     def delete(self, group_id: str) -> None:
@@ -161,4 +188,6 @@ class SectorGroupStore:
             seed = next((group for group in self.seed if group.id == group_id), None)
             if not record.builtin or seed is None:
                 raise DomainError('validation_failed', 'only built-in groups can be restored')
+            if any(item.name == seed.name and item.id != group_id and not item.deleted for item in self._records):
+                raise DomainError('validation_failed', 'sector group name in use')
             self._replace(from_seed(seed))

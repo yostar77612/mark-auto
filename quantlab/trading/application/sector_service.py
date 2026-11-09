@@ -1,6 +1,7 @@
 """Sector ranking from market-wide snapshot rounds; read-only, fail-closed on stale or missing data."""
 
 from collections import deque
+import logging
 from datetime import date, datetime, time
 from decimal import Decimal
 from threading import RLock
@@ -17,6 +18,7 @@ from quantlab.trading.ports.sector import SnapshotSourcePort
 from .sector_contracts import MemberView, MonitorCount, SectorBoardView
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
+logger = logging.getLogger(__name__)
 SESSION_START, SESSION_END = time(8, 55), time(13, 35)
 STALE_SECONDS = 30
 
@@ -98,12 +100,15 @@ class SectorService:
             self._stats = compute_stats(groups, rows)
             self._track_limit_up(rows)
             fetched, stats = self._fetched_at, self._stats
-        # Hooks run outside the lock: they may subscribe to ticks (SDK calls) and call back into the service.
+        # Hooks run outside the lock: they write to disk, may subscribe to ticks and may call back into the service.
         alerts = self.on_round(fetched, stats)
         with self.lock:
             self._alerts.extend(alerts)
         for alert in alerts:
-            self.on_alert(alert)
+            try:
+                self.on_alert(alert)
+            except Exception:
+                logger.error('sector alert delivery failed')
 
     def _track_limit_up(self, rows: dict[str, QuoteRow]) -> None:
         latest = max((row.at for row in rows.values()), default=None)

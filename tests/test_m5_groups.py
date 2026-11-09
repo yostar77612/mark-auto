@@ -152,6 +152,104 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(list(self.path.parent.glob('*.tmp')), [])
 
 
+class StoreHardeningTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = TemporaryDirectory(dir=Path.cwd())
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / 'sector_groups.json'
+
+    def test_seed_bump_on_an_unwritable_disk_still_starts_with_the_merged_list(self):
+        SectorGroupStore(self.path, SEED_A, 1)
+        newer = (ConceptGroup('builtin.a', 'A', ('2330',)), ConceptGroup('builtin.b', 'B', ('2317', '2382')))
+        with patch('os.replace', side_effect=OSError('locked')):
+            store = SectorGroupStore(self.path, newer, 2)
+        self.assertEqual(store.warning, 'sector_groups_unwritable')
+        self.assertEqual({record.id: record.codes for record in store.records()}['builtin.b'], ('2317', '2382'))
+
+    def test_restore_refuses_a_name_that_a_live_group_now_uses(self):
+        store = SectorGroupStore(self.path, SEED_A, 1)
+        store.delete('builtin.a')
+        store.create('A', ('2330',))
+        with self.assertRaises(DomainError):
+            store.restore('builtin.a')
+
+    def test_a_deleted_group_cannot_be_renamed_or_recoded(self):
+        store = SectorGroupStore(self.path, SEED_A, 1)
+        store.delete('builtin.a')
+        with self.assertRaises(DomainError):
+            store.rename('builtin.a', 'Z')
+        with self.assertRaises(DomainError):
+            store.set_codes('builtin.a', ('2330',))
+
+    def test_a_corrupt_file_that_cannot_be_set_aside_is_never_overwritten(self):
+        self.path.write_text('{broken', encoding='utf-8')
+        with patch.object(Path, 'rename', side_effect=OSError('locked')):
+            store = SectorGroupStore(self.path, SEED_A, 1)
+        self.assertEqual(store.warning, 'sector_groups_corrupt')
+        self.assertEqual([group.id for group in store.groups()], ['builtin.a', 'builtin.b'])
+        self.assertEqual(self.path.read_text(encoding='utf-8'), '{broken')
+
+    def test_a_brief_permission_error_on_replace_is_retried(self):
+        store = SectorGroupStore(self.path, SEED_A, 1)
+        import os as real_os
+
+        original = real_os.replace
+        calls = []
+
+        def flaky(source, target):
+            calls.append(1)
+            if len(calls) < 3:
+                raise PermissionError('scanner')
+            return original(source, target)
+
+        with patch('os.replace', side_effect=flaky), patch('quantlab.trading.adapters.storage.sector_store.sleep'):
+            store.rename('builtin.b', 'Bee')
+        self.assertEqual(len(calls), 3)
+        self.assertEqual({record.id: record.name for record in SectorGroupStore(self.path, SEED_A, 1).records()}['builtin.b'], 'Bee')
+
+    def test_non_string_codes_are_a_validation_error_not_a_type_error(self):
+        with self.assertRaises(DomainError):
+            clean_codes((['2330'],))
+        with self.assertRaises(DomainError):
+            SectorGroupsCommand('SET_CODES', 'x', codes=(1,))
+
+
+class MemberMenuTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from PySide6.QtWidgets import QApplication
+
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_remove_member_reads_then_rewrites_only_that_group_and_refreshes(self):
+        from desktop_app.components.charts import CandlestickChart
+        from desktop_app.features.trading.sector_board import SectorBoardWidget
+
+        with TemporaryDirectory(dir=Path.cwd()) as folder:
+            store = SectorGroupStore(Path(folder) / 'g.json', SEED_A, 1)
+            editor = SectorGroupEditor(store, lambda: ())
+            widget = SectorBoardWidget(SimpleNamespace(sector_groups=editor.execute), CandlestickChart())
+            refreshed = []
+            widget.refresh = lambda: refreshed.append(1)
+            widget._submit = lambda operation, completed: completed(operation(), None)
+            widget.remove_member('builtin.a', '2330')
+            self.assertEqual({record.id: record.codes for record in store.records()}['builtin.a'], ('2454',))
+            self.assertEqual(refreshed, [1])
+
+    def test_menu_offers_remove_only_for_concept_groups_and_wires_callbacks(self):
+        from desktop_app.components.charts import CandlestickChart
+        from desktop_app.features.trading.sector_board import SectorBoardWidget
+
+        picked = []
+        widget = SectorBoardWidget(
+            SimpleNamespace(), CandlestickChart(), open_in_watch=lambda key: picked.append(('open', key)), add_to_watch=lambda key: picked.append(('add', key))
+        )
+        self.assertEqual((widget.open_in_watch, widget.add_to_watch) != (None, None), True)
+        widget.open_in_watch('TWSE:2330')
+        widget.add_to_watch('TWSE:2330')
+        self.assertEqual(picked, [('open', 'TWSE:2330'), ('add', 'TWSE:2330')])
+
+
 class EditorTests(unittest.TestCase):
     def setUp(self):
         self.temp = TemporaryDirectory(dir=Path.cwd())

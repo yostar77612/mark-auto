@@ -131,12 +131,32 @@ class StoreTests(unittest.TestCase):
         db.execute('CREATE TABLE sector_minutes (a INTEGER)')
         db.commit()
         db.close()
-        with self.assertRaises(DomainError):
-            SectorMinuteStore(path)
+        recovered = SectorMinuteStore(path)
+        self.addCleanup(recovered.close)
+        self.assertEqual(recovered.warning, 'sector_minutes_corrupt')
+        self.assertEqual(len(list(path.parent.glob('foreign.sqlite3.bad-*'))), 1)
+        self.assertEqual(recovered.load_day(date(2026, 11, 9)), ())
+
+    def test_a_file_that_is_not_a_database_is_set_aside_and_never_blocks_startup(self):
+        path = (Path(self.temp.name) / 'garbage.sqlite3').resolve()
+        path.write_bytes(b'this is not sqlite' * 100)
+        store = SectorMinuteStore(path)
+        self.addCleanup(store.close)
+        self.assertEqual(store.warning, 'sector_minutes_corrupt')
+        self.assertEqual(len(list(path.parent.glob('garbage.sqlite3.bad-*'))), 1)
+        store.append((self.stat(DAY.replace(hour=10)),), date(2026, 11, 9))
+        self.assertEqual(len(store.load_day(date(2026, 11, 9))), 1)
+
+    def test_minutes_are_stored_in_taipei_time(self):
+        moment = DAY.replace(hour=9, minute=5)
+        self.store.append((self.stat(moment),), date(2026, 11, 9))
+        row = self.store._db.execute('SELECT trade_date, minute FROM sector_minutes').fetchone()
+        self.assertEqual(row, ('2026-11-09', '09:05'))
+        self.assertEqual(self.store.load_day(date(2026, 11, 9))[0].minute, moment.astimezone(timezone.utc))
 
 
-def stat(group, cumulative, pct_bps):
-    return SectorStat(group, NAMES[group], 'CONCEPT', Decimal(pct_bps) / 100, 5, 7, 7, 0, 0, int(cumulative), Decimal('0.1'))
+def stat(group, cumulative, pct_bps, valid=7):
+    return SectorStat(group, NAMES[group], 'CONCEPT', Decimal(pct_bps) / 100, 5, valid, 7, 0, 0, int(cumulative), Decimal('0.1'))
 
 
 def scenario():
@@ -251,6 +271,47 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(first.members, 7)
 
 
+class MinuteRobustnessTests(unittest.TestCase):
+    def feed(self, aggregator, minute_count, per_minute, valid_at=lambda minute: 7):
+        alerts = []
+        base = DAY.replace(hour=9, minute=10)
+        for index in range(minute_count):
+            cumulative = per_minute(index)
+            for second in (0, 30):
+                moment = base + timedelta(minutes=index, seconds=second)
+                alerts.extend(aggregator.on_round(moment, (stat('g1', cumulative, 0, valid_at(index)), stat('g2', 0, 0), stat('g3', 0, 0))))
+        return alerts
+
+    def make(self):
+        temp = TemporaryDirectory(dir=Path.cwd())
+        self.addCleanup(temp.cleanup)
+        store = SectorMinuteStore((Path(temp.name) / 'm.sqlite3').resolve())
+        self.addCleanup(store.close)
+        return MinuteAggregator(store, SectorAlertParams, NAMES.get), store
+
+    def test_a_changed_member_count_makes_that_minute_incomplete_instead_of_a_false_burst(self):
+        aggregator, store = self.make()
+        # steady 100M per minute, then a member with 2B cumulative turnover rejoins the group at minute 20
+        alerts = self.feed(aggregator, 40, lambda index: 100_000_000 * index + (2_000_000_000 if index >= 20 else 0), lambda index: 8 if index >= 20 else 7)
+        self.assertEqual(alerts, [])
+        rows = {item.minute.astimezone(TAIPEI).strftime('%H:%M'): item for item in store.load_day(date(2026, 11, 9)) if item.group_id == 'g1'}
+        self.assertFalse(rows['09:30'].complete)
+        self.assertTrue(rows['09:31'].complete)
+        self.assertEqual(rows['09:31'].amount, 100_000_000)
+
+    def test_pre_open_minutes_do_not_dilute_the_baseline(self):
+        aggregator, store = self.make()
+        early = DAY.replace(hour=8, minute=56)
+        for index in range(4):
+            for second in (0, 30):
+                aggregator.on_round(early + timedelta(minutes=index, seconds=second), (stat('g1', 0, 0), stat('g2', 0, 0), stat('g3', 0, 0)))
+        self.assertEqual(list(aggregator._history.get('g1', ())), [])
+
+    def test_cooldown_state_is_per_process_and_documented_not_persisted(self):
+        aggregator, store = self.make()
+        self.assertEqual(aggregator._last_alert, {})
+
+
 class LogIntegrationTests(unittest.TestCase):
     def make(self, folder):
         from threading import RLock
@@ -309,6 +370,13 @@ class LogIntegrationTests(unittest.TestCase):
             self.assertEqual([panel.table.item(0, column).text() for column in (1, 2, 3)], ['散熱', '族群', '族群爆量'])
             panel.select_event(panel.table.item(0, 0))
             self.assertEqual((chosen, groups), ([], ['builtin.cooling']))
+
+    def test_a_rule_for_a_sector_kind_is_a_validation_error(self):
+        from quantlab.trading.domain.alerts import AlertKind, AlertRule
+
+        for kind in (AlertKind.SECTOR_BURST, AlertKind.SECTOR_FLOW):
+            with self.assertRaises(DomainError):
+                AlertRule('r', kind, 'MARKET')
 
     def test_sector_kinds_cannot_be_added_as_rules(self):
         from PySide6.QtWidgets import QApplication
@@ -437,6 +505,27 @@ class BoardAlertBarTests(unittest.TestCase):
         newer = SectorBoardView_with_data_at(newer, DAY.replace(hour=9, minute=42))
         widget.render_board(newer)
         self.assertNotIn('g1', widget._flash)
+
+    def test_alerts_that_predate_the_window_do_not_flash_and_the_newest_tint_wins(self):
+        widget = self.widget()
+        first = self.view((self.alert('g1'),))
+        widget.render_board(first)
+        self.assertEqual(widget._flash, {})
+        older = SectorAlert(DAY.replace(hour=9, minute=38), 'g2', 'G2', 'BURST', 'DOWN', 450_000_000, 100_000_000, Decimal('4.5'), members=4)
+        newer = SectorAlert(DAY.replace(hour=9, minute=39), 'g2', 'G2', 'BURST', 'UP', 450_000_000, 100_000_000, Decimal('4.5'), members=4)
+        widget.render_board(self.view((newer, older, self.alert('g1'))))
+        self.assertEqual(widget._flash['g2'][0], 'UP')
+        self.assertNotIn('g1', widget._flash)
+
+    def test_clicking_an_alert_for_a_group_hidden_by_the_filter_shows_it(self):
+        widget = self.widget()
+        widget.render_board(self.view(()))
+        widget.set_filter('INDUSTRY')
+        self.assertEqual(widget.rank.rowCount(), 0)
+        widget._submit = lambda operation, completed: None
+        widget.select_group('g2')
+        self.assertEqual(widget.filter, 'all')
+        self.assertEqual(widget.rank.rowCount(), 2)
 
     def test_settings_button_opens_the_dialog_with_engine_values(self):
         widget = self.widget()

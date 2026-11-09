@@ -112,7 +112,7 @@ class AlertRule:
 
     def __post_init__(self):
         identity(self.rule_id, 'rule_id')
-        if not isinstance(self.kind, AlertKind):
+        if not isinstance(self.kind, AlertKind) or self.kind in SECTOR_KINDS:
             raise DomainError('alert_invalid_params', 'kind')
         if self.scope not in ('INSTRUMENT', 'WATCHLIST', 'MARKET') or (self.scope == 'INSTRUMENT' and not self.instrument_id):
             raise DomainError('alert_invalid_params', 'scope/instrument')

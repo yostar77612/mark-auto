@@ -98,7 +98,13 @@ class SectorGroupsCommand:
             raise DomainError('validation_failed', 'sector group action')
         if self.group_id:
             identity(self.group_id)
-        if not isinstance(self.name, str) or len(self.name) > 100 or not isinstance(self.codes, tuple) or len(self.codes) > 200:
+        if (
+            not isinstance(self.name, str)
+            or len(self.name) > 100
+            or not isinstance(self.codes, tuple)
+            or len(self.codes) > 200
+            or any(not isinstance(code, str) for code in self.codes)
+        ):
             raise DomainError('validation_failed', 'sector group command shape')
 
 

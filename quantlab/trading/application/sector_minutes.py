@@ -7,7 +7,7 @@ from typing import Callable
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.sector import SectorStat
-from quantlab.trading.domain.sector_alerts import MinuteStat, SectorAlert, SectorAlertParams, in_alert_window, judge_burst, minute_direction
+from quantlab.trading.domain.sector_alerts import SESSION_OPEN, MinuteStat, SectorAlert, SectorAlertParams, in_alert_window, judge_burst, minute_direction
 from quantlab.trading.domain.validation import DomainError
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
@@ -27,7 +27,7 @@ class MinuteAggregator:
         self._pending_minute: datetime | None = None
         self._pending: dict[str, SectorStat] = {}
         self._previous_minute: datetime | None = None
-        self._previous: dict[str, tuple[int, int]] = {}  # group -> (cumulative amount, equal pct bps)
+        self._previous: dict[str, tuple[int, int, int]] = {}  # group -> (cumulative amount, equal pct bps, valid members)
         self._history: dict[str, deque[int]] = {}
         self._last_alert: dict[tuple[str, str], datetime] = {}
         self.warning = ''
@@ -38,7 +38,7 @@ class MinuteAggregator:
         try:
             self.store.purge(day)
             for item in self.store.load_day(day):
-                if item.complete:
+                if item.complete and item.minute.astimezone(_TAIPEI).time() >= SESSION_OPEN:
                     self._history.setdefault(item.group_id, deque(maxlen=60)).append(item.amount)
         except DomainError:
             self.warning = 'sector_minutes_unavailable'
@@ -63,7 +63,9 @@ class MinuteAggregator:
         for group_id, stat in self._pending.items():
             previous = self._previous.get(group_id)
             delta = stat.amount - previous[0] if previous is not None else None
-            complete = continuous and delta is not None and delta >= 0
+            # A changed member count (a quote dropping out or returning, a group edit) moves the cumulative
+            # amount without any trading, so that minute is not comparable with the previous one.
+            complete = continuous and delta is not None and delta >= 0 and previous[2] == stat.valid_count
             pct = _bps(stat.equal_pct)
             share = int((stat.share * 10000).to_integral_value()) if stat.share is not None else 0
             breadth = int((stat.breadth * 10000).to_integral_value()) if stat.breadth is not None else 0
@@ -85,14 +87,15 @@ class MinuteAggregator:
             if complete:
                 history = self._history.setdefault(group_id, deque(maxlen=60))
                 alert = self._burst(minute, group_id, stat, delta, pct - previous[1], tuple(history), params)
-                history.append(delta)
+                if minute.time() >= SESSION_OPEN:
+                    history.append(delta)  # pre-open minutes carry no turnover and would dilute the baseline
                 if alert is not None:
                     alerts.append(alert)
         try:
             self.store.append(tuple(rows), minute.date())
         except DomainError:
             self.warning = 'sector_minutes_unavailable'
-        self._previous = {group_id: (stat.amount, _bps(stat.equal_pct)) for group_id, stat in self._pending.items()}
+        self._previous = {group_id: (stat.amount, _bps(stat.equal_pct), stat.valid_count) for group_id, stat in self._pending.items()}
         self._previous_minute = minute
         return tuple(alerts)
 
