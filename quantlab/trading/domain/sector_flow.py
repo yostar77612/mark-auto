@@ -48,12 +48,18 @@ class Allocation:
     counts: tuple[tuple[str, int, int], ...]  # group id, monitored members, total members
 
 
-def allocate(groups: tuple[tuple[str, tuple[tuple[str, int], ...]], ...], budget: int) -> Allocation:
+def allocate(groups: tuple[tuple[str, tuple[tuple[str, int], ...]], ...], budget: int, held: tuple[str, ...] = ()) -> Allocation:
     """Fill the budget group by group (in rank order), biggest turnover first within a group.
 
     ``groups`` holds (group id, ((code, turnover), ...)); a stock shared by several groups costs one slot.
+    ``held`` are codes already subscribed: they keep their slots first, so a rank or turnover flip under a tight
+    budget does not churn subscriptions.
     """
     chosen: dict[str, None] = {}
+    known = {code for _, members in groups for code, _ in members}
+    for code in held:
+        if code in known and len(chosen) < budget:
+            chosen[code] = None
     counts = []
     for group_id, members in groups:
         ordered = sorted(members, key=lambda item: item[1], reverse=True)
@@ -90,4 +96,5 @@ def judge_flow(history: tuple[FlowMinute, ...], params: SectorAlertParams) -> tu
     if any(abs(item.net) < need for item in streak):
         return None
     net, big = sum(item.net for item in streak), sum(item.big_net for item in streak)
-    return ('UP' if net > 0 else 'DOWN', abs(net), abs(big), params.flow_minutes)
+    # big-order net keeps its sign relative to the flow: negative means large orders went the other way
+    return ('UP' if net > 0 else 'DOWN', abs(net), big if net > 0 else -big, params.flow_minutes)

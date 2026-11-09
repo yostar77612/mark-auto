@@ -246,7 +246,7 @@ class MarketSession:
         except Exception:
             raise DomainError('market_data_not_connected') from None
         finally:
-            del self.bidask_subscriptions[instrument_id]
+            self.bidask_subscriptions.pop(instrument_id, None)
             self.bidask_stream.set_active(set(self.bidask_subscriptions))
 
     def bidask(self, instrument_id: str):
@@ -264,7 +264,7 @@ class MarketSession:
             self.facade.market_subscribe(contract, remove=True)
         except Exception:
             raise DomainError('market_data_not_connected') from None
-        del self.subscriptions[instrument_id]
+        self.subscriptions.pop(instrument_id, None)
         self.tick_stream.set_active(set(self.subscriptions))
 
     def disconnect(self) -> None:

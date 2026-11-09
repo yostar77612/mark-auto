@@ -1,5 +1,6 @@
 """Compose the read-only sector board with the market connection and a background snapshot poller."""
 
+import logging
 from datetime import datetime, timezone
 from threading import Event, Thread
 from time import monotonic
@@ -13,6 +14,9 @@ from quantlab.trading.application.sector_monitor import SectorMonitor
 from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.validation import DomainError
 from .sector_settings import SectorAlertSettings
+
+
+logger = logging.getLogger(__name__)
 
 
 class NullMinuteStore:
@@ -121,7 +125,16 @@ def attach_sector(bundle):
         minute_store = NullMinuteStore()  # minute history is optional: the board and alerts keep working in memory
     minutes = MinuteAggregator(minute_store, settings.get, service.group_name)
     monitor = SectorMonitor(service.candidates, MonitorSubscriptions(connection), settings.get, service.group_name)
-    service.on_round = lambda now, stats: (*minutes.on_round(now, stats), *monitor.on_round(now, stats))
+
+    def on_round(now, stats):
+        alerts = minutes.on_round(now, stats)
+        try:
+            return (*alerts, *monitor.on_round(now, stats))
+        except Exception:
+            logger.error('sector monitor round failed')
+            return alerts
+
+    service.on_round = on_round
     service.monitor_info, service.side_ratio = monitor.info, monitor.side_ratio
     bundle.session_bridge.monitor = monitor
     service.on_alert = bundle.alerts.record_sector

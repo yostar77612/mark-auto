@@ -299,6 +299,82 @@ class MonitorTests(unittest.TestCase):
         self.assertIsNone(value.side_ratio('1101'))
 
 
+class QaRegressionTests(unittest.TestCase):
+    def test_rank_flips_under_a_tight_budget_cause_no_resubscription(self):
+        value, subscriptions = monitor(capacity=6)
+        value.on_round(at(9, 10), STATS)
+        base = len(subscriptions.calls)
+        for minute in range(11, 19):
+            flipped = (stat('gB', 3), stat('gA', 2.9), stat('gC', 1), stat('gD', 0.5)) if minute % 2 else STATS
+            value.on_round(at(9, minute), flipped)
+        self.assertEqual(len(subscriptions.calls), base)
+
+    def test_a_turnover_reorder_at_the_cutoff_does_not_swap_held_stocks(self):
+        groups = (('g', (('1', 9), ('2', 8), ('3', 7))),)
+        first = allocate(groups, 2)
+        flipped = (('g', (('1', 9), ('2', 5), ('3', 7))),)
+        self.assertEqual(allocate(flipped, 2).codes, ('1', '3'))
+        self.assertEqual(allocate(flipped, 2, held=first.codes).codes, first.codes)
+
+    def test_held_codes_outside_the_groups_are_not_kept(self):
+        self.assertEqual(allocate((('g', (('1', 1),)),), 5, held=('zzz', '1')).codes, ('1',))
+
+    def test_large_order_net_keeps_its_sign_relative_to_the_flow(self):
+        minutes = tuple(FlowMinute(at(9, 20) + timedelta(minutes=index), 22 * MILLION, -5 * MILLION) for index in range(3))
+        direction, net, big, count = judge_flow(minutes, SectorAlertParams())
+        self.assertEqual((direction, net, big, count), ('UP', 66 * MILLION, -15 * MILLION, 3))
+        down = tuple(FlowMinute(at(9, 20) + timedelta(minutes=index), -22 * MILLION, 5 * MILLION) for index in range(3))
+        self.assertEqual(judge_flow(down, SectorAlertParams())[2], -15 * MILLION)
+
+    def test_release_updates_the_reported_counts_at_once(self):
+        value, subscriptions = monitor(capacity=40)
+        value.on_round(at(9, 10), STATS)
+        self.assertEqual(value.info()[1][0], ('gA', 4, 4))
+        value.release_one()
+        counts = dict((gid, monitored) for gid, monitored, _ in value.info()[1])
+        self.assertEqual(sum(counts.values()), 11)
+
+    def test_off_session_round_subscribes_nothing(self):
+        value, subscriptions = monitor()
+        value.on_round(DAY.replace(hour=15, minute=0), STATS)
+        self.assertEqual((subscriptions.calls, value.info()[0]), ([], ()))
+
+    def test_budget_exhaustion_still_counts_stocks_the_terminal_already_holds(self):
+        value, subscriptions = monitor(capacity=3)
+        subscriptions.subscribed.add('TWSE:1104')  # the terminal holds the smallest turnover stock of gA
+        value.on_round(at(9, 10), STATS)
+        self.assertIn('TWSE:1104', subscriptions.subscribed)
+        counts = dict((gid, monitored) for gid, monitored, _ in value.info()[1])
+        self.assertEqual(counts['gA'], 3)
+
+    def test_a_new_trading_day_starts_clean(self):
+        value, _ = monitor()
+        for step in range(8 * 6):
+            now = at(9, 10) + timedelta(seconds=10 * step)
+            value.on_round(now, STATS)
+        self.assertTrue(value._since)
+        value.on_round(at(9, 10) + timedelta(days=1), STATS)
+        self.assertEqual(value._since, {'gA': at(9, 10) + timedelta(days=1), 'gB': at(9, 10) + timedelta(days=1), 'gC': at(9, 10) + timedelta(days=1)})
+        self.assertTrue(all(len(history) == 0 for history in value._history.values()))
+
+    def test_flow_alert_wording_matches_the_log_and_renders_on_the_board(self):
+        from PySide6.QtWidgets import QApplication
+
+        from desktop_app.components.charts import CandlestickChart
+        from desktop_app.features.trading.sector_board import SectorBoardWidget, alert_text
+        from quantlab.trading.application.sector_contracts import SectorBoardView
+        from quantlab.trading.domain.sector_alerts import SectorAlert
+
+        QApplication.instance() or QApplication([])
+        alert = SectorAlert(at(10, 15), 'gA', '散熱', 'FLOW', 'UP', 120_000_000, 3, None, 70_000_000, 7, 7)
+        self.assertEqual(alert_text(alert), '10:15 散熱 主動買連續 3 分鐘 淨買 1.2 億（大單淨買 0.7 億，監控 7/7 檔）')
+        sell = SectorAlert(at(10, 15), 'gA', '散熱', 'FLOW', 'DOWN', 120_000_000, 3, None, -20_000_000, 7, 5)
+        self.assertIn('主動賣連續 3 分鐘 淨賣 1.2 億（大單淨賣 -0.2 億，監控 5/7 檔）', alert_text(sell))
+        widget = SectorBoardWidget(SimpleNamespace(), CandlestickChart())
+        widget.render_board(SectorBoardView('LIVE', at(10, 15), 1, 10, 50, (stat('gA', 3),), alerts=(alert,)))
+        self.assertIn('主動買連續', widget.alert_bar.text())
+
+
 class BridgeTests(unittest.TestCase):
     def make(self, capacity):
         from quantlab.trading.runtime.market_terminal import SessionBridge

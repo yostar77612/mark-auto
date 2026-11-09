@@ -37,6 +37,19 @@ def alert_text(alert):
     """Same wording as the alert log entry for the same event."""
     eok = Decimal(10**8)
     when = alert.at.astimezone(_TAIPEI).strftime('%H:%M')
+    if alert.kind == 'FLOW':
+        word = ui_text('alert.sector_flow_buy') if alert.direction == 'UP' else ui_text('alert.sector_flow_sell')
+        return ui_text('alert.event.sector_flow').format(
+            when,
+            alert.group_name,
+            '',
+            word,
+            alert.baseline,
+            f'{Decimal(alert.amount) / eok:.1f}',
+            f'{Decimal(alert.detail) / eok:.1f}',
+            alert.monitored,
+            alert.members,
+        )
     words = {'UP': ui_text('alert.sector_dir_up'), 'DOWN': ui_text('alert.sector_dir_down'), 'NEUTRAL': ''}
     return ui_text('sector.alert_burst_text').format(
         when, alert.group_name, words[alert.direction], f'{Decimal(alert.amount) / eok:.1f}', f'{Decimal(alert.baseline) / eok:.1f}', f'{alert.ratio:.1f}'
