@@ -110,6 +110,7 @@ class MarketSeriesPage:
 
 
 class UiAction(str, Enum):
+    RESEARCH_MINUTES = 'research_minutes'
     BUILD_AUTO_STRATEGY = 'build_auto_strategy'
     PAUSE_AUTO_STRATEGY = 'pause_auto_strategy'
     RESUME_AUTO_STRATEGY = 'resume_auto_strategy'

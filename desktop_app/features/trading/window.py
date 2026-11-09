@@ -30,6 +30,7 @@ from desktop_app.features.trading.wizard import StrategyWizard
 from desktop_app.features.trading.context_header import install_context_header, refresh_context_header
 from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, refresh_trading_environment
 from desktop_app.features.trading.manual_intents import MANUAL_ACTIONS
+from desktop_app.features.trading.minute_research_feedback import minute_capable
 from desktop_app.features.trading.sinopac_ui import CONNECTION_ACTIONS, complete_connection, render_connection
 
 
@@ -399,6 +400,8 @@ class TradingWindow(QMainWindow):
     def _strategy_action(self, action: UiAction) -> None:
         identity = selected_id(self.strategies)
         if identity:
+            if action is UiAction.RESEARCH and minute_capable(self.strategy_controls.selected()):
+                action = UiAction.RESEARCH_MINUTES
             self.command(action, identity)
         else:
             self._feedback(ui_text('v2.select_strategy'))

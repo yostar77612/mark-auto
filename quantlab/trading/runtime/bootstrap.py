@@ -328,6 +328,10 @@ class RuntimeBundle:
             prepared = prepare_daily_deployment(self, command)
             if prepared is not None:
                 return prepared
+        if isinstance(command, UiCommand) and command.action is UiAction.RESEARCH_MINUTES:
+            from .minute_research_command import run_minute_command
+
+            return run_minute_command(self, command)
         if self.automatic_runtime is not None and self.automatic_runtime.handles(command):
             if self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')

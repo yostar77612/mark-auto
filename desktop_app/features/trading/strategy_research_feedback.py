@@ -2,6 +2,7 @@
 
 from PySide6.QtCore import Qt
 
+from desktop_app.features.trading.minute_research_feedback import minute_error_hint, minute_summary
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.domain.models import Environment
@@ -34,7 +35,7 @@ class StrategyResearchFeedback:
             self.status.hide()
 
     def started(self, command, operation):
-        if command is None or command.action not in (UiAction.RESEARCH, UiAction.VALIDATE):
+        if command is None or command.action not in (UiAction.RESEARCH, UiAction.RESEARCH_MINUTES, UiAction.VALIDATE):
             return
         self.scope = self.context(self.window.state)
         self.target = command.target_id
@@ -58,10 +59,10 @@ class StrategyResearchFeedback:
         self.status.setAccessibleName(text)
         self.status.show()
 
-    def error(self, code, *, unconfirmed=False):
+    def error(self, code, *, unconfirmed=False, hint=''):
         detail = ' '.join(self.window.strategy_error_texts[code]) if code in self.window.strategy_error_texts else ui_text('async.error_unknown')
         heading = ui_text('research.feedback.unconfirmed') if unconfirmed else ui_text('research.feedback.failed')
-        text = ui_text('research.feedback.summary').format(self.caption, heading, ui_text('watch.unknown')) + '\n' + detail
+        text = ui_text('research.feedback.summary').format(self.caption, heading, ui_text('watch.unknown')) + '\n' + detail + ('\n' + hint if hint else '')
         self.show('error', text)
 
     def completed(self, action, state, receipt):
@@ -71,7 +72,10 @@ class StrategyResearchFeedback:
             self.error('state_conflict', unconfirmed=True)
             return
         if not receipt.accepted:
-            self.error(receipt.code)
+            self.error(receipt.code, hint=minute_error_hint(receipt.code) if action is UiAction.RESEARCH_MINUTES else '')
+            return
+        if action is UiAction.RESEARCH_MINUTES:
+            self.show('empty', self.caption + '\n' + minute_summary(receipt.reference))
             return
         strategy = next((item for item in state.strategies if f'{item.strategy_id}:{item.version}' == self.target), None)
         if strategy is None:

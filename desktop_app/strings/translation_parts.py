@@ -99,7 +99,10 @@ from .strategy_explain import ENTRIES as _part_strategy_explain
 
 from .m2_manual_connection import ENTRIES as _part_m2_manual_connection
 
+from .minute_research_ui import ENTRIES as _part_minute_research_ui
+
 PARTS = (
+    _part_minute_research_ui,
     _part_strategy_explain,
     _part_m2_manual_connection,
     _part_assistant_claude_code,

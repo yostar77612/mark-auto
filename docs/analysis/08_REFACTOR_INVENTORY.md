@@ -970,6 +970,9 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/research_core/adapters/workspace_archive.py` | 208 | infrastructure | `quantlab/research_core/adapters/workspace_archive.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `tools/archive_workspace.py` | 61 | tooling | `tools/archive_workspace.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/strings/m2_manual_connection.py` | 11 | shared | `desktop_app/strings/m2_manual_connection.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/minute_research_feedback.py` | 31 | presentation | `desktop_app/features/trading/minute_research_feedback.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/strings/minute_research_ui.py` | 18 | shared | `desktop_app/strings/minute_research_ui.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/minute_research_command.py` | 79 | composition | `quantlab/trading/runtime/minute_research_command.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

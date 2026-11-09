@@ -3236,7 +3236,11 @@
       "assistant.explain_check_stop_tight": "停損小於 1%，容易被正常波動洗出場。",
       "assistant.explain_check_stop_wide": "停損大於 10%，單筆虧損可能很大。",
       "assistant.explain_check_costs": "成本占累計虧損一半以上，可能是交易太頻繁。",
-      "assistant.explain_check_unresearched": "尚未完成研究或研究已過期，結果不能當作依據。"
+      "assistant.explain_check_unresearched": "尚未完成研究或研究已過期，結果不能當作依據。",
+      "research.minute.summary": "分鐘研究完成（{0}～{1}，{2} K 線）：{3} 筆交易，淨損益 {4}，成本 {5}，最大回落 {6}，共 {7} 根 K 線。\n僅供研究：這個結果不能啟用策略，也不含保護性停損。",
+      "research.minute.need_connection": "分鐘研究要用微台 K 線，需要已連到「券商模擬」並選好帳戶的永豐連線；也可能是 K 線補抓暫停或失敗。請到「設定」頁確認連線後再試。",
+      "research.minute.too_few_days": "目前微台合約可用的已收盤交易日太少（至少需要 3 天），等累積足夠的交易日後再試。",
+      "research.minute.source": "永豐 1 分 K（僅研究）"
     }
   },
   "aliases": {
@@ -7801,6 +7805,10 @@
       "assistant.explain_check_stop_wide": "停損大於 10%，單筆虧損可能很大。",
       "assistant.explain_check_costs": "成本占累計虧損一半以上，可能是交易太頻繁。",
       "assistant.explain_check_unresearched": "尚未完成研究或研究已過期，結果不能當作依據。",
+      "research.minute.summary": "分鐘研究完成（{0}～{1}，{2} K 線）：{3} 筆交易，淨損益 {4}，成本 {5}，最大回落 {6}，共 {7} 根 K 線。\n僅供研究：這個結果不能啟用策略，也不含保護性停損。",
+      "research.minute.need_connection": "分鐘研究要用微台 K 線，需要已連到「券商模擬」並選好帳戶的永豐連線；也可能是 K 線補抓暫停或失敗。請到「設定」頁確認連線後再試。",
+      "research.minute.too_few_days": "目前微台合約可用的已收盤交易日太少（至少需要 3 天），等累積足夠的交易日後再試。",
+      "research.minute.source": "永豐 1 分 K（僅研究）",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12361,7 +12369,11 @@
     "assistant.explain_check_stop_tight",
     "assistant.explain_check_stop_wide",
     "assistant.explain_check_costs",
-    "assistant.explain_check_unresearched"
+    "assistant.explain_check_unresearched",
+    "research.minute.summary",
+    "research.minute.need_connection",
+    "research.minute.too_few_days",
+    "research.minute.source"
   ],
   "alias_order": [
     "ui.research_controls.text_1",
