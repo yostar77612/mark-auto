@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication, QPushButton
 from desktop_app.features.trading.alert_panel import AlertPanel, AlertRuleDialog
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.alert_service import AlertService
-from quantlab.trading.domain.alerts import AlertKind
+from quantlab.trading.domain.alerts import RULE_KINDS, AlertKind
 from tests.test_alert_rules import ID, NOW, fixtures
 
 
@@ -54,10 +54,10 @@ class AlertUiTests(unittest.TestCase):
         )
         self.assertEqual(12, dialog.kind.count())
         self.assertEqual(expected, tuple(dialog.kind.itemText(i) for i in range(12)))
-        self.assertEqual(list(AlertKind), [dialog.kind.itemData(i) for i in range(12)])
+        self.assertEqual(list(RULE_KINDS), [dialog.kind.itemData(i) for i in range(12)])
         self.assertEqual({'price', 'direction'}, set(dialog.editors))
         self.assertEqual(2, dialog.scope.count())
-        for index, kind in enumerate(AlertKind):
+        for index, kind in enumerate(RULE_KINDS):
             dialog.kind.setCurrentIndex(index)
             self.assertEqual(3 if index >= 8 else 2, dialog.scope.count())
             self.assertTrue(dialog.kind.accessibleName())

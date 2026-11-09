@@ -82,6 +82,13 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         return Response(request.request_id, order_book=bundle.market_terminal.order_book(request.series.instrument_id))
     if request.operation is Operation.SECTOR_BOARD:
         return Response(request.request_id, sector=bundle.sector.board(request.sector.group_id))
+    if request.operation is Operation.SECTOR_GROUPS:
+        return Response(request.request_id, sector_groups=bundle.sector_groups.execute(request.sector_groups))
+    if request.operation is Operation.SECTOR_SETTINGS:
+        settings = bundle.sector_settings
+        params = settings.get() if request.sector_params is None else settings.save(request.sector_params)
+        bundle.sector.interval_seconds = params.snapshot_seconds
+        return Response(request.request_id, sector_params=params)
     if request.operation is Operation.ALERTS:
         return Response(request.request_id, alerts=bundle.alerts.execute(request.alert))
     if request.operation in (Operation.COMMAND, Operation.BUILD_AUTO_STRATEGY, Operation.AUTO_STRATEGY_COMMAND):

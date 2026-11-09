@@ -1,19 +1,24 @@
 """Sector ranking from market-wide snapshot rounds; read-only, fail-closed on stale or missing data."""
 
+from collections import deque
+import logging
 from datetime import date, datetime, time
+from decimal import Decimal
 from threading import RLock
 from typing import Callable
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS, ConceptGroup
 from quantlab.trading.domain.industry_names import industry_name
+from quantlab.trading.domain.sector_alerts import SectorAlert
 from quantlab.trading.domain.sector import QuoteRow, SectorGroup, SectorStat, compute_stats, eligible_stock, sort_stats
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 from quantlab.trading.ports.sector import SnapshotSourcePort
-from .sector_contracts import MemberView, SectorBoardView
+from .sector_contracts import MemberView, MonitorCount, SectorBoardView
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
+logger = logging.getLogger(__name__)
 SESSION_START, SESSION_END = time(8, 55), time(13, 35)
 STALE_SECONDS = 30
 
@@ -52,6 +57,11 @@ class SectorService:
         self._first_limit_up: dict[str, datetime] = {}
         self._limit_day: date | None = None
         self._generation = 0
+        self._alerts: deque[SectorAlert] = deque(maxlen=200)
+        self.on_round: Callable[[datetime, tuple[SectorStat, ...]], tuple[SectorAlert, ...]] = lambda now, stats: ()
+        self.on_alert: Callable[[SectorAlert], None] = lambda alert: None
+        self.monitor_info: Callable[[], tuple[tuple[str, ...], tuple[tuple[str, int, int], ...]]] = lambda: ((), ())
+        self.side_ratio: Callable[[str], Decimal | None] = lambda code: None
 
     def stocks(self) -> tuple[WatchInstrument, ...]:
         return tuple(item for item in self.directory() if item.kind is WatchKind.STOCK and eligible_stock(item.code))
@@ -89,6 +99,16 @@ class SectorService:
             self._groups = {group.id: group for group in groups}
             self._stats = compute_stats(groups, rows)
             self._track_limit_up(rows)
+            fetched, stats = self._fetched_at, self._stats
+        # Hooks run outside the lock: they write to disk, may subscribe to ticks and may call back into the service.
+        alerts = self.on_round(fetched, stats)
+        with self.lock:
+            self._alerts.extend(alerts)
+        for alert in alerts:
+            try:
+                self.on_alert(alert)
+            except Exception:
+                logger.error('sector alert delivery failed')
 
     def _track_limit_up(self, rows: dict[str, QuoteRow]) -> None:
         latest = max((row.at for row in rows.values()), default=None)
@@ -104,6 +124,29 @@ class SectorService:
                 self._first_limit_up.setdefault(code, row.at)
             else:
                 self._first_limit_up.pop(code, None)
+
+    def recompute(self) -> None:
+        """Re-rank the last snapshot with the current group list, e.g. right after the user edits a group."""
+        groups = self.groups()
+        with self.lock:
+            if self._rows:
+                self._groups = {group.id: group for group in groups}
+                self._stats = compute_stats(groups, self._rows)
+
+    def candidates(self, group_id: str) -> tuple[tuple[WatchInstrument, int], ...]:
+        """Members of a group that have a quote, with their turnover, for choosing what to subscribe."""
+        with self.lock:
+            group = self._groups.get(group_id)
+            if group is None:
+                return ()
+            rows = self._rows
+            codes = [code for code in dict.fromkeys(group.codes) if code in rows]
+        stocks = {item.code: item for item in self.stocks()}
+        return tuple((stocks[code], rows[code].total_amount) for code in codes if code in stocks)
+
+    def group_name(self, group_id: str) -> str:
+        group = self._groups.get(group_id)
+        return group.name if group is not None else group_id
 
     def disconnected(self) -> None:
         with self.lock:
@@ -127,6 +170,7 @@ class SectorService:
             if state in ('OFFLINE', 'EMPTY'):
                 return SectorBoardView(state, interval_seconds=self.interval_seconds, failed=self._failed)
             selected = group_id if group_id in self._groups else ''
+            monitored, counts = self.monitor_info()
             return SectorBoardView(
                 state,
                 max((row.at for row in self._rows.values()), default=None),
@@ -137,6 +181,9 @@ class SectorService:
                 selected,
                 self._members(selected) if selected else (),
                 self._failed,
+                tuple(reversed(self._alerts)),
+                monitored,
+                tuple(MonitorCount(*item) for item in counts),
             )
 
     def _members(self, group_id: str) -> tuple[MemberView, ...]:
@@ -156,6 +203,7 @@ class SectorService:
                 self._rows[code].limit,
                 limit_up.get(code),
                 code == leader,
+                self.side_ratio(code),
             )
             for code in codes
         ]

@@ -1,11 +1,11 @@
 """Read-only terminal; application ports own subscriptions, history, and prices."""
 
 from dataclasses import replace
-from PySide6.QtCore import Qt, QEvent, QThreadPool
+from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QMenu, QDialog, QVBoxLayout, QLabel
 from desktop_app.strings.catalog import ui_text
-from desktop_app.features.trading.market_watch import _Result, _Request
+from desktop_app.features.trading.market_watch import _Result, start_request
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text, _change_direction
 from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
@@ -45,7 +45,7 @@ class MarketTerminalWidget(QWidget):
         result = _Result(finish)
         self._requests.add(result)
         self.destroyed.connect(result.cancel)
-        QThreadPool.globalInstance().start(_Request(operation, result))
+        start_request(operation, result)
 
     def refresh_directory(self, *, initial=False):
         generation = self._generation
@@ -278,6 +278,17 @@ class MarketTerminalWidget(QWidget):
                 self.show_message(ui_text('terminal.watch_full').format(limit))
                 return
             self._save_watchlist((*watches, key))
+
+    def add_watch(self, instrument_id):
+        """Add one instrument to the watchlist (used by the sector board's member menu)."""
+        watches = self.state.watchlist
+        if instrument_id in watches or instrument_id in {item.instrument_id for item in FIXED_INDICES}:
+            return
+        limit = self.state.market_health.subscription_limit - 2
+        if len(watches) >= limit:
+            self.show_message(ui_text('terminal.watch_full').format(limit))
+            return
+        self._save_watchlist((*watches, instrument_id))
 
     def _save_watchlist(self, watches):
         if self._busy:

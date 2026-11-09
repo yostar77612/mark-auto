@@ -6,7 +6,7 @@ exceptions are sanitized at this SDK boundary; credentials are never retained.
 
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
-from threading import Lock
+from threading import Lock, RLock
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.freshness import LiveMarketSettings
@@ -80,6 +80,7 @@ class MarketSession:
         self.tick_stream: ShioajiTickStream | None = None
         self.bidask_stream: ShioajiBidAskStream | None = None
         self.bidask_subscriptions: dict[str, object] = {}
+        self._subscription_lock = RLock()
         self.subscriptions: dict[str, object] = {}
         self._quote_lock = Lock()
         self._details: dict[str, dict[str, object]] = {}
@@ -185,7 +186,14 @@ class MarketSession:
             raise DomainError('symbol_not_found')
         return contract
 
+    def free_slots(self) -> int:
+        return self.live_settings.subscription_limit - len(self.subscriptions) - len(self.bidask_subscriptions)
+
     def subscribe(self, instrument: WatchInstrument) -> None:
+        with self._subscription_lock:
+            self._subscribe(instrument)
+
+    def _subscribe(self, instrument: WatchInstrument) -> None:
         if instrument.instrument_id in self.subscriptions:
             return
         if len(self.subscriptions) + len(self.bidask_subscriptions) >= self.live_settings.subscription_limit:
@@ -208,6 +216,10 @@ class MarketSession:
             raise DomainError('market_data_subscription_failed' if self.connected else 'market_data_not_connected') from None
 
     def subscribe_bidask(self, instrument: WatchInstrument) -> None:
+        with self._subscription_lock:
+            self._subscribe_bidask(instrument)
+
+    def _subscribe_bidask(self, instrument: WatchInstrument) -> None:
         """Five levels cost one subscription slot, counted with the tick subscriptions."""
         if instrument.instrument_id in self.bidask_subscriptions:
             return
@@ -234,13 +246,17 @@ class MarketSession:
         except Exception:
             raise DomainError('market_data_not_connected') from None
         finally:
-            del self.bidask_subscriptions[instrument_id]
+            self.bidask_subscriptions.pop(instrument_id, None)
             self.bidask_stream.set_active(set(self.bidask_subscriptions))
 
     def bidask(self, instrument_id: str):
         return self.bidask_stream.latest(instrument_id) if self.connected and self.bidask_stream is not None else None
 
     def unsubscribe(self, instrument_id: str) -> None:
+        with self._subscription_lock:
+            self._unsubscribe(instrument_id)
+
+    def _unsubscribe(self, instrument_id: str) -> None:
         contract = self.subscriptions.get(instrument_id)
         if contract is None:
             return
@@ -248,7 +264,7 @@ class MarketSession:
             self.facade.market_subscribe(contract, remove=True)
         except Exception:
             raise DomainError('market_data_not_connected') from None
-        del self.subscriptions[instrument_id]
+        self.subscriptions.pop(instrument_id, None)
         self.tick_stream.set_active(set(self.subscriptions))
 
     def disconnect(self) -> None:

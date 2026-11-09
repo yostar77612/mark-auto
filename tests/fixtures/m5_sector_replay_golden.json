@@ -1,0 +1,9 @@
+{
+  "note": "Hand-derived from the scenario in tests/test_m5_alerts.py (default parameters): minute labels in Taipei time",
+  "alerts": [
+    ["09:30", "g2", "NEUTRAL"],
+    ["09:40", "g1", "UP"],
+    ["09:45", "g1", "NEUTRAL"],
+    ["09:55", "g1", "UP"]
+  ]
+}

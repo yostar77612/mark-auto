@@ -1,0 +1,7 @@
+{
+  "note": "Hand-derived from the scenario in tests/test_m5_monitor.py (default parameters): minute labels in Taipei time",
+  "alerts": [
+    ["09:18", "gA", "UP"],
+    ["09:22", "gA", "DOWN"]
+  ]
+}

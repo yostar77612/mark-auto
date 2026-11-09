@@ -6,6 +6,7 @@ from decimal import Decimal as D
 import unittest
 
 from quantlab.trading.domain.alerts import (
+    RULE_KINDS,
     AlertKind,
     AlertObservation,
     AlertRule,
@@ -63,7 +64,7 @@ def fixtures():
             tuple(bar(str(v), low='1', high='11', minute=i) for i, v in enumerate((1, 1, 7))),
         ),
     }
-    for kind in AlertKind:
+    for kind in RULE_KINDS:
         if kind in bars:
             params, values = bars[kind]
             yield AlertRule(kind.value, kind, instrument_id=ID, params=params), replace(tick, bars=values)
@@ -99,7 +100,7 @@ class AlertRulesTests(unittest.TestCase):
                 state, _, _ = evaluate_alert(rule, replace(false, occurred_at=NOW + timedelta(seconds=59)), state)
                 state, fired, _ = evaluate_alert(rule, replace(observation, occurred_at=NOW + timedelta(seconds=60)), state)
                 self.assertTrue(fired)
-        self.assertEqual(list(AlertKind), seen)
+        self.assertEqual(list(RULE_KINDS), seen)
 
     def test_unfinished_and_incomplete_bars_never_trigger(self):
         for rule, observation in fixtures():

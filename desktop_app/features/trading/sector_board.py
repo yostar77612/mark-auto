@@ -2,19 +2,20 @@
 
 from dataclasses import replace
 from decimal import Decimal
+from time import monotonic
 from zoneinfo import ZoneInfo
 
-from PySide6.QtCore import Qt, QThreadPool, QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QPushButton, QSplitter, QTableWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QListWidget, QListWidgetItem, QMenu, QPushButton, QSplitter, QTableWidget, QVBoxLayout, QWidget
 
 from desktop_app.features.trading.market_terminal_widgets import QuoteItem
-from desktop_app.features.trading.market_watch import _Request, _Result
+from desktop_app.features.trading.market_watch import _Result, start_request
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.order_book_panel import OrderBookPanel
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import MarketSeriesQuery
-from quantlab.trading.application.sector_contracts import SectorQuery
+from quantlab.trading.application.sector_contracts import SectorGroupsCommand, SectorQuery
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 REFRESH_MS = 2000
@@ -30,6 +31,29 @@ def percent_text(value, signed=True):
 
 def amount_text(value):
     return ui_text('sector.amount_eok').format(format(Decimal(value) / Decimal(10**8), '.1f'))
+
+
+def alert_text(alert):
+    """Same wording as the alert log entry for the same event."""
+    eok = Decimal(10**8)
+    when = alert.at.astimezone(_TAIPEI).strftime('%H:%M')
+    if alert.kind == 'FLOW':
+        word = ui_text('alert.sector_flow_buy') if alert.direction == 'UP' else ui_text('alert.sector_flow_sell')
+        return ui_text('alert.event.sector_flow').format(
+            when,
+            alert.group_name,
+            '',
+            word,
+            alert.baseline,
+            f'{Decimal(alert.amount) / eok:.1f}',
+            f'{Decimal(alert.detail) / eok:.1f}',
+            alert.monitored,
+            alert.members,
+        )
+    words = {'UP': ui_text('alert.sector_dir_up'), 'DOWN': ui_text('alert.sector_dir_down'), 'NEUTRAL': ''}
+    return ui_text('sector.alert_burst_text').format(
+        when, alert.group_name, words[alert.direction], f'{Decimal(alert.amount) / eok:.1f}', f'{Decimal(alert.baseline) / eok:.1f}', f'{alert.ratio:.1f}'
+    )
 
 
 def clock_text(moment):
@@ -56,9 +80,10 @@ def _table(name, headers, stretch=0, name_width=112):
 
 
 class SectorBoardWidget(QWidget):
-    def __init__(self, facade, chart, parent=None, *, colours=None, style=None):
+    def __init__(self, facade, chart, parent=None, *, colours=None, style=None, open_in_watch=None, add_to_watch=None):
         super().__init__(parent)
         self.facade, self.chart, self.style = facade, chart, style
+        self.open_in_watch, self.add_to_watch = open_in_watch, add_to_watch
         self.colours = colours or (lambda widget: ('#c62828', '#16803c'))
         self.setObjectName('sector_board')
         self.setAccessibleName(ui_text('sector.tab_board'))
@@ -67,6 +92,7 @@ class SectorBoardWidget(QWidget):
         self.view = None
         self._requests, self._loading, self._detail_loading, self._selecting, self._again = set(), False, None, False, False
         self._wanted = ''
+        self._flash, self._seen_alerts, self._alerts_primed = {}, set(), False
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         top = QHBoxLayout()
@@ -80,6 +106,16 @@ class SectorBoardWidget(QWidget):
             item.clicked.connect(lambda checked=False, selected=key: self.set_filter(selected))
             self.filter_buttons[key] = item
             top.addWidget(item)
+        self.edit_button = QPushButton(ui_text('sector.edit_button'))
+        self.edit_button.setObjectName('sector_edit_button')
+        self.edit_button.setAccessibleName(ui_text('sector.edit_button'))
+        self.edit_button.clicked.connect(lambda checked=False: self.open_editor())
+        top.addWidget(self.edit_button)
+        self.settings_button = QPushButton(ui_text('sector.alert_settings'))
+        self.settings_button.setObjectName('sector_settings_button')
+        self.settings_button.setAccessibleName(ui_text('sector.alert_settings'))
+        self.settings_button.clicked.connect(lambda checked=False: self.open_settings())
+        top.addWidget(self.settings_button)
         top.addStretch()
         self.status = QLabel(ui_text('sector.offline'))
         self.status.setObjectName('sector_status')
@@ -102,6 +138,8 @@ class SectorBoardWidget(QWidget):
         self.members.setAccessibleName(ui_text('sector.members_title'))
         self.members.itemClicked.connect(lambda item: self.select_stock(self.members.item(item.row(), 0).data(Qt.ItemDataRole.UserRole)))
         self.members.horizontalHeader().sectionClicked.connect(lambda column: self._sort(self.members, 'member_sort', column))
+        self.members.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.members.customContextMenuRequested.connect(self._member_menu)
         self.members_hint = QLabel(ui_text('sector.pick_group'))
         self.members_hint.setObjectName('sector_members_hint')
         self.members_hint.setAccessibleName(ui_text('sector.members_title'))
@@ -113,6 +151,7 @@ class SectorBoardWidget(QWidget):
         self.members_title.setObjectName('sector_members_title')
         self.members_title.setAccessibleName(ui_text('sector.members_title'))
         self.members_title.setTextFormat(Qt.TextFormat.PlainText)
+        self.members_title.setWordWrap(True)
         members_layout.addWidget(self.members_title)
         members_layout.addWidget(self.members_hint)
         members_layout.addWidget(self.members, 1)
@@ -153,6 +192,19 @@ class SectorBoardWidget(QWidget):
             splitter.addWidget(part)
         splitter.setSizes((580, 290, 310))
         root.addWidget(splitter, 1)
+        self.alert_list = QListWidget()
+        self.alert_list.setObjectName('sector_alert_list')
+        self.alert_list.setAccessibleName(ui_text('sector.alerts_title'))
+        self.alert_list.setMaximumHeight(140)
+        self.alert_list.itemClicked.connect(lambda item: self.select_group(item.data(Qt.ItemDataRole.UserRole)))
+        self.alert_list.hide()
+        root.addWidget(self.alert_list)
+        self.alert_bar = QPushButton(ui_text('sector.alerts_none'))
+        self.alert_bar.setObjectName('sector_alert_bar')
+        self.alert_bar.setAccessibleName(ui_text('sector.alerts_title'))
+        self.alert_bar.setToolTip(ui_text('sector.alerts_expand'))
+        self.alert_bar.clicked.connect(lambda checked=False: self.toggle_alerts())
+        root.addWidget(self.alert_bar)
         self.timer = QTimer(self)
         self.timer.setInterval(REFRESH_MS)
         self.timer.timeout.connect(self.refresh)
@@ -166,7 +218,7 @@ class SectorBoardWidget(QWidget):
         result = _Result(finish)
         self._requests.add(result)
         self.destroyed.connect(result.cancel)
-        QThreadPool.globalInstance().start(_Request(operation, result))
+        start_request(operation, result)
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -265,8 +317,10 @@ class SectorBoardWidget(QWidget):
             self.members_hint.setText(ui_text('sector.pick_group'))
             self.members_hint.show()
             return
+        self._track_alerts(view)
         self._render_rank(view)
         self._render_members(view)
+        self._render_alerts(view)
         if self.style is not None:
             self.style(self)
 
@@ -303,7 +357,8 @@ class SectorBoardWidget(QWidget):
             if self.filter != 'all' and stat.kind != self.filter:
                 continue
             breadth = Decimal(stat.up_count) / Decimal(stat.valid_count) if stat.valid_count else None
-            name = stat.name + (' · ' + ui_text('sector.few_members') if stat.valid_count and stat.valid_count < 4 else '')
+            name = (ui_text('sector.monitor_mark') + ' ' if stat.group_id in view.monitored else '') + stat.name
+            name += ' · ' + ui_text('sector.few_members') if stat.valid_count and stat.valid_count < 4 else ''
             kind = ui_text('sector.kind_industry') if stat.kind == 'INDUSTRY' else ui_text('sector.kind_concept')
             rows.append(
                 (
@@ -321,6 +376,7 @@ class SectorBoardWidget(QWidget):
                 )
             )
         self._fill(self.rank, rows, self.rank_sort)
+        self._tint_alerted(view)
         for row in range(self.rank.rowCount()):
             if self.rank.item(row, 0).data(Qt.ItemDataRole.UserRole) == self.group_id:
                 self.rank.selectRow(row)
@@ -333,7 +389,13 @@ class SectorBoardWidget(QWidget):
             self.members_hint.show()
             return
         stat = next((item for item in view.groups if item.group_id == view.selected_group_id), None)
-        self.members_title.setText(ui_text('sector.members_of').format(stat.name if stat else ''))
+        title = ui_text('sector.members_of').format(stat.name if stat else '')
+        count = next((item for item in view.monitor_counts if item.group_id == view.selected_group_id), None)
+        if count is not None:
+            title += ' · ' + ui_text('sector.monitor_count').format(count.monitored, count.total)
+            if count.monitored < count.total:
+                title += ' · ' + ui_text('sector.monitor_limited')
+        self.members_title.setText(title)
         self.members_hint.hide()
         rows = []
         for member in view.members:
@@ -357,7 +419,12 @@ class SectorBoardWidget(QWidget):
                             None,
                         ),
                         (amount_text(member.amount), member.amount, None, None),
-                        (ui_text('sector.no_value'), None, None, None),
+                        (
+                            f'{member.side_ratio * 100:.0f}%' if member.side_ratio is not None else ui_text('sector.no_value'),
+                            member.side_ratio,
+                            None,
+                            None,
+                        ),
                     ),
                 )
             )
@@ -374,6 +441,100 @@ class SectorBoardWidget(QWidget):
         if self.view is not None:
             self._render_rank(self.view) if table is self.rank else self._render_members(self.view)
 
+    def _track_alerts(self, view):
+        """Newly seen alerts flash their group row for 3 s, then keep a light tint until the next round."""
+        now = monotonic()
+        primed, self._alerts_primed = self._alerts_primed, True
+        for alert in reversed(view.alerts):  # oldest first, so the newest alert of a group sets the tint
+            key = (alert.at, alert.group_id, alert.kind)
+            if key not in self._seen_alerts:
+                self._seen_alerts.add(key)
+                if primed:  # alerts that predate this window (restart, reconnect) do not flash
+                    self._flash[alert.group_id] = (alert.direction, now, view.data_at)
+        for group_id, (direction, seen, data_at) in tuple(self._flash.items()):
+            if data_at != view.data_at and now - seen >= 3:
+                del self._flash[group_id]
+
+    def _tint_alerted(self, view):
+        if not self._flash:
+            return
+        now = monotonic()
+        up, down = self.colours(self)
+        for row in range(self.rank.rowCount()):
+            entry = self._flash.get(self.rank.item(row, 0).data(Qt.ItemDataRole.UserRole))
+            if entry is None:
+                continue
+            direction, seen, _ = entry
+            base = QColor(up) if direction == 'UP' else QColor(down) if direction == 'DOWN' else QColor('#9e9e9e')
+            tint = base.lighter(170 if now - seen < 3 else 215)
+            for column in range(self.rank.columnCount()):
+                self.rank.item(row, column).setBackground(tint)
+
+    def _render_alerts(self, view):
+        self.alert_bar.setText(alert_text(view.alerts[0]) if view.alerts else ui_text('sector.alerts_none'))
+        self.alert_list.clear()
+        for alert in view.alerts:
+            item = QListWidgetItem(alert_text(alert))
+            item.setData(Qt.ItemDataRole.UserRole, alert.group_id)
+            self.alert_list.addItem(item)
+
+    def toggle_alerts(self):
+        self.alert_list.setVisible(not self.alert_list.isVisible())
+        self.alert_bar.setToolTip(ui_text('sector.alerts_collapse') if self.alert_list.isVisible() else ui_text('sector.alerts_expand'))
+
+    def open_settings(self):
+        from desktop_app.features.trading.sector_settings_dialog import SectorAlertSettingsDialog
+
+        def opened(value, error):
+            if error is None:
+                dialog = SectorAlertSettingsDialog(self.facade, value, self._submit, self, on_saved=self.refresh)
+                dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+                self.settings_dialog = dialog
+                dialog.show()
+
+        self._submit(lambda: self.facade.sector_settings(), opened)
+
+    def _member_menu(self, point):
+        item = self.members.itemAt(point)
+        if item is None:
+            return
+        instrument_id = self.members.item(item.row(), 0).data(Qt.ItemDataRole.UserRole)
+        menu = QMenu(self)
+        if self.add_to_watch is not None:
+            menu.addAction(ui_text('sector.menu_add_watch'), lambda: self.add_to_watch(instrument_id))
+        if self.open_in_watch is not None:
+            menu.addAction(ui_text('sector.menu_open_watch'), lambda: self.open_in_watch(instrument_id))
+        if self.group_id and not self.group_id.startswith('industry.'):
+            menu.addAction(ui_text('sector.menu_remove_member'), lambda: self.remove_member(self.group_id, instrument_id.split(':')[-1]))
+        if menu.actions():
+            menu.exec(self.members.viewport().mapToGlobal(point))
+
+    def remove_member(self, group_id, code):
+        facade = self.facade
+
+        def operation():
+            current = next(group for group in facade.sector_groups(SectorGroupsCommand()).groups if group.id == group_id)
+            return facade.sector_groups(SectorGroupsCommand('SET_CODES', group_id, codes=tuple(value for value in current.codes if value != code)))
+
+        self._submit(operation, lambda value, error: self.refresh())
+
+    def open_editor(self):
+        from desktop_app.features.trading.sector_editor import SectorEditor
+
+        def operation():
+            return self.facade.symbol_directory()
+
+        def opened(value, error):
+            if error is not None:
+                self.status.setText(ui_text('sector.error'))
+            else:
+                editor = SectorEditor(self.facade, value, self._submit, self, on_changed=self.refresh)
+                editor.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+                self.editor = editor
+                editor.show()
+
+        self._submit(operation, opened)
+
     def set_filter(self, key):
         self.filter = key
         for name, item in self.filter_buttons.items():
@@ -382,12 +543,24 @@ class SectorBoardWidget(QWidget):
             self._render_rank(self.view)
 
     def select_group(self, group_id):
+        if self.view is not None and self.filter != 'all':
+            stat = next((item for item in self.view.groups if item.group_id == group_id), None)
+            if stat is not None and stat.kind != self.filter:
+                self.set_filter('all')  # a group hidden by the 產業/概念 filter must still be reachable from an alert
         if group_id == self.group_id:
+            self._scroll_to_group()
             return
         self.group_id = group_id
         if self.view is not None:
             self._render_rank(self.view)
+        self._scroll_to_group()
         self.refresh()
+
+    def _scroll_to_group(self):
+        for row in range(self.rank.rowCount()):
+            if self.rank.item(row, 0).data(Qt.ItemDataRole.UserRole) == self.group_id:
+                self.rank.selectRow(row)
+                self.rank.scrollToItem(self.rank.item(row, 0))
 
     def select_period(self, period):
         self.period = period

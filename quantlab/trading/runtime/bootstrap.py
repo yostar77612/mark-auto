@@ -77,6 +77,10 @@ class RuntimeBundle:
     alerts: object | None = None
     sector: object | None = None
     sector_poller: object | None = None
+    sector_groups: object | None = None
+    sector_settings: object | None = None
+    sector_minute_store: object | None = None
+    session_bridge: object | None = None
     sinopac_factory: object | None = None
     secret_resolver: object | None = None
     resource_factory: object | None = None
@@ -716,6 +720,10 @@ class RuntimeBundle:
             else:
                 self.cleanup_unconfirmed = True
         self.market_connection.close()
+        if self.sector_poller is not None:
+            self.sector_poller.stop()
+        if self.sector_minute_store is not None:
+            self.sector_minute_store.close()
         errors = []
         if self.engine is not None and self.launch.environment is not Environment.LOCAL:
             seen_gateways = set()

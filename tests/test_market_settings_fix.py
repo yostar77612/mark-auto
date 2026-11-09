@@ -16,7 +16,7 @@ from desktop_app.components.charts import CandlestickChart
 from desktop_app.shell.theme import chart_legend
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import SinopacConnectionSettings, SinopacConnectionView
-from quantlab.trading.domain.alerts import AlertKind
+from quantlab.trading.domain.alerts import RULE_KINDS
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.application.errors import ERROR_TABLE
 
@@ -83,7 +83,7 @@ class MarketSettingsUiRegressionTests(unittest.TestCase):
             shiboken6.delete(panel)
 
     def test_alert_kind_combo_creates_all_twelve_typed_rules(self):
-        for kind in AlertKind:
+        for kind in RULE_KINDS:
             with self.subTest(kind=kind):
                 dialog = AlertRuleDialog('TWSE:2330')
                 try:
