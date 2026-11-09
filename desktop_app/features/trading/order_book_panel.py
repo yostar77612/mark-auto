@@ -14,6 +14,8 @@ _SIDE_KEYS = {'BUY': 'orderbook.side_buy', 'SELL': 'orderbook.side_sell', 'NONE'
 
 
 def price_text(value: Decimal) -> str:
+    if value == 0:
+        return '—'
     digits = 2 if value < Decimal('50') else 1 if value < Decimal('500') else 0
     return format(value, f'.{digits}f')
 

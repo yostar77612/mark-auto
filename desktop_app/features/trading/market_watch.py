@@ -15,12 +15,19 @@ from desktop_app.features.trading.market_watch_rows import freshness_text, heade
 from desktop_app.features.trading.widgets import rows, selected_id
 
 
+# A worker thread's _Request holds the last Python reference once the GUI thread has finished with a
+# result. Dropping it there would destroy the QObject off its own thread, so results stay registered
+# here until Qt has deleted them on the GUI thread.
+_LIVE_RESULTS = set()
+
+
 class _Result(QObject):
     ready = Signal(object, object)
 
     def __init__(self, completed):
         super().__init__()
         self.completed = completed
+        _LIVE_RESULTS.add(self)
         self.ready.connect(self.finish)
 
     @Slot()
@@ -31,6 +38,7 @@ class _Result(QObject):
     def finish(self, value, error):
         if self.completed is not None:
             self.completed(value, error)
+        self.destroyed.connect(lambda *_, item=self: _LIVE_RESULTS.discard(item))
         self.deleteLater()
 
 

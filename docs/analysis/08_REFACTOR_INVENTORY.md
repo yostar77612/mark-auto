@@ -737,6 +737,7 @@ PR E4 market/history owners (content-only):
 | `desktop_app/strings/terminal.py` | 52 | shared | `desktop_app/strings/terminal.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/symbol_search.py` | 30 | application | `quantlab/trading/application/symbol_search.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `tools/m1_terminal_snapshot.py` | 147 | tooling | `tools/m1_terminal_snapshot.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `tools/m5_market_probe.py` | 102 | tooling | `tools/m5_market_probe.py` | M5: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/alert_panel.py` | 328 | presentation | `desktop_app/features/trading/alert_panel.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/market_alerts_ui.py` | 130 | presentation | `desktop_app/features/trading/market_alerts_ui.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/alerts.py` | 77 | shared | `desktop_app/strings/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
@@ -987,7 +988,6 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/domain/sector.py` | 117 | domain | `quantlab/trading/domain/sector.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/sector.py` | 13 | application | `quantlab/trading/ports/sector.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/sector_board.py` | 80 | composition | `quantlab/trading/runtime/sector_board.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
-| `tools/m5_market_probe.py` | 102 | tooling | `tools/m5_market_probe.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `tools/m5_sector_snapshot.py` | 146 | tooling | `tools/m5_sector_snapshot.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/sector_editor.py` | 202 | presentation | `desktop_app/features/trading/sector_editor.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/adapters/storage/sector_store.py` | 164 | infrastructure | `quantlab/trading/adapters/storage/sector_store.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
