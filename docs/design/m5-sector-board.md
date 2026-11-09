@@ -1,6 +1,6 @@
 # M5：族群看盤（五檔／明細、族群類股、族群警訊）
 
-Status: DRAFT — awaiting owner review (2026-11-09).
+Status: IMPLEMENTING (M5-0 → M5-6, started 2026-11-09; owner pre-authorized, decisions recorded in 「實作決策」).
 Scope owner decisions: 2026-11-09 chat (see "使用者已確認的需求").
 Related: [m1-stock-index-market-terminal.md](m1-stock-index-market-terminal.md),
 [m1-implementation-spec.md](m1-implementation-spec.md).
@@ -297,7 +297,28 @@ UI 不直接呼叫 adapter；所有資料經 application facade，背景執行�
 
 ## 實測結果
 
-（M5-0 填寫）
+### M5-0（2026-11-09，無人值守執行）
+
+owner 睡眠中，且規則禁止代為讀取／輸入帳密，因此**未連線實測**；採規格書預設的保守值繼續，
+以下列出 SDK 型別存根（shioaji 官方 `_core.pyi`）可確認的事實，與待實機確認項目。
+實測工具已備好：`python tools/m5_market_probe.py --mode live --rounds 3`（唯讀，結果存 `build/m5_probe_result.json`）。
+
+| 項目 | 結論 | 狀態 |
+|---|---|---|
+| `Snapshot` 欄位 | `change_rate`、`change_type`、`total_volume`、`total_amount`、`volume_ratio`、`tick_type`、`close` 皆存在 | SDK 存根確認 |
+| `snapshots()` 簽名 | `snapshots(contracts, timeout=30000, cb=None)`；本設計每批 ≤500 檔 | SDK 存根確認；批次上限待實機 |
+| `TickSTKv1.tick_type` | `int`（約定 1 外盤／2 內盤／0 無法判定，與規格一致） | 約定值待實機確認 |
+| `BidAskSTKv1` | `bid_price/ask_price: list[str]`、`bid_volume/ask_volume: list[int]`、`datetime` | SDK 存根確認 |
+| `Contract.category` | 存在（`str`） | 實際代號分佈待實機確認 |
+| 訂閱上限 | **維持 `subscription_limit` = 20** | 待使用者實機確認 |
+| 全市場快照耗時 | **維持每 10 秒一輪**；耗時若超過輪詢間隔，下一輪順延（不重疊） | 待使用者實機確認 |
+| B 類監控額度 | 依剩餘額度降級（既有設計） | 不變 |
+
+#### 實作決策
+
+1. M5-0 不連線：理由見上；以預設值繼續，不阻塞後續階段。
+2. 快照輪詢若上一輪尚未完成，跳過本輪而不是疊加（fail-closed、不超過行情查詢上限）。
+
 
 ## 附錄 A：內建概念族群（seed_version 1）
 
