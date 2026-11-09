@@ -2,6 +2,8 @@
 
 This receipt intentionally cannot authorize the daily-policy execution engine.
 The shared envelope remains readable, but its fingerprint has a minute namespace.
+A typed strategy is accepted for TMF intraday research only with its frozen interval and contract count;
+the protective stop is not simulated here (the daily research does not either).
 """
 
 from dataclasses import dataclass
@@ -34,8 +36,8 @@ register(HistoricalContractEvidence, MinuteResearchSettings, FixedModelMinuteSet
 
 
 def validate_minute_request(strategy, spec, calendar, settings) -> tuple:
-    if strategy.parameters is not None:
-        raise DomainError('capability_missing', 'typed strategy parameters are not supported by minute research')
+    if strategy.parameters is not None and strategy.parameters.bar_interval != getattr(settings, 'interval', None):
+        raise DomainError('validation_failed', 'typed strategy interval does not match minute research settings')
     if not isinstance(settings, MinuteResearchSettings) or not is_tmf_contract(spec):
         raise DomainError('capability_missing', 'minute training requires an explicit TMF contract')
     if strategy.form.instrument_id != spec.instrument_id or strategy.form.market is not spec.market:
@@ -88,13 +90,19 @@ def _forced(settings, bars, days, index):
     return index == len(bars) - 1 or settings.intraday and (cutoff or days[index + 1] != days[index])
 
 
+def _quantity(strategy, spec) -> int:
+    # A typed strategy freezes its contract count; untyped training keeps the single-contract lot.
+    return spec.lot_size if strategy.parameters is None else strategy.parameters.contracts * spec.lot_size
+
+
 def _trade(strategy, spec, fees, bars, position, index):
     entry_index, entry_price = position
     sign = 1 if strategy.form.direction is Side.BUY else -1
+    quantity = _quantity(strategy, spec)
     exit_price = spec.shift_ticks(bars[index].open, -sign * fees.slippage_ticks)
-    costs = fees.round_trip(spec, entry_price, exit_price, spec.lot_size, strategy.form.direction)
-    gross = (exit_price - entry_price) * spec.lot_size * spec.multiplier * sign
-    return ResearchTrade(entry_index, index, spec.lot_size, entry_price, exit_price, gross, costs)
+    costs = fees.round_trip(spec, entry_price, exit_price, quantity, strategy.form.direction)
+    gross = (exit_price - entry_price) * quantity * spec.multiplier * sign
+    return ResearchTrade(entry_index, index, quantity, entry_price, exit_price, gross, costs)
 
 
 @decimal_operation
