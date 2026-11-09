@@ -492,7 +492,9 @@ class SectorBoardWidget(QWidget):
             return self.facade.symbol_directory()
 
         def opened(value, error):
-            if error is None:
+            if error is not None:
+                self.status.setText(ui_text('sector.error'))
+            else:
                 editor = SectorEditor(self.facade, value, self._submit, self, on_changed=self.refresh)
                 editor.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
                 self.editor = editor
