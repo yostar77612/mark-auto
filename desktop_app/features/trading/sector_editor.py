@@ -33,7 +33,7 @@ def group_label(group) -> str:
 class SectorEditor(QDialog):
     def __init__(self, facade, directory, submit, parent=None, on_changed=lambda: None):
         super().__init__(parent)
-        self.facade, self.submit, self.on_changed = facade, submit, on_changed
+        self.facade, self.defer, self.on_changed = facade, submit, on_changed
         self.directory = {item.code: item for item in directory}
         self.view = None
         self.setObjectName('sector_editor')
@@ -104,7 +104,7 @@ class SectorEditor(QDialog):
             if command.action != 'LIST':
                 self.on_changed()
 
-        self.submit(lambda: self.facade.sector_groups(command), completed)
+        self.defer(lambda: self.facade.sector_groups(command), completed)
 
     def apply(self, view):
         selected = view.selected_id or (self.current_group().id if self.current_group() else '')
