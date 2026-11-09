@@ -737,6 +737,7 @@ PR E4 market/history owners (content-only):
 | `desktop_app/strings/terminal.py` | 52 | shared | `desktop_app/strings/terminal.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/symbol_search.py` | 30 | application | `quantlab/trading/application/symbol_search.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `tools/m1_terminal_snapshot.py` | 147 | tooling | `tools/m1_terminal_snapshot.py` | M1: reviewed new module; existing rows and layer rules retained. |
+| `tools/m5_market_probe.py` | 102 | tooling | `tools/m5_market_probe.py` | M5: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/alert_panel.py` | 328 | presentation | `desktop_app/features/trading/alert_panel.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/market_alerts_ui.py` | 130 | presentation | `desktop_app/features/trading/market_alerts_ui.py` | M1: reviewed new module; existing rows and layer rules retained. |
 | `desktop_app/strings/alerts.py` | 77 | shared | `desktop_app/strings/alerts.py` | M1: reviewed new module; existing rows and layer rules retained. |
