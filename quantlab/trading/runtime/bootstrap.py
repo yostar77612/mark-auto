@@ -77,6 +77,7 @@ class RuntimeBundle:
     alerts: object | None = None
     sector: object | None = None
     sector_poller: object | None = None
+    sector_groups: object | None = None
     sinopac_factory: object | None = None
     secret_resolver: object | None = None
     resource_factory: object | None = None

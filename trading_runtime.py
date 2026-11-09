@@ -289,7 +289,13 @@ def _run_window(
 
     from desktop_app.features.trading.sector_board import SectorBoardWidget
 
-    sector_board = SectorBoardWidget(facade, CandlestickChart(), colours=lambda widget: up_down_colors(appearance(widget)[1]))
+    sector_board = SectorBoardWidget(
+        facade,
+        CandlestickChart(),
+        colours=lambda widget: up_down_colors(appearance(widget)[1]),
+        open_in_watch=lambda key: (window.market_tabs.setCurrentWidget(terminal), terminal.select_instrument(key)),
+        add_to_watch=lambda key: terminal.add_watch(key),
+    )
     window = TradingWindow(
         facade,
         initial,

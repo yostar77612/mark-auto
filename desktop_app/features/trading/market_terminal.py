@@ -279,6 +279,17 @@ class MarketTerminalWidget(QWidget):
                 return
             self._save_watchlist((*watches, key))
 
+    def add_watch(self, instrument_id):
+        """Add one instrument to the watchlist (used by the sector board's member menu)."""
+        watches = self.state.watchlist
+        if instrument_id in watches or instrument_id in {item.instrument_id for item in FIXED_INDICES}:
+            return
+        limit = self.state.market_health.subscription_limit - 2
+        if len(watches) >= limit:
+            self.show_message(ui_text('terminal.watch_full').format(limit))
+            return
+        self._save_watchlist((*watches, instrument_id))
+
     def _save_watchlist(self, watches):
         if self._busy:
             return

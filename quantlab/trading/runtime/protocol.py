@@ -11,7 +11,14 @@ from quantlab.trading.application.context import QuoteBatch
 from quantlab.trading.application.market_terminal_service import MarketTerminalStatus
 from quantlab.trading.application.history_sync import HistorySyncState
 from quantlab.trading.application.order_book_contracts import OrderBookView, TapeEntry
-from quantlab.trading.application.sector_contracts import MemberView, SectorBoardView, SectorQuery
+from quantlab.trading.application.sector_contracts import (
+    GroupEditView,
+    MemberView,
+    SectorBoardView,
+    SectorGroupsCommand,
+    SectorGroupsView,
+    SectorQuery,
+)
 from quantlab.trading.domain.sector import SectorStat
 from quantlab.trading.domain.bidask import BidAskSnapshot
 from quantlab.trading.application.alert_contracts import AlertCommand, AlertSnapshot
@@ -37,6 +44,7 @@ class Operation(str, Enum):
     ALERTS = 'ALERTS'
     ORDER_BOOK = 'ORDER_BOOK'
     SECTOR_BOARD = 'SECTOR_BOARD'
+    SECTOR_GROUPS = 'SECTOR_GROUPS'
 
 
 @dataclass(frozen=True)
@@ -52,6 +60,7 @@ class Request:
     series: MarketSeriesQuery | None = None
     alert: AlertCommand | None = None
     sector: SectorQuery | None = None
+    sector_groups: SectorGroupsCommand | None = None
 
     def __post_init__(self) -> None:
         identity(self.request_id)
@@ -69,6 +78,8 @@ class Request:
             raise DomainError('validation_failed', 'missing alert command')
         if self.operation is Operation.SECTOR_BOARD and not isinstance(self.sector, SectorQuery):
             raise DomainError('validation_failed', 'missing sector query')
+        if self.operation is Operation.SECTOR_GROUPS and not isinstance(self.sector_groups, SectorGroupsCommand):
+            raise DomainError('validation_failed', 'missing sector group command')
 
 
 @dataclass(frozen=True)
@@ -96,6 +107,7 @@ class Response:
     alerts: AlertSnapshot | None = None
     order_book: OrderBookView | None = None
     sector: SectorBoardView | None = None
+    sector_groups: SectorGroupsView | None = None
     candidates: tuple[CandidateSummaryView, ...] = ()
 
 
@@ -103,3 +115,4 @@ register(Operation, Request, Response, Metrics, QuoteBatch)
 register(WatchInstrument, WatchKind, HistoryUsage, HistorySyncState, MarketTerminalStatus)
 register(OrderBookView, TapeEntry, BidAskSnapshot)
 register(SectorQuery, SectorBoardView, MemberView, SectorStat)
+register(SectorGroupsCommand, SectorGroupsView, GroupEditView)

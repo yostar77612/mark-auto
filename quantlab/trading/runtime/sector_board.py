@@ -5,6 +5,8 @@ from threading import Event, Thread
 from time import monotonic
 
 from quantlab.trading.adapters.shioaji.snapshot_poller import ShioajiSnapshotSource
+from quantlab.trading.adapters.storage.sector_store import SectorGroupStore
+from quantlab.trading.application.sector_group_editor import SectorGroupEditor
 from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.validation import DomainError
 
@@ -64,7 +66,8 @@ class SectorPoller:
 
 def attach_sector(bundle):
     connection = bundle.market_connection
-    service = SectorService(lambda: connection.directory.items, SnapshotBridge(connection), lambda: datetime.now(timezone.utc))
+    store = SectorGroupStore(bundle.launch.root / 'market' / 'sector_groups.json')
+    service = SectorService(lambda: connection.directory.items, SnapshotBridge(connection), lambda: datetime.now(timezone.utc), concepts=store.groups)
     poller = SectorPoller(service)
     old_connected, old_disconnected = connection.on_connected, connection.on_disconnected
 
@@ -78,3 +81,4 @@ def attach_sector(bundle):
 
     connection.on_connected, connection.on_disconnected = connected, disconnected
     bundle.sector, bundle.sector_poller = service, poller
+    bundle.sector_groups = SectorGroupEditor(store, lambda: connection.directory.items, service.recompute)

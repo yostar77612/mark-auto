@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from PySide6.QtCore import Qt, QThreadPool, QTimer
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QPushButton, QSplitter, QTableWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QMenu, QPushButton, QSplitter, QTableWidget, QVBoxLayout, QWidget
 
 from desktop_app.features.trading.market_terminal_widgets import QuoteItem
 from desktop_app.features.trading.market_watch import _Request, _Result
@@ -14,7 +14,7 @@ from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.order_book_panel import OrderBookPanel
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.contracts import MarketSeriesQuery
-from quantlab.trading.application.sector_contracts import SectorQuery
+from quantlab.trading.application.sector_contracts import SectorGroupsCommand, SectorQuery
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 REFRESH_MS = 2000
@@ -56,9 +56,10 @@ def _table(name, headers, stretch=0, name_width=112):
 
 
 class SectorBoardWidget(QWidget):
-    def __init__(self, facade, chart, parent=None, *, colours=None, style=None):
+    def __init__(self, facade, chart, parent=None, *, colours=None, style=None, open_in_watch=None, add_to_watch=None):
         super().__init__(parent)
         self.facade, self.chart, self.style = facade, chart, style
+        self.open_in_watch, self.add_to_watch = open_in_watch, add_to_watch
         self.colours = colours or (lambda widget: ('#c62828', '#16803c'))
         self.setObjectName('sector_board')
         self.setAccessibleName(ui_text('sector.tab_board'))
@@ -80,6 +81,11 @@ class SectorBoardWidget(QWidget):
             item.clicked.connect(lambda checked=False, selected=key: self.set_filter(selected))
             self.filter_buttons[key] = item
             top.addWidget(item)
+        self.edit_button = QPushButton(ui_text('sector.edit_button'))
+        self.edit_button.setObjectName('sector_edit_button')
+        self.edit_button.setAccessibleName(ui_text('sector.edit_button'))
+        self.edit_button.clicked.connect(lambda checked=False: self.open_editor())
+        top.addWidget(self.edit_button)
         top.addStretch()
         self.status = QLabel(ui_text('sector.offline'))
         self.status.setObjectName('sector_status')
@@ -102,6 +108,8 @@ class SectorBoardWidget(QWidget):
         self.members.setAccessibleName(ui_text('sector.members_title'))
         self.members.itemClicked.connect(lambda item: self.select_stock(self.members.item(item.row(), 0).data(Qt.ItemDataRole.UserRole)))
         self.members.horizontalHeader().sectionClicked.connect(lambda column: self._sort(self.members, 'member_sort', column))
+        self.members.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.members.customContextMenuRequested.connect(self._member_menu)
         self.members_hint = QLabel(ui_text('sector.pick_group'))
         self.members_hint.setObjectName('sector_members_hint')
         self.members_hint.setAccessibleName(ui_text('sector.members_title'))
@@ -364,6 +372,45 @@ class SectorBoardWidget(QWidget):
         setattr(self, attribute, (column, order))
         if self.view is not None:
             self._render_rank(self.view) if table is self.rank else self._render_members(self.view)
+
+    def _member_menu(self, point):
+        item = self.members.itemAt(point)
+        if item is None:
+            return
+        instrument_id = self.members.item(item.row(), 0).data(Qt.ItemDataRole.UserRole)
+        menu = QMenu(self)
+        if self.add_to_watch is not None:
+            menu.addAction(ui_text('sector.menu_add_watch'), lambda: self.add_to_watch(instrument_id))
+        if self.open_in_watch is not None:
+            menu.addAction(ui_text('sector.menu_open_watch'), lambda: self.open_in_watch(instrument_id))
+        if self.group_id and not self.group_id.startswith('industry.'):
+            menu.addAction(ui_text('sector.menu_remove_member'), lambda: self.remove_member(self.group_id, instrument_id.split(':')[-1]))
+        if menu.actions():
+            menu.exec(self.members.viewport().mapToGlobal(point))
+
+    def remove_member(self, group_id, code):
+        facade = self.facade
+
+        def operation():
+            current = next(group for group in facade.sector_groups(SectorGroupsCommand()).groups if group.id == group_id)
+            return facade.sector_groups(SectorGroupsCommand('SET_CODES', group_id, codes=tuple(value for value in current.codes if value != code)))
+
+        self._submit(operation, lambda value, error: self.refresh())
+
+    def open_editor(self):
+        from desktop_app.features.trading.sector_editor import SectorEditor
+
+        def operation():
+            return self.facade.symbol_directory()
+
+        def opened(value, error):
+            if error is None:
+                editor = SectorEditor(self.facade, value, self._submit, self, on_changed=self.refresh)
+                editor.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+                self.editor = editor
+                editor.show()
+
+        self._submit(operation, opened)
 
     def set_filter(self, key):
         self.filter = key

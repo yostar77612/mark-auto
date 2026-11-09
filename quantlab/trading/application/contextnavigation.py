@@ -114,6 +114,10 @@ class CompositeFacade:
         with self._lock:
             return (self._connection or self._current).sector_board(query)
 
+    def sector_groups(self, command):
+        with self._lock:
+            return (self._connection or self._current).sector_groups(command)
+
     def market_preferences(self) -> str:
         with self._lock:
             return (self._connection or self._current).market_preferences()

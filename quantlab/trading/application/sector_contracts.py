@@ -62,3 +62,43 @@ class SectorBoardView:
         integer(self.stock_count, 'sector stock count')
         if self.data_at is not None:
             aware(self.data_at)
+
+
+GROUP_ACTIONS = ('LIST', 'CREATE', 'RENAME', 'DELETE', 'RESTORE', 'SET_CODES')
+
+
+@dataclass(frozen=True)
+class SectorGroupsCommand:
+    action: str = 'LIST'
+    group_id: str = ''
+    name: str = ''
+    codes: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.action not in GROUP_ACTIONS:
+            raise DomainError('validation_failed', 'sector group action')
+        if self.group_id:
+            identity(self.group_id)
+        if not isinstance(self.name, str) or len(self.name) > 100 or not isinstance(self.codes, tuple) or len(self.codes) > 200:
+            raise DomainError('validation_failed', 'sector group command shape')
+
+
+@dataclass(frozen=True)
+class GroupEditView:
+    id: str
+    name: str
+    codes: tuple[str, ...]
+    unknown_codes: tuple[str, ...] = ()
+    builtin: bool = False
+    edited: bool = False
+    deleted: bool = False
+
+    def __post_init__(self) -> None:
+        identity(self.id)
+
+
+@dataclass(frozen=True)
+class SectorGroupsView:
+    groups: tuple[GroupEditView, ...] = ()
+    selected_id: str = ''
+    warning: str = ''

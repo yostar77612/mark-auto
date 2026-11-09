@@ -12,7 +12,7 @@ from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery, UiCommand, UiReceipt, UiState
 from quantlab.trading.application.order_book_contracts import OrderBookView
 from quantlab.trading.application.registry import initialize
-from quantlab.trading.application.sector_contracts import SectorBoardView, SectorQuery
+from quantlab.trading.application.sector_contracts import SectorBoardView, SectorGroupsCommand, SectorGroupsView, SectorQuery
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from .control_secret import unprotect
@@ -70,6 +70,7 @@ class IpcFacade:
         series: MarketSeriesQuery | None = None,
         alert: AlertCommand | None = None,
         sector: SectorQuery | None = None,
+        sector_groups: SectorGroupsCommand | None = None,
     ) -> Response:
         session = read_session(self.root)
         envelope = Request(
@@ -82,6 +83,7 @@ class IpcFacade:
             quotes,
             series=series,
             sector=sector,
+            sector_groups=sector_groups,
             alert=alert,
         )
         with Client(session.address, family=session.family, authkey=session.key) as connection:
@@ -127,6 +129,12 @@ class IpcFacade:
         if not isinstance(response.sector, SectorBoardView):
             raise DomainError('validation_failed', 'missing sector board')
         return response.sector
+
+    def sector_groups(self, command: SectorGroupsCommand) -> SectorGroupsView:
+        response = self.request(Operation.SECTOR_GROUPS, sector_groups=command)
+        if not isinstance(response.sector_groups, SectorGroupsView):
+            raise DomainError('validation_failed', 'missing sector groups')
+        return response.sector_groups
 
     def market_preferences(self) -> str:
         return self.request(Operation.MARKET_PREFERENCES).market_selected

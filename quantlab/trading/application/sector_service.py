@@ -101,6 +101,14 @@ class SectorService:
             else:
                 self._first_limit_up.pop(code, None)
 
+    def recompute(self) -> None:
+        """Re-rank the last snapshot with the current group list, e.g. right after the user edits a group."""
+        groups = self.groups()
+        with self.lock:
+            if self._rows:
+                self._groups = {group.id: group for group in groups}
+                self._stats = compute_stats(groups, self._rows)
+
     def disconnected(self) -> None:
         with self.lock:
             self._generation += 1
