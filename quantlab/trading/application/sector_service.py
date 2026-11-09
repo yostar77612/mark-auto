@@ -51,6 +51,7 @@ class SectorService:
         self._failed = False
         self._first_limit_up: dict[str, datetime] = {}
         self._limit_day: date | None = None
+        self._generation = 0
 
     def stocks(self) -> tuple[WatchInstrument, ...]:
         return tuple(item for item in self.directory() if item.kind is WatchKind.STOCK and eligible_stock(item.code))
@@ -70,14 +71,19 @@ class SectorService:
         stocks = self.stocks()
         if not stocks:
             return
+        with self.lock:
+            generation = self._generation
         try:
             rows = {row.code: row for row in self.source.snapshots(stocks)}
         except DomainError:
             with self.lock:
-                self._failed = True
+                if generation == self._generation:
+                    self._failed = True
             return
         groups = self.groups()
         with self.lock:
+            if generation != self._generation:
+                return
             self._failed = False
             self._rows, self._fetched_at = rows, self.now()
             self._groups = {group.id: group for group in groups}
@@ -90,13 +96,14 @@ class SectorService:
         if day != self._limit_day:
             self._first_limit_up, self._limit_day = {}, day
         for code, row in rows.items():
-            if row.limit == 'UP':
+            if row.limit == 'UP' and row.at.astimezone(_TAIPEI).date() == day:
                 self._first_limit_up.setdefault(code, row.at)
             else:
                 self._first_limit_up.pop(code, None)
 
     def disconnected(self) -> None:
         with self.lock:
+            self._generation += 1
             self._rows, self._stats, self._groups, self._fetched_at = {}, (), {}, None
             self._first_limit_up, self._limit_day, self._failed = {}, None, False
 
@@ -125,6 +132,7 @@ class SectorService:
                 sort_stats(self._stats, sort_key),
                 selected,
                 self._members(selected) if selected else (),
+                self._failed,
             )
 
     def _members(self, group_id: str) -> tuple[MemberView, ...]:

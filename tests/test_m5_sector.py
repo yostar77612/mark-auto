@@ -8,6 +8,8 @@ from types import SimpleNamespace
 import json
 import unittest
 
+from PySide6.QtCore import Qt
+
 from quantlab.trading.adapters.shioaji.snapshot_poller import BATCH, ShioajiSnapshotSource, normalise_snapshot
 from quantlab.trading.adapters.shioaji.symbol_directory import SymbolDirectory
 from quantlab.trading.application.codec import dumps, loads
@@ -118,6 +120,21 @@ class SnapshotTests(unittest.TestCase):
         self.assertIsNone(normalise_snapshot(raw_snapshot(close=0)))
         self.assertIsNone(normalise_snapshot(raw_snapshot(volume_ratio=-1)).volume_ratio)
         self.assertIsNone(normalise_snapshot(raw_snapshot(volume_ratio=None)).volume_ratio)
+
+    def test_one_malformed_row_does_not_discard_the_round(self):
+        class Facade:
+            def market_contract(self, code):
+                return SimpleNamespace(code=code)
+
+            def snapshots(self, contracts):
+                rows = [raw_snapshot(contract.code) for contract in contracts]
+                rows[0].total_amount = None
+                return rows
+
+        source = ShioajiSnapshotSource(SimpleNamespace(connected=True, facade=Facade()))
+        self.assertEqual(len(source.snapshots((stock('2330'), stock('2454'), stock('3034')))), 2)
+        with self.assertRaises(DomainError):
+            source.snapshots((stock('2330'),))
 
     def test_source_batches_at_500_resolves_contracts_once_and_cleans_vendor_errors(self):
         calls, lookups = [], []
@@ -311,6 +328,32 @@ class ServiceTests(unittest.TestCase):
         ai = next(item for item in view.groups if item.group_id == 'builtin.ai_server')
         self.assertEqual((ai.valid_count, ai.listed_count), (1, 9))
 
+    def test_round_finishing_after_a_disconnect_cannot_repopulate_the_board(self):
+        class Slow(Source):
+            def snapshots(inner, instruments):
+                self.service.disconnected()
+                return super().snapshots(instruments)
+
+        self.service.source = Slow(self.rows)
+        self.service.refresh()
+        self.assertEqual(self.service.board().state, 'EMPTY')
+
+    def test_a_row_from_another_day_never_sets_the_leader_time(self):
+        yesterday = OPEN - timedelta(days=1)
+        self.rows[0] = row('2330', '9.90', 400, 'UP', at=yesterday)
+        self.rows[1] = row('2454', '9.90', 300, 'UP', at=OPEN)
+        self.service.refresh()
+        members = {member.code: member for member in self.service.board('industry.24').members}
+        self.assertIsNone(members['2330'].leader_at)
+        self.assertTrue(members['2454'].is_leader)
+
+    def test_failed_latest_round_is_visible_on_the_board(self):
+        self.service.refresh()
+        self.assertFalse(self.service.board().failed)
+        self.source.fail = True
+        self.service.refresh()
+        self.assertTrue(self.service.board().failed)
+
     def test_wire_roundtrip_for_board_query_and_members(self):
         self.service.refresh()
         view = self.service.board('industry.24')
@@ -371,6 +414,49 @@ class BoardWidgetTests(unittest.TestCase):
         self.assertIn('非交易時段', widget.status.text())
         widget.render_board(SectorBoardView('STALE', OPEN, 45, 10, 1, service.board().groups))
         self.assertIn('資料延遲 45 秒', widget.status.text())
+
+    def test_groups_without_a_value_sort_last_in_both_directions(self):
+        widget, service = self.make()
+        widget.render_board(service.board())
+        column = 2
+        for order in (Qt.SortOrder.DescendingOrder, Qt.SortOrder.AscendingOrder):
+            widget.rank_sort = (column, order)
+            widget.render_board(service.board())
+            texts = [widget.rank.item(row, column).text() for row in range(widget.rank.rowCount())]
+            known = [text for text in texts if text != '—']
+            self.assertEqual(texts[: len(known)], known)
+            self.assertTrue(all(text == '—' for text in texts[len(known) :]))
+            values = [Decimal(text.rstrip('%')) for text in known]
+            self.assertEqual(values, sorted(values, reverse=order == Qt.SortOrder.DescendingOrder))
+        self.assertIn('—', texts)
+
+    def test_failed_read_clears_the_tables_instead_of_keeping_old_numbers(self):
+        widget, service = self.make()
+        widget.render_board(service.board('industry.24'))
+        self.assertGreater(widget.rank.rowCount(), 0)
+        widget.render_failure()
+        self.assertEqual((widget.rank.rowCount(), widget.members.rowCount()), (0, 0))
+        self.assertIn('讀取失敗', widget.status.text())
+
+    def test_the_latest_stock_click_during_a_selection_is_not_lost(self):
+        widget, service = self.make()
+        widget.render_board(service.board('industry.24'))
+        chosen = []
+        widget._submit = lambda operation, completed: chosen.append(completed)
+        widget.select_stock('TWSE:2330')
+        widget.select_stock('TWSE:2454')
+        self.assertEqual(widget.stock_id, 'TWSE:2330')
+        chosen.pop(0)(True, None)
+        self.assertEqual(widget.stock_id, 'TWSE:2454')
+
+    def test_a_failed_selection_is_reported_not_left_blank(self):
+        widget, service = self.make()
+        widget.render_board(service.board('industry.24'))
+        chosen = []
+        widget._submit = lambda operation, completed: chosen.append(completed)
+        widget.select_stock('TWSE:2330')
+        chosen.pop(0)(None, RuntimeError('x'))
+        self.assertIn('失敗', widget.detail_title.text())
 
     def test_amount_and_percent_formatting(self):
         from desktop_app.features.trading.sector_board import amount_text, percent_text

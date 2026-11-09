@@ -66,6 +66,7 @@ class SectorBoardWidget(QWidget):
         self.rank_sort, self.member_sort = (2, Qt.SortOrder.DescendingOrder), (3, Qt.SortOrder.DescendingOrder)
         self.view = None
         self._requests, self._loading, self._detail_loading, self._selecting, self._again = set(), False, False, False, False
+        self._wanted = ''
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         top = QHBoxLayout()
@@ -186,7 +187,9 @@ class SectorBoardWidget(QWidget):
 
         def completed(value, error):
             self._loading = False
-            if error is None and group == self.group_id:
+            if error is not None:
+                self.render_failure()
+            elif group == self.group_id:
                 self.render_board(value)
             if self._again:
                 self._again = False
@@ -219,6 +222,16 @@ class SectorBoardWidget(QWidget):
         self._submit(fetch, completed)
 
     # --- rendering ---------------------------------------------------------
+    def render_failure(self):
+        """The engine could not be read: show that, and never keep old numbers on screen as if they were current."""
+        self.view = None
+        self.status.setText(ui_text('sector.error'))
+        self.status.setStyleSheet('color: #e67e22;')
+        self.rank.setRowCount(0)
+        self.members.setRowCount(0)
+        self.members_hint.setText(ui_text('sector.error'))
+        self.members_hint.show()
+
     def render_board(self, view):
         self.view = view
         if view.state == 'OFFLINE':
@@ -232,6 +245,9 @@ class SectorBoardWidget(QWidget):
             stale = view.state == 'STALE'
             if stale:
                 text += ' · ' + ui_text('sector.stale').format(view.age_seconds)
+        if view.failed and view.state in ('LIVE', 'STALE'):
+            text += ' · ' + ui_text('sector.refresh_failed')
+            stale = True
         self.status.setText(text)
         self.status.setStyleSheet('color: #e67e22;' if stale else '')
         if view.state in ('OFFLINE', 'EMPTY'):
@@ -246,6 +262,11 @@ class SectorBoardWidget(QWidget):
             self.style(self)
 
     def _fill(self, table, rows, sort):
+        column, order = sort
+        known = [item for item in rows if item[1][column][1] is not None]
+        unknown = [item for item in rows if item[1][column][1] is None]
+        known.sort(key=lambda item: item[1][column][1], reverse=order == Qt.SortOrder.DescendingOrder)
+        rows = known + unknown
         table.setSortingEnabled(False)
         table.setRowCount(len(rows))
         for row, (key, cells) in enumerate(rows):
@@ -261,7 +282,6 @@ class SectorBoardWidget(QWidget):
                 if column > 1:
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 table.setItem(row, column, item)
-        table.sortItems(*sort)
         table.horizontalHeader().setSortIndicator(*sort)
 
     def _direction(self, value):
@@ -342,8 +362,8 @@ class SectorBoardWidget(QWidget):
         previous = getattr(self, attribute)
         order = Qt.SortOrder.AscendingOrder if previous == (column, Qt.SortOrder.DescendingOrder) else Qt.SortOrder.DescendingOrder
         setattr(self, attribute, (column, order))
-        table.sortItems(column, order)
-        table.horizontalHeader().setSortIndicator(column, order)
+        if self.view is not None:
+            self._render_rank(self.view) if table is self.rank else self._render_members(self.view)
 
     def set_filter(self, key):
         self.filter = key
@@ -367,7 +387,10 @@ class SectorBoardWidget(QWidget):
         self._refresh_detail()
 
     def select_stock(self, instrument_id):
-        if instrument_id == self.stock_id or self._selecting:
+        if self._selecting:
+            self._wanted = instrument_id
+            return
+        if instrument_id == self.stock_id:
             return
         self.stock_id = instrument_id
         self._selecting = True
@@ -379,6 +402,12 @@ class SectorBoardWidget(QWidget):
 
         def completed(value, error):
             self._selecting = False
-            self._refresh_detail()
+            wanted, self._wanted = self._wanted, ''
+            if error is not None:
+                self.detail_title.setText(ui_text('sector.error'))
+            elif wanted:
+                self.select_stock(wanted)
+            else:
+                self._refresh_detail()
 
         self._submit(lambda: self.facade.select_market_instrument(instrument_id, period), completed)

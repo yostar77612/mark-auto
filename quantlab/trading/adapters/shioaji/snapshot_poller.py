@@ -52,15 +52,24 @@ class ShioajiSnapshotSource:
         facade = self.session.facade
         if not self.session.connected or facade is None:
             raise DomainError('market_data_not_connected')
-        rows = []
+        rows, skipped = [], 0
         try:
             contracts = [self._contract(facade, instrument) for instrument in instruments]
             for start in range(0, len(contracts), BATCH):
                 for raw in facade.snapshots(contracts[start : start + BATCH]):
-                    row = normalise_snapshot(raw)
+                    try:
+                        row = normalise_snapshot(raw)
+                    except (DomainError, ValueError, TypeError, ArithmeticError):
+                        # One malformed row must not discard the other ~1,900 stocks of the round.
+                        skipped += 1
+                        continue
                     if row is not None:
                         rows.append(row)
         except Exception:
             logger.error('Shioaji snapshot round failed')
             raise DomainError('market_data_snapshot_failed') from None
+        if skipped:
+            logger.error('Shioaji snapshot round skipped %d malformed rows', skipped)
+        if not rows and skipped:
+            raise DomainError('market_data_snapshot_failed')
         return tuple(rows)

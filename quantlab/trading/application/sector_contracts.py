@@ -52,6 +52,7 @@ class SectorBoardView:
     groups: tuple[SectorStat, ...] = ()
     selected_group_id: str = ''
     members: tuple[MemberView, ...] = ()
+    failed: bool = False
 
     def __post_init__(self) -> None:
         if self.state not in STATES:

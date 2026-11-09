@@ -60,4 +60,6 @@ ENTRIES = (
     (78, 3296, 'sector.empty', '載入族群資料中…'),
     (78, 3297, 'sector.amount_eok', '{0} 億'),
     (78, 3298, 'sector.no_value', '—'),
+    (78, 3299, 'sector.error', '族群資料讀取失敗，請稍後再試'),
+    (78, 3300, 'sector.refresh_failed', '最近一次更新失敗'),
 )
