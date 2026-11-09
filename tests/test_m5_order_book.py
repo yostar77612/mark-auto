@@ -286,7 +286,7 @@ class LayoutUpgradeTests(unittest.TestCase):
     def test_old_saved_layout_gains_the_order_book_and_keeps_other_panels(self):
         import json
 
-        from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
+        from desktop_app.features.trading.market_terminal_layout import OPTIONAL_PANELS, PANEL_IDS, terminal_preset
         from quantlab.research_core.adapters.market_layout import LayoutStore
 
         old = terminal_preset()
@@ -295,18 +295,21 @@ class LayoutUpgradeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'layout.json'
             path.write_text(json.dumps({'version': 1, 'current': old, 'layouts': {'Mine': old}}), encoding='utf-8')
-            store = LayoutStore(folder, panel_ids=PANEL_IDS, file_name='layout.json', default_layout=terminal_preset())
+            store = LayoutStore(folder, panel_ids=PANEL_IDS, file_name='layout.json', default_layout=terminal_preset(), optional_panels=OPTIONAL_PANELS)
         self.assertEqual(store.current['panels']['chart']['size'], 1234)
         self.assertEqual(store.current['panels']['orderbook'], terminal_preset()['panels']['orderbook'])
         self.assertEqual(set(store.layouts['Mine']['panels']), set(PANEL_IDS))
 
     def test_wrong_extra_panel_is_still_rejected(self):
-        from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
+        from desktop_app.features.trading.market_terminal_layout import OPTIONAL_PANELS, PANEL_IDS, terminal_preset
         from quantlab.research_core.adapters.market_layout import validate_layout
 
         value = terminal_preset()
         value['panels']['ghost'] = dict(value['panels']['chart'])
-        self.assertIsNone(validate_layout(value, PANEL_IDS, fill=terminal_preset()))
+        self.assertIsNone(validate_layout(value, PANEL_IDS, fill=terminal_preset(), optional=OPTIONAL_PANELS))
+        gap = terminal_preset()
+        del gap['panels']['chart']
+        self.assertIsNone(validate_layout(gap, PANEL_IDS, fill=terminal_preset(), optional=OPTIONAL_PANELS))
 
 
 if __name__ == '__main__':

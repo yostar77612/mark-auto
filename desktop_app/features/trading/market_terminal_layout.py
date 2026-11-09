@@ -6,6 +6,8 @@ from PySide6.QtWidgets import QSplitter, QToolButton, QMenu, QInputDialog
 from desktop_app.strings.catalog import ui_text
 
 PANEL_IDS = ('quotes', 'alerts', 'chart', 'index', 'orderbook')
+# Panels added after layouts were first saved; older layout files are completed with them.
+OPTIONAL_PANELS = ('orderbook',)
 
 
 def terminal_preset(name='terminal_default'):

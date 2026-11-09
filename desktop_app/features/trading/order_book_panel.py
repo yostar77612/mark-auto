@@ -8,7 +8,6 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QHeaderView, QLabel, QProgressBar, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 from desktop_app.strings.catalog import ui_text
-from quantlab.trading.application.order_book_contracts import OrderBookView
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 _SIDE_KEYS = {'BUY': 'orderbook.side_buy', 'SELL': 'orderbook.side_sell', 'NONE': 'orderbook.side_none'}
@@ -23,7 +22,7 @@ def clock_text(moment) -> str:
     return moment.astimezone(_TAIPEI).strftime('%H:%M:%S')
 
 
-def ladder_rows(view: OrderBookView) -> list[tuple[str, str, str, str]]:
+def ladder_rows(view) -> list[tuple[str, str, str, str]]:
     """Ten rows top to bottom: asks 5..1 then bids 1..5, as (bid volume, price, ask volume, kind)."""
     book = view.bidask
     if book is None:
@@ -33,7 +32,7 @@ def ladder_rows(view: OrderBookView) -> list[tuple[str, str, str, str]]:
     return rows
 
 
-def side_ratio_text(view: OrderBookView) -> str:
+def side_ratio_text(view) -> str:
     decided = view.buy_volume + view.sell_volume
     if decided == 0:
         return ''
@@ -128,7 +127,7 @@ class OrderBookPanel(QWidget):
         self.tape_summary.setText('')
         self.balance.setValue(50)
 
-    def render_view(self, view: OrderBookView, up: str, down: str) -> None:
+    def render_view(self, view, up: str, down: str) -> None:
         if not view.supported:
             self.clear(ui_text('orderbook.no_index'))
             return

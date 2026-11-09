@@ -195,7 +195,7 @@ def _run_window(
     from desktop_app.features.trading import TradingWindow
     from desktop_app.features.trading.market_terminal import MarketTerminalWidget
     from desktop_app.features.trading.market_alerts_ui import AlertPanelController
-    from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
+    from desktop_app.features.trading.market_terminal_layout import OPTIONAL_PANELS, PANEL_IDS, terminal_preset
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
     from desktop_app.features.market.workspace import WorkspacePanel
@@ -254,6 +254,7 @@ def _run_window(
         areas=('left', 'center', 'right'),
         file_name='market-terminal-layout-v1.json',
         default_layout=terminal_preset(),
+        optional_panels=OPTIONAL_PANELS,
     )
 
     def notify_alert(message):
