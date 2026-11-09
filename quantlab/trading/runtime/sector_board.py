@@ -14,6 +14,22 @@ from quantlab.trading.domain.validation import DomainError
 from .sector_settings import SectorAlertSettings
 
 
+class NullMinuteStore:
+    """Stand-in when the minute database cannot be opened; nothing is persisted."""
+
+    def append(self, stats, trade_date):
+        return None
+
+    def load_day(self, trade_date):
+        return ()
+
+    def purge(self, today):
+        return 0
+
+    def close(self):
+        return None
+
+
 class SnapshotBridge:
     """Resolve the connected session per call; never construct or log in to one."""
 
@@ -73,7 +89,10 @@ def attach_sector(bundle):
     service = SectorService(lambda: connection.directory.items, SnapshotBridge(connection), lambda: datetime.now(timezone.utc), concepts=store.groups)
     settings = SectorAlertSettings(bundle.launch.root / 'settings.json', lock=connection.settings_lock)
     service.interval_seconds = settings.get().snapshot_seconds
-    minute_store = SectorMinuteStore((bundle.launch.root / 'market' / 'sector_minutes.sqlite3').resolve())
+    try:
+        minute_store = SectorMinuteStore((bundle.launch.root / 'market' / 'sector_minutes.sqlite3').resolve())
+    except DomainError:
+        minute_store = NullMinuteStore()  # minute history is optional: the board and alerts keep working in memory
     minutes = MinuteAggregator(minute_store, settings.get, service.group_name)
     service.on_round = minutes.on_round
     service.on_alert = bundle.alerts.record_sector

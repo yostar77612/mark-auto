@@ -1,6 +1,7 @@
 """Sector ranking from market-wide snapshot rounds; read-only, fail-closed on stale or missing data."""
 
 from collections import deque
+import logging
 from datetime import date, datetime, time
 from threading import RLock
 from typing import Callable
@@ -16,6 +17,7 @@ from quantlab.trading.ports.sector import SnapshotSourcePort
 from .sector_contracts import MemberView, SectorBoardView
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
+logger = logging.getLogger(__name__)
 SESSION_START, SESSION_END = time(8, 55), time(13, 35)
 STALE_SECONDS = 30
 
@@ -54,7 +56,6 @@ class SectorService:
         self._first_limit_up: dict[str, datetime] = {}
         self._limit_day: date | None = None
         self._generation = 0
-        self.new_alerts: tuple[SectorAlert, ...] = ()
         self._alerts: deque[SectorAlert] = deque(maxlen=200)
         self.on_round: Callable[[datetime, tuple[SectorStat, ...]], tuple[SectorAlert, ...]] = lambda now, stats: ()
         self.on_alert: Callable[[SectorAlert], None] = lambda alert: None
@@ -95,10 +96,16 @@ class SectorService:
             self._groups = {group.id: group for group in groups}
             self._stats = compute_stats(groups, rows)
             self._track_limit_up(rows)
-            self.new_alerts = self.on_round(self._fetched_at, self._stats)
-            self._alerts.extend(self.new_alerts)
-        for alert in self.new_alerts:
-            self.on_alert(alert)
+            fetched, stats = self._fetched_at, self._stats
+        # Hooks run outside the lock: they write to disk and may call back into the service.
+        alerts = self.on_round(fetched, stats)
+        with self.lock:
+            self._alerts.extend(alerts)
+        for alert in alerts:
+            try:
+                self.on_alert(alert)
+            except Exception:
+                logger.error('sector alert delivery failed')
 
     def _track_limit_up(self, rows: dict[str, QuoteRow]) -> None:
         latest = max((row.at for row in rows.values()), default=None)

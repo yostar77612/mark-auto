@@ -4,11 +4,13 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 import sqlite3
 from threading import RLock
+from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.sector_alerts import MinuteStat
 from quantlab.trading.domain.validation import DomainError
 
 RETAIN_DAYS = 30
+TAIPEI = ZoneInfo('Asia/Taipei')
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS sector_minutes (
     trade_date TEXT NOT NULL, minute TEXT NOT NULL, group_id TEXT NOT NULL,
@@ -27,7 +29,25 @@ class SectorMinuteStore:
             raise DomainError('validation_failed', 'absolute regular sector minute path required')
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path, self._lock = path, RLock()
-        self._db = sqlite3.connect(path, timeout=2, check_same_thread=False)
+        self.warning = ''
+        try:
+            self._open()
+        except (sqlite3.DatabaseError, DomainError):
+            # Set the unreadable file aside (it may hold history) and start a fresh one.
+            try:
+                self._db.close()
+            except (AttributeError, sqlite3.Error):
+                pass
+            stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+            try:
+                path.rename(path.with_name(path.name + '.bad-' + stamp))
+            except OSError:
+                raise DomainError('sector_minutes_unavailable', 'cannot set the damaged file aside') from None
+            self.warning = 'sector_minutes_corrupt'
+            self._open()
+
+    def _open(self) -> None:
+        self._db = sqlite3.connect(self.path, timeout=2, check_same_thread=False)
         self._db.execute('PRAGMA journal_mode=WAL')
         self._db.executescript(SCHEMA)
         if len(self._db.execute('PRAGMA table_info(sector_minutes)').fetchall()) != COLUMNS:
@@ -43,7 +63,7 @@ class SectorMinuteStore:
         rows = [
             (
                 trade_date.isoformat(),
-                item.minute.astimezone(timezone.utc).strftime('%H:%M'),
+                item.minute.astimezone(TAIPEI).strftime('%H:%M'),
                 item.group_id,
                 item.amount,
                 item.cumulative,
@@ -72,7 +92,7 @@ class SectorMinuteStore:
             raise DomainError('sector_minutes_unavailable', 'load') from None
         result = []
         for day, minute, group_id, amount, cumulative, share, pct, breadth, up, down, members, complete in rows:
-            stamp = datetime.fromisoformat(f'{day}T{minute}:00+00:00')
+            stamp = datetime.fromisoformat(f'{day}T{minute}:00+08:00')
             result.append(MinuteStat(stamp, group_id, amount, cumulative, share, pct, breadth, up, down, members, bool(complete)))
         return tuple(result)
 

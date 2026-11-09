@@ -79,7 +79,7 @@ class SectorBoardWidget(QWidget):
         self.view = None
         self._requests, self._loading, self._detail_loading, self._selecting, self._again = set(), False, None, False, False
         self._wanted = ''
-        self._flash, self._seen_alerts = {}, set()
+        self._flash, self._seen_alerts, self._alerts_primed = {}, set(), False
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         top = QHBoxLayout()
@@ -413,11 +413,13 @@ class SectorBoardWidget(QWidget):
     def _track_alerts(self, view):
         """Newly seen alerts flash their group row for 3 s, then keep a light tint until the next round."""
         now = monotonic()
-        for alert in view.alerts:
+        primed, self._alerts_primed = self._alerts_primed, True
+        for alert in reversed(view.alerts):  # oldest first, so the newest alert of a group sets the tint
             key = (alert.at, alert.group_id, alert.kind)
             if key not in self._seen_alerts:
                 self._seen_alerts.add(key)
-                self._flash[alert.group_id] = (alert.direction, now, view.data_at)
+                if primed:  # alerts that predate this window (restart, reconnect) do not flash
+                    self._flash[alert.group_id] = (alert.direction, now, view.data_at)
         for group_id, (direction, seen, data_at) in tuple(self._flash.items()):
             if data_at != view.data_at and now - seen >= 3:
                 del self._flash[group_id]
@@ -510,6 +512,10 @@ class SectorBoardWidget(QWidget):
             self._render_rank(self.view)
 
     def select_group(self, group_id):
+        if self.view is not None and self.filter != 'all':
+            stat = next((item for item in self.view.groups if item.group_id == group_id), None)
+            if stat is not None and stat.kind != self.filter:
+                self.set_filter('all')  # a group hidden by the 產業/概念 filter must still be reachable from an alert
         if group_id == self.group_id:
             self._scroll_to_group()
             return
