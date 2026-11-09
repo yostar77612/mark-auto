@@ -75,6 +75,8 @@ class RuntimeBundle:
     connect_timeout: float = 8.0
     market_terminal: object | None = None
     alerts: object | None = None
+    sector: object | None = None
+    sector_poller: object | None = None
     sinopac_factory: object | None = None
     secret_resolver: object | None = None
     resource_factory: object | None = None

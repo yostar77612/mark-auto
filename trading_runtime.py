@@ -287,10 +287,14 @@ def _run_window(
     )
     from desktop_app.components.async_status import AsyncStatus
 
+    from desktop_app.features.trading.sector_board import SectorBoardWidget
+
+    sector_board = SectorBoardWidget(facade, CandlestickChart(), colours=lambda widget: up_down_colors(appearance(widget)[1]))
     window = TradingWindow(
         facade,
         initial,
         market_watch=terminal,
+        sector_board=sector_board,
         strategy_error_texts={code: (text.explanation, text.action) for code, text in ERROR_TABLE.items()},
         style_strategy_table=style_strategy_table,
         style_automatic_controls=style_automatic_controls,

@@ -18,6 +18,7 @@ class WatchInstrument:
     exchange: str
     code: str
     name: str
+    category: str = ''
 
     def __post_init__(self) -> None:
         identity(self.instrument_id)
@@ -31,6 +32,8 @@ class WatchInstrument:
             or not isinstance(self.name, str)
             or not self.name.strip()
             or len(self.name) > 200
+            or not isinstance(self.category, str)
+            or len(self.category) > 8
         ):
             raise DomainError('validation_failed', 'watch instrument identity')
 

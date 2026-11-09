@@ -81,6 +81,7 @@ def _allowed(layer: str, target: str) -> bool:
                     'application.auto_strategy_views',
                     'application.market_settings',
                     'application.symbol_search',
+                    'application.sector_contracts',
                     'application.alert_contracts',
                     'domain.watch',
                     'domain.alerts',

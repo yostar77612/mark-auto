@@ -12,6 +12,7 @@ from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery, UiCommand, UiReceipt, UiState
 from quantlab.trading.application.order_book_contracts import OrderBookView
 from quantlab.trading.application.registry import initialize
+from quantlab.trading.application.sector_contracts import SectorBoardView, SectorQuery
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from .control_secret import unprotect
@@ -61,7 +62,14 @@ class IpcFacade:
         self.closed_state: UiState | None = None
 
     def request(
-        self, operation: Operation, *, command: UiCommand | None = None, quotes=None, series: MarketSeriesQuery | None = None, alert: AlertCommand | None = None
+        self,
+        operation: Operation,
+        *,
+        command: UiCommand | None = None,
+        quotes=None,
+        series: MarketSeriesQuery | None = None,
+        alert: AlertCommand | None = None,
+        sector: SectorQuery | None = None,
     ) -> Response:
         session = read_session(self.root)
         envelope = Request(
@@ -73,6 +81,7 @@ class IpcFacade:
             command,
             quotes,
             series=series,
+            sector=sector,
             alert=alert,
         )
         with Client(session.address, family=session.family, authkey=session.key) as connection:
@@ -112,6 +121,12 @@ class IpcFacade:
         if not isinstance(response.order_book, OrderBookView):
             raise DomainError('validation_failed', 'missing order book')
         return response.order_book
+
+    def sector_board(self, query: SectorQuery) -> SectorBoardView:
+        response = self.request(Operation.SECTOR_BOARD, sector=query)
+        if not isinstance(response.sector, SectorBoardView):
+            raise DomainError('validation_failed', 'missing sector board')
+        return response.sector
 
     def market_preferences(self) -> str:
         return self.request(Operation.MARKET_PREFERENCES).market_selected

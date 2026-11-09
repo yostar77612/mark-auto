@@ -14,6 +14,9 @@ from .sdk import sdk_text, sdk_value
 from .sdk_facade import ShioajiSDKFacade
 
 
+VERSION = 2
+
+
 class SymbolDirectory:
     def __init__(self, path: Path):
         self.path = path
@@ -25,7 +28,8 @@ class SymbolDirectory:
     def load(self) -> tuple[WatchInstrument, ...]:
         try:
             body = json.loads(self.path.read_text(encoding='utf-8'))
-            if body['version'] != 1:
+            if body['version'] != VERSION:
+                # A version 1 cache has no industry codes: treat it as missing so the next refresh rebuilds it.
                 raise ValueError('directory version')
             fetched = datetime.fromisoformat(body['fetched_at'])
             if fetched.tzinfo is None:
@@ -56,13 +60,14 @@ class SymbolDirectory:
                 kind = WatchKind.INDEX if security == 'IND' else WatchKind.STOCK
                 exchange = 'INDEX' if security == 'IND' else exchange
                 prefix = {'TSE': 'TWSE', 'OTC': 'TPEX', 'INDEX': 'INDEX'}[exchange]
-                items.append(WatchInstrument(f'{prefix}:{code}', kind, exchange, code, name))
+                category = '' if security == 'IND' else str(getattr(base, 'category', '') or '')
+                items.append(WatchInstrument(f'{prefix}:{code}', kind, exchange, code, name, category))
         self.refresh_seconds = perf_counter() - started
         result = tuple({item.instrument_id: item for item in (*items, *FIXED_INDICES)}.values())
         body = {
-            'version': 1,
+            'version': VERSION,
             'fetched_at': now.astimezone(timezone.utc).isoformat(),
-            'items': [[i.instrument_id, i.kind.value, i.exchange, i.code, i.name] for i in result],
+            'items': [[i.instrument_id, i.kind.value, i.exchange, i.code, i.name, i.category] for i in result],
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_name(self.path.name + '.' + uuid4().hex + '.tmp')
