@@ -85,7 +85,7 @@ class MarketRuntimeTests(unittest.TestCase):
         self.assertEqual(len(page.bars), 1)
         self.assertEqual(page.bars[0].start.hour, 1)
         status = self.request(Operation.MARKET_STATUS).market_status
-        self.assertEqual(status.subscription_count, 3)
+        self.assertEqual(status.subscription_count, 4)  # two indices, the watched stock and its five-level slot
         self.assertTrue(status.connected)
         self.assertEqual(self.secrets.references, ['MarkAuto/v2/broker/sinopac'])
         self.assertTrue(self.command(UiAction.DISCONNECT_MARKET_DATA).accepted)

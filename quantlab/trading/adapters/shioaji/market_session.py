@@ -233,8 +233,9 @@ class MarketSession:
             self.facade.market_subscribe_bidask(contract, remove=True)
         except Exception:
             raise DomainError('market_data_not_connected') from None
-        del self.bidask_subscriptions[instrument_id]
-        self.bidask_stream.set_active(set(self.bidask_subscriptions))
+        finally:
+            del self.bidask_subscriptions[instrument_id]
+            self.bidask_stream.set_active(set(self.bidask_subscriptions))
 
     def bidask(self, instrument_id: str):
         return self.bidask_stream.latest(instrument_id) if self.connected and self.bidask_stream is not None else None
