@@ -14,6 +14,7 @@ from quantlab.trading.domain.sector_flow import FlowMinute, MonitorSelector, all
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+from tests.test_m5_sector import release
 
 TAIPEI = timezone(timedelta(hours=8))
 DAY = datetime(2026, 11, 9, tzinfo=TAIPEI)
@@ -370,7 +371,7 @@ class QaRegressionTests(unittest.TestCase):
         self.assertEqual(alert_text(alert), '10:15 散熱 主動買連續 3 分鐘 淨買 1.2 億（大單淨買 0.7 億，監控 7/7 檔）')
         sell = SectorAlert(at(10, 15), 'gA', '散熱', 'FLOW', 'DOWN', 120_000_000, 3, None, -20_000_000, 7, 5)
         self.assertIn('主動賣連續 3 分鐘 淨賣 1.2 億（大單淨賣 -0.2 億，監控 5/7 檔）', alert_text(sell))
-        widget = SectorBoardWidget(SimpleNamespace(), CandlestickChart())
+        widget = release(self, SectorBoardWidget(SimpleNamespace(), CandlestickChart()))
         widget.render_board(SectorBoardView('LIVE', at(10, 15), 1, 10, 50, (stat('gA', 3),), alerts=(alert,)))
         self.assertIn('主動買連續', widget.alert_bar.text())
 
@@ -438,7 +439,7 @@ class BoardDisplayTests(unittest.TestCase):
         from desktop_app.features.trading.sector_board import SectorBoardWidget
         from quantlab.trading.application.sector_contracts import MemberView, MonitorCount, SectorBoardView
 
-        widget = SectorBoardWidget(SimpleNamespace(), CandlestickChart())
+        widget = release(self, SectorBoardWidget(SimpleNamespace(), CandlestickChart()))
         groups = (stat('gA', 3), stat('gB', 2))
         members = (
             MemberView('TWSE:1101', '1101', 'N1101', Decimal(100), Decimal('1.5'), Decimal('1.2'), 10**8, '', side_ratio=Decimal('0.57')),

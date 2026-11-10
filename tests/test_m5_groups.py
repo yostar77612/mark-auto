@@ -16,7 +16,7 @@ from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS, ConceptGroup
 from quantlab.trading.domain.sector_groups import GroupRecord, clean_codes, clean_name, merge_seed
 from quantlab.trading.domain.validation import DomainError
-from tests.test_m5_sector import OPEN, Source, row, stock
+from tests.test_m5_sector import OPEN, Source, release, row, stock
 
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
 
@@ -296,7 +296,7 @@ class MemberMenuTests(unittest.TestCase):
         with TemporaryDirectory(dir=Path.cwd()) as folder:
             store = SectorGroupStore(Path(folder) / 'g.json', SEED_A, 1)
             editor = SectorGroupEditor(store, lambda: ())
-            widget = SectorBoardWidget(SimpleNamespace(sector_groups=editor.execute), CandlestickChart())
+            widget = release(self, SectorBoardWidget(SimpleNamespace(sector_groups=editor.execute), CandlestickChart()))
             refreshed = []
             widget.refresh = lambda: refreshed.append(1)
             widget._submit = lambda operation, completed: completed(operation(), None)
@@ -309,8 +309,14 @@ class MemberMenuTests(unittest.TestCase):
         from desktop_app.features.trading.sector_board import SectorBoardWidget
 
         picked = []
-        widget = SectorBoardWidget(
-            SimpleNamespace(), CandlestickChart(), open_in_watch=lambda key: picked.append(('open', key)), add_to_watch=lambda key: picked.append(('add', key))
+        widget = release(
+            self,
+            SectorBoardWidget(
+                SimpleNamespace(),
+                CandlestickChart(),
+                open_in_watch=lambda key: picked.append(('open', key)),
+                add_to_watch=lambda key: picked.append(('add', key)),
+            ),
         )
         self.assertEqual((widget.open_in_watch, widget.add_to_watch) != (None, None), True)
         widget.open_in_watch('TWSE:2330')
@@ -400,7 +406,7 @@ class EditorDialogTests(unittest.TestCase):
 
         from desktop_app.features.trading.sector_editor import SectorEditor
 
-        self.dialog = SectorEditor(self.facade, directory, submit, on_changed=lambda: self.changed.append('ui'))
+        self.dialog = release(self, SectorEditor(self.facade, directory, submit, on_changed=lambda: self.changed.append('ui')))
 
     def names(self):
         return [self.dialog.groups.item(row).text() for row in range(self.dialog.groups.count())]
