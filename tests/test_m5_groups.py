@@ -197,6 +197,8 @@ class StoreHardeningTests(unittest.TestCase):
         calls = []
 
         def flaky(source, target):
+            if Path(target) != Path(self.path):  # os.replace is patched process-wide; ignore other threads' files
+                return original(source, target)
             calls.append(1)
             if len(calls) < 3:
                 raise PermissionError('scanner')
@@ -254,13 +256,30 @@ class RequestPumpTests(unittest.TestCase):
         self.wait(lambda: not market_watch._LIVE_RESULTS)
         self.assertEqual(seen, ['ZeroDivisionError'])
 
-    def test_the_pump_stops_when_nothing_is_outstanding(self):
+    def test_the_pump_goes_idle_and_rearms_for_the_next_request(self):
         from desktop_app.features.trading import market_watch
 
-        result = market_watch._Result(lambda value, error: None)
-        market_watch.start_request(lambda: None, result)
-        self.wait(lambda: not market_watch._pump().timer.isActive())
-        self.assertEqual(market_watch._pump().outstanding, 0)
+        seen = []
+        for number in (1, 2):
+            result = market_watch._Result(lambda value, error: seen.append(value))
+            market_watch.start_request(lambda number=number: number, result)
+            self.wait(lambda number=number: len(seen) == number)
+            self.wait(lambda: not market_watch._PUMP['armed'])
+        self.assertEqual(seen, [1, 2])
+        self.assertEqual(market_watch._PUMP['outstanding'], 0)
+
+    def test_nothing_in_the_pump_is_a_qobject(self):
+        # A module-level QObject is torn down in an unspecified order against QApplication at interpreter exit
+        # ("shared QObject was deleted directly", segfault after a green CI run).
+        from PySide6.QtCore import QObject
+
+        from desktop_app.features.trading import market_watch
+
+        for name, value in vars(market_watch).items():
+            if name.startswith('_') and not name.startswith('__'):
+                self.assertNotIsInstance(value, QObject, name)
+        self.assertFalse(issubclass(market_watch._Result, QObject))
+        self.assertFalse(issubclass(market_watch._Request, QObject))
 
 
 class MemberMenuTests(unittest.TestCase):
