@@ -70,12 +70,11 @@ class ContextIpcFacade(IpcFacade):
         self.launch, self.configuration_id = launch, configuration_id
         super().__init__(launch.root, environment=launch.environment, account_ref=launch.account_ref)
 
-    def request(self, operation, *, command=None, quotes=None, series=None, alert=None):
+    def request(self, operation, *, command=None, quotes=None, series=None, alert=None, sector=None, sector_groups=None, sector_params=None):
         self.environment, self.account_ref = self.launch.environment, self.launch.account_ref
-        series_fields = {} if series is None else {'series': series}
-        if alert is not None:
-            series_fields['alert'] = alert
-        response = super().request(operation, command=command, quotes=quotes, **series_fields)
+        optional = {'series': series, 'alert': alert, 'sector': sector, 'sector_groups': sector_groups, 'sector_params': sector_params}
+        fields = {name: value for name, value in optional.items() if value is not None}
+        response = super().request(operation, command=command, quotes=quotes, **fields)
         if response.state is not None:
             state = response.state
             configured = any(item.account_ref == self.launch.account_ref and item.environment is self.launch.environment for item in state.accounts)
