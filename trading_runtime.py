@@ -198,6 +198,7 @@ def _run_window(
     from desktop_app.features.trading.market_terminal_layout import OPTIONAL_PANELS, PANEL_IDS, terminal_preset
     from desktop_app.components.charts import CandlestickChart
     from quantlab.research_core.adapters.market_layout import LayoutStore
+    from quantlab.trading.adapters.storage.startup_preferences import StartupPreferences
     from desktop_app.features.market.workspace import WorkspacePanel
     from desktop_app.shell.theme import (
         up_down_colors,
@@ -306,6 +307,7 @@ def _run_window(
         style_strategy_table=style_strategy_table,
         style_automatic_controls=style_automatic_controls,
         research_status_factory=AsyncStatus,
+        startup_preferences=StartupPreferences(root or default_root()),
         **_presentation_options(root or default_root()),
     )
     app.setProperty('maintenanceRequestClose', window.close)

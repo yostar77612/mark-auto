@@ -31,6 +31,7 @@ from desktop_app.features.trading.context_header import install_context_header, 
 from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, refresh_trading_environment
 from desktop_app.features.trading.manual_intents import MANUAL_ACTIONS
 from desktop_app.features.trading.minute_research_feedback import minute_capable
+from desktop_app.features.trading.auto_connect import AutoConnect
 from desktop_app.features.trading.sinopac_ui import CONNECTION_ACTIONS, complete_connection, render_connection
 
 
@@ -114,6 +115,7 @@ class TradingWindow(QMainWindow):
         style_strategy_table=None,
         style_automatic_controls=None,
         research_status_factory=None,
+        startup_preferences=None,
     ):
         super().__init__(parent)
         self.facade = facade
@@ -148,6 +150,8 @@ class TradingWindow(QMainWindow):
         build(self)
         install_context_header(self)
         self.apply_state(initial_state)
+        self.auto_connect = AutoConnect(startup_preferences)
+        self.auto_connect.attach(self)
         self.poll = QTimer(self)
         self.poll.setInterval(1000)
         self.poll.timeout.connect(self.refresh)
@@ -173,7 +177,8 @@ class TradingWindow(QMainWindow):
         self.notice.setText(text)
 
     def refresh(self) -> None:
-        self._run(None)
+        if not self.auto_connect.step(self):
+            self._run(None)
 
     def command(
         self,
