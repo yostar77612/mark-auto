@@ -70,9 +70,10 @@ class ContextIpcFacade(IpcFacade):
         self.launch, self.configuration_id = launch, configuration_id
         super().__init__(launch.root, environment=launch.environment, account_ref=launch.account_ref)
 
-    def request(self, operation, *, command=None, quotes=None, series=None, alert=None, sector=None, sector_groups=None, sector_params=None):
+    def request(self, operation, *, command=None, quotes=None, **optional):
+        # Every other envelope field (series, alert, sector...) passes straight through: listing them here by hand is what
+        # once hid the sector requests from the desktop.
         self.environment, self.account_ref = self.launch.environment, self.launch.account_ref
-        optional = {'series': series, 'alert': alert, 'sector': sector, 'sector_groups': sector_groups, 'sector_params': sector_params}
         fields = {name: value for name, value in optional.items() if value is not None}
         response = super().request(operation, command=command, quotes=quotes, **fields)
         if response.state is not None:
