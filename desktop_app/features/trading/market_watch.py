@@ -9,7 +9,7 @@ from dataclasses import replace
 from itertools import count
 from queue import Empty, SimpleQueue
 from threading import Thread
-from PySide6.QtCore import Qt, QObject, QRunnable, QTimer, Slot
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QApplication,
@@ -33,67 +33,59 @@ from desktop_app.features.trading.widgets import rows, selected_id
 
 # Answers from worker threads are queued in plain Python and handed over by a GUI-thread timer: no Qt signal is
 # ever emitted from, or object released on, a worker thread (CI saw intermittent access violations with
-# QThreadPool runnables and cross-thread signals). Results stay registered until delivered.
+# QThreadPool runnables and cross-thread signals). Nothing here is a QObject that outlives a request: a module-level
+# QObject is destroyed in an unspecified order against QApplication at interpreter exit ("shared QObject was deleted
+# directly", segfault after a green run), so results are plain objects and the pump re-arms a one-shot timer.
 _LIVE_RESULTS = {}  # token -> result; touched on the GUI thread only. Workers carry just the token.
 _DONE = SimpleQueue()
 _TOKENS = count(1)
-_PUMP = None
+_PUMP = {'outstanding': 0, 'armed': False, 'app': None}  # GUI thread only
 
 
-class _Pump(QObject):
-    """Delivers finished requests on the GUI thread; runs only while something is outstanding."""
-
-    def __init__(self):
-        super().__init__(QApplication.instance())
-        self.outstanding = 0
-        self.timer = QTimer(self)
-        self.timer.setInterval(8)
-        self.timer.timeout.connect(self.drain)
-
-    def expect(self):
-        self.outstanding += 1
-        self.timer.start()
-
-    @Slot()
-    def drain(self):
-        while True:
-            try:
-                token, value, error = _DONE.get_nowait()
-            except Empty:
-                break
-            self.outstanding -= 1
-            result = _LIVE_RESULTS.pop(token, None)
-            if result is not None:
-                result.finish(value, error)
-        if self.outstanding <= 0:
-            self.outstanding = 0
-            self.timer.stop()
+def _expect():
+    app = id(QApplication.instance())
+    if _PUMP['app'] != app:  # a new QApplication: the old one-shot timer died with it
+        _PUMP.update(armed=False, app=app)
+    _PUMP['outstanding'] += 1
+    _arm()
 
 
-def _pump():
-    global _PUMP
-    app = QApplication.instance()
-    if _PUMP is None or _PUMP.parent() is not app:
-        _PUMP = _Pump()
-    return _PUMP
+def _arm():
+    if not _PUMP['armed']:
+        _PUMP['armed'] = True
+        QTimer.singleShot(8, _drain)
 
 
-class _Result(QObject):
+def _drain():
+    _PUMP['armed'] = False
+    while True:
+        try:
+            token, value, error = _DONE.get_nowait()
+        except Empty:
+            break
+        _PUMP['outstanding'] -= 1
+        result = _LIVE_RESULTS.pop(token, None)
+        if result is not None:
+            result.finish(value, error)
+    if _PUMP['outstanding'] > 0:
+        _arm()
+    else:
+        _PUMP['outstanding'] = 0
+
+
+class _Result:
     def __init__(self, completed):
-        super().__init__()
         self.completed = completed
         self.token = next(_TOKENS)
         _LIVE_RESULTS[self.token] = self
-        _pump().expect()
+        _expect()
 
-    @Slot()
-    def cancel(self):
+    def cancel(self, *_):
         self.completed = None
 
     def finish(self, value, error):
         if self.completed is not None:
             self.completed(value, error)
-        self.deleteLater()
 
 
 def start_request(operation, result):
@@ -101,10 +93,9 @@ def start_request(operation, result):
     Thread(target=_Request(operation, result).run, name='market-request', daemon=True).start()
 
 
-class _Request(QRunnable):
+class _Request:
     def __init__(self, operation, result):
-        super().__init__()
-        # Only the token goes to the worker: the QObject itself is never referenced off the GUI thread.
+        # Only the token goes to the worker: the result is never referenced off the GUI thread.
         self.operation, self.token = operation, result.token
 
     def run(self):

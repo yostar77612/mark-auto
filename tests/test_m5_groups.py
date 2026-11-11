@@ -16,7 +16,7 @@ from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS, ConceptGroup
 from quantlab.trading.domain.sector_groups import GroupRecord, clean_codes, clean_name, merge_seed
 from quantlab.trading.domain.validation import DomainError
-from tests.test_m5_sector import OPEN, Source, row, stock
+from tests.test_m5_sector import OPEN, Source, release, row, stock
 
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
 
@@ -197,6 +197,8 @@ class StoreHardeningTests(unittest.TestCase):
         calls = []
 
         def flaky(source, target):
+            if Path(target) != Path(self.path):  # os.replace is patched process-wide; ignore other threads' files
+                return original(source, target)
             calls.append(1)
             if len(calls) < 3:
                 raise PermissionError('scanner')
@@ -254,13 +256,30 @@ class RequestPumpTests(unittest.TestCase):
         self.wait(lambda: not market_watch._LIVE_RESULTS)
         self.assertEqual(seen, ['ZeroDivisionError'])
 
-    def test_the_pump_stops_when_nothing_is_outstanding(self):
+    def test_the_pump_goes_idle_and_rearms_for_the_next_request(self):
         from desktop_app.features.trading import market_watch
 
-        result = market_watch._Result(lambda value, error: None)
-        market_watch.start_request(lambda: None, result)
-        self.wait(lambda: not market_watch._pump().timer.isActive())
-        self.assertEqual(market_watch._pump().outstanding, 0)
+        seen = []
+        for number in (1, 2):
+            result = market_watch._Result(lambda value, error: seen.append(value))
+            market_watch.start_request(lambda number=number: number, result)
+            self.wait(lambda number=number: len(seen) == number)
+            self.wait(lambda: not market_watch._PUMP['armed'])
+        self.assertEqual(seen, [1, 2])
+        self.assertEqual(market_watch._PUMP['outstanding'], 0)
+
+    def test_nothing_in_the_pump_is_a_qobject(self):
+        # A module-level QObject is torn down in an unspecified order against QApplication at interpreter exit
+        # ("shared QObject was deleted directly", segfault after a green CI run).
+        from PySide6.QtCore import QObject
+
+        from desktop_app.features.trading import market_watch
+
+        for name, value in vars(market_watch).items():
+            if name.startswith('_') and not name.startswith('__'):
+                self.assertNotIsInstance(value, QObject, name)
+        self.assertFalse(issubclass(market_watch._Result, QObject))
+        self.assertFalse(issubclass(market_watch._Request, QObject))
 
 
 class MemberMenuTests(unittest.TestCase):
@@ -277,7 +296,7 @@ class MemberMenuTests(unittest.TestCase):
         with TemporaryDirectory(dir=Path.cwd()) as folder:
             store = SectorGroupStore(Path(folder) / 'g.json', SEED_A, 1)
             editor = SectorGroupEditor(store, lambda: ())
-            widget = SectorBoardWidget(SimpleNamespace(sector_groups=editor.execute), CandlestickChart())
+            widget = release(self, SectorBoardWidget(SimpleNamespace(sector_groups=editor.execute), CandlestickChart()))
             refreshed = []
             widget.refresh = lambda: refreshed.append(1)
             widget._submit = lambda operation, completed: completed(operation(), None)
@@ -290,8 +309,14 @@ class MemberMenuTests(unittest.TestCase):
         from desktop_app.features.trading.sector_board import SectorBoardWidget
 
         picked = []
-        widget = SectorBoardWidget(
-            SimpleNamespace(), CandlestickChart(), open_in_watch=lambda key: picked.append(('open', key)), add_to_watch=lambda key: picked.append(('add', key))
+        widget = release(
+            self,
+            SectorBoardWidget(
+                SimpleNamespace(),
+                CandlestickChart(),
+                open_in_watch=lambda key: picked.append(('open', key)),
+                add_to_watch=lambda key: picked.append(('add', key)),
+            ),
         )
         self.assertEqual((widget.open_in_watch, widget.add_to_watch) != (None, None), True)
         widget.open_in_watch('TWSE:2330')
@@ -381,7 +406,7 @@ class EditorDialogTests(unittest.TestCase):
 
         from desktop_app.features.trading.sector_editor import SectorEditor
 
-        self.dialog = SectorEditor(self.facade, directory, submit, on_changed=lambda: self.changed.append('ui'))
+        self.dialog = release(self, SectorEditor(self.facade, directory, submit, on_changed=lambda: self.changed.append('ui')))
 
     def names(self):
         return [self.dialog.groups.item(row).text() for row in range(self.dialog.groups.count())]

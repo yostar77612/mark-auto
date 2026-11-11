@@ -33,6 +33,26 @@ def row(code, pct, amount=100_000_000, limit='', price='100', ratio='1.5', at=OP
     return QuoteRow(code, Decimal(price), Decimal(pct), limit, 1000, amount, Decimal(ratio) if ratio is not None else None, at)
 
 
+def release(case, widget):
+    """Delete a top-level widget when the test ends (repo convention: shiboken6.delete in tearDown).
+
+    Widgets left alive until interpreter exit are torn down in an unspecified order against QApplication
+    ("QObject: shared QObject was deleted directly", segfault after a fully green shard).
+    """
+
+    def delete():
+        import shiboken6
+        from PySide6.QtWidgets import QApplication
+
+        QApplication.processEvents()
+        if shiboken6.isValid(widget):
+            shiboken6.delete(widget)
+        QApplication.processEvents()
+
+    case.addCleanup(delete)
+    return widget
+
+
 def stock(code, category='24', exchange='TSE'):
     prefix = 'TWSE' if exchange == 'TSE' else 'TPEX'
     return WatchInstrument(f'{prefix}:{code}', WatchKind.STOCK, exchange, code, 'N' + code, category)
@@ -393,7 +413,7 @@ class BoardWidgetTests(unittest.TestCase):
         )
         service.refresh()
         facade = SimpleNamespace(sector_board=lambda query: service.board(query.group_id))
-        return SectorBoardWidget(facade, CandlestickChart()), service
+        return release(self, SectorBoardWidget(facade, CandlestickChart())), service
 
     def test_ranking_renders_filters_sorts_and_selects_group_members(self):
         widget, service = self.make()
