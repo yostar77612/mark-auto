@@ -44,12 +44,13 @@ class AutoConnect:
         if not self.active or window._operation is not None or window._priority_operation is not None or not window._engine_reachable:
             return False
         view = window.state.sinopac_connection
-        if view.phase != 'DISCONNECTED' or view.environment is not None:
-            self.active = False  # connecting or connected, by us or by the user
-            return False
-        if view.error_code:
+        if self.attempts and view.phase == 'DISCONNECTED' and view.error_code:
+            # The engine keeps the attempted environment after a failure, so judge by phase and error.
             self.active = False
             window._feedback(ui_text('autoconnect.failed').format(reason_text(view.error_code)))
+            return False
+        if view.phase != 'DISCONNECTED' or view.environment is not None or view.error_code:
+            self.active = False  # connecting or connected (by us or by the user), or an error left from before we tried
             return False
         if view.settings.environment is not Environment.BROKER_SIMULATION:
             self.active = False

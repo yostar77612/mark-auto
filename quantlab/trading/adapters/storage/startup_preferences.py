@@ -19,9 +19,9 @@ class StartupPreferences:
     def auto_connect(self) -> bool:
         try:
             body = json.loads(self.path.read_text(encoding='utf-8'))
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):  # hostile nesting is "malformed", not a startup crash
             return False
-        return type(body) is dict and body.get('version') == VERSION and body.get('auto_connect') is True
+        return type(body) is dict and type(body.get('version')) is int and body['version'] == VERSION and body.get('auto_connect') is True
 
     def set_auto_connect(self, value: bool) -> None:
         if type(value) is not bool:

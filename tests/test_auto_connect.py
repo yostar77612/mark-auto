@@ -33,9 +33,18 @@ class StartupPreferencesTests(unittest.TestCase):
 
     def test_unreadable_or_foreign_files_mean_off(self):
         path = Path(self.temp.name) / FILE_NAME
-        for body in ('', '{', '[]', '{"version": 2, "auto_connect": true}', '{"version": 1, "auto_connect": "yes"}', '{"version": 1}'):
+        for body in (
+            '',
+            '{',
+            '[]',
+            '[' * 100000,
+            '{"version": 2, "auto_connect": true}',
+            '{"version": true, "auto_connect": true}',
+            '{"version": 1, "auto_connect": "yes"}',
+            '{"version": 1}',
+        ):
             path.write_text(body, encoding='utf-8')
-            self.assertFalse(self.preferences.auto_connect(), body)
+            self.assertFalse(self.preferences.auto_connect(), body[:40])
 
     def test_only_a_bool_is_accepted_and_a_bad_file_is_replaced(self):
         with self.assertRaises(ValueError):
@@ -105,12 +114,28 @@ class AutoConnectWindowTests(unittest.TestCase):
         self.assertEqual(self.connects(), [])
         self.assertEqual(self.window._last_feedback, ui_text('autoconnect.skipped_live'))
 
-    def test_a_failed_attempt_is_reported_and_not_repeated(self):
+    def test_a_failed_attempt_is_reported_once_and_not_repeated(self):
+        # The real engine keeps the attempted environment and sets the error code when the login fails.
+        self.build()
+        view = self.facade.state.sinopac_connection
+
+        def execute(command):
+            self.facade.commands.append(command)
+            failed = replace(view, environment=Environment.BROKER_SIMULATION, phase='DISCONNECTED', error_code='market_data_login_failed')
+            self.facade.state = replace(self.facade.state, sinopac_connection=failed)
+            return UiReceipt(True, 'connection_pending', '')
+
+        with patch.object(self.facade, 'execute', side_effect=execute):
+            for _ in range(4):
+                self.tick()
+        self.assertEqual(len(self.connects()), 1)
+        self.assertTrue(self.window._last_feedback.startswith(ui_text('autoconnect.failed').split('{')[0]))
+
+    def test_an_error_left_from_before_any_attempt_blocks_it_quietly(self):
         self.build(error_code='market_data_login_failed')
         self.tick()
         self.tick()
         self.assertEqual(self.connects(), [])
-        self.assertIn(ui_text('autoconnect.failed').split('{')[0], self.window._last_feedback)
 
     def test_a_rejected_command_is_retried_a_bounded_number_of_times(self):
         self.build()
