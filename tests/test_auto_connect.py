@@ -100,9 +100,14 @@ class AutoConnectWindowTests(unittest.TestCase):
             (command.sinopac_settings, command.connection_revision, command.connection_generation), (view.settings, view.revision, view.generation)
         )
 
-    def test_nothing_is_sent_without_the_switch_or_without_preferences(self):
+    # One window per test: the shared tearDown disposes exactly self.window. A window replaced inside a test
+    # would stay visible and, on a real desktop, cover widgets that later tests hover with the mouse.
+    def test_nothing_is_sent_without_the_switch(self):
         self.build(on=False)
         self.tick()
+        self.assertEqual(self.connects(), [])
+
+    def test_nothing_is_sent_and_the_switch_is_hidden_without_preferences(self):
         self.build(preferences=False)
         self.assertTrue(self.window.broker_panel.auto_connect.isHidden())
         self.tick()
