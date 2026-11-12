@@ -14,7 +14,7 @@ import shiboken6
 
 from desktop_app.features.trading.alert_panel import AlertPanel
 from desktop_app.features.trading.market_alerts_ui import AlertPanelController
-from desktop_app.features.trading.market_watch import _Request, _Result
+from desktop_app.features.trading.market_watch import _Result, start_request
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.alert_contracts import AlertOperation, AlertRuleData, AlertSnapshot
 from quantlab.trading.domain.alerts import AlertEvent, AlertKind, AlertRule
@@ -198,7 +198,7 @@ class AlertControllerTests(unittest.TestCase):
 
             result = _Result(finish)
             results.add(result)
-            QThreadPool.globalInstance().start(_Request(operation, result))
+            start_request(operation, result)
 
         controller = AlertPanelController(call, submit, lambda: ID, lambda *args: None, lambda key: key, None, lambda: ('#ff0000', '#00ff00'))
         try:

@@ -3362,7 +3362,12 @@
       "sector.alert_burst_text": "{0} {1} 爆量{2} 本分鐘 {3} 億（基準 {4} 億，{5} 倍）",
       "sector.monitor_mark": "●",
       "sector.monitor_count": "監控 {0}/{1} 檔",
-      "sector.monitor_limited": "訂閱額度不足，僅監控部分成分股"
+      "sector.monitor_limited": "訂閱額度不足，僅監控部分成分股",
+      "autoconnect.label": "啟動時自動連線（永豐模擬環境）",
+      "autoconnect.hint": "勾選後，下次開啟程式會自動用上方已儲存的設定連線；只在目標為「券商模擬」時動作，連線失敗不會重試。",
+      "autoconnect.failed": "自動連線失敗：{0}",
+      "autoconnect.skipped_live": "自動連線已略過：儲存的目標不是券商模擬環境，請手動連線。",
+      "autoconnect.save_failed": "無法儲存自動連線設定，請稍後再試。"
     }
   },
   "aliases": {
@@ -8053,6 +8058,11 @@
       "sector.monitor_mark": "●",
       "sector.monitor_count": "監控 {0}/{1} 檔",
       "sector.monitor_limited": "訂閱額度不足，僅監控部分成分股",
+      "autoconnect.label": "啟動時自動連線（永豐模擬環境）",
+      "autoconnect.hint": "勾選後，下次開啟程式會自動用上方已儲存的設定連線；只在目標為「券商模擬」時動作，連線失敗不會重試。",
+      "autoconnect.failed": "自動連線失敗：{0}",
+      "autoconnect.skipped_live": "自動連線已略過：儲存的目標不是券商模擬環境，請手動連線。",
+      "autoconnect.save_failed": "無法儲存自動連線設定，請稍後再試。",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12739,7 +12749,12 @@
     "sector.alert_burst_text",
     "sector.monitor_mark",
     "sector.monitor_count",
-    "sector.monitor_limited"
+    "sector.monitor_limited",
+    "autoconnect.label",
+    "autoconnect.hint",
+    "autoconnect.failed",
+    "autoconnect.skipped_live",
+    "autoconnect.save_failed"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

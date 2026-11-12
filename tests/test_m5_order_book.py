@@ -20,6 +20,7 @@ from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES
+from tests.test_m5_sector import release
 from tests.test_market_terminal_service import NOW, OTHER, STOCK, Session
 
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
@@ -302,7 +303,7 @@ class OrderBookPanelTests(unittest.TestCase):
 
         rows = ladder_rows(self.view())
         self.assertEqual([row[1] for row in rows], ['103.0', '102.5', '102.0', '101.5', '101.0', '100.5', '100.0', '99.5', '99.0', '98.5'])
-        panel = OrderBookPanel()
+        panel = release(self, OrderBookPanel())
         panel.render_view(self.view(), '#ff0000', '#00aa00')
         self.assertEqual(panel.ladder.rowCount(), 10)
         self.assertEqual(panel.tape.rowCount(), 2)
@@ -316,7 +317,7 @@ class OrderBookPanelTests(unittest.TestCase):
     def test_index_and_missing_data_states(self):
         from desktop_app.features.trading.order_book_panel import OrderBookPanel
 
-        panel = OrderBookPanel()
+        panel = release(self, OrderBookPanel())
         panel.render_view(OrderBookView('INDEX:IX0001'), '#ff0000', '#00aa00')
         self.assertEqual(panel.notice.text(), '指數無五檔')
         panel.render_view(OrderBookView(STOCK.instrument_id, supported=True), '#ff0000', '#00aa00')

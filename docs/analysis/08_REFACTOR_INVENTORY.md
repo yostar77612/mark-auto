@@ -1000,6 +1000,9 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/runtime/sector_settings.py` | 41 | composition | `quantlab/trading/runtime/sector_settings.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/sector_monitor.py` | 211 | application | `quantlab/trading/application/sector_monitor.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/sector_flow.py` | 93 | domain | `quantlab/trading/domain/sector_flow.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/auto_connect.py` | 65 | presentation | `desktop_app/features/trading/auto_connect.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/strings/auto_connect.py` | 9 | shared | `desktop_app/strings/auto_connect.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/storage/startup_preferences.py` | 31 | infrastructure | `quantlab/trading/adapters/storage/startup_preferences.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

@@ -23,6 +23,8 @@ from quantlab.trading.domain.sector_alerts import (
 )
 from quantlab.trading.domain.validation import DomainError
 
+from tests.test_m5_sector import release
+
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
 
 TAIPEI = timezone(timedelta(hours=8))
@@ -365,7 +367,7 @@ class LogIntegrationTests(unittest.TestCase):
             runtime = self.make(folder)
             runtime.record_sector(self.burst())
             chosen, groups = [], []
-            panel = AlertPanel(runtime.service, lambda: 'TWSE:2330', lambda key, at: chosen.append(key))
+            panel = release(self, AlertPanel(runtime.service, lambda: 'TWSE:2330', lambda key, at: chosen.append(key)))
             panel.select_sector = groups.append
             self.assertEqual([panel.table.item(0, column).text() for column in (1, 2, 3)], ['散熱', '族群', '族群爆量'])
             panel.select_event(panel.table.item(0, 0))
@@ -384,7 +386,7 @@ class LogIntegrationTests(unittest.TestCase):
         from desktop_app.features.trading.alert_panel import AlertRuleDialog
 
         QApplication.instance() or QApplication([])
-        dialog = AlertRuleDialog('TWSE:2330')
+        dialog = release(self, AlertRuleDialog('TWSE:2330'))
         kinds = {getattr(dialog.kind.itemData(index), 'value', dialog.kind.itemData(index)) for index in range(dialog.kind.count())}
         self.assertNotIn('SECTOR_BURST', kinds)
         self.assertNotIn('SECTOR_FLOW', kinds)
@@ -431,7 +433,7 @@ class SettingsTests(unittest.TestCase):
                 raise DomainError('validation_failed', 'range')
             return params
 
-        dialog = SectorAlertSettingsDialog(SimpleNamespace(sector_settings=settings), SectorAlertParams(), submit)
+        dialog = release(self, SectorAlertSettingsDialog(SimpleNamespace(sector_settings=settings), SectorAlertParams(), submit))
         widget = dialog.inputs['burst_floor'][0]
         self.assertEqual(widget.value(), 2000)  # NT$20M shown in 10,000s
         widget.setValue(3000)
@@ -466,7 +468,7 @@ class BoardAlertBarTests(unittest.TestCase):
         from desktop_app.components.charts import CandlestickChart
         from desktop_app.features.trading.sector_board import SectorBoardWidget
 
-        widget = SectorBoardWidget(SimpleNamespace(sector_board=lambda query: self.view(())), CandlestickChart())
+        widget = release(self, SectorBoardWidget(SimpleNamespace(sector_board=lambda query: self.view(())), CandlestickChart()))
         widget._submit = lambda operation, completed: None
         return widget
 
