@@ -92,6 +92,9 @@ def preview_preflight_receipt(bundle: 'RuntimeBundle', command: UiCommand) -> Ui
             with engine.lock:
                 view = build_preflight(reference, engine.state.trading_day, engine.clock.now(), engine.configuration.environment, facts)
         else:
+            # Without an engine nothing here can judge the session calendar: say unknown, not a red 'closed', once connected.
+            if facts.connected and facts.service_open is False:
+                facts = replace(facts, service_open=None)
             now = datetime.now(timezone.utc)
             view = build_preflight(reference, now.astimezone(ZoneInfo('Asia/Taipei')).date(), now, bundle.launch.environment, facts)
         return UiReceipt(True, 'completed', '', '', view)

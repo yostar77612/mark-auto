@@ -592,6 +592,25 @@ class PreflightDispatchTests(unittest.TestCase):
         self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))
         provider.assert_not_called()
 
+    def test_engine_less_preview_keeps_the_launched_environment_and_does_not_call_a_connected_session_closed(self):
+        self.bundle.engine = None
+        self.bundle.launch = SimpleNamespace(environment=Environment.LIVE)
+        receipt, _ = self.preview(facts=PreflightFacts(True, False, None, True, None, False, False))
+        rows = {row.key: row.state for row in receipt.preflight.checks}
+        self.assertEqual(rows['ca'], 'PASS')  # LIVE: the certificate row is a real check, not 'not required'
+        self.assertEqual((rows['connection'], rows['service']), ('PASS', 'UNKNOWN'))  # connected, but no engine to judge the session
+        receipt, _ = self.preview(facts=PreflightFacts(False, False, None, True, False, False, False))
+        self.assertEqual(next(row.state for row in receipt.preflight.checks if row.key == 'service'), 'FAIL')  # not connected: still red
+        self.assert_no_record()
+
+    def test_a_reference_the_engine_does_not_hold_gets_the_engine_less_checklist_not_a_refusal(self):
+        receipt, provider = self.preview(replace(self.command(account_ref='sinopac-pending'), action=UiAction.PREVIEW_PREFLIGHT))
+        self.assertTrue(receipt.accepted, receipt)
+        provider.assert_called_once_with(self.bundle, 'sinopac-pending')
+        self.assertEqual(receipt.preflight.account_ref, 'sinopac-pending')
+        self.assertEqual(self.engine.state.preflight, ())
+        self.assert_no_record()
+
     def test_a_preview_never_blocks_the_real_check_that_follows(self):
         self.preview(facts=replace(self.passed, connected=False))
         receipt, _ = self.execute()
