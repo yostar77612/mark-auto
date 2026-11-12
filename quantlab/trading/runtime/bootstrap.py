@@ -63,6 +63,46 @@ class PublicVersionState:
 register(PublicVersionState)
 
 
+def preview_preflight_receipt(bundle: 'RuntimeBundle', command: UiCommand) -> UiReceipt:
+    """The broker checklist as it reads now: nothing is recorded, latched or versioned, so no version stamp is needed.
+
+    Before an account is chosen and the manual book is enabled there is no engine at all; the facts collector then
+    reports connection and session as they are and everything that needs an engine as not ready, which is exactly
+    what the owner should read, so the preview does not wait for one.
+    """
+    from datetime import datetime, timezone
+    from zoneinfo import ZoneInfo
+
+    from quantlab.trading.application.errors import ERROR_TABLE
+    from quantlab.trading.application.preflight import build_preflight
+    from .preflight import sinopac_preflight_facts
+
+    if type(command.account_ref) is not str:
+        return UiReceipt(False, 'validation_failed', '')
+    with bundle.lock:
+        engine = bundle.engine
+        if bundle.closing or bundle.closed or bundle.control_failed or bundle.sinopac_connection is None:
+            return UiReceipt(False, 'capability_missing', '')
+    try:
+        reference = command.account_ref or (engine.state.account_ref if engine is not None else '')
+        if not reference:
+            return UiReceipt(False, 'validation_failed', '')
+        facts = sinopac_preflight_facts(bundle, reference)
+        if engine is not None and reference in engine.gateways:
+            with engine.lock:
+                view = build_preflight(reference, engine.state.trading_day, engine.clock.now(), engine.configuration.environment, facts)
+        else:
+            # Without an engine nothing here can judge the session calendar: say unknown, not a red 'closed', once connected.
+            if facts.connected and facts.service_open is False:
+                facts = replace(facts, service_open=None)
+            now = datetime.now(timezone.utc)
+            view = build_preflight(reference, now.astimezone(ZoneInfo('Asia/Taipei')).date(), now, bundle.launch.environment, facts)
+        return UiReceipt(True, 'completed', '', '', view)
+    except DomainError as error:
+        entry = ERROR_TABLE.get(error.code, ERROR_TABLE['operation_failed'])
+        return UiReceipt(False, error.code, entry.explanation + ' ' + entry.action)
+
+
 @dataclass
 class RuntimeBundle:
     launch: RuntimeLaunch
@@ -346,6 +386,8 @@ class RuntimeBundle:
             if self.closing or self.closed or self.control_failed:
                 return UiReceipt(False, 'state_conflict', '')
             return self.manual_runtime.execute(command)
+        if isinstance(command, UiCommand) and command.action is UiAction.PREVIEW_PREFLIGHT and self.sinopac_connection is not None:
+            return preview_preflight_receipt(self, command)
         if isinstance(command, UiCommand) and command.action is UiAction.CHECK_PREFLIGHT and self.sinopac_connection is not None:
             from quantlab.trading.application.preflight import record_preflight
             from quantlab.trading.application.errors import ERROR_TABLE

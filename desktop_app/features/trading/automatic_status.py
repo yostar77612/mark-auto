@@ -28,6 +28,7 @@ class AutomaticControls:
     def __init__(self, window, header):
         self.window = window
         self.reconciled_scope = None
+        self.preview = None  # (scope, view): the read-only checklist, shown only while the day has no recorded one
         self.header = plain_label('automatic_header_status')
         self.header.setWordWrap(False)
         self.header.setMaximumWidth(300)
@@ -92,6 +93,10 @@ class AutomaticControls:
         reminder = plain_label('keep_computer_on_reminder')
         reminder.setText(ui_text('u4.keep_on'))
         layout.addRow(reminder)
+        self.preview_note = plain_label('preflight_preview_note')
+        self.preview_note.setText(ui_text('preflight.preview_note'))
+        self.preview_note.hide()
+        layout.addRow(self.preview_note)
         check = button('u4.check_now', 'check_preflight')
         check.clicked.connect(self.check)
         layout.addRow(check)
@@ -105,7 +110,22 @@ class AutomaticControls:
         self.reconciled_scope = None
         self.window.command(UiAction.AUTO_RECONCILE)
 
+    def preview_scope(self, state):
+        # The connection phase is part of it: a preview read before the connection changed describes another situation.
+        return state.context_id, state.context_epoch, state.environment, state.account_ref, state.trading_day, state.sinopac_connection.phase
+
     def received(self, command, state, receipt):
+        if command is not None and command.action is UiAction.PREVIEW_PREFLIGHT:
+            fresh = receipt is not None and receipt.accepted and receipt.preflight is not None
+            # A refused preview must not leave the previous answer on screen as if it were current.
+            self.preview = (
+                (
+                    (state.context_id, state.context_epoch, state.environment, command.account_ref, state.trading_day, state.sinopac_connection.phase),
+                    receipt.preflight,
+                )
+                if fresh
+                else None
+            )
         if command is not None and command.action is UiAction.AUTO_RECONCILE:
             self.reconciled_scope = self.scope(state) if receipt is not None and receipt.accepted and state.reconciliation_verified else None
 
@@ -202,6 +222,10 @@ class AutomaticControls:
             resume.setEnabled(can_resume)
             resume.setToolTip(resume_hint)
         view = next((item for item in state.preflight if item.account_ref == state.account_ref and item.trade_date.isoformat() == state.trading_day), None)
+        previewing = view is None and self.preview is not None and self.preview[0] == self.preview_scope(state)
+        if previewing:
+            view = self.preview[1]
+        self.preview_note.setVisible(previewing)
         rows = {item.key: item for item in view.checks} if view is not None else {}
         for key, label in self.checks.items():
             row = rows.get(key)

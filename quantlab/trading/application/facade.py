@@ -45,6 +45,8 @@ class LocalFacade:
             try:
                 if not isinstance(command, UiCommand) or not isinstance(command.action, UiAction) or type(command.expected_version) is not int:
                     raise DomainError('validation_failed', 'typed UI command required')
+                if command.action is UiAction.PREVIEW_PREFLIGHT:
+                    return self._preview_preflight(command)
                 if command.expected_version != engine.state.version:
                     raise DomainError('state_conflict', 'refresh before issuing another command')
                 if engine.state.engine_closed and command.action is not UiAction.RECONCILE:
@@ -61,6 +63,15 @@ class LocalFacade:
                 return UiReceipt(False, 'operation_failed', entry.explanation + ' ' + entry.action)
             finally:
                 engine.latencies.append(perf_counter() - started)
+
+    def _preview_preflight(self, command: UiCommand) -> UiReceipt:
+        # Read-only: it needs no matching version because it changes nothing.
+        from .preflight import engine_preflight_facts, preview_preflight
+
+        if type(command.account_ref) is not str:
+            raise DomainError('validation_failed', 'account reference required')
+        reference = command.account_ref or self.engine.state.account_ref
+        return UiReceipt(True, 'completed', '', '', preview_preflight(self.engine, reference, engine_preflight_facts(self.engine, reference)))
 
     def _execute(self, command: UiCommand) -> str:
         engine, action = self.engine, command.action

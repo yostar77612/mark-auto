@@ -120,6 +120,7 @@ class UiAction(str, Enum):
     AUTO_RECONCILE = 'auto_reconcile'
     DECLARE_DAILY_NOT_SENT = 'declare_daily_not_sent'
     CHECK_PREFLIGHT = 'check_preflight'
+    PREVIEW_PREFLIGHT = 'preview_preflight'
     SAVE_ACCOUNT_RISK = 'save_account_risk'
     CREATE_TYPED_STRATEGY = 'create_typed_strategy'
     DISABLE_STRATEGY = 'disable_strategy'
@@ -253,6 +254,7 @@ class UiReceipt:
     code: str
     message: str
     reference: str = ''
+    preflight: PreflightView | None = None  # only PREVIEW_PREFLIGHT fills it: a read-only checklist, never recorded
 
 
 @dataclass(frozen=True)

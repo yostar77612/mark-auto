@@ -308,6 +308,7 @@ def _run_window(
         style_automatic_controls=style_automatic_controls,
         research_status_factory=AsyncStatus,
         startup_preferences=StartupPreferences(root or default_root()),
+        auto_preflight=True,
         **_presentation_options(root or default_root()),
     )
     app.setProperty('maintenanceRequestClose', window.close)
