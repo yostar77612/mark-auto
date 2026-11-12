@@ -59,8 +59,26 @@ PAPER_MODULES = frozenset(
         'test_paper_replay_wal',
     }
 )
+# Windows 'remaining' ran at 93% of its fifteen-minute cap (median 831-838 s, worst 897 s of 900 s), so any slow
+# runner cancelled it and cost a full rerun, while 'paper' used about 90-150 s. These ten whole modules are the
+# costliest in 'remaining' on both Python profiles (about 245 s on 3.11, 177 s on 3.12) and move to the 'paper'
+# runner. Linux merges paper and remaining into one slice, so its partition is unchanged. Whole modules only.
+BALANCE_MODULES = frozenset(
+    {
+        'test_import_graph',
+        'test_m2_daily_retention',
+        'test_m2_daily_runtime',
+        'test_m2_manual_daily_baseline',
+        'test_m3_integration',
+        'test_observer_symbol_pins',
+        'test_official_daily_large_pump',
+        'test_research_analysis',
+        'test_ui_snapshot',
+        'test_wf_wizard',
+    }
+)
 CORE_SHARDS = ('desktop', 'paper', 'remaining', 'trading')
-CORE_SHARD_PLAN = 'core-modules-v4'
+CORE_SHARD_PLAN = 'core-modules-v5'
 # c054 Windows remaining log: these two additional UI modules account for
 # approximately 118 seconds. Keep them whole and retain the fifteen-minute cap.
 LEGACY_DESKTOP_MODULES = frozenset(
@@ -82,7 +100,7 @@ def core_shard_for_module(module):
     # runner rather than consuming the legacy remaining runner's fifteen minutes.
     if module.startswith(('test_trading_', 'test_broker_', 'test_runtime_context_')) or module == 'test_quality_gate_v2_boundaries':
         return 'trading'
-    if module in PAPER_MODULES:
+    if module in PAPER_MODULES or module in BALANCE_MODULES:
         return 'paper'
     return 'desktop' if module.startswith('test_desktop_') or module in LEGACY_DESKTOP_MODULES else 'remaining'
 
