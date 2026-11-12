@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QLayout,
+    QPushButton,
     QScrollArea,
     QStackedWidget,
     QTabWidget,
@@ -457,6 +458,19 @@ def _performance_page(self) -> None:
     self.performance.horizontalHeaderItem(8).setToolTip(ui_text('v2.drawdown') + '\n' + ui_text('v2.performance_valuation_hint'))
     self.performance.horizontalHeaderItem(7).setText(ui_text('m2t.adjusted_pnl'))
     self.performance.horizontalHeaderItem(8).setText(ui_text('m2t.recorded_drawdown'))
+    # A plain row above the table, not an overlay on its viewport: viewport overlays crashed CI natively.
+    self.performance_empty = QWidget()
+    empty_row = QHBoxLayout(self.performance_empty)
+    empty_row.setContentsMargins(0, 0, 0, 0)
+    self.performance_empty.reason = label('performance.empty')
+    self.performance_empty.reason.setAccessibleName(ui_text('performance.empty'))
+    self.performance_empty.next = QPushButton(ui_text('m2t.open_strategy'))
+    self.performance_empty.next.setAccessibleName(ui_text('m2t.open_strategy'))
+    self.performance_empty.next.clicked.connect(lambda: self.navigation.setCurrentRow(1))
+    empty_row.addWidget(self.performance_empty.reason, 1)
+    empty_row.addWidget(self.performance_empty.next)
+    self.performance_empty.hide()
+    layout.addWidget(self.performance_empty)
     layout.addWidget(self.performance)
     _buttons(
         self,

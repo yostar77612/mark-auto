@@ -270,6 +270,16 @@ class TradingUiTests(unittest.TestCase):
             self.assertIs(wizard.state.environment, environment)
             wizard.deleteLater()
 
+    def test_empty_performance_table_explains_itself_and_leads_to_strategies(self):
+        self.window.apply_state(replace(self.window.state, version=2, performance=()))
+        self.assertFalse(self.window.performance_empty.isHidden())
+        self.assertEqual(self.window.performance_empty.reason.text(), ui_text('performance.empty'))
+        self.window.performance_empty.next.click()
+        self.assertEqual(self.window.navigation.currentRow(), 1)
+        row = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
+        self.window.apply_state(replace(self.window.state, version=3, performance=(row,)))
+        self.assertTrue(self.window.performance_empty.isHidden())
+
     def test_execution_drawdown_distinguishes_unknown_history_from_proven_zero(self):
         legacy = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
         self.window.apply_state(replace(self.window.state, version=2, performance=(legacy,)))
