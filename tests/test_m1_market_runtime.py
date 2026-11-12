@@ -59,6 +59,10 @@ class MarketRuntimeTests(unittest.TestCase):
         request = Request('offline-m1', Environment.LOCAL, 'local-stock', datetime.now(timezone.utc) + timedelta(seconds=10), operation, **kwargs)
         return loads(dumps(_dispatch(self.bundle, loads(dumps(request)))))
 
+    def test_sector_flow_cooldown_marks_use_the_minute_database(self):
+        monitor = self.bundle.session_bridge.monitor
+        self.assertIs(monitor.marks, self.bundle.sector_minute_store)
+
     def test_independent_connection_without_trading_fields_and_real_wire_roundtrips(self):
         self.assertTrue(self.command(UiAction.SAVE_MARKET_DATA_SETTINGS, market_data_settings=MarketDataSettings(enabled=True)).accepted)
         self.assertEqual(self.bundle.snapshot().watchlist, ())
