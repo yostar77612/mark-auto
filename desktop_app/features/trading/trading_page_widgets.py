@@ -1,6 +1,6 @@
 """Remembered column choices and actionable empty tables; no storage ownership."""
 
-from PySide6.QtCore import QObject, QSignalBlocker, Qt
+from PySide6.QtCore import QEvent, QObject, QSignalBlocker, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QLabel, QMenu, QVBoxLayout, QWidget
 
@@ -72,9 +72,11 @@ class EmptyTableState(QWidget):
         self.next.clicked.connect(navigate)
         layout.addWidget(self.next, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addStretch()
-        # A layout on the viewport keeps the overlay sized natively. A Python event filter on the viewport
-        # was called back while the window was being destroyed, which is where CI's access violations hit.
-        holder = QVBoxLayout(table.viewport())
-        holder.setContentsMargins(0, 0, 0, 0)
-        holder.addWidget(self)
+        table.viewport().installEventFilter(self)
+        self.setGeometry(table.viewport().rect())
         self.hide()
+
+    def eventFilter(self, watched, event):
+        if event.type() is QEvent.Type.Resize:
+            self.setGeometry(watched.rect())
+        return super().eventFilter(watched, event)
