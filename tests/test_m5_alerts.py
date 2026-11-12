@@ -264,6 +264,24 @@ class ReplayTests(unittest.TestCase):
         tomorrow.on_round(DAY.replace(hour=10, minute=1) + timedelta(days=1), (stat('g1', 10**10, 0),))
         self.assertEqual(tomorrow._last_alert, {})
 
+    def test_restart_inside_a_cooldown_does_not_repeat_the_alert(self):
+        temp = TemporaryDirectory(dir=Path.cwd())
+        self.addCleanup(temp.cleanup)
+        path = (Path(temp.name) / 'sector_minutes.sqlite3').resolve()
+        store = SectorMinuteStore(path)
+        aggregator = MinuteAggregator(store, SectorAlertParams, NAMES.get)
+        alerts, restarted = [], False
+        for moment, stats in rounds(20):
+            if not restarted and moment.astimezone(TAIPEI).strftime('%H:%M') == '09:44':
+                store.close()  # 09:40 g1 UP is inside its 10 minute cooldown here
+                store = SectorMinuteStore(path)
+                aggregator = MinuteAggregator(store, SectorAlertParams, NAMES.get)
+                restarted = True
+            alerts.extend(aggregator.on_round(moment, stats))
+        store.close()
+        observed = [[alert.at.astimezone(TAIPEI).strftime('%H:%M'), alert.group_id, alert.direction] for alert in alerts]
+        self.assertEqual(observed, json.loads(GOLDEN.read_text(encoding='utf-8'))['alerts'])
+
     def test_restart_midday_reloads_history_so_baseline_survives(self):
         aggregator, store, temp, alerts = replay()
         self.addCleanup(temp.cleanup)
