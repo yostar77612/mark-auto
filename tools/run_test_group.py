@@ -380,8 +380,8 @@ def run_parallel(args, manifest, research):
             process.stdin.write((tokens[index] + '\n').encode('ascii'))
             process.stdin.flush()
             process.stdin.close()
-        # The existing workflow's original 15-minute JOB cap remains authoritative;
-        # no independent/restarted 15-minute allowance or per-case limit is added.
+        # The existing workflow's original 15-minute JOB cap remains authoritative; no independent or
+        # restarted allowance is added. Each worker applies RecordingResult's per-test watchdog.
         while any(item['process'].poll() is None for item in owned):
             time.sleep(0.05)
         reports = manifest['worker_results']
@@ -494,7 +494,7 @@ class RecordingResult(unittest.TextTestResult):
         # A native Qt hang inside one test otherwise burns the whole 15 minute job
         # silently; dump every thread and fail fast so the hang is both visible
         # and cheap to rerun.
-        faulthandler.dump_traceback_later(SINGLE_TEST_SECONDS, exit=True)
+        faulthandler.dump_traceback_later(SINGLE_TEST_SECONDS, exit=True, file=sys.__stderr__)
         super().startTest(test)
 
     def stopTest(self, test):

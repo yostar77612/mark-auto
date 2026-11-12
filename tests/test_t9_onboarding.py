@@ -37,10 +37,8 @@ class OnboardingTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        import faulthandler  # a hang prints every thread's stack to the CI log instead of silently timing out
-
-        faulthandler.dump_traceback_later(240)
-        self.addCleanup(faulthandler.cancel_dump_traceback_later)
+        # Hangs are reported by the test runner's per-test watchdog (tools/run_test_group.py); arming
+        # faulthandler here would replace that single global timer with a dump-only one.
         self.context = sandbox_ui()
         self.context.__enter__()
         self.addCleanup(self.context.__exit__, None, None, None)

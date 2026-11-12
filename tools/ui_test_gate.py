@@ -74,7 +74,7 @@ def run(selected, destination, profile='ui', core_slice=None):
     before = execution_identity('tests')
     original = context(profile)
     cases_path = destination.with_suffix('.cases.json')
-    # The existing runner preserves whole-module fixtures and all original case limits.
+    # The existing runner preserves whole-module fixtures; RecordingResult adds its per-test hang watchdog.
     command = ['--group', selected, '--manifest', str(cases_path)]
     if core_slice is not None:
         command.extend(['--core-slice', core_slice])
