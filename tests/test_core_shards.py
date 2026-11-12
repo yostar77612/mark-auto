@@ -79,6 +79,21 @@ EXPECTED_PAPER_MODULES = frozenset(
         'test_paper_replay_wal',
     }
 )
+EXPECTED_BALANCE_MODULES = frozenset(
+    {
+        'test_import_graph',
+        'test_m2_daily_retention',
+        'test_m2_daily_runtime',
+        'test_m2_manual_daily_baseline',
+        'test_m3_integration',
+        'test_observer_symbol_pins',
+        'test_official_daily_large_pump',
+        'test_research_analysis',
+        'test_ui_snapshot',
+        'test_wf_wizard',
+    }
+)
+EXPECTED_PAPER_SHARD_MODULES = EXPECTED_PAPER_MODULES | EXPECTED_BALANCE_MODULES
 EXPECTED_DESKTOP_MODULES = frozenset(
     {
         'test_analysis_recovery_ui',
@@ -95,7 +110,7 @@ def _expected_shard(module):
         return 'trading'
     if module.startswith('test_desktop_') or module in EXPECTED_DESKTOP_MODULES:
         return 'desktop'
-    return 'paper' if module in EXPECTED_PAPER_MODULES else 'remaining'
+    return 'paper' if module in EXPECTED_PAPER_SHARD_MODULES else 'remaining'
 
 
 class CoreShardAssignmentTests(unittest.TestCase):
@@ -114,8 +129,10 @@ class CoreShardAssignmentTests(unittest.TestCase):
 
     def test_versioned_rule_and_future_modules(self):
         self.assertEqual(group.CORE_SHARDS, ('desktop', 'paper', 'remaining', 'trading'))
-        self.assertEqual(group.CORE_SHARD_PLAN, 'core-modules-v4')
+        self.assertEqual(group.CORE_SHARD_PLAN, 'core-modules-v5')
         self.assertEqual(group.PAPER_MODULES, EXPECTED_PAPER_MODULES)
+        self.assertEqual(group.BALANCE_MODULES, EXPECTED_BALANCE_MODULES)
+        self.assertFalse(group.PAPER_MODULES & group.BALANCE_MODULES)
         self.assertEqual(group.LEGACY_DESKTOP_MODULES, EXPECTED_DESKTOP_MODULES)
         for module in (
             'test_desktop_future',
@@ -137,7 +154,7 @@ class CoreShardAssignmentTests(unittest.TestCase):
             'test_ui_operations_registry',
             'test_ui_redesign_data_results',
             'test_ui_unknown_future',
-            *sorted(EXPECTED_PAPER_MODULES),
+            *sorted(EXPECTED_PAPER_SHARD_MODULES),
         ):
             with self.subTest(module=module):
                 self.assertEqual(group.core_shard_for_module(module), _expected_shard(module))
@@ -182,7 +199,7 @@ class CoreShardAssignmentTests(unittest.TestCase):
                 'desktop'
                 if module.startswith('test_desktop_') or module in EXPECTED_DESKTOP_MODULES
                 else 'paper'
-                if module in EXPECTED_PAPER_MODULES
+                if module in EXPECTED_PAPER_SHARD_MODULES
                 else 'remaining'
             )
             with self.subTest(legacy_module=module):
@@ -647,7 +664,7 @@ class CoreShardReportTests(unittest.TestCase):
                     'platform': 'win32',
                     'group': 'core',
                     'core_shard': label,
-                    'core_shard_plan': 'core-modules-v4',
+                    'core_shard_plan': 'core-modules-v5',
                     'core_shard_assignments': copy.deepcopy(assignments),
                     'shard_context': dict(self.CONTEXT),
                     'source_sha256_after': self.CONTEXT['source_sha256'],
@@ -683,7 +700,7 @@ class CoreShardReportTests(unittest.TestCase):
         self.assertEqual(result['coverage_scope'], 'original core only; research remains a separate mandatory gate')
         self.assertEqual(result['head_sha'], self.CONTEXT['head_sha'])
         self.assertEqual(result['python_profile'], self.CONTEXT['python_profile'])
-        self.assertEqual(result['core_shard_plan'], 'core-modules-v4')
+        self.assertEqual(result['core_shard_plan'], 'core-modules-v5')
         self.assertEqual(result['shards'], 4)
         self.assertEqual(result['tests_run'], len(reports[0]['partitions']['core']))
         self.assertIs(result['successful'], True)
