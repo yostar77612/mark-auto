@@ -3368,7 +3368,7 @@
       "autoconnect.failed": "自動連線失敗：{0}",
       "autoconnect.skipped_live": "自動連線已略過：儲存的目標不是券商模擬環境，請手動連線。",
       "autoconnect.save_failed": "無法儲存自動連線設定，請稍後再試。",
-      "preflight.preview_note": "以上為即時預覽，尚未記錄；按「檢查目前帳戶」才會記入今日開盤檢查。"
+      "preflight.preview_note": "以上為即時預覽，尚未記錄。按「檢查目前帳戶」會正式記入今日開盤檢查：只要有一項未通過，今日自動新倉就會停止，之後重新檢查也無法解除，請等全部就緒再按。"
     }
   },
   "aliases": {
@@ -8064,7 +8064,7 @@
       "autoconnect.failed": "自動連線失敗：{0}",
       "autoconnect.skipped_live": "自動連線已略過：儲存的目標不是券商模擬環境，請手動連線。",
       "autoconnect.save_failed": "無法儲存自動連線設定，請稍後再試。",
-      "preflight.preview_note": "以上為即時預覽，尚未記錄；按「檢查目前帳戶」才會記入今日開盤檢查。",
+      "preflight.preview_note": "以上為即時預覽，尚未記錄。按「檢查目前帳戶」會正式記入今日開盤檢查：只要有一項未通過，今日自動新倉就會停止，之後重新檢查也無法解除，請等全部就緒再按。",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
