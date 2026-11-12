@@ -278,6 +278,59 @@ class AutoPreflightTests(unittest.TestCase):
         self.assertEqual(self.row('connection'), ui_text('u4.not_checked'))
         self.assertFalse(self.window.automatic_controls.preview_note.isVisibleTo(self.window))
 
+    def test_a_refused_preview_removes_the_previous_answer_instead_of_leaving_it_as_current(self):
+        self.build(facts=PreflightFacts(False, True, True, True, True, True, True))
+        self.tick(2)
+        self.assertTrue(self.window.automatic_controls.preview_note.isVisibleTo(self.window))
+        self.now[0] += REFRESH_SECONDS + 1
+        refuse = lambda command: self.facade.commands.append(command) or UiReceipt(False, 'state_conflict', '')  # noqa: E731
+        with patch.object(self.facade, 'execute', side_effect=refuse):
+            self.tick(2)
+        self.assertEqual(self.row('connection'), ui_text('u4.not_checked'))
+        self.assertFalse(self.window.automatic_controls.preview_note.isVisibleTo(self.window))
+
+    def test_a_preview_is_shown_only_for_the_account_day_context_and_connection_it_was_read_for(self):
+        self.build()
+        controls = self.window.automatic_controls
+        state = self.window.state
+        view = build_preflight(state.account_ref, date.fromisoformat(state.trading_day), datetime.now(timezone.utc), state.environment, self.facts)
+        scope = controls.preview_scope(state)
+        for label, other in (
+            ('account', (*scope[:3], 'someone-else', *scope[4:])),
+            ('day', (*scope[:4], '2099-01-04', scope[5])),
+            ('context', ('other-context', *scope[1:])),
+            ('connection', (*scope[:5], 'CONNECTED' if scope[5] != 'CONNECTED' else 'DISCONNECTED')),
+        ):
+            with self.subTest(label):
+                controls.preview = (other, view)
+                controls.render(state)
+                self.assertEqual(self.row('connection'), ui_text('u4.not_checked'))
+                self.assertFalse(controls.preview_note.isVisibleTo(self.window))
+        controls.preview = (scope, view)
+        controls.render(state)
+        self.assertEqual(self.row('connection'), ui_text('u4.passed'))
+        self.assertTrue(controls.preview_note.isVisibleTo(self.window))
+        # A checklist recorded afterwards wins at once, even though the preview is still stored and matches.
+        recorded = build_preflight(
+            state.account_ref,
+            date.fromisoformat(state.trading_day),
+            datetime.now(timezone.utc),
+            state.environment,
+            PreflightFacts(False, True, True, True, True, True, True),
+        )
+        controls.render(replace(state, preflight=(recorded,)))
+        self.assertNotEqual(self.row('connection'), ui_text('u4.passed'))
+        self.assertFalse(controls.preview_note.isVisibleTo(self.window))
+
+    def test_a_preview_in_flight_does_not_lock_the_manual_order_form_but_a_user_command_does(self):
+        self.build()
+        controls = self.window.manual_controls
+        self.window._operation = SimpleNamespace(command=object(), quiet=True)
+        self.assertFalse(controls.command_running())
+        self.window._operation = SimpleNamespace(command=object(), quiet=False)
+        self.assertTrue(controls.command_running())
+        self.window._operation = None
+
     def test_nothing_is_sent_without_an_account_or_while_a_command_is_running(self):
         self.build(account_ref='')
         self.tick(2)

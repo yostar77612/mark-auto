@@ -111,13 +111,20 @@ class AutomaticControls:
         self.window.command(UiAction.AUTO_RECONCILE)
 
     def preview_scope(self, state):
-        return state.context_id, state.context_epoch, state.environment, state.account_ref, state.trading_day
+        # The connection phase is part of it: a preview read before the connection changed describes another situation.
+        return state.context_id, state.context_epoch, state.environment, state.account_ref, state.trading_day, state.sinopac_connection.phase
 
     def received(self, command, state, receipt):
-        if command is not None and command.action is UiAction.PREVIEW_PREFLIGHT and receipt is not None and receipt.accepted and receipt.preflight is not None:
+        if command is not None and command.action is UiAction.PREVIEW_PREFLIGHT:
+            fresh = receipt is not None and receipt.accepted and receipt.preflight is not None
+            # A refused preview must not leave the previous answer on screen as if it were current.
             self.preview = (
-                (state.context_id, state.context_epoch, state.environment, command.account_ref, state.trading_day),
-                receipt.preflight,
+                (
+                    (state.context_id, state.context_epoch, state.environment, command.account_ref, state.trading_day, state.sinopac_connection.phase),
+                    receipt.preflight,
+                )
+                if fresh
+                else None
             )
         if command is not None and command.action is UiAction.AUTO_RECONCILE:
             self.reconciled_scope = self.scope(state) if receipt is not None and receipt.accepted and state.reconciliation_verified else None

@@ -574,6 +574,24 @@ class PreflightDispatchTests(unittest.TestCase):
         self.assertTrue(receipt.accepted, receipt)
         self.assert_no_record()
 
+    def test_preview_before_any_engine_exists_still_reads_the_connection_and_never_waits_for_one(self):
+        # Right after start-up (no account chosen, manual book not enabled) there is no engine; the checklist must still fill in.
+        from datetime import datetime, timezone
+        from zoneinfo import ZoneInfo
+
+        self.bundle.engine = None
+        receipt, provider = self.preview(facts=replace(self.passed, connected=False, account_ready=False, reconciled=False))
+        self.assertTrue(receipt.accepted, receipt)
+        provider.assert_called_once_with(self.bundle, 'stock')
+        view = receipt.preflight
+        self.assertEqual((view.account_ref, view.trade_date), ('stock', datetime.now(timezone.utc).astimezone(ZoneInfo('Asia/Taipei')).date()))
+        self.assertEqual(view.block_reasons, ('preflight_connection', 'preflight_account', 'preflight_reconciliation'))
+        self.assertEqual(next(row.state for row in view.checks if row.key == 'ca'), 'NOT_REQUIRED')  # the launched environment is the simulation
+        self.assert_no_record()
+        receipt, provider = self.preview(replace(self.command(account_ref=''), action=UiAction.PREVIEW_PREFLIGHT))
+        self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))
+        provider.assert_not_called()
+
     def test_a_preview_never_blocks_the_real_check_that_follows(self):
         self.preview(facts=replace(self.passed, connected=False))
         receipt, _ = self.execute()
@@ -586,7 +604,6 @@ class PreflightDispatchTests(unittest.TestCase):
             ('closing', {'closing': True}),
             ('closed', {'closed': True}),
             ('control', {'control_failed': True}),
-            ('engine', {'engine': None}),
         ):
             with self.subTest(label):
                 saved = {name: getattr(self.bundle, name) for name in change}
