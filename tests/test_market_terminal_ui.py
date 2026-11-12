@@ -171,11 +171,6 @@ class TerminalTests(unittest.TestCase):
 
     def tearDown(self):
         QThreadPool.globalInstance().waitForDone(3000)
-        # Requests run on plain threads, which waitForDone does not cover: let every answer come back before the widget goes.
-        deadline = time.monotonic() + 3
-        while self.widget._requests and time.monotonic() < deadline:
-            self.app.processEvents()
-            QTest.qWait(5)
         self.app.processEvents()
         shiboken6.delete(self.widget)
         self.app.processEvents()
