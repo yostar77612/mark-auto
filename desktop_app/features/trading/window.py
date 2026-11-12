@@ -32,6 +32,7 @@ from desktop_app.features.trading.trading_page import LIVE_ORDER_ACTIONS, refres
 from desktop_app.features.trading.manual_intents import MANUAL_ACTIONS
 from desktop_app.features.trading.minute_research_feedback import minute_capable
 from desktop_app.features.trading.auto_connect import AutoConnect
+from desktop_app.features.trading.auto_preflight import AutoPreflight
 from desktop_app.features.trading.sinopac_ui import CONNECTION_ACTIONS, complete_connection, render_connection
 
 
@@ -44,6 +45,7 @@ class _Operation(QThread):
         self.facade = facade
         self.command = command
         self.refresh_before = refresh_before
+        self.quiet = False
 
     def run(self) -> None:
         try:
@@ -116,6 +118,7 @@ class TradingWindow(QMainWindow):
         style_automatic_controls=None,
         research_status_factory=None,
         startup_preferences=None,
+        auto_preflight=False,
     ):
         super().__init__(parent)
         self.facade = facade
@@ -135,6 +138,7 @@ class TradingWindow(QMainWindow):
         self._context_rendering = False
         self._settings_dirty = False
         self._last_feedback = ''
+        self._quiet_next = False  # the next command is the checklist checking itself: no 'working' or result line
         self._engine_reachable = True
         self._connecting_request = False
         self._screen_hooked = False
@@ -152,6 +156,8 @@ class TradingWindow(QMainWindow):
         self.apply_state(initial_state)
         self.auto_connect = AutoConnect(startup_preferences)
         self.auto_connect.attach(self)
+        # Like connect-on-startup, composed by the runtime root: explicit test windows never act on their own.
+        self.auto_preflight = AutoPreflight() if auto_preflight else None
         self.poll = QTimer(self)
         self.poll.setInterval(1000)
         self.poll.timeout.connect(self.refresh)
@@ -177,7 +183,7 @@ class TradingWindow(QMainWindow):
         self.notice.setText(text)
 
     def refresh(self) -> None:
-        if not self.auto_connect.step(self):
+        if not (self.auto_connect.step(self) or (self.auto_preflight is not None and self.auto_preflight.step(self))):
             self._run(None)
 
     def command(
@@ -260,13 +266,14 @@ class TradingWindow(QMainWindow):
         # the selected context epoch. Actual book mutations retain the exact
         # version the user reviewed and are never silently refreshed/retried.
         operation = _Operation(self.facade, command, self, refresh_before=command is not None and command.action is UiAction.SWITCH_CONTEXT)
+        operation.quiet, self._quiet_next = self._quiet_next, False
         self._operation = operation
         if command is not None and command.action in CONNECTION_ACTIONS:
             self.broker_panel.set_busy(True)
         operation.completed.connect(self._completed)
         operation.failed.connect(self._failed)
         operation.finished.connect(self._finished)
-        if command is not None:
+        if command is not None and not operation.quiet:
             self._feedback(ui_text('v2.working'))
         if self.strategy_controls.research_feedback is not None:
             self.strategy_controls.research_feedback.started(command, operation)
@@ -321,7 +328,7 @@ class TradingWindow(QMainWindow):
         if action in (UiAction.SWITCH_CONTEXT, UiAction.ADD_CONTEXT):
             self._rendered_version = None
         self.apply_state(state)
-        if receipt is not None:
+        if receipt is not None and not (operation is not None and operation.quiet):
             message = receipt.message or ui_text('v2.completed' if receipt.accepted else 'v2.connection_failed')
             if action in MANUAL_ACTIONS and not receipt.accepted and receipt.code == 'price_deviation':
                 message = ui_text('u2.price_deviation')
