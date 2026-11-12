@@ -553,6 +553,57 @@ class PreflightDispatchTests(unittest.TestCase):
         self.assertTrue(receipt.accepted, receipt)
         provider.assert_called_once_with(self.bundle, self.engine.state.account_ref)
 
+    def preview(self, command=None, *, side_effect=None, facts=None):
+        command = command or replace(self.command(), action=UiAction.PREVIEW_PREFLIGHT)
+        with patch('quantlab.trading.runtime.preflight.sinopac_preflight_facts', return_value=facts or self.passed, side_effect=side_effect) as provider:
+            result = RuntimeBundle.execute(self.bundle, command)
+        return result, provider
+
+    def test_preview_returns_the_checklist_and_writes_nothing(self):
+        before = (self.engine.state, self.bundle.version_offset)
+        receipt, provider = self.preview(facts=replace(self.passed, connected=False))
+        self.assertTrue(receipt.accepted, receipt)
+        provider.assert_called_once_with(self.bundle, 'stock')
+        self.assertTrue(receipt.preflight.blocked_today)
+        self.assertEqual(receipt.preflight.block_reasons, ('preflight_connection',))
+        self.assertEqual((self.engine.state, self.bundle.version_offset), before)  # no version, no stop, no latch
+        self.assert_no_record()
+
+    def test_preview_needs_no_matching_version_because_it_changes_nothing(self):
+        receipt, _ = self.preview(replace(self.command(expected_version=0), action=UiAction.PREVIEW_PREFLIGHT))
+        self.assertTrue(receipt.accepted, receipt)
+        self.assert_no_record()
+
+    def test_a_preview_never_blocks_the_real_check_that_follows(self):
+        self.preview(facts=replace(self.passed, connected=False))
+        receipt, _ = self.execute()
+        self.assertTrue(receipt.accepted, receipt)
+        self.assertFalse(self.engine.state.preflight[0].blocked_today)
+        self.assertEqual(self.engine.state.preflight_blocks, ())
+
+    def test_preview_refuses_a_closed_bundle_a_bad_reference_and_failing_facts_without_recording(self):
+        for label, change in (
+            ('closing', {'closing': True}),
+            ('closed', {'closed': True}),
+            ('control', {'control_failed': True}),
+            ('engine', {'engine': None}),
+        ):
+            with self.subTest(label):
+                saved = {name: getattr(self.bundle, name) for name in change}
+                for name, value in change.items():
+                    setattr(self.bundle, name, value)
+                receipt, provider = self.preview()
+                for name, value in saved.items():
+                    setattr(self.bundle, name, value)
+                self.assertEqual((receipt.accepted, receipt.code, receipt.preflight), (False, 'capability_missing', None))
+                provider.assert_not_called()
+        receipt, provider = self.preview(replace(self.command(account_ref=0), action=UiAction.PREVIEW_PREFLIGHT))
+        self.assertEqual((receipt.accepted, receipt.code), (False, 'validation_failed'))
+        provider.assert_not_called()
+        receipt, _ = self.preview(side_effect=DomainError('state_conflict'))
+        self.assertEqual((receipt.accepted, receipt.code, receipt.preflight), (False, 'state_conflict', None))
+        self.assert_no_record()
+
     def test_host_requires_exact_integer_version_even_when_float_equals_public_version(self):
         public = self.engine.state.version + self.bundle.version_offset
         for value in (True, float(public), str(public)):

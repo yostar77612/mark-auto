@@ -1,4 +1,4 @@
-"""Connect-on-startup switch on the broker connection panel."""
+"""Connect-on-startup switch on the broker connection panel, and the self-updating pre-open checklist preview."""
 
 ENTRIES = (
     (78, 3362, 'autoconnect.label', '啟動時自動連線（永豐模擬環境）'),
@@ -6,4 +6,5 @@ ENTRIES = (
     (78, 3364, 'autoconnect.failed', '自動連線失敗：{0}'),
     (78, 3365, 'autoconnect.skipped_live', '自動連線已略過：儲存的目標不是券商模擬環境，請手動連線。'),
     (78, 3366, 'autoconnect.save_failed', '無法儲存自動連線設定，請稍後再試。'),
+    (78, 3367, 'preflight.preview_note', '以上為即時預覽，尚未記錄；按「檢查目前帳戶」才會記入今日開盤檢查。'),
 )

@@ -171,6 +171,26 @@ class AccountRiskIntegrationTests(unittest.TestCase):
         self.assert_entry_rejected(reference, 'preflight_blocked')
         self.assertTrue(self.engine.state.stopped)
 
+    def test_a_preview_through_the_facade_changes_nothing_and_leaves_the_day_open(self):
+        import quantlab.trading.runtime.protocol  # noqa: F401  (registers the wire types)
+        from quantlab.trading.domain.models import Quote
+
+        self.case.deploy()
+        self.engine.quotes.clear()
+        before = self.engine.state
+        # A stale version is accepted: the preview writes nothing, so there is nothing to conflict with.
+        receipt = self.facade.execute(UiCommand(UiAction.PREVIEW_PREFLIGHT, before.version - 1, account_ref='test-stock'))
+        self.assertTrue(receipt.accepted)
+        self.assertTrue(receipt.preflight.blocked_today)
+        self.assertIn('preflight_market', receipt.preflight.block_reasons)
+        self.assertEqual(loads(dumps(receipt)), receipt)
+        self.assertEqual(self.engine.state, before)  # no version, no stop, no row, no day latch
+        now = self.engine.clock.now()
+        self.engine.quotes['TWSE:2330'] = Quote('TWSE:2330', D('9.95'), D('10'), D('10'), now, now, self.engine.state.trading_day)
+        self.case.command(UiAction.CHECK_PREFLIGHT, account_ref='test-stock')
+        self.assertFalse(self.engine.state.preflight[0].blocked_today)
+        self.assertEqual(self.engine.state.preflight_blocks, ())
+
     def test_failed_preflight_is_latched_for_the_day_after_a_successful_recheck(self):
         reference = self.case.deploy()
         self.engine.quotes.clear()

@@ -8,7 +8,15 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from quantlab.trading.application.preflight import PreflightCheck, PreflightFacts, PreflightView, assert_preflight, build_preflight, record_preflight
+from quantlab.trading.application.preflight import (
+    PreflightCheck,
+    PreflightFacts,
+    PreflightView,
+    assert_preflight,
+    build_preflight,
+    preview_preflight,
+    record_preflight,
+)
 from quantlab.trading.application.codec import dumps, loads, register
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
@@ -115,6 +123,34 @@ class PreflightTests(unittest.TestCase):
         with self.assertRaises(DomainError) as rejected:
             assert_preflight(engine, 'stock')
         self.assertEqual(rejected.exception.code, 'preflight_blocked')
+
+    def test_a_preview_reads_the_facts_but_changes_nothing_and_never_latches_the_day(self):
+        engine = DraftEngine()
+        before = (engine.state, tuple(engine.journal))
+        failing = preview_preflight(engine, 'stock', replace(PASS, connected=False, reconciled=None))
+        self.assertTrue(failing.blocked_today)
+        self.assertEqual(failing.block_reasons, ('preflight_connection', 'preflight_reconciliation'))
+        self.assertEqual((engine.state, tuple(engine.journal)), before)  # no version, no stop, no row, no latch, no journal entry
+        # The day is still open for the real record: a later passing record is not blocked by the earlier preview.
+        recorded = record_preflight(engine, 'stock', PASS)
+        self.assertFalse(recorded.blocked_today)
+        assert_preflight(engine, 'stock')
+        self.assertFalse(engine.state.stopped)
+
+    def test_a_preview_never_replaces_or_clears_a_recorded_latch(self):
+        engine = DraftEngine()
+        record_preflight(engine, 'stock', replace(PASS, connected=False))
+        recorded = engine.state
+        view = preview_preflight(engine, 'stock', PASS)
+        self.assertFalse(view.blocked_today)  # what it reads now ...
+        self.assertEqual(engine.state, recorded)  # ... while the recorded latch is untouched
+        with self.assertRaises(DomainError):
+            assert_preflight(engine, 'stock')
+
+    def test_a_preview_of_an_unknown_account_is_refused(self):
+        with self.assertRaises(DomainError) as refused:
+            preview_preflight(DraftEngine(), 'other', PASS)
+        self.assertEqual(refused.exception.code, 'capability_missing')
 
     def test_multiple_failures_keep_day_reasons_when_later_checks_pass(self):
         engine = DraftEngine()

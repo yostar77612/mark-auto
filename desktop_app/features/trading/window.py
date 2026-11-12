@@ -138,7 +138,7 @@ class TradingWindow(QMainWindow):
         self._context_rendering = False
         self._settings_dirty = False
         self._last_feedback = ''
-        self._quiet_next = False  # the next command is the checklist checking itself: no 'working' or result line
+        self._quiet_next = False  # the next command is the checklist previewing itself: no 'working' or result line
         self._engine_reachable = True
         self._connecting_request = False
         self._screen_hooked = False

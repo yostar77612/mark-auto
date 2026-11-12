@@ -81,6 +81,17 @@ def record_preflight(engine: 'TradingEngine', account_ref: str, facts: Preflight
     return result
 
 
+def preview_preflight(engine: 'TradingEngine', account_ref: str, facts: PreflightFacts) -> PreflightView:
+    """The checklist as it reads right now, for display only.
+
+    Unlike record_preflight this writes nothing: no new version, no stop, and above all no same-day latch, which a
+    failing record can never undo. The real record is made by the owner's click or by the daily admission itself.
+    """
+    if account_ref not in engine.gateways:
+        raise DomainError('capability_missing')
+    return build_preflight(account_ref, engine.state.trading_day, engine.clock.now(), engine.configuration.environment, facts)
+
+
 def assert_preflight(engine: 'TradingEngine', account_ref: str) -> None:
     day = engine.state.trading_day
     result = next((row for row in engine.state.preflight if row.account_ref == account_ref and row.trade_date == day), None)

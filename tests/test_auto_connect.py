@@ -1,5 +1,6 @@
 """Connect-on-startup switch: the preference file, and the window sending the ordinary connect command once."""
 
+import ast
 from dataclasses import replace
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -13,11 +14,11 @@ from PySide6.QtWidgets import QLineEdit
 
 from desktop_app.features.trading import TradingWindow
 from desktop_app.features.trading.auto_connect import MAX_ATTEMPTS
-from desktop_app.features.trading.auto_preflight import MAX_TRIES
+from desktop_app.features.trading.auto_preflight import REFRESH_SECONDS
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.adapters.storage.startup_preferences import FILE_NAME, StartupPreferences
 from quantlab.trading.application.contracts import UiAction, UiReceipt
-from quantlab.trading.application.preflight import PreflightView
+from quantlab.trading.application.preflight import PreflightFacts, build_preflight
 from quantlab.trading.application.sinopac_contracts import SinopacConnectionSettings
 from quantlab.trading.domain.models import Environment
 from tests import test_trading_ui as support
@@ -176,83 +177,122 @@ class AutoConnectWindowTests(unittest.TestCase):
 
 
 class AutoPreflightTests(unittest.TestCase):
-    """The pre-open checklist checks itself: at start, and again once the connection is ready."""
+    """The pre-open checklist fills itself in with a read-only preview; it never records anything on its own."""
 
     setUpClass = classmethod(support.TradingUiTests.setUpClass.__func__)
     drain = support.TradingUiTests.drain
     tearDown = support.TradingUiTests.tearDown
 
-    def build(self, *, records=True, **state_changes):
+    def build(self, *, facts=PreflightFacts(True, True, True, True, True, True, True), recorded=None, **state_changes):
         QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
         self.facade = support.RecordingFacade()
         self.facade.state = replace(self.facade.state, **state_changes)
-        if records:
-            self.recording(self.facade.execute)
+        if recorded is not None:
+            state = self.facade.state
+            row = build_preflight(state.account_ref, date.fromisoformat(state.trading_day), datetime.now(timezone.utc), state.environment, recorded)
+            self.facade.state = replace(state, preflight=(row,))
+        self.facts = facts
+        self.answer(self.facade.execute)
         self.window = TradingWindow(self.facade, self.facade.snapshot(), auto_preflight=True)
         self.window.poll.stop()
         self.window.setProperty('allow_close_for_tests', True)
+        self.now = [1000.0]
+        self.window.auto_preflight.clock = lambda: self.now[0]
         self.window.show()
         self.app.processEvents()
 
-    def recording(self, inner):
-        """Like the engine: a check leaves a row for that account and day in the state."""
+    def answer(self, inner):
+        """Like the engine: a preview carries the checklist in its receipt and changes nothing."""
 
         def execute(command):
             receipt = inner(command)
-            if command.action is UiAction.CHECK_PREFLIGHT:
+            if command.action is UiAction.PREVIEW_PREFLIGHT:
                 state = self.facade.state
-                row = PreflightView(state.account_ref, date.fromisoformat(state.trading_day), datetime.now(timezone.utc), (), False)
-                rows = tuple(item for item in state.preflight if (item.account_ref, item.trade_date) != (row.account_ref, row.trade_date))
-                self.facade.state = replace(state, preflight=(*rows, row))
+                view = build_preflight(state.account_ref, date.fromisoformat(state.trading_day), datetime.now(timezone.utc), state.environment, self.facts)
+                return UiReceipt(True, 'completed', '', '', view)
             return receipt
 
         patcher = patch.object(self.facade, 'execute', side_effect=execute)
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def checks(self):
-        return [command for command in self.facade.commands if command.action is UiAction.CHECK_PREFLIGHT]
+    def sent(self, action):
+        return [command for command in self.facade.commands if command.action is action]
 
     def tick(self, times=1):
         for _ in range(times):
             self.window.refresh()
             self.drain()
 
-    def test_the_first_poll_runs_the_check_for_the_current_account_and_only_once(self):
+    def row(self, key):
+        return self.window.automatic_controls.checks[key].text()
+
+    def test_the_first_poll_previews_and_never_records(self):
         self.build()
         self.tick(4)
-        (command,) = self.checks()
+        (command,) = self.sent(UiAction.PREVIEW_PREFLIGHT)
         self.assertEqual(command.account_ref, self.facade.state.account_ref)
+        # Recording belongs to the owner click and the daily admission, never to the window on its own.
+        self.assertEqual(self.sent(UiAction.CHECK_PREFLIGHT), [])
 
-    def test_it_runs_again_when_the_connection_becomes_ready_and_not_after_that(self):
-        self.build()
+    def test_the_checklist_shows_the_preview_and_says_it_is_only_a_preview(self):
+        self.build(facts=PreflightFacts(False, True, True, True, True, True, True))
+        self.assertEqual(self.row('connection'), ui_text('u4.not_checked'))
         self.tick(2)
+        self.assertNotEqual(self.row('connection'), ui_text('u4.not_checked'))
+        self.assertEqual(self.row('account'), ui_text('u4.passed'))
+        self.assertTrue(self.window.automatic_controls.preview_note.isVisibleTo(self.window))
+        self.assertEqual(self.window.automatic_controls.preview_note.text(), ui_text('preflight.preview_note'))
+
+    def test_a_recorded_checklist_is_never_replaced_by_a_preview(self):
+        self.build(recorded=PreflightFacts(False, True, True, True, True, True, True))
+        self.tick(3)
+        self.assertEqual(self.sent(UiAction.PREVIEW_PREFLIGHT), [])
+        self.assertFalse(self.window.automatic_controls.preview_note.isVisibleTo(self.window))
+        self.assertNotEqual(self.row('connection'), ui_text('u4.passed'))
+
+    def test_it_asks_again_when_the_situation_changes_or_after_the_refresh_interval_only(self):
+        self.build()
+        self.tick(3)
+        self.assertEqual(len(self.sent(UiAction.PREVIEW_PREFLIGHT)), 1)
+        self.now[0] += REFRESH_SECONDS - 1
+        self.tick(2)
+        self.assertEqual(len(self.sent(UiAction.PREVIEW_PREFLIGHT)), 1)
+        self.now[0] += 2
+        self.tick(2)
+        self.assertEqual(len(self.sent(UiAction.PREVIEW_PREFLIGHT)), 2)
         connected = replace(self.facade.state.sinopac_connection, phase='CONNECTED')
         self.facade.state = replace(self.facade.state, sinopac_connection=connected)
-        self.tick(5)
-        self.assertEqual(len(self.checks()), 2)
-
-    def test_a_new_trading_day_is_checked_too(self):
-        self.build()
-        self.tick(2)
+        self.tick(3)  # the first poll adopts the new state, the next one sees the change at once
+        self.assertEqual(len(self.sent(UiAction.PREVIEW_PREFLIGHT)), 3)
         self.facade.state = replace(self.facade.state, trading_day='2099-01-04')
-        self.tick(4)
-        self.assertEqual(len(self.checks()), 2)
+        self.tick(3)
+        self.assertEqual(len(self.sent(UiAction.PREVIEW_PREFLIGHT)), 4)
+
+    def test_a_refused_preview_leaves_the_checklist_alone_and_waits_for_the_next_turn(self):
+        self.build()
+        refuse = lambda command: self.facade.commands.append(command) or UiReceipt(False, 'capability_missing', '')  # noqa: E731
+        with patch.object(self.facade, 'execute', side_effect=refuse):
+            self.tick(6)
+        self.assertEqual(len(self.sent(UiAction.PREVIEW_PREFLIGHT)), 1)
+        self.assertEqual(self.row('connection'), ui_text('u4.not_checked'))
+        self.assertFalse(self.window.automatic_controls.preview_note.isVisibleTo(self.window))
 
     def test_nothing_is_sent_without_an_account_or_while_a_command_is_running(self):
         self.build(account_ref='')
         self.tick(2)
-        self.assertEqual(self.checks(), [])
+        self.assertEqual(self.sent(UiAction.PREVIEW_PREFLIGHT), [])
         self.window.state = replace(self.window.state, account_ref='local-stock')
         self.window._operation = SimpleNamespace(command=None)
         self.assertFalse(self.window.auto_preflight.step(self.window))
         self.window._operation = None
-        self.assertEqual(self.checks(), [])
-
-    def test_a_check_the_engine_never_records_is_tried_a_bounded_number_of_times(self):
-        self.build(records=False)
-        self.tick(8)
-        self.assertEqual(len(self.checks()), MAX_TRIES)
+        self.window._priority_operation = SimpleNamespace(command=None)
+        self.assertFalse(self.window.auto_preflight.step(self.window))
+        self.window._priority_operation = None
+        self.window._engine_reachable = False
+        self.assertFalse(self.window.auto_preflight.step(self.window))
+        self.window._engine_reachable = True
+        self.assertEqual(self.sent(UiAction.PREVIEW_PREFLIGHT), [])
 
     def test_it_waits_while_the_user_is_typing_in_a_field(self):
         self.build()
@@ -261,12 +301,12 @@ class AutoPreflightTests(unittest.TestCase):
         self.app.processEvents()
         self.assertTrue(field.hasFocus())
         self.tick(2)
-        self.assertEqual(self.checks(), [])
+        self.assertEqual(self.sent(UiAction.PREVIEW_PREFLIGHT), [])
         field.clearFocus()
         self.window.setFocus()
         self.app.processEvents()
         self.tick(2)
-        self.assertEqual(len(self.checks()), 1)
+        self.assertEqual(len(self.sent(UiAction.PREVIEW_PREFLIGHT)), 1)
 
     def test_the_message_line_is_left_alone_and_the_next_user_command_is_not_silenced(self):
         self.build()
@@ -277,6 +317,21 @@ class AutoPreflightTests(unittest.TestCase):
         self.window.command(UiAction.CHECK_PREFLIGHT, account_ref=self.window.state.account_ref)
         self.drain()
         self.assertNotEqual(self.window._last_feedback, 'keep me')
+
+    def test_windows_built_by_tests_never_act_on_their_own_and_the_real_runtime_turns_it_on(self):
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.facade = support.RecordingFacade()
+        self.window = TradingWindow(self.facade, self.facade.snapshot())
+        self.window.poll.stop()
+        self.window.setProperty('allow_close_for_tests', True)
+        self.assertIsNone(self.window.auto_preflight)
+        self.window.refresh()
+        self.drain()
+        self.assertEqual(self.sent(UiAction.PREVIEW_PREFLIGHT), [])
+        tree = ast.parse((Path(__file__).resolve().parents[1] / 'trading_runtime.py').read_text(encoding='utf-8'))
+        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and getattr(node.func, 'id', '') == 'TradingWindow']
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(any(item.arg == 'auto_preflight' and isinstance(item.value, ast.Constant) and item.value.value is True for item in calls[0].keywords))
 
 
 if __name__ == '__main__':
