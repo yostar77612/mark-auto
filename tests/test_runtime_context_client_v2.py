@@ -31,14 +31,23 @@ from quantlab.trading.runtime.context_client import ContextIpcFacade, RuntimeCon
 from quantlab.trading.runtime.ipc import read_session
 from test_trading_runtime_context import close_owned_test_context, close_owned_test_process, profile_fixture, serve_fixture
 from tools.owned_trading_engine import OwnedEngineProcesses
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from quantlab.trading.adapters.storage.sector_store import SectorGroupStore
 from quantlab.trading.application.codec import dumps, loads
-from quantlab.trading.application.sector_contracts import SectorBoardView, SectorGroupsCommand, SectorGroupsView, SectorQuery
+from quantlab.trading.adapters.storage.sector_minute_store import SectorMinuteStore
+from quantlab.trading.application.sector_contracts import (
+    HistoryRow,
+    SectorBoardView,
+    SectorGroupsCommand,
+    SectorGroupsView,
+    SectorHistoryQuery,
+    SectorQuery,
+)
+from quantlab.trading.application.sector_minutes import sector_history
 from quantlab.trading.application.sector_group_editor import SectorGroupEditor
 from quantlab.trading.application.sector_service import SectorService
-from quantlab.trading.domain.sector_alerts import SectorAlertParams
+from quantlab.trading.domain.sector_alerts import MinuteStat, SectorAlertParams
 from quantlab.trading.runtime.protocol import Operation
 from quantlab.trading.runtime.sector_settings import SectorAlertSettings
 from quantlab.trading.runtime.server import _dispatch
@@ -450,6 +459,9 @@ class SectorTransportTests(unittest.TestCase):
             sector_groups=SectorGroupEditor(store, lambda: (), service.recompute),
             sector_settings=SectorAlertSettings(root / 'settings.json'),
         )
+        self.minutes = SectorMinuteStore((root / 'market' / 'sector_minutes.sqlite3').resolve())
+        self.addCleanup(self.minutes.close)
+        self.bundle.sector_history = lambda query: sector_history(self.minutes, query, lambda group_id: group_id.upper())
         self.client = ContextIpcFacade(self.launch)
 
     def call(self, method, *args):
@@ -475,6 +487,16 @@ class SectorTransportTests(unittest.TestCase):
         view, sent = self.call('sector_groups', SectorGroupsCommand())
         self.assertIsInstance(view, SectorGroupsView)
         self.assertEqual(sent.operation, Operation.SECTOR_GROUPS)
+
+    def test_history_goes_through_the_context_facade_and_the_dispatcher(self):
+        minute = datetime(2026, 11, 12, 10, 5, tzinfo=timezone(timedelta(hours=8)))
+        self.minutes.append((MinuteStat(minute, 'g1', 7, 70, 120, -35, 4000, 1, 0, 5, True),), minute.date())
+        days, sent = self.call('sector_history', SectorHistoryQuery())
+        self.assertEqual((days.days, sent.operation, sent.sector_history), (('2026-11-12',), Operation.SECTOR_HISTORY, SectorHistoryQuery()))
+        view, sent = self.call('sector_history', SectorHistoryQuery('2026-11-12', '10:05'))
+        self.assertEqual((view.trade_date, view.minutes, view.minute), ('2026-11-12', ('10:05',), '10:05'))
+        self.assertEqual(view.rows, (HistoryRow('g1', 'G1', -35, 120, 4000, 1, 7, 5, True),))
+        self.assertEqual(sent.sector_history, SectorHistoryQuery('2026-11-12', '10:05'))
 
     def test_settings_read_and_save_go_through_the_context_facade_and_the_dispatcher(self):
         params, sent = self.call('sector_settings')

@@ -29,16 +29,15 @@ class _Item(QTableWidgetItem):
 
 def history_cells(row):
     """Display text and sort value for each column of one stored group minute."""
-    amount = amount_text(row.amount)
-    if not row.complete:
-        amount += ui_text('sector.replay_incomplete')
+    # An incomplete minute stores no amount (0); show that it is unknown instead of a misleading zero.
+    amount = amount_text(row.amount) if row.complete else ui_text('sector.no_value') + ui_text('sector.replay_incomplete')
     return (
         (row.name, row.name),
         (f'{row.equal_pct_bps / 100:+.2f}%', row.equal_pct_bps),
         (f'{row.share_bps / 100:.2f}%', row.share_bps),
         (f'{row.breadth_bps / 100:.0f}%', row.breadth_bps),
         (str(row.limit_up), row.limit_up),
-        (amount, row.amount),
+        (amount, row.amount if row.complete else -1),
         (str(row.members), row.members),
     )
 

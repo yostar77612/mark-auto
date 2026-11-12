@@ -80,6 +80,7 @@ class IpcFacade:
         sector: SectorQuery | None = None,
         sector_groups: SectorGroupsCommand | None = None,
         sector_params: SectorAlertParams | None = None,
+        sector_history: SectorHistoryQuery | None = None,
     ) -> Response:
         session = read_session(self.root)
         envelope = Request(
@@ -94,6 +95,7 @@ class IpcFacade:
             sector=sector,
             sector_groups=sector_groups,
             sector_params=sector_params,
+            sector_history=sector_history,
             alert=alert,
         )
         with Client(session.address, family=session.family, authkey=session.key) as connection:
