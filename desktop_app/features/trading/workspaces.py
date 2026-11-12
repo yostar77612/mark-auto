@@ -457,6 +457,7 @@ def _performance_page(self) -> None:
     self.performance.horizontalHeaderItem(8).setToolTip(ui_text('v2.drawdown') + '\n' + ui_text('v2.performance_valuation_hint'))
     self.performance.horizontalHeaderItem(7).setText(ui_text('m2t.adjusted_pnl'))
     self.performance.horizontalHeaderItem(8).setText(ui_text('m2t.recorded_drawdown'))
+    self.performance_empty = EmptyTableState(self.performance, ui_text('performance.empty'), lambda: self.navigation.setCurrentRow(1))
     layout.addWidget(self.performance)
     _buttons(
         self,
