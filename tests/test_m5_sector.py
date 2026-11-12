@@ -13,7 +13,7 @@ from PySide6.QtCore import Qt
 from quantlab.trading.adapters.shioaji.snapshot_poller import BATCH, ShioajiSnapshotSource, normalise_snapshot
 from quantlab.trading.adapters.shioaji.symbol_directory import SymbolDirectory
 from quantlab.trading.application.codec import dumps, loads
-from quantlab.trading.application.sector_contracts import MemberView, SectorBoardView, SectorQuery
+from quantlab.trading.application.sector_contracts import MemberView, SectorBoardView, SectorQuery, ShareBaseline
 from quantlab.trading.application.sector_service import STALE_SECONDS, SectorService, in_session, industry_groups
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS
 from quantlab.trading.domain.industry_names import industry_name
@@ -391,6 +391,10 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(loads(dumps(view)), view)
         self.assertEqual(loads(dumps(SectorQuery('industry.24'))), SectorQuery('industry.24'))
         self.assertEqual(loads(dumps(SectorBoardView())), SectorBoardView())
+        self.service.share_baselines = lambda: (ShareBaseline('industry.24', 1200, 4),)
+        with_baseline = self.service.board()
+        self.assertEqual(with_baseline.baselines, (ShareBaseline('industry.24', 1200, 4),))
+        self.assertEqual(loads(dumps(with_baseline)), with_baseline)
         member = view.members[0]
         self.assertIsInstance(member, MemberView)
 
@@ -460,6 +464,26 @@ class BoardWidgetTests(unittest.TestCase):
             values = [Decimal(text.rstrip('%')) for text in known]
             self.assertEqual(values, sorted(values, reverse=order == Qt.SortOrder.DescendingOrder))
         self.assertIn('—', texts)
+
+    def test_share_versus_five_days_column_shows_the_multiple_and_partial_days(self):
+        from dataclasses import replace
+
+        from desktop_app.features.trading.sector_board import RANK_COLUMNS
+
+        widget, service = self.make()
+        board = service.board()
+        groups = {stat.group_id: stat for stat in board.groups if stat.share is not None}
+        full, partial = sorted(groups, key=lambda group: groups[group].share, reverse=True)[:2]
+        bps = {group: int(groups[group].share * 10000) for group in (full, partial)}
+        view = replace(board, baselines=(ShareBaseline(full, bps[full] // 2, 5), ShareBaseline(partial, bps[partial], 3)))
+        self.assertEqual(loads(dumps(view)), view)
+        widget.render_board(view)
+        column = RANK_COLUMNS.index('share_vs')
+        texts = {widget.rank.item(row, 0).data(Qt.ItemDataRole.UserRole): widget.rank.item(row, column).text() for row in range(widget.rank.rowCount())}
+        self.assertRegex(texts[full], r'^[12]\.\d×$')
+        self.assertEqual(texts[partial], '1.0×（3 日）')
+        self.assertTrue(all(text == '—' for group, text in texts.items() if group not in (full, partial)))
+        self.assertIn('前 5 個交易日', widget.rank.horizontalHeaderItem(column).toolTip())
 
     def test_failed_read_clears_the_tables_instead_of_keeping_old_numbers(self):
         widget, service = self.make()

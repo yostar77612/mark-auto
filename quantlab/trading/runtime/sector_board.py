@@ -34,6 +34,9 @@ class NullMinuteStore:
     def alert_marks(self, trade_date, kind):
         return {}
 
+    def share_baseline(self, before, minute, days=5):
+        return {}
+
     def mark_alert(self, trade_date, kind, group_id, direction, minute):
         return None
 
@@ -142,6 +145,7 @@ def attach_sector(bundle):
 
     service.on_round = on_round
     service.monitor_info, service.side_ratio = monitor.info, monitor.side_ratio
+    service.share_baselines = lambda: minutes.baselines
     bundle.session_bridge.monitor = monitor
     service.on_alert = bundle.alerts.record_sector
     poller = SectorPoller(service)
