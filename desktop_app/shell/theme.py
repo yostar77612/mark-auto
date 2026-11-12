@@ -315,13 +315,6 @@ QToolButton[themePart="helpButton"]:hover { background: @button_hover@; }
 QToolButton[themePart="helpButton"]:focus { border-color: @focus_border@; }
 QLineEdit, QPlainTextEdit, QComboBox, QSpinBox { background: @input_background@; border: 1px solid @input_border@; border-radius: 5px; padding: @space_input@px; selection-background-color: @primary@; }
 QCheckBox { padding: 7px 0; }
-QScrollBar:vertical { background: @input_background@; width: 12px; margin: 0; border: 0; }
-QScrollBar:horizontal { background: @input_background@; height: 12px; margin: 0; border: 0; }
-QScrollBar::handle:vertical { background: @button_border@; min-height: 28px; border-radius: 4px; margin: 2px; }
-QScrollBar::handle:horizontal { background: @button_border@; min-width: 28px; border-radius: 4px; margin: 2px; }
-QScrollBar::handle:hover { background: @hint_text@; }
-QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
-QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid @input_border@; border-radius: 3px; background: @input_background@; }
 QCheckBox::indicator:checked { background: @primary@; border-color: @focus_border@; }
 QToolButton { border: 1px solid @table_grid@; border-radius: 5px; padding: 5px 8px; }
