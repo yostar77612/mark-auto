@@ -11,6 +11,7 @@ import argparse
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 import ctypes
+import faulthandler
 import hashlib
 import json
 import os
@@ -477,6 +478,9 @@ def partition(suite):
     return {"all": suite, **{name: unittest.TestSuite(items) for name, items in selected.items()}}
 
 
+SINGLE_TEST_SECONDS = 300
+
+
 class RecordingResult(unittest.TextTestResult):
     """Record actual starts separately: failed fixtures can prevent starts."""
 
@@ -487,9 +491,14 @@ class RecordingResult(unittest.TextTestResult):
 
     def startTest(self, test):
         self.started_ids.append(test.id())
+        # A native Qt hang inside one test otherwise burns the whole 15 minute job
+        # silently; dump every thread and fail fast so the hang is both visible
+        # and cheap to rerun.
+        faulthandler.dump_traceback_later(SINGLE_TEST_SECONDS, exit=True)
         super().startTest(test)
 
     def stopTest(self, test):
+        faulthandler.cancel_dump_traceback_later()
         self.stopped_ids.append(test.id())
         super().stopTest(test)
 
