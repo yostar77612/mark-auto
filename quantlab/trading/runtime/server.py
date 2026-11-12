@@ -84,6 +84,8 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         return Response(request.request_id, sector=bundle.sector.board(request.sector.group_id))
     if request.operation is Operation.SECTOR_GROUPS:
         return Response(request.request_id, sector_groups=bundle.sector_groups.execute(request.sector_groups))
+    if request.operation is Operation.SECTOR_HISTORY:
+        return Response(request.request_id, sector_history=bundle.sector_history(request.sector_history))
     if request.operation is Operation.SECTOR_SETTINGS:
         settings = bundle.sector_settings
         params = settings.get() if request.sector_params is None else settings.save(request.sector_params)

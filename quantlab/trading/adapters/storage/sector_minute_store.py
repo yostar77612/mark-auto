@@ -155,3 +155,34 @@ class SectorMinuteStore:
         except sqlite3.Error:
             raise DomainError('sector_minutes_unavailable', 'baseline') from None
         return {group_id: (round(average), count) for group_id, average, count in rows}
+
+    def trade_days(self) -> tuple[date, ...]:
+        """Stored trading days, newest first."""
+        try:
+            with self._lock:
+                rows = self._db.execute('SELECT DISTINCT trade_date FROM sector_minutes ORDER BY trade_date DESC').fetchall()
+        except sqlite3.Error:
+            raise DomainError('sector_minutes_unavailable', 'days') from None
+        return tuple(date.fromisoformat(day) for (day,) in rows)
+
+    def day_minutes(self, trade_date: date) -> tuple[str, ...]:
+        """Stored minutes (HH:MM, Taipei) of one day in order."""
+        try:
+            with self._lock:
+                rows = self._db.execute('SELECT DISTINCT minute FROM sector_minutes WHERE trade_date=? ORDER BY minute', (trade_date.isoformat(),)).fetchall()
+        except sqlite3.Error:
+            raise DomainError('sector_minutes_unavailable', 'minutes') from None
+        return tuple(minute for (minute,) in rows)
+
+    def load_minute(self, trade_date: date, minute: str) -> tuple[MinuteStat, ...]:
+        try:
+            with self._lock:
+                rows = self._db.execute(
+                    'SELECT * FROM sector_minutes WHERE trade_date=? AND minute=? ORDER BY group_id', (trade_date.isoformat(), minute)
+                ).fetchall()
+        except sqlite3.Error:
+            raise DomainError('sector_minutes_unavailable', 'minute') from None
+        return tuple(
+            MinuteStat(datetime.fromisoformat(f'{day}T{hhmm}:00+08:00'), group_id, amount, cumulative, share, pct, breadth, up, down, members, bool(complete))
+            for day, hhmm, group_id, amount, cumulative, share, pct, breadth, up, down, members, complete in rows
+        )

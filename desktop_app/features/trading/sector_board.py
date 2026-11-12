@@ -127,6 +127,11 @@ class SectorBoardWidget(QWidget):
         self.settings_button.setAccessibleName(ui_text('sector.alert_settings'))
         self.settings_button.clicked.connect(lambda checked=False: self.open_settings())
         top.addWidget(self.settings_button)
+        self.replay_button = QPushButton(ui_text('sector.replay_button'))
+        self.replay_button.setAccessibleName(ui_text('sector.replay_button'))
+        self.replay_button.setToolTip(ui_text('sector.replay_tip'))
+        self.replay_button.clicked.connect(lambda checked=False: self.open_replay())
+        top.addWidget(self.replay_button)
         top.addStretch()
         self.status = QLabel(ui_text('sector.offline'))
         self.status.setObjectName('sector_status')
@@ -494,6 +499,14 @@ class SectorBoardWidget(QWidget):
     def toggle_alerts(self):
         self.alert_list.setVisible(not self.alert_list.isVisible())
         self.alert_bar.setToolTip(ui_text('sector.alerts_collapse') if self.alert_list.isVisible() else ui_text('sector.alerts_expand'))
+
+    def open_replay(self):
+        from desktop_app.features.trading.sector_replay import SectorReplayDialog
+
+        dialog = SectorReplayDialog(self.facade, self._submit, self)
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.replay_dialog = dialog
+        dialog.show()
 
     def open_settings(self):
         from desktop_app.features.trading.sector_settings_dialog import SectorAlertSettingsDialog

@@ -1,7 +1,8 @@
 """Read-only sector board DTOs shared by the engine and its UI client."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
+import re
 from decimal import Decimal
 
 from quantlab.trading.domain.sector import LIMITS, SectorStat
@@ -70,6 +71,74 @@ class ShareBaseline:
         identity(self.group_id)
         integer(self.share_bps, 'baseline share', 1)
         integer(self.days, 'baseline days', 1)
+
+
+_MINUTE = re.compile(r'([01][0-9]|2[0-3]):[0-5][0-9]')
+
+
+def _history_date(value: str) -> None:
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError):
+        raise DomainError('validation_failed', 'history date') from None
+
+
+@dataclass(frozen=True)
+class SectorHistoryQuery:
+    """No date: list the stored days. A date: its minutes and one minute's rows (the given one, else the last)."""
+
+    trade_date: str = ''
+    minute: str = ''
+
+    def __post_init__(self) -> None:
+        if self.trade_date:
+            _history_date(self.trade_date)
+        if self.minute and (not self.trade_date or not _MINUTE.fullmatch(self.minute)):
+            raise DomainError('validation_failed', 'history minute')
+
+
+@dataclass(frozen=True)
+class HistoryRow:
+    """One group at one stored minute; percentages are basis points, amount is that minute's NT$."""
+
+    group_id: str
+    name: str
+    equal_pct_bps: int
+    share_bps: int
+    breadth_bps: int
+    limit_up: int
+    amount: int
+    members: int
+    complete: bool
+
+    def __post_init__(self) -> None:
+        identity(self.group_id)
+        if type(self.equal_pct_bps) is not int or type(self.complete) is not bool:
+            raise DomainError('validation_failed', 'history row')
+        for value, name in (
+            (self.share_bps, 'share'),
+            (self.breadth_bps, 'breadth'),
+            (self.limit_up, 'limit up'),
+            (self.amount, 'amount'),
+            (self.members, 'members'),
+        ):
+            integer(value, 'history ' + name)
+
+
+@dataclass(frozen=True)
+class SectorHistoryView:
+    days: tuple[str, ...] = ()
+    trade_date: str = ''
+    minutes: tuple[str, ...] = ()
+    minute: str = ''
+    rows: tuple[HistoryRow, ...] = ()
+    failed: bool = False
+
+    def __post_init__(self) -> None:
+        for day in self.days + ((self.trade_date,) if self.trade_date else ()):
+            _history_date(day)
+        if any(not _MINUTE.fullmatch(value) for value in self.minutes + ((self.minute,) if self.minute else ())):
+            raise DomainError('validation_failed', 'history minute')
 
 
 @dataclass(frozen=True)

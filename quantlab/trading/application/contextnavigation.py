@@ -118,6 +118,10 @@ class CompositeFacade:
         with self._lock:
             return (self._connection or self._current).sector_groups(command)
 
+    def sector_history(self, query):
+        with self._lock:
+            return (self._connection or self._current).sector_history(query)
+
     def sector_settings(self, params=None):
         with self._lock:
             return (self._connection or self._current).sector_settings(params)

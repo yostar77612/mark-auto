@@ -15,8 +15,11 @@ from quantlab.trading.application.sector_contracts import (
     GroupEditView,
     MemberView,
     MonitorCount,
+    HistoryRow,
     ShareBaseline,
     SectorBoardView,
+    SectorHistoryQuery,
+    SectorHistoryView,
     SectorGroupsCommand,
     SectorGroupsView,
     SectorQuery,
@@ -49,6 +52,7 @@ class Operation(str, Enum):
     SECTOR_BOARD = 'SECTOR_BOARD'
     SECTOR_GROUPS = 'SECTOR_GROUPS'
     SECTOR_SETTINGS = 'SECTOR_SETTINGS'
+    SECTOR_HISTORY = 'SECTOR_HISTORY'
 
 
 @dataclass(frozen=True)
@@ -66,6 +70,7 @@ class Request:
     sector: SectorQuery | None = None
     sector_groups: SectorGroupsCommand | None = None
     sector_params: SectorAlertParams | None = None
+    sector_history: SectorHistoryQuery | None = None
 
     def __post_init__(self) -> None:
         identity(self.request_id)
@@ -85,6 +90,8 @@ class Request:
             raise DomainError('validation_failed', 'missing sector query')
         if self.operation is Operation.SECTOR_GROUPS and not isinstance(self.sector_groups, SectorGroupsCommand):
             raise DomainError('validation_failed', 'missing sector group command')
+        if self.operation is Operation.SECTOR_HISTORY and not isinstance(self.sector_history, SectorHistoryQuery):
+            raise DomainError('validation_failed', 'missing sector history query')
 
 
 @dataclass(frozen=True)
@@ -115,6 +122,7 @@ class Response:
     sector_groups: SectorGroupsView | None = None
     sector_params: SectorAlertParams | None = None
     candidates: tuple[CandidateSummaryView, ...] = ()
+    sector_history: SectorHistoryView | None = None
 
 
 register(Operation, Request, Response, Metrics, QuoteBatch)
@@ -122,3 +130,4 @@ register(WatchInstrument, WatchKind, HistoryUsage, HistorySyncState, MarketTermi
 register(OrderBookView, TapeEntry, BidAskSnapshot)
 register(SectorQuery, SectorBoardView, MemberView, SectorStat)
 register(SectorGroupsCommand, SectorGroupsView, GroupEditView, SectorAlert, SectorAlertParams, MonitorCount, ShareBaseline)
+register(SectorHistoryQuery, SectorHistoryView, HistoryRow)

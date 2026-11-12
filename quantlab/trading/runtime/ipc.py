@@ -13,7 +13,14 @@ from quantlab.trading.application.contracts import MarketSeriesPage, MarketSerie
 from quantlab.trading.application.order_book_contracts import OrderBookView
 from quantlab.trading.application.registry import initialize
 from quantlab.trading.domain.sector_alerts import SectorAlertParams
-from quantlab.trading.application.sector_contracts import SectorBoardView, SectorGroupsCommand, SectorGroupsView, SectorQuery
+from quantlab.trading.application.sector_contracts import (
+    SectorBoardView,
+    SectorGroupsCommand,
+    SectorGroupsView,
+    SectorHistoryQuery,
+    SectorHistoryView,
+    SectorQuery,
+)
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
 from .control_secret import unprotect
@@ -138,6 +145,12 @@ class IpcFacade:
         if not isinstance(response.sector_groups, SectorGroupsView):
             raise DomainError('validation_failed', 'missing sector groups')
         return response.sector_groups
+
+    def sector_history(self, query: SectorHistoryQuery) -> SectorHistoryView:
+        response = self.request(Operation.SECTOR_HISTORY, sector_history=query)
+        if not isinstance(response.sector_history, SectorHistoryView):
+            raise DomainError('validation_failed', 'missing sector history')
+        return response.sector_history
 
     def sector_settings(self, params=None) -> SectorAlertParams:
         response = self.request(Operation.SECTOR_SETTINGS, sector_params=params)
