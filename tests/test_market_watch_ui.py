@@ -310,6 +310,20 @@ class WidgetTests(unittest.TestCase):
         self.assertIn(ui_text('watch.stopped').split('{')[0], self.widget.detail.text())
 
 
+class PendingRequestsTests(unittest.TestCase):
+    def test_cancel_stops_every_in_flight_result_with_one_connection(self):
+        from desktop_app.features.trading.market_watch import PendingRequests, _Result
+
+        seen = []
+        pending = PendingRequests()
+        results = [_Result(lambda value, error, tag=tag: seen.append(tag)) for tag in range(3)]
+        pending.update(results)
+        pending.cancel()
+        for result in results:
+            result.finish(None, None)
+        self.assertEqual(seen, [])
+
+
 class PersistenceTests(unittest.TestCase):
     def test_settings_saved_via_runtime_command_and_restored_on_restart(self):
         with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:

@@ -40,6 +40,7 @@ class MinuteAggregator:
             for item in self.store.load_day(day):
                 if item.complete and item.minute.astimezone(_TAIPEI).time() >= SESSION_OPEN:
                     self._history.setdefault(item.group_id, deque(maxlen=60)).append(item.amount)
+            self._last_alert = self.store.alert_marks(day, 'BURST')
         except DomainError:
             self.warning = 'sector_minutes_unavailable'
 
@@ -110,6 +111,10 @@ class MinuteAggregator:
         if last is not None and minute - last < timedelta(minutes=params.cooldown_minutes):
             return None
         self._last_alert[(group_id, direction)] = minute
+        try:
+            self.store.mark_alert(minute.date(), 'BURST', group_id, direction, minute)
+        except DomainError:
+            self.warning = 'sector_minutes_unavailable'
         return SectorAlert(
             minute,
             group_id,

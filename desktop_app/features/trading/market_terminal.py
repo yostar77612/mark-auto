@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QMenu, QDialog, QVBoxLayout, QLabel
 from desktop_app.strings.catalog import ui_text
-from desktop_app.features.trading.market_watch import _Result, start_request
+from desktop_app.features.trading.market_watch import PendingRequests, _Result, start_request
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text, _change_direction
 from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
@@ -21,7 +21,8 @@ class MarketTerminalWidget(QWidget):
         self.colours = colours or (lambda widget: ('#c62828', '#16803c'))
         self.style_terminal = style_terminal
         self.current_instrument = FIXED_INDICES[0].instrument_id
-        self.period, self.periods, self._requests = '1m', {}, set()
+        self.period, self.periods, self._requests = '1m', {}, PendingRequests()
+        self.destroyed.connect(self._requests.cancel)
         self._generation, self._series_loading, self._pending, self._busy = 0, False, False, False
         self._selecting, self._selection_pending, self._ready = False, False, False
         self._pending_retry = False
@@ -44,7 +45,6 @@ class MarketTerminalWidget(QWidget):
 
         result = _Result(finish)
         self._requests.add(result)
-        self.destroyed.connect(result.cancel)
         start_request(operation, result)
 
     def refresh_directory(self, *, initial=False):
