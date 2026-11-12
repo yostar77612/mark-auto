@@ -10,7 +10,7 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QLabel, QListWidget, QListWidgetItem, QMenu, QPushButton, QSplitter, QTableWidget, QVBoxLayout, QWidget
 
 from desktop_app.features.trading.market_terminal_widgets import QuoteItem
-from desktop_app.features.trading.market_watch import _Result, start_request
+from desktop_app.features.trading.market_watch import PendingRequests, _Result, start_request
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.order_book_panel import OrderBookPanel
 from desktop_app.strings.catalog import ui_text
@@ -90,7 +90,8 @@ class SectorBoardWidget(QWidget):
         self.filter, self.group_id, self.stock_id, self.period = 'all', '', '', '1m'
         self.rank_sort, self.member_sort = (2, Qt.SortOrder.DescendingOrder), (3, Qt.SortOrder.DescendingOrder)
         self.view = None
-        self._requests, self._loading, self._detail_loading, self._selecting, self._again = set(), False, None, False, False
+        self._requests, self._loading, self._detail_loading, self._selecting, self._again = PendingRequests(), False, None, False, False
+        self.destroyed.connect(self._requests.cancel)
         self._wanted = ''
         self._flash, self._seen_alerts, self._alerts_primed = {}, set(), False
         root = QVBoxLayout(self)
@@ -217,7 +218,6 @@ class SectorBoardWidget(QWidget):
 
         result = _Result(finish)
         self._requests.add(result)
-        self.destroyed.connect(result.cancel)
         start_request(operation, result)
 
     def showEvent(self, event):

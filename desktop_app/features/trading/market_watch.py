@@ -88,6 +88,14 @@ class _Result:
             self.completed(value, error)
 
 
+class PendingRequests(set):
+    """In-flight results of one widget: one destroyed connection per widget, not one per request."""
+
+    def cancel(self, *_):
+        for result in tuple(self):
+            result.cancel()
+
+
 def start_request(operation, result):
     """Run one request on a plain Python thread; the answer is queued for the GUI-thread pump."""
     Thread(target=_Request(operation, result).run, name='market-request', daemon=True).start()
@@ -115,7 +123,8 @@ class MarketWatchWidget(QWidget):
         self._bars, self._series_key, self._revision = (), None, -1
         self._generation, self._busy = 0, False
         self._series_loading, self._pending_request = False, None
-        self._requests = set()
+        self._requests = PendingRequests()
+        self.destroyed.connect(self._requests.cancel)
         self._identify(self, 'market_watch', ui_text('watch.title'))
         layout = QVBoxLayout(self)
         layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
@@ -226,7 +235,6 @@ class MarketWatchWidget(QWidget):
 
         result = _Result(finish)
         self._requests.add(result)
-        self.destroyed.connect(result.cancel)
         start_request(operation, result)
 
     def render(self, state):
