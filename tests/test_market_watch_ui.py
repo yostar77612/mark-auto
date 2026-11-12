@@ -215,6 +215,23 @@ class WidgetTests(unittest.TestCase):
             QTest.qWait(5)
         self.assertTrue(condition())
 
+    def test_destroying_the_widget_cancels_a_request_still_in_flight(self):
+        import threading
+
+        import shiboken6
+
+        from desktop_app.features.trading import market_watch
+
+        other = MarketWatchWidget(FakeFacade(), RecordingChart(), self.facade.state)
+        self.wait_for(lambda: not other._requests)
+        gate, seen = threading.Event(), []
+        other._submit(lambda: gate.wait(5), lambda value, error: seen.append(value))
+        token = next(iter(other._requests)).token
+        shiboken6.delete(other)
+        gate.set()
+        self.wait_for(lambda: token not in market_watch._LIVE_RESULTS)
+        self.assertEqual(seen, [])
+
     def test_periods_keyboard_accessibility_and_large_font(self):
         for period, button in self.widget.period_buttons.items():
             with self.subTest(period=period):
