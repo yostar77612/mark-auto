@@ -252,6 +252,18 @@ class ReplayTests(unittest.TestCase):
         self.addCleanup(store2.close)
         self.assertEqual([(alert.at.astimezone(TAIPEI).strftime('%H:%M'), alert.group_id) for alert in strict], [('09:40', 'g1')])
 
+    def test_restart_keeps_the_cooldown_of_alerts_already_sent_today(self):
+        aggregator, store, temp, alerts = replay()
+        self.addCleanup(temp.cleanup)
+        self.addCleanup(store.close)
+        self.assertTrue(aggregator._last_alert)
+        fresh = MinuteAggregator(store, SectorAlertParams, NAMES.get)
+        fresh.on_round(DAY.replace(hour=10, minute=1), (stat('g1', 10**10, 0), stat('g2', 10**9, 0), stat('g3', 10**8, 0)))
+        self.assertEqual(fresh._last_alert, aggregator._last_alert)
+        tomorrow = MinuteAggregator(store, SectorAlertParams, NAMES.get)
+        tomorrow.on_round(DAY.replace(hour=10, minute=1) + timedelta(days=1), (stat('g1', 10**10, 0),))
+        self.assertEqual(tomorrow._last_alert, {})
+
     def test_restart_midday_reloads_history_so_baseline_survives(self):
         aggregator, store, temp, alerts = replay()
         self.addCleanup(temp.cleanup)
@@ -309,9 +321,28 @@ class MinuteRobustnessTests(unittest.TestCase):
                 aggregator.on_round(early + timedelta(minutes=index, seconds=second), (stat('g1', 0, 0), stat('g2', 0, 0), stat('g3', 0, 0)))
         self.assertEqual(list(aggregator._history.get('g1', ())), [])
 
-    def test_cooldown_state_is_per_process_and_documented_not_persisted(self):
+    def test_cooldown_marks_are_kept_per_day_and_kind_and_dropped_the_next_day(self):
         aggregator, store = self.make()
-        self.assertEqual(aggregator._last_alert, {})
+        minute = DAY.replace(hour=9, minute=40)
+        store.mark_alert(minute.date(), 'BURST', 'g1', 'UP', minute)
+        store.mark_alert(minute.date(), 'BURST', 'g1', 'UP', minute + timedelta(minutes=15))
+        self.assertEqual(store.alert_marks(minute.date(), 'BURST'), {('g1', 'UP'): minute + timedelta(minutes=15)})
+        self.assertEqual(store.alert_marks(minute.date(), 'FLOW'), {})
+        store.purge(minute.date() + timedelta(days=1))
+        self.assertEqual(store.alert_marks(minute.date(), 'BURST'), {})
+
+    def test_a_file_written_before_marks_existed_gains_the_table_and_keeps_its_minutes(self):
+        aggregator, store = self.make()
+        store.append((MinuteStat(DAY.replace(hour=9, minute=1), 'g1', 5, 5, 0, 0, 0, 0, 0, 3, True),), DAY.date())
+        store._db.execute('DROP TABLE sector_alert_marks')
+        store._db.commit()
+        path = store.path
+        store.close()
+        reopened = SectorMinuteStore(path)
+        self.addCleanup(reopened.close)
+        self.assertEqual(reopened.warning, '')
+        self.assertEqual(len(reopened.load_day(DAY.date())), 1)
+        self.assertEqual(reopened.alert_marks(DAY.date(), 'BURST'), {})
 
 
 class LogIntegrationTests(unittest.TestCase):

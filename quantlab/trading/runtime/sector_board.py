@@ -31,6 +31,12 @@ class NullMinuteStore:
     def purge(self, today):
         return 0
 
+    def alert_marks(self, trade_date, kind):
+        return {}
+
+    def mark_alert(self, trade_date, kind, group_id, direction, minute):
+        return None
+
     def close(self):
         return None
 
@@ -124,7 +130,7 @@ def attach_sector(bundle):
     except DomainError:
         minute_store = NullMinuteStore()  # minute history is optional: the board and alerts keep working in memory
     minutes = MinuteAggregator(minute_store, settings.get, service.group_name)
-    monitor = SectorMonitor(service.candidates, MonitorSubscriptions(connection), settings.get, service.group_name)
+    monitor = SectorMonitor(service.candidates, MonitorSubscriptions(connection), settings.get, service.group_name, minute_store)
 
     def on_round(now, stats):
         alerts = minutes.on_round(now, stats)

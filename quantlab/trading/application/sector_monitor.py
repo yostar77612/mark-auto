@@ -30,6 +30,22 @@ class TickSubscriptionsPort(Protocol):
     def unsubscribe(self, instrument_id: str) -> None: ...
 
 
+class AlertMarksPort(Protocol):
+    def alert_marks(self, trade_date, kind: str) -> dict[tuple[str, str], datetime]: ...
+
+    def mark_alert(self, trade_date, kind: str, group_id: str, direction: str, minute: datetime) -> None: ...
+
+
+class NoMarks:
+    """Cooldown memory that lasts only as long as the process (no minute database)."""
+
+    def alert_marks(self, trade_date, kind):
+        return {}
+
+    def mark_alert(self, trade_date, kind, group_id, direction, minute):
+        return None
+
+
 class SectorMonitor:
     def __init__(
         self,
@@ -37,8 +53,10 @@ class SectorMonitor:
         subscriptions: TickSubscriptionsPort,
         params: Callable[[], SectorAlertParams],
         name_of: Callable[[str], str],
+        marks: AlertMarksPort = NoMarks(),
     ):
         self.candidates, self.subscriptions, self.params, self.name_of = candidates, subscriptions, params, name_of
+        self.marks = marks
         self.lock = RLock()
         self._selector = MonitorSelector()
         self._selected_minute: datetime | None = None
@@ -143,6 +161,10 @@ class SectorMonitor:
                 self._day = minute.date()
                 self._selector.reset()
                 self._buckets, self._history, self._finalized, self._since, self._sides, self._last_alert = {}, {}, {}, {}, {}, {}
+                try:
+                    self._last_alert = self.marks.alert_marks(minute.date(), 'FLOW')
+                except DomainError:
+                    pass  # the cooldown then starts empty, as it did before marks were stored
             reselect = self._selected_minute != minute
             if reselect:
                 self._selected_minute = minute
@@ -251,6 +273,10 @@ class SectorMonitor:
         if last is not None and minute - last < timedelta(minutes=params.cooldown_minutes):
             return None
         self._last_alert[(group_id, direction)] = minute
+        try:
+            self.marks.mark_alert(minute.date(), 'FLOW', group_id, direction, minute)
+        except DomainError:
+            pass  # the alert still fires; only the restart memory of this cooldown is lost
         counts = {gid: (monitored, total) for gid, monitored, total in self._counts}
         monitored, total = counts.get(group_id, (0, 0))
         return SectorAlert(minute, group_id, name, 'FLOW', direction, net, minutes, None, big, total, monitored)
