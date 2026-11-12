@@ -143,9 +143,23 @@ MEMBERS = {
 STATS = (stat('gA', 3), stat('gB', 2), stat('gC', 1), stat('gD', 0.5))
 
 
-def monitor(capacity=40, taken=0, params=None):
+class Marks:
+    def __init__(self):
+        self.rows = {}
+
+    def alert_marks(self, trade_date, kind):
+        return {key[2:]: minute for key, minute in self.rows.items() if key[:2] == (trade_date, kind)}
+
+    def mark_alert(self, trade_date, kind, group_id, direction, minute):
+        self.rows[(trade_date, kind, group_id, direction)] = minute
+
+
+def monitor(capacity=40, taken=0, params=None, marks=None):
     subscriptions = Subscriptions(capacity, taken)
-    value = SectorMonitor(lambda group_id: MEMBERS.get(group_id, ()), subscriptions, lambda: params or SectorAlertParams(), lambda group_id: group_id.upper())
+    names = lambda group_id: group_id.upper()  # noqa: E731
+    members = lambda group_id: MEMBERS.get(group_id, ())  # noqa: E731
+    extra = () if marks is None else (marks,)
+    value = SectorMonitor(members, subscriptions, lambda: params or SectorAlertParams(), names, *extra)
     return value, subscriptions
 
 
@@ -162,9 +176,9 @@ def minute_ticks(index, net_million, start=None):
     return tuple(tick(codes[position % 4], amount, side, base) for position, amount in enumerate(amounts))
 
 
-def replay(params=None, stats=STATS, minutes=15, capacity=40, start=None):
+def replay(params=None, stats=STATS, minutes=15, capacity=40, start=None, marks=None):
     start = start or START
-    value, subscriptions = monitor(capacity, params=params)
+    value, subscriptions = monitor(capacity, params=params, marks=marks)
     alerts = []
     for step in range(minutes * 6 + 1):
         now = start + timedelta(seconds=10 * step)
@@ -188,6 +202,16 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual((down.amount, down.detail), (60 * MILLION, 30 * MILLION))
         # 09:19 would repeat the UP streak but sits inside the 10 minute cooldown.
         self.assertNotIn('09:19', [alert.at.astimezone(TAIPEI).strftime('%H:%M') for alert in alerts])
+
+    def test_flow_cooldown_survives_a_restart_through_the_stored_marks(self):
+        marks = Marks()
+        _, _, first = replay(marks=marks)
+        self.assertEqual(len(first), 2)
+        self.assertEqual({key[1:] for key in marks.rows}, {('FLOW', 'gA', 'UP'), ('FLOW', 'gA', 'DOWN')})
+        _, _, restarted = replay(marks=marks)  # a fresh monitor on the same day and the same ticks
+        self.assertEqual(restarted, [])
+        _, _, next_day = replay(marks=marks, start=START + timedelta(days=1))
+        self.assertEqual(len(next_day), 2)
 
     def test_opening_warmup_also_applies_to_flow(self):
         _, _, alerts = replay(start=at(9, 0))

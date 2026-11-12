@@ -21,6 +21,13 @@ CREATE TABLE IF NOT EXISTS sector_minutes (
     PRIMARY KEY (trade_date, minute, group_id));
 '''
 COLUMNS = 12
+# Last alert per (kind, group, direction) of a trading day, so a restart keeps the cooldown. A separate table:
+# builds that predate it only check sector_minutes and keep working on the same file.
+MARKS = '''
+CREATE TABLE IF NOT EXISTS sector_alert_marks (
+    trade_date TEXT NOT NULL, kind TEXT NOT NULL, group_id TEXT NOT NULL, direction TEXT NOT NULL, minute TEXT NOT NULL,
+    PRIMARY KEY (trade_date, kind, group_id, direction));
+'''
 
 
 class SectorMinuteStore:
@@ -49,7 +56,7 @@ class SectorMinuteStore:
     def _open(self) -> None:
         self._db = sqlite3.connect(self.path, timeout=2, check_same_thread=False)
         self._db.execute('PRAGMA journal_mode=WAL')
-        self._db.executescript(SCHEMA)
+        self._db.executescript(SCHEMA + MARKS)
         if len(self._db.execute('PRAGMA table_info(sector_minutes)').fetchall()) != COLUMNS:
             self._db.close()
             raise DomainError('sector_minutes_unavailable', 'unsupported sector minute schema')
@@ -101,7 +108,28 @@ class SectorMinuteStore:
         try:
             with self._lock:
                 removed = self._db.execute('DELETE FROM sector_minutes WHERE trade_date < ?', (cutoff,)).rowcount
+                self._db.execute('DELETE FROM sector_alert_marks WHERE trade_date < ?', (today.isoformat(),))
                 self._db.commit()
             return removed
         except sqlite3.Error:
             raise DomainError('sector_minutes_unavailable', 'purge') from None
+
+    def mark_alert(self, trade_date: date, kind: str, group_id: str, direction: str, minute: datetime) -> None:
+        row = (trade_date.isoformat(), kind, group_id, direction, minute.astimezone(TAIPEI).strftime('%H:%M'))
+        try:
+            with self._lock:
+                self._db.execute('INSERT OR REPLACE INTO sector_alert_marks VALUES (?,?,?,?,?)', row)
+                self._db.commit()
+        except sqlite3.Error:
+            raise DomainError('sector_minutes_unavailable', 'mark') from None
+
+    def alert_marks(self, trade_date: date, kind: str) -> dict[tuple[str, str], datetime]:
+        try:
+            with self._lock:
+                rows = self._db.execute(
+                    'SELECT group_id, direction, minute FROM sector_alert_marks WHERE trade_date=? AND kind=?', (trade_date.isoformat(), kind)
+                ).fetchall()
+        except sqlite3.Error:
+            raise DomainError('sector_minutes_unavailable', 'marks') from None
+        day = trade_date.isoformat()
+        return {(group_id, direction): datetime.fromisoformat(f'{day}T{minute}:00+08:00') for group_id, direction, minute in rows}
