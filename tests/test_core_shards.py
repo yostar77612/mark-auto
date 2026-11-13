@@ -1552,5 +1552,24 @@ class CoreShardWorkflowTests(unittest.TestCase):
         self.assertIn('if-no-files-found: error', upload)
 
 
+class DeferredDeleteFlushTests(unittest.TestCase):
+    def test_a_widget_queued_with_delete_later_is_destroyed_when_the_test_stops(self):
+        from PySide6.QtWidgets import QApplication, QWidget
+
+        app = QApplication.instance() or QApplication([])
+        destroyed = []
+        widget = QWidget()
+        widget.destroyed.connect(lambda *_: destroyed.append(True))
+        widget.deleteLater()
+        app.processEvents()
+        self.assertEqual(destroyed, [])  # plain processEvents leaves it alive: the pile-up this flush prevents
+        group.flush_deferred_deletes()
+        self.assertEqual(destroyed, [True])
+
+    def test_without_qt_or_an_application_the_flush_does_nothing(self):
+        with patch.dict(sys.modules, {'PySide6.QtCore': None}):
+            group.flush_deferred_deletes()
+
+
 if __name__ == '__main__':
     unittest.main()
