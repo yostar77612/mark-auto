@@ -498,9 +498,24 @@ class RecordingResult(unittest.TextTestResult):
         super().startTest(test)
 
     def stopTest(self, test):
+        # Still under the watchdog: a crash or hang while destroying this test's widgets is reported here.
+        flush_deferred_deletes()
         faulthandler.cancel_dump_traceback_later()
         self.stopped_ids.append(test.id())
         super().stopTest(test)
+
+
+def flush_deferred_deletes():
+    """Destroy the widgets a test queued with deleteLater() before the next test starts.
+
+    processEvents() alone does not run deferred deletions, so windows piled up across modules until some later
+    test happened to spin an event loop (QTest.qWait) and the whole pile was destroyed inside that test: CI then
+    blamed an unrelated test for a native crash. Flushing here keeps each test's destruction inside that test.
+    """
+    qtcore = sys.modules.get('PySide6.QtCore')
+    if qtcore is None or qtcore.QCoreApplication.instance() is None:
+        return
+    qtcore.QCoreApplication.sendPostedEvents(None, qtcore.QEvent.Type.DeferredDelete)
 
 
 def main(argv=None):
