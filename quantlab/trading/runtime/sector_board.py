@@ -146,6 +146,7 @@ def attach_sector(bundle):
     service.on_round = on_round
     service.monitor_info, service.side_ratio = monitor.info, monitor.side_ratio
     service.share_baselines = lambda: minutes.baselines
+    bundle.sector_minutes = minutes
     bundle.session_bridge.monitor = monitor
     service.on_alert = bundle.alerts.record_sector
     poller = SectorPoller(service)
