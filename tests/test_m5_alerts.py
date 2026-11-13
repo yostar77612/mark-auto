@@ -134,6 +134,33 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.store.share_baseline(today, '08:30'), {})
         self.assertEqual(self.store.share_baseline(days[-1], '10:00'), {})
 
+    def test_history_lists_days_minutes_and_one_minute_and_reports_store_failure(self):
+        from quantlab.trading.application.sector_contracts import HistoryRow, SectorHistoryQuery
+        from quantlab.trading.application.sector_minutes import sector_history
+
+        early, late = DAY.replace(hour=9, minute=1), DAY.replace(hour=9, minute=2)
+        self.store.append((self.stat(early), self.stat(early, 'g2', complete=False), self.stat(late, amount=8)), DAY.date())
+        self.store.append((self.stat(early + timedelta(days=1)),), DAY.date() + timedelta(days=1))
+        names = {'g1': 'G1', 'g2': 'G2'}.get
+        self.assertEqual(sector_history(self.store, SectorHistoryQuery(), names).days, ('2026-11-10', '2026-11-09'))
+        last = sector_history(self.store, SectorHistoryQuery('2026-11-09'), names)
+        self.assertEqual((last.minutes, last.minute, [row.group_id for row in last.rows]), (('09:01', '09:02'), '09:02', ['g1']))
+        first = sector_history(self.store, SectorHistoryQuery('2026-11-09', '09:01'), names)
+        self.assertEqual(first.rows, (HistoryRow('g1', 'G1', 123, 250, 6000, 1, 5, 7, True), HistoryRow('g2', 'G2', 123, 250, 6000, 1, 5, 7, False)))
+        unknown = sector_history(self.store, SectorHistoryQuery('2026-11-09', '13:30'), names)
+        self.assertEqual(unknown.minute, '09:02')  # a minute that was never stored falls back to the last one
+        empty = sector_history(self.store, SectorHistoryQuery('2026-10-01'), names)
+        self.assertEqual((empty.minutes, empty.minute, empty.rows, empty.failed), ((), '', (), False))
+        self.store.close()
+        self.assertTrue(sector_history(self.store, SectorHistoryQuery(), names).failed)
+
+    def test_history_queries_reject_malformed_dates_and_minutes(self):
+        from quantlab.trading.application.sector_contracts import SectorHistoryQuery
+
+        for bad in (('2026-13-01', ''), ('2026-11-09', '9:01'), ('', '09:01'), ('2026-11-09', '24:00')):
+            with self.subTest(bad=bad), self.assertRaises(DomainError):
+                SectorHistoryQuery(*bad)
+
     def test_purge_keeps_30_days(self):
         old, keep = date(2026, 11, 9) - timedelta(days=RETAIN_DAYS + 1), date(2026, 11, 9) - timedelta(days=RETAIN_DAYS)
         for day in (old, keep):

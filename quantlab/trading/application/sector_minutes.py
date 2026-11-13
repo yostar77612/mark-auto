@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from quantlab.trading.domain.sector import SectorStat
 from quantlab.trading.domain.sector_alerts import SESSION_OPEN, MinuteStat, SectorAlert, SectorAlertParams, in_alert_window, judge_burst, minute_direction
 from quantlab.trading.domain.validation import DomainError
-from .sector_contracts import ShareBaseline
+from .sector_contracts import HistoryRow, SectorHistoryQuery, SectorHistoryView, ShareBaseline
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 _MINUTE = timedelta(minutes=1)
@@ -134,3 +134,24 @@ class MinuteAggregator:
             Decimal(delta) / Decimal(baseline),
             members=stat.valid_count,
         )
+
+
+def sector_history(store, query: SectorHistoryQuery, name_of: Callable[[str], str]) -> SectorHistoryView:
+    """Read-only replay of stored minutes; a store failure is reported, never raised."""
+    try:
+        days = tuple(day.isoformat() for day in store.trade_days())
+        if not query.trade_date:
+            return SectorHistoryView(days)
+        day = date.fromisoformat(query.trade_date)
+        minutes = store.day_minutes(day)
+        minute = query.minute if query.minute in minutes else (minutes[-1] if minutes else '')
+        stats = store.load_minute(day, minute) if minute else ()
+    except DomainError:
+        return SectorHistoryView(failed=True)
+    rows = tuple(
+        HistoryRow(
+            item.group_id, name_of(item.group_id), item.equal_pct_bps, item.share_bps, item.breadth_bps, item.limit_up, item.amount, item.members, item.complete
+        )
+        for item in stats
+    )
+    return SectorHistoryView(days, query.trade_date, minutes, minute, rows)
