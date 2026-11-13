@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime
-import re
 from decimal import Decimal
 
 from quantlab.trading.domain.sector import LIMITS, SectorStat
@@ -73,7 +72,13 @@ class ShareBaseline:
         integer(self.days, 'baseline days', 1)
 
 
-_MINUTE = re.compile(r'([01][0-9]|2[0-3]):[0-5][0-9]')
+def _is_minute(value: str) -> bool:
+    """Exactly HH:MM (00:00-23:59)."""
+    try:
+        datetime.strptime(value, '%H:%M')
+    except (TypeError, ValueError):
+        return False
+    return len(value) == 5
 
 
 def _history_date(value: str) -> None:
@@ -93,7 +98,7 @@ class SectorHistoryQuery:
     def __post_init__(self) -> None:
         if self.trade_date:
             _history_date(self.trade_date)
-        if self.minute and (not self.trade_date or not _MINUTE.fullmatch(self.minute)):
+        if self.minute and (not self.trade_date or not _is_minute(self.minute)):
             raise DomainError('validation_failed', 'history minute')
 
 
@@ -137,7 +142,7 @@ class SectorHistoryView:
     def __post_init__(self) -> None:
         for day in self.days + ((self.trade_date,) if self.trade_date else ()):
             _history_date(day)
-        if any(not _MINUTE.fullmatch(value) for value in self.minutes + ((self.minute,) if self.minute else ())):
+        if any(not _is_minute(value) for value in self.minutes + ((self.minute,) if self.minute else ())):
             raise DomainError('validation_failed', 'history minute')
 
 

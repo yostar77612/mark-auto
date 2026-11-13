@@ -43,9 +43,9 @@ def history_cells(row):
 
 
 class SectorReplayDialog(QDialog):
-    def __init__(self, facade, submit, parent=None):
+    def __init__(self, facade, defer, parent=None):
         super().__init__(parent)
-        self.facade, self.submit = facade, submit
+        self.facade, self.defer = facade, defer
         self.minutes, self.trade_date, self._generation = (), '', 0
         self.setWindowTitle(ui_text('sector.replay_title'))
         self.setAccessibleName(ui_text('sector.replay_title'))
@@ -109,7 +109,7 @@ class SectorReplayDialog(QDialog):
             if generation == self._generation:
                 self.render(view if error is None else None)
 
-        self.submit(lambda: facade.sector_history(query), completed)
+        self.defer(lambda: facade.sector_history(query), completed)
 
     def load_day(self):
         day = self.days.currentData()
