@@ -319,11 +319,30 @@ class ReplayTests(unittest.TestCase):
         for seconds in (0, 50, 60):
             tomorrow.on_round(start + timedelta(seconds=seconds), (stat('g1', 10**10, 0), stat('g2', 10**9, 0)))
         by_group = {item.group_id: item for item in tomorrow.baselines}
+        self.assertEqual(set(by_group), {'g1', 'g2', 'g3'})  # every group stored at 09:40 of the replay day
         stored = {item.group_id: item.share_bps for item in store.load_day(DAY.date()) if item.minute.astimezone(TAIPEI).strftime('%H:%M') == '09:40'}
         self.assertEqual({group: by_group[group].share_bps for group in by_group}, {group: stored[group] for group in by_group})
         self.assertTrue(all(item.days == 1 for item in tomorrow.baselines))
         later = tomorrow.on_round(start + timedelta(days=1), (stat('g1', 10**10, 0),))
         self.assertEqual((later, tomorrow.baselines), ((), ()))
+
+    def test_restart_inside_a_cooldown_does_not_repeat_the_alert(self):
+        temp = TemporaryDirectory(dir=Path.cwd())
+        self.addCleanup(temp.cleanup)
+        path = (Path(temp.name) / 'sector_minutes.sqlite3').resolve()
+        store = SectorMinuteStore(path)
+        aggregator = MinuteAggregator(store, SectorAlertParams, NAMES.get)
+        alerts, restarted = [], False
+        for moment, stats in rounds(20):
+            if not restarted and moment.astimezone(TAIPEI).strftime('%H:%M') == '09:44':
+                store.close()  # 09:40 g1 UP is inside its 10 minute cooldown here
+                store = SectorMinuteStore(path)
+                aggregator = MinuteAggregator(store, SectorAlertParams, NAMES.get)
+                restarted = True
+            alerts.extend(aggregator.on_round(moment, stats))
+        store.close()
+        observed = [[alert.at.astimezone(TAIPEI).strftime('%H:%M'), alert.group_id, alert.direction] for alert in alerts]
+        self.assertEqual(observed, json.loads(GOLDEN.read_text(encoding='utf-8'))['alerts'])
 
     def test_restart_midday_reloads_history_so_baseline_survives(self):
         aggregator, store, temp, alerts = replay()
