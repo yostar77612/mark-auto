@@ -22,7 +22,7 @@ from quantlab.trading.domain.validation import DomainError
 class ManualActions:
     def __init__(self, window, layout):
         self.window = window
-        self.form = ManualForm(window, header=window.page_headers['trading'])
+        self.form = ManualForm(window)
         self.intents = ManualIntents()
         self.exit_preview = ManualExitPreview(self)
         self.scope, self.instruments = None, ()
