@@ -15,6 +15,7 @@ from quantlab.trading.application.sector_contracts import (
     GroupEditView,
     MemberView,
     MonitorCount,
+    ShareBaseline,
     SectorBoardView,
     SectorGroupsCommand,
     SectorGroupsView,
@@ -120,4 +121,4 @@ register(Operation, Request, Response, Metrics, QuoteBatch)
 register(WatchInstrument, WatchKind, HistoryUsage, HistorySyncState, MarketTerminalStatus)
 register(OrderBookView, TapeEntry, BidAskSnapshot)
 register(SectorQuery, SectorBoardView, MemberView, SectorStat)
-register(SectorGroupsCommand, SectorGroupsView, GroupEditView, SectorAlert, SectorAlertParams, MonitorCount)
+register(SectorGroupsCommand, SectorGroupsView, GroupEditView, SectorAlert, SectorAlertParams, MonitorCount, ShareBaseline)

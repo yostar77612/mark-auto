@@ -63,6 +63,12 @@ class MarketRuntimeTests(unittest.TestCase):
         monitor = self.bundle.session_bridge.monitor
         self.assertIs(monitor.marks, self.bundle.sector_minute_store)
 
+    def test_sector_board_serves_the_minute_aggregator_share_baselines(self):
+        from quantlab.trading.application.sector_contracts import ShareBaseline
+
+        self.bundle.sector_minutes.baselines = (ShareBaseline('industry.24', 120, 3),)
+        self.assertEqual(self.bundle.sector.share_baselines(), (ShareBaseline('industry.24', 120, 3),))
+
     def test_independent_connection_without_trading_fields_and_real_wire_roundtrips(self):
         self.assertTrue(self.command(UiAction.SAVE_MARKET_DATA_SETTINGS, market_data_settings=MarketDataSettings(enabled=True)).accepted)
         self.assertEqual(self.bundle.snapshot().watchlist, ())
