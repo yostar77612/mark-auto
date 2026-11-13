@@ -27,17 +27,18 @@ class M2GuidelinesTests(unittest.TestCase):
     tearDown = support.M2TradingPageTests.tearDown
     drain = support.M2TradingPageTests.drain
 
-    def test_help_controls_belong_to_each_page_title_and_keep_full_information(self):
+    def test_each_help_control_sits_beside_the_text_it_explains_and_keeps_full_information(self):
         for index, name in ((0, 'overview'), (3, 'trading'), (4, 'performance'), (5, 'settings')):
             self.window.navigation.setCurrentRow(index)
             header = self.window.page_headers[name]
-            controls = [header.itemAt(i).widget() for i in range(header.count())]
-            for row in self.window.pages.widget(index).findChildren(HelpText):
-                self.assertIn(row.button, controls, row.objectName())
+            title_controls = [header.itemAt(i).widget() for i in range(header.count())]
+            rows = self.window.pages.widget(index).findChildren(HelpText)
+            self.assertTrue(rows, name)
+            for row in rows:
+                self.assertNotIn(row.button, title_controls, row.objectName())
+                self.assertIs(row.button.parentWidget(), row, row.objectName())
+                self.assertIs(row.summary.parentWidget(), row, row.objectName())
                 self.assertEqual(row.button.toolTip(), row.details.text())
-                self.assertTrue(row.details.text())
-                self.assertGreater(row.button.x(), controls[0].x())
-                self.assertEqual(row.button.parentWidget(), controls[0].parentWidget())
 
     def test_button_roles_are_explicit_and_at_most_one_primary_per_touched_page(self):
         control = button('v2.reconcile', 'role_probe', role='danger')

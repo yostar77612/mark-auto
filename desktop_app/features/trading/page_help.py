@@ -1,9 +1,21 @@
 """Short visible copy with complete, keyboard-accessible explanation dialogs."""
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QSizePolicy, QToolButton, QVBoxLayout, QWidget
 
 from desktop_app.strings.catalog import ui_text
+
+
+SUMMARY_WIDTH = 640
+
+
+class _Summary(QLabel):
+    """Without a stretch a word-wrapped label shrinks to a narrow column. Ask for one line of the current text in
+    the current font (wrapping only past SUMMARY_WIDTH) so the "?" sits right after a readable line."""
+
+    def sizeHint(self):
+        width = max(super().sizeHint().width(), min(self.fontMetrics().horizontalAdvance(self.text()) + 8, SUMMARY_WIDTH))
+        return QSize(width, self.heightForWidth(width))
 
 
 class HelpText(QWidget):
@@ -12,11 +24,11 @@ class HelpText(QWidget):
         self.setObjectName(name + '_help_row')
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.summary = QLabel(self)
+        self.summary = _Summary(self)
         self.summary.setObjectName(name)
         self.summary.setTextFormat(Qt.TextFormat.PlainText)
         self.summary.setWordWrap(True)
-        layout.addWidget(self.summary, 1)
+        layout.addWidget(self.summary)
         self.button = QToolButton(self)
         self.button.setObjectName(name + '_help')
         self.button.setText(ui_text('help.symbol'))
@@ -24,6 +36,7 @@ class HelpText(QWidget):
         self.button.setProperty('tradingHelp', True)
         self.button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         (header or layout).addWidget(self.button, alignment=Qt.AlignmentFlag.AlignTop)
+        layout.addStretch(1)  # the "?" stays right after the text it explains
         self.dialog = QDialog(self)
         self.dialog.setObjectName(name + '_help_details')
         self.dialog.setWindowTitle(ui_text('help.accessible'))
