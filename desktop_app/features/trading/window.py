@@ -38,7 +38,7 @@ from desktop_app.features.trading.sinopac_ui import CONNECTION_ACTIONS, complete
 
 class _Operation(QThread):
     completed = Signal(object, object)
-    failed = Signal()
+    failed = Signal(str)
 
     def __init__(self, facade: TradingFacade, command: UiCommand | None, parent, *, refresh_before: bool = False):
         super().__init__(parent)
@@ -66,8 +66,10 @@ class _Operation(QThread):
                     else (self.facade.execute(self.command) if self.command is not None else None)
                 )
             state = self.facade.snapshot()
-        except Exception:
-            self.failed.emit()
+        except Exception as error:
+            # Only a fixed code or the exception's class name leaves the worker: never the message, which may be private.
+            code = ''.join(char for char in str(getattr(error, 'code', '') or '') if char.isalnum() or char in '_.')[:64]
+            self.failed.emit(code or type(error).__name__)
         else:
             self.completed.emit(state, receipt)
 
@@ -351,12 +353,12 @@ class TradingWindow(QMainWindow):
                         self.strategies.selectRow(row)
                         break
 
-    def _failed(self) -> None:
+    def _failed(self, reason: str = '') -> None:
         if self._operation is not None and self._operation.command is not None and self._operation.command.action is UiAction.BUILD_AUTO_STRATEGY:
             self.auto_strategies.failed()
         self._engine_reachable = False
         self.broker_panel.unavailable()
-        self._feedback(ui_text('v2.connection_failed'))
+        self._feedback(ui_text('v2.connection_failed') + (' ' + ui_text('v2.failure_code').format(reason) if reason else ''))
 
     def _finished(self) -> None:
         operation = self._operation

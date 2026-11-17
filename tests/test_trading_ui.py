@@ -257,7 +257,34 @@ class TradingUiTests(unittest.TestCase):
         self.drain()
         self.assertEqual(self.window.positions.rowCount(), 1)
         self.assertEqual(self.window.state.version, 1)
-        self.assertEqual(self.window.notice.text(), ui_text('v2.connection_failed'))
+        self.assertEqual(self.window.notice.text(), ui_text('v2.connection_failed') + ' ' + ui_text('v2.failure_code').format('ConnectionError'))
+        self.assertNotIn('private', self.window.notice.text())
+
+    def test_an_odd_failure_code_is_reduced_to_a_short_safe_identifier(self):
+        from quantlab.trading.domain.validation import DomainError
+
+        def refuse():
+            raise DomainError('x' * 200 + ' <b>private</b>' + chr(10) + 'secret', 'm')
+
+        self.facade.snapshot = refuse
+        self.window.refresh()
+        self.drain()
+        notice = self.window.notice.text()
+        self.assertIn('x' * 64, notice)
+        self.assertNotIn('x' * 65, notice)
+        self.assertNotIn('<', notice)
+        self.assertNotIn(chr(10), notice)
+
+    def test_a_refused_request_shows_its_fixed_code_not_its_message(self):
+        from quantlab.trading.domain.validation import DomainError
+
+        def refuse():
+            raise DomainError('state_conflict', 'private detail that must stay out of the UI')
+
+        self.facade.snapshot = refuse
+        self.window.refresh()
+        self.drain()
+        self.assertIn('state_conflict', self.window.notice.text())
         self.assertNotIn('private', self.window.notice.text())
 
     def test_strategy_page_has_one_create_button_then_a_wrapping_toolbar_with_delete_last(self):
