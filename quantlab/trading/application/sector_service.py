@@ -27,8 +27,9 @@ def _quotes_are_from_today(rows: dict[str, QuoteRow], fetched: datetime) -> bool
     """In session, at least one quote must carry today's (Taipei) date; outside it nothing is judged."""
     if not in_session(fetched):
         return True
-    latest = max((row.at for row in rows.values()), default=None)
-    return latest is not None and latest.astimezone(_TAIPEI).date() == fetched.astimezone(_TAIPEI).date()
+    today = fetched.astimezone(_TAIPEI).date()
+    # any(), not max(): one stray future-dated row must not switch a whole trading day off.
+    return any(row.at.astimezone(_TAIPEI).date() == today for row in rows.values())
 
 
 def in_session(now: datetime) -> bool:

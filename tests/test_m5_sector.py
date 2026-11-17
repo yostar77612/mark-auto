@@ -265,6 +265,27 @@ class ServiceTests(unittest.TestCase):
         self.service.disconnected()
         self.assertTrue(self.service._data_is_today)
 
+    def test_one_fresh_row_among_stale_ones_keeps_the_round_and_a_future_row_does_not_switch_it_off(self):
+        calls = []
+        self.service.on_round = lambda now, stats: calls.append(now) or ()
+        yesterday = OPEN - timedelta(days=1)
+        self.rows[:] = [replace(item, at=yesterday) for item in self.rows]
+        self.rows[0] = replace(self.rows[0], at=OPEN)  # thinly traded stocks keep old timestamps all day
+        self.service.refresh()
+        self.assertEqual(calls, [OPEN])
+        self.rows[1] = replace(self.rows[1], at=OPEN + timedelta(days=1))  # a stray future-dated row
+        self.service.refresh()
+        self.assertEqual(calls, [OPEN, OPEN])
+        self.assertEqual(self.service.board().state, 'LIVE')
+
+    def test_a_round_without_any_rows_is_not_judged_in_session(self):
+        calls = []
+        self.service.on_round = lambda now, stats: calls.append(now) or ()
+        self.rows[:] = []
+        self.service.refresh()
+        self.assertEqual(calls, [])
+        self.assertEqual(self.service.board().state, 'CLOSED')
+
     def test_live_board_ranks_by_equal_weight_and_lists_members_with_leader(self):
         self.service.refresh()
         view = self.service.board('industry.24')
