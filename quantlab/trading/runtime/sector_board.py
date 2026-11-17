@@ -9,7 +9,7 @@ from quantlab.trading.adapters.shioaji.snapshot_poller import ShioajiSnapshotSou
 from quantlab.trading.adapters.storage.sector_store import SectorGroupStore
 from quantlab.trading.adapters.storage.sector_minute_store import SectorMinuteStore
 from quantlab.trading.application.sector_group_editor import SectorGroupEditor
-from quantlab.trading.application.sector_minutes import MinuteAggregator
+from quantlab.trading.application.sector_minutes import MinuteAggregator, sector_history
 from quantlab.trading.application.sector_monitor import SectorMonitor
 from quantlab.trading.application.sector_service import SectorService
 from quantlab.trading.domain.validation import DomainError
@@ -36,6 +36,15 @@ class NullMinuteStore:
 
     def share_baseline(self, before, minute, days=5):
         return {}
+
+    def trade_days(self):
+        return ()
+
+    def day_minutes(self, trade_date):
+        return ()
+
+    def load_minute(self, trade_date, minute):
+        return ()
 
     def mark_alert(self, trade_date, kind, group_id, direction, minute):
         return None
@@ -164,4 +173,5 @@ def attach_sector(bundle):
     connection.on_connected, connection.on_disconnected = connected, disconnected
     bundle.sector, bundle.sector_poller = service, poller
     bundle.sector_settings, bundle.sector_minute_store = settings, minute_store
+    bundle.sector_history = lambda query: sector_history(minute_store, query, service.group_name)
     bundle.sector_groups = SectorGroupEditor(store, lambda: connection.directory.items, service.recompute)
