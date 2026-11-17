@@ -43,6 +43,14 @@ class DesktopThemeTests(unittest.TestCase):
         for state in ('success', 'warning', 'danger', 'neutral'):
             self.assertIn(f'[status="{state}"]', qss)
 
+    def test_scrollbars_follow_the_theme_instead_of_the_platform_default(self):
+        for name in ('dark', 'light'):
+            qss = build_app_stylesheet(name)
+            for selector in ('QScrollBar:vertical', 'QScrollBar:horizontal', 'QScrollBar::handle:vertical', 'QScrollBar::handle:horizontal'):
+                self.assertIn(selector, qss, name)
+            self.assertNotIn('@', qss)
+        self.assertNotEqual(build_app_stylesheet('dark'), build_app_stylesheet('light'))
+
     def test_apply_and_status_refresh_offscreen(self):
         self.assertEqual(self.host.styleSheet(), build_app_stylesheet())
         label = QLabel('status', self.host)
