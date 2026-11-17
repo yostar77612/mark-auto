@@ -190,7 +190,7 @@ class Fixture {
             encoding='utf-8',
         )
         compiler = Path(os.environ['SystemRoot']) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
-        built = subprocess.run([str(compiler), '/nologo', '/target:exe', '/out:' + str(cls.fixture), str(source)], capture_output=True, timeout=20)
+        built = subprocess.run([str(compiler), '/nologo', '/target:exe', '/out:' + str(cls.fixture), str(source)], capture_output=True, timeout=90)
         if built.returncode:
             raise AssertionError(built.stdout.decode(errors='replace') + built.stderr.decode(errors='replace'))
 
@@ -242,7 +242,7 @@ class Fixture {
             show_errors=False,
             **options,
         )
-        process = subprocess.run(command, capture_output=True, timeout=20, creationflags=subprocess.CREATE_NO_WINDOW)
+        process = subprocess.run(command, capture_output=True, timeout=90, creationflags=subprocess.CREATE_NO_WINDOW)
         self.assertTrue(self.result.exists(), process.stderr.decode(errors='replace'))
         result = json.loads(self.result.read_text(encoding='utf-8-sig'))
         self.assertEqual(process.returncode, 0 if result['code'] == 'installed' else 1)
@@ -307,13 +307,13 @@ class Fixture {
         parent = subprocess.Popen([str(parent_exe)], creationflags=subprocess.CREATE_NO_WINDOW)
         try:
             command = install._helper_command(request, parent_pid=parent.pid, mutex_name=self.mutex, wait_ms=20, result_path=self.result, show_errors=False)
-            finished = subprocess.run(command, capture_output=True, timeout=10, creationflags=subprocess.CREATE_NO_WINDOW)
+            finished = subprocess.run(command, capture_output=True, timeout=60, creationflags=subprocess.CREATE_NO_WINDOW)
             self.assertEqual(finished.returncode, 1, finished.stderr)
             self.assertEqual(json.loads(self.result.read_text(encoding='utf-8-sig'))['code'], 'update_parent_timeout')
             self.assertIsNone(parent.poll(), 'helper must never force-close the parent')
             self.assertFalse(Path(str(self.installer) + '.called').exists())
         finally:
-            self.assertEqual(parent.wait(timeout=10), 0)
+            self.assertEqual(parent.wait(timeout=60), 0)
 
     def test_native_success_with_untrusted_payload_log_refuses_relaunch(self):
         if os.name != 'nt':

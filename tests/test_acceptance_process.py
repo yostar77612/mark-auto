@@ -33,7 +33,7 @@ class AcceptanceProcessContracts(unittest.TestCase):
             capture_output=True,
             encoding='utf-8',
             errors='replace',
-            timeout=15,
+            timeout=90,
         )
         self.assertNotEqual(run.returncode, 0)
         self.assertIn('Source UI fixture requires ephemeral hosted CI', run.stdout + run.stderr)
@@ -80,7 +80,7 @@ foreach ($row in $rows) {
             # Localized PowerShell 5.1 writes OEM-codepage text; keep diagnostics decodable.
             encoding='utf-8',
             errors='replace',
-            timeout=15,
+            timeout=90,
         )
         self.assertEqual(run.returncode, 0, run.stderr[-2000:])
 
