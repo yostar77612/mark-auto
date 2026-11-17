@@ -68,7 +68,8 @@ class _Operation(QThread):
             state = self.facade.snapshot()
         except Exception as error:
             # Only a fixed code or the exception's class name leaves the worker: never the message, which may be private.
-            self.failed.emit(str(getattr(error, 'code', '') or type(error).__name__))
+            code = ''.join(char for char in str(getattr(error, 'code', '') or '') if char.isalnum() or char in '_.')[:64]
+            self.failed.emit(code or type(error).__name__)
         else:
             self.completed.emit(state, receipt)
 
