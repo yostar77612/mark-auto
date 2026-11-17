@@ -260,6 +260,32 @@ class TradingUiTests(unittest.TestCase):
         self.assertEqual(self.window.notice.text(), ui_text('v2.connection_failed'))
         self.assertNotIn('private', self.window.notice.text())
 
+    def test_strategy_page_has_one_create_button_then_a_toolbar_with_delete_apart(self):
+        self.window.navigation.setCurrentRow(1)
+        QApplication.processEvents()
+        window = self.window
+        create = window.new_strategy_button
+        self.assertEqual(create.property('role'), 'primary')
+        manage = [getattr(window, name) for name in ('deploy_button', 'disable_strategy_button', 'version_button', 'clone_strategy_button')]
+        more = [getattr(window, name) for name in ('go_strategy_research', 'strategy_step')] + [window.delete_strategy_button]
+        parent = create.parentWidget()
+        self.assertEqual({widget.parentWidget() for widget in manage + more}, {parent})
+
+        def corner(widget):
+            point = widget.mapTo(parent, widget.rect().topLeft())
+            return point.x(), point.y()
+
+        for row in (manage, more):
+            xs = [corner(widget)[0] for widget in row]
+            self.assertEqual(xs, sorted(xs))  # a single left-to-right row
+            self.assertEqual(len({corner(widget)[1] for widget in row}), 1)
+            for widget in row:  # every label is fully readable, not squeezed
+                self.assertGreaterEqual(widget.width(), widget.fontMetrics().horizontalAdvance(widget.text()))
+        self.assertLess(corner(create)[1], corner(manage[0])[1])
+        self.assertLess(corner(manage[0])[1], corner(more[0])[1])
+        self.assertGreater(corner(window.delete_strategy_button)[0], corner(window.strategy_step)[0] + window.strategy_step.width())
+        self.assertEqual(window.delete_strategy_button.property('role'), 'danger')
+
     def test_wizard_summary_uses_human_environment_labels_without_changing_dto(self):
         for environment, key in ((Environment.LOCAL, 'v2.local'), (Environment.BROKER_SIMULATION, 'v2.broker_sim'), (Environment.LIVE, 'v2.live')):
             state = replace(self.window.state, environment=environment)

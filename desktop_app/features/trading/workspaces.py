@@ -175,6 +175,31 @@ def _buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> 
     layout.addLayout(grid)
 
 
+def _strategy_buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> None:
+    """One prominent create button, then two compact rows for the actions that need a selected strategy.
+
+    The labels are long (up to nine characters), so one row of seven does not fit the page; two rows keep every
+    label readable. Delete sits apart at the right end so it is not hit next to the everyday actions.
+    """
+    widgets = {}
+    for key, name, callback in definitions:
+        widget = button(key, name)
+        widget.clicked.connect(callback)
+        widgets[name] = widget
+        setattr(self, name, widget)
+    layout.addWidget(self.new_strategy_button, alignment=Qt.AlignmentFlag.AlignLeft)
+    manage, more = QHBoxLayout(), QHBoxLayout()
+    for name in ('deploy_button', 'disable_strategy_button', 'version_button', 'clone_strategy_button'):
+        manage.addWidget(widgets[name])
+    manage.addStretch(1)
+    for name in ('go_strategy_research', 'strategy_step'):
+        more.addWidget(widgets[name])
+    more.addStretch(1)
+    more.addWidget(widgets['delete_strategy_button'])
+    layout.addLayout(manage)
+    layout.addLayout(more)
+
+
 def _overview_page(self) -> None:
     layout = _page(self, 'overview')
     self.dashboard = DashboardWidget(lambda action: confirm_trading_action(self, action), help_header=self.page_headers['overview'])
@@ -206,7 +231,7 @@ def _strategy_page(self) -> None:
     self.strategy_tabs.setAccessibleName(ui_text('v2.strategies'))
     listing, research = QWidget(), QWidget()
     listing_layout, research_layout = QVBoxLayout(listing), QVBoxLayout(research)
-    _buttons(
+    _strategy_buttons(
         self,
         listing_layout,
         (
