@@ -35,6 +35,7 @@ from desktop_app.features.trading.trading_page import (
     configure_trading_positions,
     confirm_trading_action,
 )
+from desktop_app.components.flow_layout import FlowLayout
 from desktop_app.features.trading.page_help import HelpText
 from desktop_app.features.trading.strategy_controls import StrategyControls
 from desktop_app.features.trading.trading_page_widgets import EmptyTableState, PositionColumns
@@ -176,10 +177,11 @@ def _buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> 
 
 
 def _strategy_buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> None:
-    """One prominent create button, then two compact rows for the actions that need a selected strategy.
+    """One prominent create button, then the actions that need a selected strategy in a wrapping toolbar.
 
-    The labels are long (up to nine characters), so one row of seven does not fit the page; two rows keep every
-    label readable. Delete sits apart at the right end so it is not hit next to the everyday actions.
+    The labels are long (up to nine characters) and the page can be as narrow as ~390 px, so the toolbar wraps
+    instead of squeezing: every label stays readable at any width. Delete comes last so it is not hit next to the
+    everyday actions.
     """
     widgets = {}
     for key, name, callback in definitions:
@@ -188,16 +190,18 @@ def _strategy_buttons(self, layout, definitions: tuple[tuple[str, str, object], 
         widgets[name] = widget
         setattr(self, name, widget)
     layout.addWidget(self.new_strategy_button, alignment=Qt.AlignmentFlag.AlignLeft)
-    manage, more = QHBoxLayout(), QHBoxLayout()
-    for name in ('deploy_button', 'disable_strategy_button', 'version_button', 'clone_strategy_button'):
-        manage.addWidget(widgets[name])
-    manage.addStretch(1)
-    for name in ('go_strategy_research', 'strategy_step'):
-        more.addWidget(widgets[name])
-    more.addStretch(1)
-    more.addWidget(widgets['delete_strategy_button'])
-    layout.addLayout(manage)
-    layout.addLayout(more)
+    toolbar = FlowLayout()
+    for name in (
+        'deploy_button',
+        'disable_strategy_button',
+        'version_button',
+        'clone_strategy_button',
+        'go_strategy_research',
+        'strategy_step',
+        'delete_strategy_button',
+    ):
+        toolbar.addWidget(widgets[name])
+    layout.addLayout(toolbar)
 
 
 def _overview_page(self) -> None:
