@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from quantlab.trading.domain.sector import SectorStat
 from quantlab.trading.domain.sector_alerts import SESSION_OPEN, MinuteStat, SectorAlert, SectorAlertParams, in_alert_window, judge_burst, minute_direction
 from quantlab.trading.domain.validation import DomainError
+from .sector_contracts import ShareBaseline
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 _MINUTE = timedelta(minutes=1)
@@ -30,11 +31,13 @@ class MinuteAggregator:
         self._previous: dict[str, tuple[int, int, int]] = {}  # group -> (cumulative amount, equal pct bps, valid members)
         self._history: dict[str, deque[int]] = {}
         self._last_alert: dict[tuple[str, str], datetime] = {}
+        self.baselines: tuple[ShareBaseline, ...] = ()  # refreshed once per finished minute (poller thread)
         self.warning = ''
 
     def _reset(self, day: date) -> None:
         self._day, self._pending_minute, self._pending = day, None, {}
         self._previous_minute, self._previous, self._history, self._last_alert = None, {}, {}, {}
+        self.baselines = ()
         try:
             self.store.purge(day)
             for item in self.store.load_day(day):
@@ -96,6 +99,11 @@ class MinuteAggregator:
             self.store.append(tuple(rows), minute.date())
         except DomainError:
             self.warning = 'sector_minutes_unavailable'
+        try:
+            found = self.store.share_baseline(minute.date(), minute.strftime('%H:%M'))
+            self.baselines = tuple(ShareBaseline(group_id, bps, days) for group_id, (bps, days) in sorted(found.items()))
+        except DomainError:
+            self.baselines = ()
         self._previous = {group_id: (stat.amount, _bps(stat.equal_pct), stat.valid_count) for group_id, stat in self._pending.items()}
         self._previous_minute = minute
         return tuple(alerts)

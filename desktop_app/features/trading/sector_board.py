@@ -21,7 +21,7 @@ _TAIPEI = ZoneInfo('Asia/Taipei')
 REFRESH_MS = 2000
 FILTERS = (('all', 'sector.filter_all'), ('INDUSTRY', 'sector.filter_industry'), ('CONCEPT', 'sector.filter_concept'))
 PERIODS = (('1m', 'terminal.period_1m'), ('5m', 'terminal.period_5m'), ('15m', 'terminal.period_15m'), ('1d', 'terminal.period_1d'))
-RANK_COLUMNS = ('group', 'kind', 'pct', 'breadth', 'limit_up', 'amount', 'share', 'count')
+RANK_COLUMNS = ('group', 'kind', 'pct', 'breadth', 'limit_up', 'amount', 'share', 'share_vs', 'count')
 MEMBER_COLUMNS = ('code', 'name', 'price', 'change', 'ratio', 'amount', 'side')
 
 
@@ -54,6 +54,16 @@ def alert_text(alert):
     return ui_text('sector.alert_burst_text').format(
         when, alert.group_name, words[alert.direction], f'{Decimal(alert.amount) / eok:.1f}', f'{Decimal(alert.baseline) / eok:.1f}', f'{alert.ratio:.1f}'
     )
+
+
+def share_versus(share, baseline):
+    """Today's cumulative share as a multiple of the same-time average of earlier days: (text, sort value, colour, tip)."""
+    if share is None or baseline is None:
+        return ui_text('sector.no_value'), None, None, None
+    ratio = (share * 10000 / baseline.share_bps).quantize(Decimal('0.1'))
+    if baseline.days >= 5:
+        return ui_text('sector.share_vs_value').format(ratio), ratio, None, None
+    return ui_text('sector.share_vs_partial').format(ratio, baseline.days), ratio, None, None
 
 
 def clock_text(moment):
@@ -128,6 +138,7 @@ class SectorBoardWidget(QWidget):
         splitter.setChildrenCollapsible(False)
         self.rank = _table('sector_rank', [ui_text('sector.col_' + name) for name in RANK_COLUMNS])
         self.rank.setAccessibleName(ui_text('sector.rank_title'))
+        self.rank.horizontalHeaderItem(RANK_COLUMNS.index('share_vs')).setToolTip(ui_text('sector.share_vs_tip'))
         self.rank.itemClicked.connect(lambda item: self.select_group(self.rank.item(item.row(), 0).data(Qt.ItemDataRole.UserRole)))
         self.rank.horizontalHeader().sectionClicked.connect(lambda column: self._sort(self.rank, 'rank_sort', column))
         self.members = _table(
@@ -353,6 +364,7 @@ class SectorBoardWidget(QWidget):
 
     def _render_rank(self, view):
         rows = []
+        baselines = {item.group_id: item for item in view.baselines}
         for stat in view.groups:
             if self.filter != 'all' and stat.kind != self.filter:
                 continue
@@ -371,6 +383,7 @@ class SectorBoardWidget(QWidget):
                         (str(stat.limit_up), stat.limit_up, None, None),
                         (amount_text(stat.amount), stat.amount, None, None),
                         (percent_text(stat.share * 100, signed=False) if stat.share is not None else ui_text('sector.no_value'), stat.share, None, None),
+                        share_versus(stat.share, baselines.get(stat.group_id)),
                         (f'{stat.valid_count}/{stat.listed_count}', stat.valid_count, None, None),
                     ),
                 )

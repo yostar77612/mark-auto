@@ -15,7 +15,7 @@ from quantlab.trading.domain.sector import QuoteRow, SectorGroup, SectorStat, co
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 from quantlab.trading.ports.sector import SnapshotSourcePort
-from .sector_contracts import MemberView, MonitorCount, SectorBoardView
+from .sector_contracts import MemberView, MonitorCount, SectorBoardView, ShareBaseline
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 logger = logging.getLogger(__name__)
@@ -62,6 +62,7 @@ class SectorService:
         self.on_alert: Callable[[SectorAlert], None] = lambda alert: None
         self.monitor_info: Callable[[], tuple[tuple[str, ...], tuple[tuple[str, int, int], ...]]] = lambda: ((), ())
         self.side_ratio: Callable[[str], Decimal | None] = lambda code: None
+        self.share_baselines: Callable[[], tuple[ShareBaseline, ...]] = lambda: ()
 
     def stocks(self) -> tuple[WatchInstrument, ...]:
         return tuple(item for item in self.directory() if item.kind is WatchKind.STOCK and eligible_stock(item.code))
@@ -184,6 +185,7 @@ class SectorService:
                 tuple(reversed(self._alerts)),
                 monitored,
                 tuple(MonitorCount(*item) for item in counts),
+                self.share_baselines(),
             )
 
     def _members(self, group_id: str) -> tuple[MemberView, ...]:

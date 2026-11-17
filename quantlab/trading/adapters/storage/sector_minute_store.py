@@ -133,3 +133,25 @@ class SectorMinuteStore:
             raise DomainError('sector_minutes_unavailable', 'marks') from None
         day = trade_date.isoformat()
         return {(group_id, direction): datetime.fromisoformat(f'{day}T{minute}:00+08:00') for group_id, direction, minute in rows}
+
+    def share_baseline(self, before: date, minute: str, days: int = 5) -> dict[str, tuple[int, int]]:
+        """Average cumulative share (bps) per group at `minute` (HH:MM) over the latest `days` stored trading days
+        before `before`; each day contributes its last stored minute at or before `minute`. -> {group: (bps, days)}"""
+        query = '''
+            WITH days AS (
+                SELECT DISTINCT trade_date FROM sector_minutes WHERE trade_date < ? ORDER BY trade_date DESC LIMIT ?
+            ), last AS (
+                SELECT trade_date, group_id, MAX(minute) AS minute FROM sector_minutes
+                WHERE trade_date IN (SELECT trade_date FROM days) AND minute <= ? AND amount_share_bps > 0
+                GROUP BY trade_date, group_id
+            )
+            SELECT s.group_id, AVG(s.amount_share_bps), COUNT(*) FROM sector_minutes s
+            JOIN last l ON s.trade_date = l.trade_date AND s.group_id = l.group_id AND s.minute = l.minute
+            GROUP BY s.group_id
+        '''
+        try:
+            with self._lock:
+                rows = self._db.execute(query, (before.isoformat(), days, minute)).fetchall()
+        except sqlite3.Error:
+            raise DomainError('sector_minutes_unavailable', 'baseline') from None
+        return {group_id: (round(average), count) for group_id, average, count in rows}

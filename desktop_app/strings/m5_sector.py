@@ -123,4 +123,13 @@ ENTRIES = (
     (78, 3359, 'sector.monitor_mark', '●'),
     (78, 3360, 'sector.monitor_count', '監控 {0}/{1} 檔'),
     (78, 3361, 'sector.monitor_limited', '訂閱額度不足，僅監控部分成分股'),
+    (78, 3368, 'sector.col_share_vs', '比重/5日'),
+    (
+        78,
+        3369,
+        'sector.share_vs_tip',
+        '今日累積成交比重 ÷ 前 5 個交易日同一時刻的平均比重；大於 1 表示今天資金比平常集中在這個族群。未滿 5 日時括號標示實際天數。',
+    ),
+    (78, 3370, 'sector.share_vs_value', '{0}×'),
+    (78, 3371, 'sector.share_vs_partial', '{0}×（{1} 日）'),
 )

@@ -116,6 +116,24 @@ class StoreTests(unittest.TestCase):
         self.assertFalse(rows['g2'].complete)
         self.assertEqual(self.store.load_day(date(2026, 11, 10)), ())
 
+    def test_share_baseline_averages_the_same_time_of_the_last_five_stored_days(self):
+        def share(day, hhmm, group, bps):
+            minute = datetime(day.year, day.month, day.day, int(hhmm[:2]), int(hhmm[3:]), tzinfo=TAIPEI)
+            return MinuteStat(minute.astimezone(timezone.utc), group, 1, 10, bps, 0, 0, 0, 0, 5, True)
+
+        today = date(2026, 11, 16)
+        days = [today - timedelta(days=offset) for offset in (1, 2, 3, 4, 5, 6, 7)]
+        for index, day in enumerate(days):
+            # the last minute at or before 10:00 counts; later minutes of the same day must not
+            self.store.append((share(day, '09:58', 'g1', 100 * (index + 1)), share(day, '10:30', 'g1', 9999)), day)
+        self.store.append((share(days[0], '09:00', 'g2', 400), share(days[0], '09:01', 'g2', 0)), days[0])
+        self.store.append((share(today, '09:30', 'g1', 7777),), today)
+        found = self.store.share_baseline(today, '10:00')
+        self.assertEqual(found['g1'], (300, 5))  # 100..500 from the five latest earlier days; today and 10:30 ignored
+        self.assertEqual(found['g2'], (400, 1))  # a zero share (no value) is not a data point
+        self.assertEqual(self.store.share_baseline(today, '08:30'), {})
+        self.assertEqual(self.store.share_baseline(days[-1], '10:00'), {})
+
     def test_purge_keeps_30_days(self):
         old, keep = date(2026, 11, 9) - timedelta(days=RETAIN_DAYS + 1), date(2026, 11, 9) - timedelta(days=RETAIN_DAYS)
         for day in (old, keep):
@@ -263,6 +281,23 @@ class ReplayTests(unittest.TestCase):
         tomorrow = MinuteAggregator(store, SectorAlertParams, NAMES.get)
         tomorrow.on_round(DAY.replace(hour=10, minute=1) + timedelta(days=1), (stat('g1', 10**10, 0),))
         self.assertEqual(tomorrow._last_alert, {})
+
+    def test_each_finished_minute_refreshes_the_share_baseline_and_a_new_day_clears_it(self):
+        aggregator, store, temp, alerts = replay()
+        self.addCleanup(temp.cleanup)
+        self.addCleanup(store.close)
+        self.assertEqual(aggregator.baselines, ())  # the replay day is the only stored day
+        tomorrow = MinuteAggregator(store, SectorAlertParams, NAMES.get)
+        start = DAY.replace(hour=9, minute=40) + timedelta(days=1)
+        for seconds in (0, 50, 60):
+            tomorrow.on_round(start + timedelta(seconds=seconds), (stat('g1', 10**10, 0), stat('g2', 10**9, 0)))
+        by_group = {item.group_id: item for item in tomorrow.baselines}
+        self.assertEqual(set(by_group), {'g1', 'g2', 'g3'})  # every group stored at 09:40 of the replay day
+        stored = {item.group_id: item.share_bps for item in store.load_day(DAY.date()) if item.minute.astimezone(TAIPEI).strftime('%H:%M') == '09:40'}
+        self.assertEqual({group: by_group[group].share_bps for group in by_group}, {group: stored[group] for group in by_group})
+        self.assertTrue(all(item.days == 1 for item in tomorrow.baselines))
+        later = tomorrow.on_round(start + timedelta(days=1), (stat('g1', 10**10, 0),))
+        self.assertEqual((later, tomorrow.baselines), ((), ()))
 
     def test_restart_inside_a_cooldown_does_not_repeat_the_alert(self):
         temp = TemporaryDirectory(dir=Path.cwd())
