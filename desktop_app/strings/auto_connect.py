@@ -15,4 +15,5 @@ ENTRIES = (
     (78, 3372, 'm2t.header_short', '{0} · {1} 項待處理'),
     (78, 3373, 'performance.empty', '尚無績效紀錄；策略成交並完成對帳後會顯示在這裡。'),
     (78, 3389, 'v2.failure_code', '（原因代碼：{0}）'),
+    (78, 3390, 'm2.connection.credential_unavailable', '無法讀取金鑰引用；請到 Windows 認證管理員確認該項目存在且內容完整，或重新儲存金鑰。'),
 )
