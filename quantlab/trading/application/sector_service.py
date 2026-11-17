@@ -23,6 +23,15 @@ SESSION_START, SESSION_END = time(8, 55), time(13, 35)
 STALE_SECONDS = 30
 
 
+def _quotes_are_from_today(rows: dict[str, QuoteRow], fetched: datetime) -> bool:
+    """In session, at least one quote must carry today's (Taipei) date; outside it nothing is judged."""
+    if not in_session(fetched):
+        return True
+    today = fetched.astimezone(_TAIPEI).date()
+    # any(), not max(): one stray future-dated row must not switch a whole trading day off.
+    return any(row.at.astimezone(_TAIPEI).date() == today for row in rows.values())
+
+
 def in_session(now: datetime) -> bool:
     local = now.astimezone(_TAIPEI)
     return local.weekday() < 5 and SESSION_START <= local.time() <= SESSION_END
@@ -56,6 +65,7 @@ class SectorService:
         self._failed = False
         self._first_limit_up: dict[str, datetime] = {}
         self._limit_day: date | None = None
+        self._data_is_today = True
         self._generation = 0
         self._alerts: deque[SectorAlert] = deque(maxlen=200)
         self.on_round: Callable[[datetime, tuple[SectorStat, ...]], tuple[SectorAlert, ...]] = lambda now, stats: ()
@@ -101,6 +111,13 @@ class SectorService:
             self._stats = compute_stats(groups, rows)
             self._track_limit_up(rows)
             fetched, stats = self._fetched_at, self._stats
+            self._data_is_today = _quotes_are_from_today(rows, fetched)
+            from_today = self._data_is_today
+        if not from_today:
+            # A weekday holiday (no calendar here): the exchange is closed and every snapshot still carries the last
+            # trading day's closing totals. Storing them under today's date would pollute the 5-day baseline and
+            # replay, and judging them could raise alerts and subscribe ticks for a market that is not trading.
+            return
         # Hooks run outside the lock: they write to disk, may subscribe to ticks and may call back into the service.
         alerts = self.on_round(fetched, stats)
         with self.lock:
@@ -154,13 +171,14 @@ class SectorService:
             self._generation += 1
             self._rows, self._stats, self._groups, self._fetched_at = {}, (), {}, None
             self._first_limit_up, self._limit_day, self._failed = {}, None, False
+            self._data_is_today = True
 
     def _state(self, now: datetime) -> str:
         if not self.source.connected:
             return 'OFFLINE'
         if self._fetched_at is None:
             return 'EMPTY'
-        if not in_session(now):
+        if not in_session(now) or not self._data_is_today:
             return 'CLOSED'
         return 'STALE' if (now - self._fetched_at).total_seconds() > STALE_SECONDS else 'LIVE'
 
