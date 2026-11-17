@@ -296,6 +296,15 @@ class TradingUiTests(unittest.TestCase):
             self.assertIs(wizard.state.environment, environment)
             wizard.deleteLater()
 
+    def test_top_bar_keeps_short_labels_and_puts_the_full_text_in_the_tooltip(self):
+        bar = self.window.compact_context
+        self.assertLess(len(bar.text()), 24)
+        self.assertIn('項待處理', bar.text())
+        self.assertNotIn('淨損益', bar.text())
+        self.assertIn('淨損益', bar.toolTip())
+        self.assertIn('剩餘風險', bar.toolTip())
+        self.assertLess(self.window.automatic_controls.header.text().count('\n'), 1)
+
     def test_execution_drawdown_distinguishes_unknown_history_from_proven_zero(self):
         legacy = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
         self.window.apply_state(replace(self.window.state, version=2, performance=(legacy,)))

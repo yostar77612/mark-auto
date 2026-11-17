@@ -15,7 +15,7 @@ from desktop_app.features.trading.page_help import HelpText
 
 
 class DashboardWidget(QWidget):
-    def __init__(self, command, parent=None, *, help_header=None):
+    def __init__(self, command, parent=None):
         super().__init__(parent)
         self._identify(self, 'overview_dashboard', ui_text('v2.overview'))
         layout = QVBoxLayout(self)
@@ -58,7 +58,7 @@ class DashboardWidget(QWidget):
             lights.addWidget(light)
             self.lights[name] = light
         layout.addLayout(lights)
-        self.data_help = HelpText(ui_text('dashboard.data_status'), '', 'overview_status', self, header=help_header)
+        self.data_help = HelpText(ui_text('dashboard.data_status'), '', 'overview_status', self)
         self.status = self.data_help.summary
         layout.addWidget(self.data_help)
         self.today = self._label('dashboard_today', ui_text('dashboard.today'))

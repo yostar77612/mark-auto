@@ -13,11 +13,11 @@ from quantlab.trading.domain.models import QuantityUnit, Side
 
 
 class ManualForm(QGroupBox):
-    def __init__(self, parent=None, *, header=None):
+    def __init__(self, parent=None):
         super().__init__(ui_text('m2m.title'), parent)
         self.setObjectName('manual_simulation')
         layout = QVBoxLayout(self)
-        layout.addWidget(HelpText(ui_text('m2m.hint'), ui_text('m2m.help'), 'manual_simulation', header=header))
+        layout.addWidget(HelpText(ui_text('m2m.hint'), ui_text('m2m.help'), 'manual_simulation'))
         self.status = label('m2m.not_ready')
         self.status.setObjectName('manual_status')
         layout.addWidget(self.status)
