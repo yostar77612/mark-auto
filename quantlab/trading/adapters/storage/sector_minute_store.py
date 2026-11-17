@@ -1,4 +1,4 @@
-"""Per-minute sector statistics (sector_minutes.sqlite3); 30 trading days, never blocks the board on failure."""
+"""Per-minute sector statistics (sector_minutes.sqlite3); 30 calendar days, never blocks the board on failure."""
 
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path

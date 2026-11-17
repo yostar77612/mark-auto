@@ -163,6 +163,25 @@ class ChartTests(unittest.TestCase):
         self.assertEqual(_display_time(None, '2026-10-09'), '2026-10-09')
         self.assertEqual(_display_time(datetime(2026, 10, 9)), '時間未提供／未驗證')
 
+    def test_compact_header_gives_the_plot_more_room_and_keeps_the_legend_for_tall_charts(self):
+        plain, compact = self.widget, CandlestickChart(compact_header=True)
+        self.addCleanup(compact.close)
+        compact.set_series(fixture(), trace=self.trace, source_label='測試資料', status_label='歷史')
+        for height, rows in ((420, 1), (700, 2)):
+            plain.resize(1000, height)
+            compact.resize(1000, height)
+            self.assertEqual(plain.price_rect.top(), 86)  # the default header is unchanged
+            self.assertEqual(compact._collect_header_rows(), rows)
+            self.assertEqual(compact.price_rect.top(), 22 + 21 * rows)
+            self.assertGreater(compact.price_rect.height(), plain.price_rect.height())
+        compact.paper_orders.notice = '委託處理中'
+        compact.resize(1000, 420)
+        self.assertEqual(compact._collect_header_rows(), 2)  # a pending-order notice takes its own row
+        compact.show()
+        compact.repaint()
+        self.app.processEvents()
+        self.assertGreater(compact.last_rendered_bar_count, 0)
+
     def test_unavailable_legend_does_not_hide_zero(self):
         self.widget.set_overlays({'MA60': (None,) * 100, '零值': (Decimal(0),) * 100}, panes={'RSI14': (None,) * 100})
         self.assertEqual(self.widget._legend_label('MA60'), 'MA60 · 資料不足')
