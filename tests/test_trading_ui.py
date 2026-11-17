@@ -292,6 +292,29 @@ class TradingUiTests(unittest.TestCase):
         rows = {widget.mapTo(parent, widget.rect().topLeft()).y() for widget in toolbar}
         self.assertLessEqual(len(rows), 2)  # the default window needs at most two rows
 
+    def test_a_hidden_toolbar_button_leaves_no_gap_in_the_wrapping_toolbar(self):
+        window = self.window
+        window.navigation.setCurrentRow(1)
+        window.resize(1180, 760)
+        QApplication.processEvents()
+        parent = window.delete_strategy_button.parentWidget()
+
+        def gap():
+            step, delete = window.strategy_step, window.delete_strategy_button
+            return delete.mapTo(parent, delete.rect().topLeft()).x() - (step.mapTo(parent, step.rect().topRight()).x() + 1)
+
+        before = window.clone_strategy_button.mapTo(parent, window.clone_strategy_button.rect().topLeft())
+        window.strategy_step.hide()
+        QApplication.processEvents()
+        after = window.delete_strategy_button.mapTo(parent, window.delete_strategy_button.rect().topLeft())
+        research = window.go_strategy_research
+        right_of_research = research.mapTo(parent, research.rect().topRight()).x() + 1
+        self.assertEqual(after.x() - right_of_research, 8)  # exactly one spacing between neighbours, not two
+        self.assertEqual(window.clone_strategy_button.mapTo(parent, window.clone_strategy_button.rect().topLeft()), before)
+        window.strategy_step.show()
+        QApplication.processEvents()
+        self.assertEqual(gap(), 8)
+
     def test_wizard_summary_uses_human_environment_labels_without_changing_dto(self):
         for environment, key in ((Environment.LOCAL, 'v2.local'), (Environment.BROKER_SIMULATION, 'v2.broker_sim'), (Environment.LIVE, 'v2.live')):
             state = replace(self.window.state, environment=environment)
