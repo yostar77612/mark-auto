@@ -35,6 +35,7 @@ from desktop_app.features.trading.trading_page import (
     configure_trading_positions,
     confirm_trading_action,
 )
+from desktop_app.features.trading.flow_layout import FlowLayout
 from desktop_app.features.trading.page_help import HelpText
 from desktop_app.features.trading.strategy_controls import StrategyControls
 from desktop_app.features.trading.trading_page_widgets import EmptyTableState, PositionColumns
@@ -175,6 +176,34 @@ def _buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> 
     layout.addLayout(grid)
 
 
+def _strategy_buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> None:
+    """One prominent create button, then the actions that need a selected strategy in a wrapping toolbar.
+
+    The labels are long (up to nine characters) and the page can be as narrow as ~390 px, so the toolbar wraps
+    instead of squeezing: every label stays readable at any width. Delete comes last so it is not hit next to the
+    everyday actions.
+    """
+    widgets = {}
+    for key, name, callback in definitions:
+        widget = button(key, name)
+        widget.clicked.connect(callback)
+        widgets[name] = widget
+        setattr(self, name, widget)
+    layout.addWidget(self.new_strategy_button, alignment=Qt.AlignmentFlag.AlignLeft)
+    toolbar = FlowLayout()
+    for name in (
+        'deploy_button',
+        'disable_strategy_button',
+        'version_button',
+        'clone_strategy_button',
+        'go_strategy_research',
+        'strategy_step',
+        'delete_strategy_button',
+    ):
+        toolbar.addWidget(widgets[name])
+    layout.addLayout(toolbar)
+
+
 def _overview_page(self) -> None:
     layout = _page(self, 'overview')
     self.dashboard = DashboardWidget(lambda action: confirm_trading_action(self, action))
@@ -206,7 +235,7 @@ def _strategy_page(self) -> None:
     self.strategy_tabs.setAccessibleName(ui_text('v2.strategies'))
     listing, research = QWidget(), QWidget()
     listing_layout, research_layout = QVBoxLayout(listing), QVBoxLayout(research)
-    _buttons(
+    _strategy_buttons(
         self,
         listing_layout,
         (

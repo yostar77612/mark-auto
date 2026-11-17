@@ -260,6 +260,38 @@ class TradingUiTests(unittest.TestCase):
         self.assertEqual(self.window.notice.text(), ui_text('v2.connection_failed'))
         self.assertNotIn('private', self.window.notice.text())
 
+    def test_strategy_page_has_one_create_button_then_a_wrapping_toolbar_with_delete_last(self):
+        window = self.window
+        window.navigation.setCurrentRow(1)
+        create = window.new_strategy_button
+        self.assertEqual(create.property('role'), 'primary')
+        names = (
+            'deploy_button',
+            'disable_strategy_button',
+            'version_button',
+            'clone_strategy_button',
+            'go_strategy_research',
+            'strategy_step',
+            'delete_strategy_button',
+        )
+        toolbar = [getattr(window, name) for name in names]
+        parent = create.parentWidget()
+        self.assertEqual({widget.parentWidget() for widget in toolbar}, {parent})
+        self.assertEqual(window.delete_strategy_button.property('role'), 'danger')
+        for width in (600, 660, 780, 1180):
+            window.resize(width, 760)
+            QApplication.processEvents()
+            positions = [(widget.mapTo(parent, widget.rect().topLeft()).y(), widget.mapTo(parent, widget.rect().topLeft()).x()) for widget in toolbar]
+            self.assertEqual(positions, sorted(positions), width)  # reading order is the declared order, delete last
+            self.assertGreater(positions[0][0], create.mapTo(parent, create.rect().topLeft()).y(), width)
+            for widget in toolbar:  # every label is fully readable at every width, down to the window minimum
+                self.assertGreaterEqual(widget.width(), widget.fontMetrics().horizontalAdvance(widget.text()), (width, widget.objectName()))
+                self.assertLessEqual(widget.mapTo(parent, widget.rect().topRight()).x(), parent.width(), (width, widget.objectName()))
+        window.resize(1180, 760)
+        QApplication.processEvents()
+        rows = {widget.mapTo(parent, widget.rect().topLeft()).y() for widget in toolbar}
+        self.assertLessEqual(len(rows), 2)  # the default window needs at most two rows
+
     def test_wizard_summary_uses_human_environment_labels_without_changing_dto(self):
         for environment, key in ((Environment.LOCAL, 'v2.local'), (Environment.BROKER_SIMULATION, 'v2.broker_sim'), (Environment.LIVE, 'v2.live')):
             state = replace(self.window.state, environment=environment)
