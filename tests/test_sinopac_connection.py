@@ -13,6 +13,7 @@ from quantlab.trading.adapters.shioaji.sdk_loader import SdkUnavailable
 from quantlab.trading.application.contracts import UiAction, UiCommand
 from quantlab.trading.application.sinopac_contracts import SinopacConnectionSettings
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.sinopac_connection import SinopacConnection
 from test_market_session import FakeApi, FakeSecrets
 
@@ -141,6 +142,18 @@ class UnifiedConnectionTests(unittest.TestCase):
         self.owner.worker.join(2)
         self.assertTrue(self.owner.cleanup_unconfirmed)
         self.assertEqual(self.owner.snapshot().error_code, 'logout_unconfirmed')
+
+    def test_unreadable_credential_reference_has_its_own_code(self):
+        def unreadable(reference):
+            raise DomainError('capability_missing', 'configured credential reference unavailable')
+
+        self.secrets.broker_credentials = unreadable
+        self.owner.execute(self.command(UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=SinopacConnectionSettings()))
+        self.owner.worker.join(2)
+        view = self.owner.snapshot()
+        self.assertEqual((view.phase, view.error_code), ('DISCONNECTED', 'credential_unavailable'))
+        self.assertFalse(self.owner.cleanup_unconfirmed)
+        self.assertNotIn('login', [call[0] for call in self.api.calls])
 
     def test_failed_logout_blocks_replacement_factory(self):
         self.connect()

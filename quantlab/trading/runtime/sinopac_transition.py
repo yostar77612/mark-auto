@@ -159,7 +159,10 @@ def connect_candidate(owner, ticket):
     candidate, market = SharedSDKSession(facade), None
     authenticated = False
     try:
-        credentials = owner.secrets.broker_credentials(owner.configuration.key_ref)
+        try:
+            credentials = owner.secrets.broker_credentials(owner.configuration.key_ref)
+        except DomainError:
+            raise DomainError('credential_unavailable') from None
         try:
             candidate.login(api_key=credentials.api_key, secret_key=credentials.secret_key)
             authenticated = True
@@ -209,6 +212,8 @@ def transition(owner, command, ticket):
             if type(error).__name__ in ('AuthError', 'ShioajiPermissionError')
             else 'reconciliation_required'
             if isinstance(error, DomainError) and error.code == 'reconciliation_required'
+            else 'credential_unavailable'
+            if isinstance(error, DomainError) and error.code == 'credential_unavailable'
             else 'broker_initialization_failed'
             if isinstance(error, DomainError) and error.code == 'broker_initialization_failed'
             else 'account_query_failed'
