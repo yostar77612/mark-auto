@@ -80,9 +80,15 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
     def COLORS(self):
         return _theme.chart_color(self, 'overlay')
 
-    def __init__(self, parent=None, *, show_volume=True):
+    # A compact header shows the source and the bar's figures on one line; the legend line only appears when the
+    # chart is tall enough that giving up a row for it still leaves a generous plot.
+    _LEGEND_MIN_HEIGHT = 520
+
+    def __init__(self, parent=None, *, show_volume=True, compact_header=False):
         super().__init__(parent)
         self.show_volume = show_volume
+        self._compact_header = compact_header
+        self._title_width = 0
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMinimumSize(360, 280)
@@ -111,10 +117,19 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.last_rendered_bar_count = 0
         self.paper_orders = _order_lines.PaperOrderLines()
 
+    def _header_rows(self):
+        """Text rows above the plot: source (+ bar figures), legend when tall, then a pending-order notice."""
+        if not self._compact_header:
+            return 3
+        return 1 + (self.height() >= self._LEGEND_MIN_HEIGHT) + bool(self.paper_orders.notice)
+
+    def _header_row_y(self, row):
+        return 22 + 21 * row
+
     @property
     def price_rect(self):
         lower = 0.55 if self.panes else 0.71 if self.show_volume else 0.88
-        top = 86 if self.show_volume else 12
+        top = (86 if not self._compact_header else 22 + 21 * self._header_rows()) if self.show_volume else 12
         return QRectF(12, top, max(40, self.width() - 102), max(50, self.height() * lower - top))
 
     @property
@@ -305,22 +320,30 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
             p.drawText(QPointF(x, y), str(s))
 
         fm = p.fontMetrics()
+        header_bottom = 43
         if self.show_volume:
-            text(
-                12,
-                22,
-                fm.elidedText(ui_text('charts.paint_event.title').format(self.source_label, self.status_label), Qt.TextElideMode.ElideRight, self.width() - 24),
-            )
-            text(12, 43, _theme.chart_legend(self))
-            if self.paper_orders.notice:
-                text(12, 81, self.paper_orders.notice)
+            title = ui_text('charts.paint_event.title').format(self.source_label, self.status_label)
+            text(12, 22, fm.elidedText(title, Qt.TextElideMode.ElideRight, self.width() - 24))
+            if self._compact_header:
+                self._title_width = min(fm.horizontalAdvance(title), self.width() - 24)
+                row = 1
+                if self.height() >= self._LEGEND_MIN_HEIGHT:
+                    text(12, self._header_row_y(row), _theme.chart_legend(self))
+                    row += 1
+                if self.paper_orders.notice:
+                    text(12, self._header_row_y(row), self.paper_orders.notice)
+                header_bottom = self._header_row_y(self._header_rows() - 1)
+            else:
+                text(12, 43, _theme.chart_legend(self))
+                if self.paper_orders.notice:
+                    text(12, 81, self.paper_orders.notice)
         self.last_rendered_bar_count = 0
         if self.error or not self.bars:
             self.setToolTip('')
             message = self.error or ui_text('charts.paint_event.no_data')
             message_rect = self.rect()
-            if self.show_volume and fm.boundingRect(message_rect, Qt.AlignmentFlag.AlignCenter, message).top() <= 43 + fm.descent():
-                message_rect.setTop(43 + fm.descent() + 4)
+            if self.show_volume and fm.boundingRect(message_rect, Qt.AlignmentFlag.AlignCenter, message).top() <= header_bottom + fm.descent():
+                message_rect.setTop(header_bottom + fm.descent() + 4)
             p.drawText(message_rect, Qt.AlignmentFlag.AlignCenter, message)
             p.end()
             return

@@ -16,8 +16,11 @@ def _prepare_chart_geometry(self, fm, text, start, end, visible, r):
         self.price_text(d['change_text']),
         d['volume'] if d['volume'] is not None else ui_text('charts.paint_event.unknown'),
     ) + (ui_text('charts.paint_event.incomplete') if d['partial'] else '')
-    if self.show_volume:
+    if self.show_volume and not self._compact_header:
         text(12, 65, fm.elidedText(detail, Qt.TextElideMode.ElideRight, self.width() - 24))
+    elif self.show_volume:
+        left = 12 + self._title_width + 18  # the bar's figures continue the source line
+        text(left, 22, fm.elidedText(detail, Qt.TextElideMode.ElideRight, max(0, self.width() - left - 12)))
     low = min(float(b.low) for b in visible)
     high = max(float(b.high) for b in visible)
     extras = [float(v) for seq in self.overlays.values() for v in seq[start:end] if v is not None]
