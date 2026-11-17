@@ -37,21 +37,22 @@ class M2ReadabilityTests(unittest.TestCase):
         with patch('desktop_app.features.trading.context_header.datetime', wraps=datetime, create=True) as clock:
             clock.now.return_value = datetime(2026, 11, 1, 15, 59, tzinfo=timezone.utc)
             self.window.apply_state(self.window.state)
-            self.assertIn('今天 11/01', self.window.compact_context.text())
-            self.assertIn('模擬交易日 10/23', self.window.compact_context.text())
+            self.assertIn('今天 11/01', self.window.compact_context.toolTip())
+            self.assertIn('模擬交易日 10/23', self.window.compact_context.toolTip())
             clock.now.return_value = datetime(2026, 11, 1, 16, 1, tzinfo=timezone.utc)
             self.window.apply_state(replace(self.window.state, market_revision=1))
-            self.assertIn('今天 11/02', self.window.compact_context.text())
-            self.assertIn('模擬交易日 10/23', self.window.compact_context.text())
+            self.assertIn('今天 11/02', self.window.compact_context.toolTip())
+            self.assertIn('模擬交易日 10/23', self.window.compact_context.toolTip())
 
     def test_broker_environments_show_today_without_the_simulation_date(self):
         with patch('desktop_app.features.trading.context_header.datetime', wraps=datetime, create=True) as clock:
             clock.now.return_value = datetime(2026, 11, 1, 16, 1, tzinfo=timezone.utc)
             for environment in (Environment.BROKER_SIMULATION, Environment.LIVE):
                 self.show_state(replace(self.window.state, environment=environment))
-                self.assertIn('今天 11/02', self.window.compact_context.text())
+                self.assertIn('今天 11/02', self.window.compact_context.toolTip())
                 self.assertNotIn('10/23', self.window.compact_context.text())
                 self.assertNotIn('模擬交易日', self.window.compact_context.text())
+                self.assertNotIn('模擬交易日', self.window.compact_context.toolTip())
                 self.assertNotIn('10/23', self.window.compact_context.toolTip())
                 self.assertNotIn('10-23', self.window.compact_context.toolTip())
 
