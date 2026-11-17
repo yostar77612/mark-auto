@@ -13,7 +13,7 @@ from PySide6.QtCore import Qt
 from quantlab.trading.adapters.shioaji.snapshot_poller import BATCH, ShioajiSnapshotSource, normalise_snapshot
 from quantlab.trading.adapters.shioaji.symbol_directory import SymbolDirectory
 from quantlab.trading.application.codec import dumps, loads
-from quantlab.trading.application.sector_contracts import MemberView, SectorBoardView, SectorQuery, ShareBaseline
+from quantlab.trading.application.sector_contracts import MemberView, SectorBoardView, SectorHistoryView, SectorQuery, ShareBaseline
 from quantlab.trading.application.sector_service import STALE_SECONDS, SectorService, in_session, industry_groups
 from quantlab.trading.domain.concept_groups import BUILTIN_GROUPS
 from quantlab.trading.domain.industry_names import industry_name
@@ -531,6 +531,60 @@ class BoardWidgetTests(unittest.TestCase):
         dialog._advance()
         self.assertFalse(dialog.timer.isActive())  # stops at the last minute
         self.assertEqual(dialog.slider.value(), 2)
+
+    def test_a_late_answer_after_the_dialog_is_closed_or_deleted_is_ignored(self):
+        import shiboken6
+
+        from desktop_app.features.trading.sector_replay import SectorReplayDialog
+        from quantlab.trading.application.sector_contracts import HistoryRow, SectorHistoryView
+
+        row = HistoryRow('a', 'A', 10, 500, 6000, 1, 300_000_000, 5, True)
+        answer = SectorHistoryView(('2026-11-12',), '2026-11-12', ('09:00', '09:01'), '09:01', (row,))
+        for how in ('close', 'delete'):
+            pending = []
+            facade = SimpleNamespace(sector_history=lambda query: answer)
+            dialog = SectorReplayDialog(facade, lambda operation, completed: pending.append((operation, completed)))
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.assertEqual(len(pending), 1)  # the first load is in flight
+            operation, completed = pending.pop()
+            if how == 'close':
+                dialog.show()
+                dialog.close()
+            else:
+                shiboken6.delete(dialog)
+            self.app.processEvents()
+            completed(operation(), None)  # arrives late: must neither raise nor touch the dialog
+            completed(None, RuntimeError('late failure'))
+            self.assertEqual(pending, [], how)
+
+    def test_a_failed_minute_read_clears_the_previous_rows_and_a_new_day_keeps_the_selection(self):
+        from desktop_app.features.trading.sector_replay import SectorReplayDialog
+        from quantlab.trading.application.sector_contracts import HistoryRow, SectorHistoryView
+
+        row = HistoryRow('a', 'A', 10, 500, 6000, 1, 300_000_000, 5, True)
+        minutes = ('09:00', '09:01')
+        views = {'days': SectorHistoryView(('2026-11-11', '2026-11-10'))}
+        facade = SimpleNamespace(sector_history=lambda query: views['next'] if 'next' in views else views['days'])
+        views['next'] = SectorHistoryView(('2026-11-11', '2026-11-10'), '2026-11-11', minutes, '09:01', (row,))
+        dialog = release(self, SectorReplayDialog(facade, lambda operation, completed: completed(operation(), None)))
+        dialog.days.setCurrentIndex(1)  # the older day
+        self.assertEqual(dialog.table.rowCount(), 1)
+        views['next'] = SectorHistoryView(failed=True)
+        dialog.slider.setValue(0)
+        self.assertEqual(dialog.table.rowCount(), 0)  # no stale rows under the failure message
+        self.assertIn('讀取歷史資料失敗', dialog.message.text())
+        dialog.render(SectorHistoryView(('2026-11-12', '2026-11-11', '2026-11-10'), '2026-11-10', minutes, '09:00', (row,)))
+        self.assertEqual([dialog.days.itemText(index) for index in range(dialog.days.count())], ['2026-11-12', '2026-11-11', '2026-11-10'])
+        self.assertEqual(dialog.days.currentData(), '2026-11-10')  # the new trading day joined; the selection stayed
+
+    def test_replay_button_reuses_an_open_dialog(self):
+        widget, service = self.make()
+        widget.facade.sector_history = lambda query: SectorHistoryView()
+        widget.replay_button.click()
+        first = widget.replay_dialog
+        widget.replay_button.click()
+        self.assertIs(widget.replay_dialog, first)
+        first.close()
 
     def test_replay_dialog_explains_an_empty_history_and_a_failed_read(self):
         from desktop_app.features.trading.sector_replay import SectorReplayDialog

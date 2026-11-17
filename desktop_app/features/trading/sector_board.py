@@ -503,8 +503,14 @@ class SectorBoardWidget(QWidget):
     def open_replay(self):
         from desktop_app.features.trading.sector_replay import SectorReplayDialog
 
+        existing = getattr(self, 'replay_dialog', None)
+        if existing is not None:
+            existing.raise_()
+            existing.activateWindow()
+            return
         dialog = SectorReplayDialog(self.facade, self._submit, self)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.destroyed.connect(lambda *_: setattr(self, 'replay_dialog', None))
         self.replay_dialog = dialog
         dialog.show()
 

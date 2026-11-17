@@ -154,6 +154,14 @@ class StoreTests(unittest.TestCase):
         self.store.close()
         self.assertTrue(sector_history(self.store, SectorHistoryQuery(), names).failed)
 
+    def test_a_corrupt_day_value_in_the_store_is_a_failed_read_not_an_exception(self):
+        from quantlab.trading.application.sector_contracts import SectorHistoryQuery
+        from quantlab.trading.application.sector_minutes import sector_history
+
+        self.store._db.execute("INSERT INTO sector_minutes VALUES ('not-a-date','09:01','g1',1,1,1,1,1,0,0,1,1)")
+        self.store._db.commit()
+        self.assertTrue(sector_history(self.store, SectorHistoryQuery(), {}.get).failed)
+
     def test_history_queries_reject_malformed_dates_and_minutes(self):
         from quantlab.trading.application.sector_contracts import SectorHistoryQuery
 

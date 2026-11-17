@@ -51,7 +51,7 @@ Related: [m1-stock-index-market-terminal.md](m1-stock-index-market-terminal.md),
 
 - 不下單、不連交易帳戶；全部走既有**行情連線**（`MarketSession`，唯讀）。
 - 不做期貨、選擇權族群；不做新聞。
-- 不做熱力圖、5 日比重比較、族群歷史回放（第二階段）。
+- 不做熱力圖（第二階段）；5 日比重比較與族群歷史重播已於 2026-11-13 在第二階段實作（見「第二階段」）。
 - 不使用 `IndexComponents` 串流（原因見「資料來源決策」）。
 - 不自動從網路更新概念股名單。
 

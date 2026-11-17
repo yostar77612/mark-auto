@@ -47,6 +47,10 @@ class SectorReplayDialog(QDialog):
         super().__init__(parent)
         self.facade, self.defer = facade, defer
         self.minutes, self.trade_date, self._generation = (), '', 0
+        # Cleared when the C++ dialog is destroyed (close with WA_DeleteOnClose, parent deleted, explicit delete):
+        # a plain list so the answer callbacks can read it without touching the dead widget.
+        self._alive = [True]
+        self.destroyed.connect(lambda *_, alive=self._alive: alive.__setitem__(0, False))
         self.setWindowTitle(ui_text('sector.replay_title'))
         self.setAccessibleName(ui_text('sector.replay_title'))
         self.resize(820, 560)
@@ -103,10 +107,12 @@ class SectorReplayDialog(QDialog):
     def _request(self, query):
         self._generation += 1
         generation = self._generation
-        facade = self.facade
+        facade, alive = self.facade, self._alive
 
         def completed(view, error):
-            if generation == self._generation:
+            # An answer can arrive after the dialog was closed or deleted: closing bumps the generation, and a
+            # destroyed dialog is skipped here, so a late result never touches a deleted widget.
+            if alive[0] and generation == self._generation:
                 self.render(view if error is None else None)
 
         self.defer(lambda: facade.sector_history(query), completed)
@@ -146,6 +152,7 @@ class SectorReplayDialog(QDialog):
             self.step(1)
 
     def closeEvent(self, event):
+        self._generation += 1  # answers still in flight are now stale
         self.stop()
         super().closeEvent(event)
 
@@ -153,6 +160,7 @@ class SectorReplayDialog(QDialog):
     def render(self, view):
         if view is None or view.failed:
             self.stop()
+            self.table.setRowCount(0)  # never leave the previous minute's rows under a failure message
             self.message.setText(ui_text('sector.replay_failed'))
             self.message.show()
             return
@@ -161,11 +169,14 @@ class SectorReplayDialog(QDialog):
             self.message.show()
             self._set_controls(False)
             return
-        if self.days.count() != len(view.days):
+        if [self.days.itemData(index) for index in range(self.days.count())] != list(view.days):
+            current = self.days.currentData()  # a new trading day joins the list without moving the selection
             self.days.blockSignals(True)
             self.days.clear()
             for day in view.days:
                 self.days.addItem(day, day)
+            if current in view.days:
+                self.days.setCurrentIndex(view.days.index(current))
             self.days.blockSignals(False)
         if not view.trade_date:
             self.load_day()

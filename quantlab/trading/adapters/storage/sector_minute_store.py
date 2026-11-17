@@ -163,7 +163,10 @@ class SectorMinuteStore:
                 rows = self._db.execute('SELECT DISTINCT trade_date FROM sector_minutes ORDER BY trade_date DESC').fetchall()
         except sqlite3.Error:
             raise DomainError('sector_minutes_unavailable', 'days') from None
-        return tuple(date.fromisoformat(day) for (day,) in rows)
+        try:
+            return tuple(date.fromisoformat(day) for (day,) in rows)
+        except ValueError:
+            raise DomainError('sector_minutes_unavailable', 'days') from None
 
     def day_minutes(self, trade_date: date) -> tuple[str, ...]:
         """Stored minutes (HH:MM, Taipei) of one day in order."""
