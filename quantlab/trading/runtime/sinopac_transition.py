@@ -124,7 +124,7 @@ def accept_candidate(owner, candidate, market, accounts, ticket):
         owner.publish(phase='CONNECTED', accounts=account_views(owner), readiness=readiness(owner), error_code='')
 
 
-def discard_candidate(owner, candidate, market):
+def discard_candidate(owner, candidate, market, authenticated=True):
     if owner.shared is candidate:
         try:
             owner.on_disconnected()
@@ -140,7 +140,10 @@ def discard_candidate(owner, candidate, market):
         try:
             candidate.close()
         except Exception:
-            owner.cleanup_unconfirmed = True
+            # A login that never succeeded holds no session, so a refused logout is nothing to confirm. Marking it
+            # would hide the real login failure behind a logout error that blocks every later attempt until restart.
+            if authenticated:
+                owner.cleanup_unconfirmed = True
     with owner.lock:
         owner.publish(readiness=readiness(owner))
 
@@ -167,7 +170,7 @@ def connect_candidate(owner, ticket):
         market.attach_authenticated(candidate.consumer('terminal'))
         accept_candidate(owner, candidate, market, accounts, ticket)
     except Exception as error:
-        discard_candidate(owner, candidate, market)
+        discard_candidate(owner, candidate, market, authenticated)
         if authenticated and not (
             isinstance(error, DomainError)
             and error.code in ('api_key_expired', 'reconciliation_required')

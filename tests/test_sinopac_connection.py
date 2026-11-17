@@ -122,6 +122,18 @@ class UnifiedConnectionTests(unittest.TestCase):
         self.assertEqual((view.phase, view.error_code), ('DISCONNECTED', 'market_sdk_missing'))
         self.assertEqual(self.secrets.references, [])
 
+    def test_failed_login_keeps_its_own_code_and_does_not_block_the_next_attempt(self):
+        self.api.fail_login = True
+        self.api.logout = lambda: False  # the SDK refuses to log out a session that never existed
+        self.owner.execute(self.command(UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=SinopacConnectionSettings()))
+        self.owner.worker.join(2)
+        view = self.owner.snapshot()
+        self.assertEqual((view.phase, view.error_code), ('DISCONNECTED', 'broker_login_failed'))
+        self.assertFalse(self.owner.cleanup_unconfirmed)
+        self.api.fail_login = False
+        self.api.logout = lambda: None
+        self.connect()
+
     def test_failed_logout_blocks_replacement_factory(self):
         self.connect()
         self.api.logout = lambda: False
