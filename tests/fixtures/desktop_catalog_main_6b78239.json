@@ -3389,7 +3389,8 @@
       "sector.replay_empty": "尚無歷史資料：行情連線的交易日會每分鐘記錄族群統計，保留 30 個交易日。",
       "sector.replay_failed": "讀取歷史資料失敗，請稍後再試。",
       "sector.replay_incomplete": "（不完整）",
-      "sector.col_minute_amount": "本分鐘成交"
+      "sector.col_minute_amount": "本分鐘成交",
+      "v2.failure_code": "（原因代碼：{0}）"
     }
   },
   "aliases": {
@@ -8107,6 +8108,7 @@
       "sector.replay_failed": "讀取歷史資料失敗，請稍後再試。",
       "sector.replay_incomplete": "（不完整）",
       "sector.col_minute_amount": "本分鐘成交",
+      "v2.failure_code": "（原因代碼：{0}）",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12820,7 +12822,8 @@
     "sector.replay_empty",
     "sector.replay_failed",
     "sector.replay_incomplete",
-    "sector.col_minute_amount"
+    "sector.col_minute_amount",
+    "v2.failure_code"
   ],
   "alias_order": [
     "ui.research_controls.text_1",
