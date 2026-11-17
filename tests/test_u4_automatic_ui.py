@@ -67,8 +67,9 @@ class AutomaticUiTests(unittest.TestCase):
         controls = self.window.automatic_controls
         self.apply(issues=('risk_rejected',))
         self.assertIn(ui_text('dashboard.status.engine').format(''), controls.header.text())
-        self.assertIn('risk_rejected', controls.header.text())
-        self.assertNotIn('重新啟動', controls.header.text())
+        self.assertNotIn('\n', controls.header.text())  # one short status; the reason is in the tooltip
+        self.assertIn('risk_rejected', controls.header.toolTip())
+        self.assertNotIn('重新啟動', controls.header.toolTip())
         self.assertTrue(controls.header_resume.isHidden())
         for status, _, reconcile, resume in controls.panels:
             self.assertNotIn('重新啟動', status.text())
@@ -93,7 +94,8 @@ class AutomaticUiTests(unittest.TestCase):
         self.apply(environment=Environment.BROKER_SIMULATION)
         controls = self.window.automatic_controls
         self.assertIn('已暫停', controls.header.text())
-        self.assertIn('重新啟動', controls.header.text())
+        self.assertNotIn('重新啟動', controls.header.text())  # the sentence stays in the cards and the tooltip
+        self.assertIn('重新啟動', controls.header.toolTip())
         for status, _, _, resume in controls.panels:
             self.assertIn('已暫停', status.text())
             self.assertIn('重新啟動', status.text())
