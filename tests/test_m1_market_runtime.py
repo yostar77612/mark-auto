@@ -59,6 +59,16 @@ class MarketRuntimeTests(unittest.TestCase):
         request = Request('offline-m1', Environment.LOCAL, 'local-stock', datetime.now(timezone.utc) + timedelta(seconds=10), operation, **kwargs)
         return loads(dumps(_dispatch(self.bundle, loads(dumps(request)))))
 
+    def test_sector_flow_cooldown_marks_use_the_minute_database(self):
+        monitor = self.bundle.session_bridge.monitor
+        self.assertIs(monitor.marks, self.bundle.sector_minute_store)
+
+    def test_sector_board_serves_the_minute_aggregator_share_baselines(self):
+        from quantlab.trading.application.sector_contracts import ShareBaseline
+
+        self.bundle.sector_minutes.baselines = (ShareBaseline('industry.24', 120, 3),)
+        self.assertEqual(self.bundle.sector.share_baselines(), (ShareBaseline('industry.24', 120, 3),))
+
     def test_independent_connection_without_trading_fields_and_real_wire_roundtrips(self):
         self.assertTrue(self.command(UiAction.SAVE_MARKET_DATA_SETTINGS, market_data_settings=MarketDataSettings(enabled=True)).accepted)
         self.assertEqual(self.bundle.snapshot().watchlist, ())

@@ -59,6 +59,20 @@ class MemberView:
 
 
 @dataclass(frozen=True)
+class ShareBaseline:
+    """Average cumulative turnover share of one group at this time of day over the previous stored days."""
+
+    group_id: str
+    share_bps: int
+    days: int
+
+    def __post_init__(self) -> None:
+        identity(self.group_id)
+        integer(self.share_bps, 'baseline share', 1)
+        integer(self.days, 'baseline days', 1)
+
+
+@dataclass(frozen=True)
 class SectorBoardView:
     state: str = 'OFFLINE'
     data_at: datetime | None = None
@@ -72,6 +86,7 @@ class SectorBoardView:
     alerts: tuple[SectorAlert, ...] = ()
     monitored: tuple[str, ...] = ()
     monitor_counts: tuple[MonitorCount, ...] = ()
+    baselines: tuple[ShareBaseline, ...] = ()
 
     def __post_init__(self) -> None:
         if self.state not in STATES:
