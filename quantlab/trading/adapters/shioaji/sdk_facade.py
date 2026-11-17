@@ -124,6 +124,8 @@ class ShioajiSDKFacade:
     gateway/application must retain UNKNOWN exposure and reconcile it.
     """
 
+    login_reached_broker = False
+
     def __init__(self, client: object, sdk_module: object, *, environment: Environment, query_timeout_ms: int = 2500, order_timeout_ms: int = 10000):
         if getattr(sdk_module, '__version__', None) != SDK_VERSION:
             raise DomainError('capability_missing', 'pinned SDK version required')
@@ -157,7 +159,9 @@ class ShioajiSDKFacade:
     def login(self, *, api_key: str, secret_key: str, subscribe_trade: bool) -> list[object]:
         if not isinstance(api_key, str) or not api_key or not isinstance(secret_key, str) or not secret_key or type(subscribe_trade) is not bool:
             raise DomainError('capability_missing', 'explicit broker credentials and subscription choice required')
-        return _rows(_callable(self._client, 'login')(api_key=api_key, secret_key=secret_key, subscribe_trade=subscribe_trade))
+        result = _callable(self._client, 'login')(api_key=api_key, secret_key=secret_key, subscribe_trade=subscribe_trade)
+        self.login_reached_broker = True  # the broker answered, so a session may exist even if the reply is malformed
+        return _rows(result)
 
     def logout(self) -> object:
         return _callable(self._client, 'logout')()
