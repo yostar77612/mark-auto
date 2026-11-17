@@ -279,6 +279,14 @@ class TradingUiTests(unittest.TestCase):
         self.assertIn('剩餘風險', bar.toolTip())
         self.assertLess(self.window.automatic_controls.header.text().count('\n'), 1)
 
+    def test_empty_performance_table_says_why_and_the_message_goes_away_with_rows(self):
+        self.window.apply_state(replace(self.window.state, version=2, performance=()))
+        self.assertFalse(self.window.performance_empty.isHidden())
+        self.assertEqual(self.window.performance_empty.text(), ui_text('performance.empty'))
+        row = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
+        self.window.apply_state(replace(self.window.state, version=3, performance=(row,)))
+        self.assertTrue(self.window.performance_empty.isHidden())
+
     def test_execution_drawdown_distinguishes_unknown_history_from_proven_zero(self):
         legacy = PerformanceView('strategy-1', 1, Market.STOCK, 'SWING:3-5', Environment.LOCAL, Decimal('129'), Decimal('0'), Decimal('71'), None, '5')
         self.window.apply_state(replace(self.window.state, version=2, performance=(legacy,)))

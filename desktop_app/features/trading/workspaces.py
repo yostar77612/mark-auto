@@ -454,6 +454,10 @@ def _performance_page(self) -> None:
     self.performance.horizontalHeaderItem(8).setToolTip(ui_text('v2.drawdown') + '\n' + ui_text('v2.performance_valuation_hint'))
     self.performance.horizontalHeaderItem(7).setText(ui_text('m2t.adjusted_pnl'))
     self.performance.horizontalHeaderItem(8).setText(ui_text('m2t.recorded_drawdown'))
+    self.performance_empty = label('performance.empty')
+    self.performance_empty.setObjectName('performance_empty')
+    self.performance_empty.hide()
+    layout.addWidget(self.performance_empty)
     layout.addWidget(self.performance)
     _buttons(
         self,

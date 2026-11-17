@@ -172,6 +172,7 @@ def _render_performance(self, state: UiState) -> None:
             for item in state.performance
         ),
     )
+    self.performance_empty.setVisible(not state.performance)
 
 
 def _render_accounts(self, state: UiState) -> None:
