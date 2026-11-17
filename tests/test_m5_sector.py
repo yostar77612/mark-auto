@@ -1,5 +1,6 @@
 """M5-2: sector statistics, snapshot normalisation, directory v2, the sector service and the board tab."""
 
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -246,6 +247,23 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(groups['industry.24'].name, '半導體')
         self.assertEqual(groups['industry.24'].codes, ('2330', '2454', '3034'))
         self.assertEqual(groups['industry.01'].name, '水泥工業')
+
+    def test_a_weekday_holiday_is_not_stored_judged_or_shown_as_live(self):
+        calls = []
+        self.service.on_round = lambda now, stats: calls.append(now) or ()
+        yesterday = OPEN - timedelta(days=1)  # every quote still carries the last trading day's time
+        self.rows[:] = [replace(item, at=yesterday) for item in self.rows]
+        self.service.refresh()
+        self.assertEqual(calls, [])  # no minute rows, no burst or flow judging, no tick subscriptions
+        view = self.service.board()
+        self.assertEqual(view.state, 'CLOSED')
+        self.assertTrue(view.groups)  # the last close is still readable
+        self.rows[0] = replace(self.rows[0], at=OPEN)  # the first quote of today arrives
+        self.service.refresh()
+        self.assertEqual(calls, [OPEN])
+        self.assertEqual(self.service.board().state, 'LIVE')
+        self.service.disconnected()
+        self.assertTrue(self.service._data_is_today)
 
     def test_live_board_ranks_by_equal_weight_and_lists_members_with_leader(self):
         self.service.refresh()
