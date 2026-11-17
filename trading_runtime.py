@@ -277,7 +277,7 @@ def _run_window(
     )
     terminal = MarketTerminalWidget(
         facade,
-        CandlestickChart(),
+        CandlestickChart(compact_header=True),
         initial,
         layout_store=layout_store,
         index_chart=CandlestickChart(show_volume=False),

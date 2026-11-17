@@ -377,7 +377,7 @@ class TerminalTests(unittest.TestCase):
             self.assertFalse((Path(folder) / FILE_NAME).exists())
 
     def test_accessible_controls_and_status_diagnostics(self):
-        self.assertEqual(self.widget.chart.price_rect.top(), 86)
+        self.assertEqual(self.widget.chart.price_rect.top(), 86)  # the plain chart keeps its three header rows
         self.assertEqual(self.widget.index_chart.price_rect.top(), 12)
         for control in (
             *self.widget.findChildren(QAbstractButton),

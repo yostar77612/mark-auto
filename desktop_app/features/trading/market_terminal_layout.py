@@ -18,8 +18,8 @@ def terminal_preset(name='terminal_default'):
         'panels': {
             'quotes': {'area': 'left', 'position': 0, 'size': 600, 'collapsed': False},
             'alerts': {'area': 'left', 'position': 1, 'size': 400, 'collapsed': name == 'chart_focus'},
-            'chart': {'area': 'center', 'position': 0, 'size': 700, 'collapsed': False},
-            'index': {'area': 'center', 'position': 1, 'size': 300, 'collapsed': name == 'chart_focus'},
+            'chart': {'area': 'center', 'position': 0, 'size': 780, 'collapsed': False},
+            'index': {'area': 'center', 'position': 1, 'size': 220, 'collapsed': name == 'chart_focus'},
             'orderbook': {'area': 'right', 'position': 0, 'size': 700, 'collapsed': name == 'chart_focus'},
         },
     }
