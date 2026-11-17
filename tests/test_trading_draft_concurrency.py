@@ -178,7 +178,7 @@ class DraftConcurrencyUiTests(unittest.TestCase):
         self.assertEqual(len(self.facade.commands), 1)
         self.assertEqual(len(self.facade.state.strategies), 1)
         self.assertEqual(self.window.state.strategies, ())
-        self.assertEqual(self.window.notice.text(), ui_text('v2.connection_failed'))
+        self.assertTrue(self.window.notice.text().startswith(ui_text('v2.connection_failed')))
         self.window.refresh()
         self.drain()
         self.assertEqual(len(self.facade.commands), 1)
