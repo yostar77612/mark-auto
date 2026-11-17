@@ -3373,7 +3373,8 @@
       "sector.share_vs_tip": "今日累積成交比重 ÷ 前 5 個交易日同一時刻的平均比重；大於 1 表示今天資金比平常集中在這個族群。未滿 5 日時括號標示實際天數。",
       "sector.share_vs_value": "{0}×",
       "sector.share_vs_partial": "{0}×（{1} 日）",
-      "m2t.header_short": "{0} · {1} 項待處理"
+      "m2t.header_short": "{0} · {1} 項待處理",
+      "performance.empty": "尚無績效紀錄；策略成交並完成對帳後會顯示在這裡。"
     }
   },
   "aliases": {
@@ -8075,6 +8076,7 @@
       "sector.share_vs_value": "{0}×",
       "sector.share_vs_partial": "{0}×（{1} 日）",
       "m2t.header_short": "{0} · {1} 項待處理",
+      "performance.empty": "尚無績效紀錄；策略成交並完成對帳後會顯示在這裡。",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12772,7 +12774,8 @@
     "sector.share_vs_tip",
     "sector.share_vs_value",
     "sector.share_vs_partial",
-    "m2t.header_short"
+    "m2t.header_short",
+    "performance.empty"
   ],
   "alias_order": [
     "ui.research_controls.text_1",
