@@ -117,19 +117,19 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
         self.last_rendered_bar_count = 0
         self.paper_orders = _order_lines.PaperOrderLines()
 
-    def _header_rows(self):
+    def _collect_header_rows(self):
         """Text rows above the plot: source (+ bar figures), legend when tall, then a pending-order notice."""
         if not self._compact_header:
             return 3
         return 1 + (self.height() >= self._LEGEND_MIN_HEIGHT) + bool(self.paper_orders.notice)
 
-    def _header_row_y(self, row):
+    def _prepare_header_row_y(self, row):
         return 22 + 21 * row
 
     @property
     def price_rect(self):
         lower = 0.55 if self.panes else 0.71 if self.show_volume else 0.88
-        top = (86 if not self._compact_header else 22 + 21 * self._header_rows()) if self.show_volume else 12
+        top = (86 if not self._compact_header else 22 + 21 * self._collect_header_rows()) if self.show_volume else 12
         return QRectF(12, top, max(40, self.width() - 102), max(50, self.height() * lower - top))
 
     @property
@@ -328,11 +328,11 @@ class CandlestickChart(_ChartAnnotationMixin, _order_lines.PaperOrderChartMixin,
                 self._title_width = min(fm.horizontalAdvance(title), self.width() - 24)
                 row = 1
                 if self.height() >= self._LEGEND_MIN_HEIGHT:
-                    text(12, self._header_row_y(row), _theme.chart_legend(self))
+                    text(12, self._prepare_header_row_y(row), _theme.chart_legend(self))
                     row += 1
                 if self.paper_orders.notice:
-                    text(12, self._header_row_y(row), self.paper_orders.notice)
-                header_bottom = self._header_row_y(self._header_rows() - 1)
+                    text(12, self._prepare_header_row_y(row), self.paper_orders.notice)
+                header_bottom = self._prepare_header_row_y(self._collect_header_rows() - 1)
             else:
                 text(12, 43, _theme.chart_legend(self))
                 if self.paper_orders.notice:

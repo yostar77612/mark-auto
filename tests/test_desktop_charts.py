@@ -171,12 +171,12 @@ class ChartTests(unittest.TestCase):
             plain.resize(1000, height)
             compact.resize(1000, height)
             self.assertEqual(plain.price_rect.top(), 86)  # the default header is unchanged
-            self.assertEqual(compact._header_rows(), rows)
+            self.assertEqual(compact._collect_header_rows(), rows)
             self.assertEqual(compact.price_rect.top(), 22 + 21 * rows)
             self.assertGreater(compact.price_rect.height(), plain.price_rect.height())
         compact.paper_orders.notice = '委託處理中'
         compact.resize(1000, 420)
-        self.assertEqual(compact._header_rows(), 2)  # a pending-order notice takes its own row
+        self.assertEqual(compact._collect_header_rows(), 2)  # a pending-order notice takes its own row
         compact.show()
         compact.repaint()
         self.app.processEvents()
