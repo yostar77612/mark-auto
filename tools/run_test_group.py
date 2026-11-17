@@ -21,6 +21,7 @@ import sqlite3
 import subprocess
 import tempfile
 import time
+import traceback
 import uuid
 import sys
 import unittest
@@ -498,8 +499,12 @@ class RecordingResult(unittest.TextTestResult):
         super().startTest(test)
 
     def stopTest(self, test):
-        # Still under the watchdog: a crash or hang while destroying this test's widgets is reported here.
-        flush_deferred_deletes()
+        # Still under the watchdog: a crash or hang while destroying this test's widgets is reported here. A Python
+        # exception from a widget's event() override is reported too, but must not abort every remaining test.
+        try:
+            flush_deferred_deletes()
+        except Exception:
+            traceback.print_exc(file=sys.__stderr__)
         faulthandler.cancel_dump_traceback_later()
         self.stopped_ids.append(test.id())
         super().stopTest(test)

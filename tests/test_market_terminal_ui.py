@@ -172,7 +172,8 @@ class TerminalTests(unittest.TestCase):
     def tearDown(self):
         QThreadPool.globalInstance().waitForDone(3000)
         self.app.processEvents()
-        shiboken6.delete(self.widget)
+        if shiboken6.isValid(self.widget):
+            shiboken6.delete(self.widget)
         self.app.processEvents()
 
     def wait_for(self, predicate):
@@ -243,6 +244,28 @@ class TerminalTests(unittest.TestCase):
         self.assertEqual(self.facade.current, FIXED_INDICES[0].instrument_id)
         self.assertEqual(self.widget.chart.bars[0].contract_id, FIXED_INDICES[0].instrument_id)
         self.assertEqual(self.widget.chart.crosshair_index, 0)
+
+    def test_destroying_the_widget_cancels_a_request_still_in_flight(self):
+        import threading
+
+        from desktop_app.features.trading import market_watch
+
+        other = MarketTerminalWidget(
+            self.facade,
+            CandlestickChart(),
+            self.facade.state,
+            layout_store=self.store,
+            index_chart=CandlestickChart(show_volume=False),
+            panel_factory=WorkspacePanel,
+        )
+        self.wait_for(lambda: not other._requests)
+        gate, seen = threading.Event(), []
+        other._submit(lambda: gate.wait(5), lambda value, error: seen.append(value), quiet=True)
+        token = next(iter(other._requests)).token
+        shiboken6.delete(other)  # never the shared fixture: tearDown deletes self.widget again
+        gate.set()
+        self.wait_for(lambda: token not in market_watch._LIVE_RESULTS)
+        self.assertEqual(seen, [])
 
     def test_status_usage_pause_and_unknown_index(self):
         self.widget._terminal_status = SimpleNamespace(

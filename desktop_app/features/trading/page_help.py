@@ -19,7 +19,7 @@ class _Summary(QLabel):
 
 
 class HelpText(QWidget):
-    def __init__(self, short_text, full_text, name, parent=None, *, header=None):
+    def __init__(self, short_text, full_text, name, parent=None):
         super().__init__(parent)
         self.setObjectName(name + '_help_row')
         layout = QHBoxLayout(self)
@@ -35,7 +35,7 @@ class HelpText(QWidget):
         self.button.setAccessibleName(ui_text('help.accessible'))
         self.button.setProperty('tradingHelp', True)
         self.button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        (header or layout).addWidget(self.button, alignment=Qt.AlignmentFlag.AlignTop)
+        layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignTop)
         layout.addStretch(1)  # the "?" stays right after the text it explains
         self.dialog = QDialog(self)
         self.dialog.setObjectName(name + '_help_details')

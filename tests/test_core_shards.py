@@ -1566,6 +1566,23 @@ class DeferredDeleteFlushTests(unittest.TestCase):
         group.flush_deferred_deletes()
         self.assertEqual(destroyed, [True])
 
+    def test_a_flush_that_raises_is_reported_and_does_not_abort_the_run(self):
+        import io
+        import unittest as ut
+
+        class Quiet(ut.TestCase):
+            def test_one(self):
+                pass
+
+            def test_two(self):
+                pass
+
+        with patch.object(group, 'flush_deferred_deletes', side_effect=RuntimeError('destroy failed')), patch.object(group.traceback, 'print_exc') as report:
+            result = ut.TextTestRunner(stream=io.StringIO(), resultclass=group.RecordingResult).run(ut.defaultTestLoader.loadTestsFromTestCase(Quiet))
+        self.assertTrue(result.wasSuccessful())
+        self.assertEqual(len(result.stopped_ids), 2)  # both tests still finished
+        self.assertEqual(report.call_count, 2)  # and each failed flush was reported
+
     def test_without_qt_or_an_application_the_flush_does_nothing(self):
         with patch.dict(sys.modules, {'PySide6.QtCore': None}):
             group.flush_deferred_deletes()
