@@ -244,6 +244,19 @@ class TerminalTests(unittest.TestCase):
         self.assertEqual(self.widget.chart.bars[0].contract_id, FIXED_INDICES[0].instrument_id)
         self.assertEqual(self.widget.chart.crosshair_index, 0)
 
+    def test_destroying_the_widget_cancels_a_request_still_in_flight(self):
+        import threading
+
+        from desktop_app.features.trading import market_watch
+
+        gate, seen = threading.Event(), []
+        self.widget._submit(lambda: gate.wait(5), lambda value, error: seen.append(value), quiet=True)
+        token = next(iter(self.widget._requests)).token
+        shiboken6.delete(self.widget)
+        gate.set()
+        self.wait_for(lambda: token not in market_watch._LIVE_RESULTS)
+        self.assertEqual(seen, [])
+
     def test_status_usage_pause_and_unknown_index(self):
         self.widget._terminal_status = SimpleNamespace(
             subscription_count=4,

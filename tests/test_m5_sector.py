@@ -6,6 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import json
+import time
 import unittest
 
 from PySide6.QtCore import Qt
@@ -484,6 +485,26 @@ class BoardWidgetTests(unittest.TestCase):
         self.assertEqual(texts[partial], '1.0×（3 日）')
         self.assertTrue(all(text == '—' for group, text in texts.items() if group not in (full, partial)))
         self.assertIn('前 5 個交易日', widget.rank.horizontalHeaderItem(column).toolTip())
+
+    def test_destroying_the_board_cancels_a_request_still_in_flight(self):
+        import threading
+
+        import shiboken6
+
+        from desktop_app.features.trading import market_watch
+
+        widget, service = self.make()
+        gate, seen = threading.Event(), []
+        widget._submit(lambda: gate.wait(5), lambda value, error: seen.append(value))
+        token = next(iter(widget._requests)).token
+        shiboken6.delete(widget)
+        gate.set()
+        deadline = time.monotonic() + 3
+        while token in market_watch._LIVE_RESULTS and time.monotonic() < deadline:
+            self.app.processEvents()
+            time.sleep(0.005)
+        self.assertNotIn(token, market_watch._LIVE_RESULTS)
+        self.assertEqual(seen, [])
 
     def test_failed_read_clears_the_tables_instead_of_keeping_old_numbers(self):
         widget, service = self.make()
