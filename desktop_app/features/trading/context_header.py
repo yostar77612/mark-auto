@@ -43,8 +43,10 @@ def refresh_context_header(window, state):
     today = datetime.now(timezone.utc).astimezone(ZoneInfo('Asia/Taipei')).strftime('%m/%d')
     simulated = state.trading_day[-5:].replace('-', '/') or ui_text('v2.context_unknown_day')
     dates = ui_text('m2t.local_dates').format(today, simulated) if state.environment is Environment.LOCAL else ui_text('m2t.today').format(today)
-    window.compact_context.setText(ui_text('m2t.header').format(window._environment_label(state.environment), dates, pnl, risk, len(state.issues)))
-    details = [window.compact_context.text(), window.summary.text(), window.notice.text(), state.account_ref]
+    # The bar keeps only what must always be visible; the dates, P&L and risk live in the tooltip and the details dialog.
+    window.compact_context.setText(ui_text('m2t.header_short').format(window._environment_label(state.environment), len(state.issues)))
+    full = ui_text('m2t.header').format(window._environment_label(state.environment), dates, pnl, risk, len(state.issues))
+    details = [full, window.summary.text(), window.notice.text(), state.account_ref]
     if state.environment is Environment.LOCAL:
         details.append(ui_text('m1u.header').format(window._environment_label(state.environment), simulated, pnl, risk, len(state.issues)))
     window.compact_context.setToolTip('\n'.join(details))
