@@ -10,7 +10,7 @@ CONNECTION_ACTIONS = frozenset((UiAction.SAVE_AND_CONNECT_SINOPAC, UiAction.SELE
 
 
 def install_panel(window, layout):
-    window.broker_panel = BrokerPanel(help_header=window.page_headers['settings'], confirm=lambda value: window._confirm(value))
+    window.broker_panel = BrokerPanel(confirm=lambda value: window._confirm(value))
     window.broker_panel.save_connect_requested.connect(
         lambda settings, revision, generation: window.command(
             UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=settings, connection_revision=revision, connection_generation=generation

@@ -177,7 +177,7 @@ def _buttons(self, layout, definitions: tuple[tuple[str, str, object], ...]) -> 
 
 def _overview_page(self) -> None:
     layout = _page(self, 'overview')
-    self.dashboard = DashboardWidget(lambda action: confirm_trading_action(self, action), help_header=self.page_headers['overview'])
+    self.dashboard = DashboardWidget(lambda action: confirm_trading_action(self, action))
     self.dashboard.strategy_setup.clicked.connect(lambda: (self.navigation.setCurrentRow(1), self.new_strategy()))
     layout.addWidget(self.dashboard)
     self.overview_status = self.dashboard.status
@@ -187,7 +187,7 @@ def _overview_page(self) -> None:
     self.overview_stop = self.dashboard.operation_buttons[UiAction.STOP_NEW]
     self.overview_cancel_entries = self.dashboard.operation_buttons[UiAction.CANCEL_ENTRIES]
     self.overview_reconcile = self.dashboard.operation_buttons[UiAction.RECONCILE]
-    layout.addWidget(HelpText(ui_text('m2t.overview_hint'), ui_text('v2.start_hint'), 'overview_start', header=self.page_headers['overview']))
+    layout.addWidget(HelpText(ui_text('m2t.overview_hint'), ui_text('v2.start_hint'), 'overview_start'))
     _buttons(
         self,
         layout,
@@ -342,7 +342,7 @@ def _market_page(self) -> None:
 def _trading_page(self) -> None:
     layout = _page(self, 'trading')
     install_trading_environment(self, layout, self.pages.widget(3).widget())
-    layout.addWidget(HelpText(ui_text('m2t.trading_hint'), ui_text('v2.control_hint'), 'trading_control', header=self.page_headers['trading']))
+    layout.addWidget(HelpText(ui_text('m2t.trading_hint'), ui_text('v2.control_hint'), 'trading_control'))
     _buttons(
         self,
         layout,
@@ -400,9 +400,7 @@ def _trading_page(self) -> None:
 
 def _reconciliation_panel(self, layout) -> None:
     layout.addWidget(label('v2.reconciliation_title'))
-    layout.addWidget(
-        HelpText(ui_text('m2t.reconciliation_hint'), ui_text('v2.reconciliation_hint'), 'trading_reconciliation', header=self.page_headers['trading'])
-    )
+    layout.addWidget(HelpText(ui_text('m2t.reconciliation_hint'), ui_text('v2.reconciliation_hint'), 'trading_reconciliation'))
     self.reconciliation_status = label('v2.reconciliation_unknown')
     self.reconciliation_status.setObjectName('reconciliation_status')
     layout.addWidget(self.reconciliation_status)
@@ -433,7 +431,6 @@ def _performance_page(self) -> None:
             ui_text('m2t.performance_hint'),
             ui_text('v2.performance_hint') + '\n\n' + ui_text('v2.performance_valuation_hint'),
             'performance_explanation',
-            header=self.page_headers['performance'],
         )
     )
     self.performance = table(
@@ -487,7 +484,6 @@ def _settings_page(self) -> None:
             ui_text('m2.connection.context_hint'),
             ui_text('m2.connection.context_help') + '\n\n' + ui_text('v2.external_hint'),
             'settings_context',
-            header=self.page_headers['settings'],
         )
     )
     self.accounts = table(('v2.account', 'v2.environment', 'v2.market', 'v2.allocation', 'v2.availability'), 'accounts')
@@ -513,7 +509,7 @@ def _settings_page(self) -> None:
         fields.addRow(ui_text('v2.' + name), widget)
     self.setting_risk.currentIndexChanged.connect(self._dirty_settings)
     fields.addRow(ui_text('v2.risk'), self.setting_risk)
-    fields.addRow(HelpText(ui_text('m2t.settings_hint'), ui_text('v2.settings_hint'), 'settings_limits', header=self.page_headers['settings']))
+    fields.addRow(HelpText(ui_text('m2t.settings_hint'), ui_text('v2.settings_hint'), 'settings_limits'))
     save = button('v2.save_settings', 'save_settings_button')
     save.clicked.connect(self.save_settings)
     fields.addRow(save)

@@ -40,7 +40,7 @@ class BrokerPanel(QWidget):
     certificate_requested = Signal(object, int, str)
     disconnect_requested = Signal(int, str)
 
-    def __init__(self, parent=None, *, help_header=None, confirm):
+    def __init__(self, parent=None, *, confirm):
         super().__init__(parent)
         self.setObjectName('sinopac_connection_panel')
         self.setAccessibleName(ui_text('m2.connection.title'))
@@ -53,7 +53,7 @@ class BrokerPanel(QWidget):
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.addWidget(self._label(ui_text('m2.connection.title')))
-        self.help = HelpText(ui_text('m2.connection.help_short'), ui_text('m2.connection.help_full'), 'sinopac_connection', header=help_header)
+        self.help = HelpText(ui_text('m2.connection.help_short'), ui_text('m2.connection.help_full'), 'sinopac_connection')
         self._layout.addWidget(self.help)
         self._connection_fields()
         self._account_fields()
