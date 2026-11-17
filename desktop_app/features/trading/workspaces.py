@@ -35,7 +35,7 @@ from desktop_app.features.trading.trading_page import (
     configure_trading_positions,
     confirm_trading_action,
 )
-from desktop_app.components.flow_layout import FlowLayout
+from desktop_app.features.trading.flow_layout import FlowLayout
 from desktop_app.features.trading.page_help import HelpText
 from desktop_app.features.trading.strategy_controls import StrategyControls
 from desktop_app.features.trading.trading_page_widgets import EmptyTableState, PositionColumns
