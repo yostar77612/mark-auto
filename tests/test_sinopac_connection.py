@@ -134,6 +134,14 @@ class UnifiedConnectionTests(unittest.TestCase):
         self.api.logout = lambda: None
         self.connect()
 
+    def test_login_answered_but_malformed_with_refused_logout_stays_unconfirmed(self):
+        self.api.login = lambda **kwargs: None  # the broker answered, the reply is not an account list
+        self.api.logout = lambda: False
+        self.owner.execute(self.command(UiAction.SAVE_AND_CONNECT_SINOPAC, sinopac_settings=SinopacConnectionSettings()))
+        self.owner.worker.join(2)
+        self.assertTrue(self.owner.cleanup_unconfirmed)
+        self.assertEqual(self.owner.snapshot().error_code, 'logout_unconfirmed')
+
     def test_failed_logout_blocks_replacement_factory(self):
         self.connect()
         self.api.logout = lambda: False

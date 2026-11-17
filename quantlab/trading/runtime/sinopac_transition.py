@@ -170,7 +170,7 @@ def connect_candidate(owner, ticket):
         market.attach_authenticated(candidate.consumer('terminal'))
         accept_candidate(owner, candidate, market, accounts, ticket)
     except Exception as error:
-        discard_candidate(owner, candidate, market, authenticated)
+        discard_candidate(owner, candidate, market, authenticated or facade.login_reached_broker)
         if authenticated and not (
             isinstance(error, DomainError)
             and error.code in ('api_key_expired', 'reconciliation_required')
