@@ -47,7 +47,7 @@ class KlineStoreTests(unittest.TestCase):
 
         self.store.upsert(tuple(minute(offset) for offset in range(10)), source='LIVE_TICKS')
         hour = timedelta(hours=1)
-        self.assertEqual(len(self.store.read('TWSE:2330', START, START + hour)), 10)
+        self.assertEqual(len(self.store.read_cached('TWSE:2330', START, START + hour)), 10)
         decoded = []
         original = module._decode
 
@@ -57,14 +57,14 @@ class KlineStoreTests(unittest.TestCase):
 
         with unittest.mock.patch.object(module, '_decode', counting):
             # Nothing changed: the sliding window decodes nothing again.
-            self.assertEqual(len(self.store.read('TWSE:2330', START, START + hour + timedelta(seconds=5))), 10)
+            self.assertEqual(len(self.store.read_cached('TWSE:2330', START, START + hour + timedelta(seconds=5))), 10)
             self.assertEqual(decoded, [])
             # An official correction of an old bar and a new bar: only rows from the corrected bar on are decoded.
             self.store.upsert((minute(3, close='20'),))
             self.store.upsert((minute(10, close='21'),), source='LIVE_TICKS')
             # A live bar never replaces an official one; the read must still show the official price.
             self.store.upsert((minute(3, close='30'),), source='LIVE_TICKS')
-            bars = self.store.read('TWSE:2330', START + timedelta(minutes=1), START + hour + timedelta(seconds=10))
+            bars = self.store.read_cached('TWSE:2330', START + timedelta(minutes=1), START + hour + timedelta(seconds=10))
             self.assertEqual(len(decoded), 8)
         self.assertEqual([bar.start for bar in bars], [minute(offset).start for offset in range(1, 11)])
         self.assertEqual(bars[2].close, Decimal('20'))
@@ -72,11 +72,35 @@ class KlineStoreTests(unittest.TestCase):
         # A range ending earlier than the cached one is a plain read; every answer equals a fresh store's.
         # A narrow read that ends before a later correction keeps that correction pending for the next wide read.
         self.store.upsert((minute(8, close='40'),))
-        self.assertEqual(len(self.store.read('TWSE:2330', START, START + timedelta(minutes=5))), 5)
-        self.assertEqual(self.store.read('TWSE:2330', START, START + hour + timedelta(seconds=20))[8].close, Decimal('40'))
+        self.assertEqual(len(self.store.read_cached('TWSE:2330', START, START + timedelta(minutes=5))), 5)
+        self.assertEqual(self.store.read_cached('TWSE:2330', START, START + hour + timedelta(seconds=20))[8].close, Decimal('40'))
         with closing(KlineStore(self.path)) as fresh:
-            self.assertEqual(self.store.read('TWSE:2330', START, START + timedelta(minutes=4)), fresh.read('TWSE:2330', START, START + timedelta(minutes=4)))
-            self.assertEqual(self.store.read('TWSE:2330', START, START + hour), fresh.read('TWSE:2330', START, START + hour))
+            self.assertEqual(
+                self.store.read_cached('TWSE:2330', START, START + timedelta(minutes=4)), fresh.read('TWSE:2330', START, START + timedelta(minutes=4))
+            )
+            self.assertEqual(self.store.read_cached('TWSE:2330', START, START + hour), fresh.read('TWSE:2330', START, START + hour))
+
+    def test_cached_reads_evict_oldest_with_pending_upserts_and_plain_reads_never_fill_the_cache(self):
+        hour = timedelta(hours=1)
+
+        def bars(code, offsets, close='10'):
+            return tuple(replace(minute(offset, close), instrument_id='TWSE:' + code) for offset in offsets)
+
+        codes = [str(2300 + index) for index in range(7)]
+        for code in codes:
+            self.store.upsert(bars(code, range(3)), source='LIVE_TICKS')
+        self.store.read('TWSE:' + codes[0], START, START + hour)
+        self.assertEqual(self.store._recent, {})
+        for code in codes:
+            self.store.read_cached('TWSE:' + code, START, START + hour)
+            # Every cached instrument keeps receiving live minutes, as during market hours.
+            for other in codes:
+                self.store.upsert(bars(other, (3,), close='11'), source='LIVE_TICKS')
+        self.assertLessEqual(len(self.store._recent), 4)
+        self.assertTrue(set(self.store._dirty) <= set(self.store._recent))
+        with closing(KlineStore(self.path)) as fresh:
+            for code in codes:
+                self.assertEqual(self.store.read_cached('TWSE:' + code, START, START + hour), fresh.read('TWSE:' + code, START, START + hour))
 
     def test_official_history_overwrites_live_and_live_cannot_overwrite_official(self):
         self.store.upsert((minute(close='11'),), source='LIVE_TICKS')

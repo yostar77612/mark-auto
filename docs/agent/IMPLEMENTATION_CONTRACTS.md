@@ -5781,7 +5781,7 @@ with only `LiveMarketSettings.snapshot_bar_tail` bars per instrument (default 2,
 maximum 32). Full retention is read separately through additive `MARKET_SERIES`
 IPC requests, never a UiAction. Application builds each chosen-period page from
 LiveMarketService; offsets/next_offset traverse ascending bars with gaps and
-forming/incomplete flags intact. `series_page_limit` caps pages at 1,000 bars
+forming/incomplete flags intact. `series_page_limit` caps pages at 4,000 bars
 (configurable downward), with a half-wire byte budget reserving envelope space.
 Clients pass the returned market_revision to subsequent pages; a changed revision
 returns state_conflict and requires restarting. Reads do not mutate trading state.

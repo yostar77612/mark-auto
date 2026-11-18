@@ -59,6 +59,10 @@ def _decode(row: tuple) -> LiveBar:
         raise DomainError('kline_store_unavailable', 'invalid cached minute') from None
 
 
+_READ = 'SELECT * FROM bars_1m WHERE instrument_id=? AND start_utc>=? AND start_utc<? ORDER BY start_utc'
+_CACHED_INSTRUMENTS = 4
+
+
 class KlineStore:
     """Thread-safe SQLite cache with official-history precedence and preserved recovery."""
 
@@ -73,7 +77,7 @@ class KlineStore:
         self.warning_code = ''
         self._arrival_clock = arrival_clock
         self.recovered_path: Path | None = None
-        # Decoded reads per instrument; upsert marks the earliest start it touched so the next read re-decodes only from there.
+        # read_cached's decoded ranges; upsert marks the earliest start it touched so the next read re-decodes only from there.
         self._recent: dict[str, tuple[str, str, list[str], tuple[LiveBar, ...]]] = {}
         self._dirty: dict[str, str] = {}
         try:
@@ -198,7 +202,16 @@ class KlineStore:
 
     def read(self, instrument_id: str, start: datetime, end: datetime) -> tuple[LiveBar, ...]:
         instrument_id, first, last = _range(instrument_id, start, end)
-        query = 'SELECT * FROM bars_1m WHERE instrument_id=? AND start_utc>=? AND start_utc<? ORDER BY start_utc'
+        with self._lock:
+            rows = self._db.execute(_READ, (instrument_id, first, last)).fetchall()
+        return tuple(_decode(row) for row in rows)
+
+    def read_cached(self, instrument_id: str, start: datetime, end: datetime) -> tuple[LiveBar, ...]:
+        """Same answer as read; the chart's repeated year-long reads decode only rows new or upserted since the last one.
+
+        A year of minutes is about 65 MB decoded, so only the few most recent instruments are kept.
+        """
+        instrument_id, first, last = _range(instrument_id, start, end)
         with self._lock:
             cached = self._recent.pop(instrument_id, None)
             dirty = self._dirty.pop(instrument_id, None)
@@ -209,7 +222,7 @@ class KlineStore:
                 valid = old_last if dirty is None else min(dirty, old_last)
                 if last > valid:
                     keep, new_last = bisect_left(starts, valid), max(last, old_last)
-                    rows = self._db.execute(query, (instrument_id, valid, new_last)).fetchall()
+                    rows = self._db.execute(_READ, (instrument_id, valid, new_last)).fetchall()
                     starts = starts[:keep] + [row[1] for row in rows]
                     bars = bars[:keep] + tuple(_decode(row) for row in rows)
                     old_last = new_last
@@ -217,10 +230,12 @@ class KlineStore:
                     self._dirty[instrument_id] = dirty
                 entry = old_first, old_last, starts, bars
             else:
-                rows = self._db.execute(query, (instrument_id, first, last)).fetchall()
+                rows = self._db.execute(_READ, (instrument_id, first, last)).fetchall()
                 entry = first, last, [row[1] for row in rows], tuple(_decode(row) for row in rows)
-            if len(self._recent) >= 8:
-                self._dirty.pop(self._recent.pop(next(iter(self._recent))), None)
+            if len(self._recent) >= _CACHED_INSTRUMENTS:
+                oldest = next(iter(self._recent))
+                del self._recent[oldest]
+                self._dirty.pop(oldest, None)
             self._recent[instrument_id] = entry
             starts, bars = entry[2], entry[3]
             return bars[bisect_left(starts, first) : bisect_left(starts, last)]

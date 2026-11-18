@@ -325,7 +325,7 @@ class MarketTerminalService:
             else:
                 now = self.now()
                 start = now - timedelta(days=self.history.settings.daily_lookback_days)
-                persisted = self.store.read(query.instrument_id, start, now)
+                persisted = self.store.read_cached(query.instrument_id, start, now)
                 current = self._minutes.get(query.instrument_id)
                 merged = {bar.start: bar for bar in persisted}
                 if current is not None and not current.bar.final and current.bar.start not in merged:
