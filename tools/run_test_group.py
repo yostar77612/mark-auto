@@ -534,6 +534,10 @@ def main(argv=None):
     parser.add_argument('--worker-index', type=int, choices=(0, 1), help=argparse.SUPPRESS)
     parser.add_argument('--worker-token', help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if os.environ.get('MARKAUTO_NATIVE_CRASH_PROBE') == '1':
+        from tools.native_crash_probe import install
+
+        install()
     if args.core_slice is not None and (
         sys.platform != 'linux'
         or args.group != 'core'

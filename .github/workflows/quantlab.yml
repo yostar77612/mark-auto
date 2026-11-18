@@ -9,6 +9,8 @@ permissions:
 env:
   # Preserve Python stacks for native Qt faults; a crash still fails the job.
   PYTHONFAULTHANDLER: '1'
+  # Windows only: also log the native module+offset and stack of an access violation (tools/native_crash_probe.py).
+  MARKAUTO_NATIVE_CRASH_PROBE: '1'
 concurrency:
   # Only superseded pull_request runs are cancelled; main and tag runs (which
   # release gating reads) always finish.
