@@ -32,7 +32,7 @@ class M2GuidelinesTests(unittest.TestCase):
         for index, name in ((0, 'overview'), (3, 'trading'), (4, 'performance'), (5, 'settings')):
             self.window.navigation.setCurrentRow(index)
             header = self.window.page_headers[name]
-            title_controls = layout_entries(header)
+            title_controls = layout_entries(header, header.parentWidget())
             rows = self.window.pages.widget(index).findChildren(HelpText)
             self.assertTrue(rows, name)
             for row in rows:

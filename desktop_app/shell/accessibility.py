@@ -40,7 +40,7 @@ def semantic_name(widget):
                 return label.text()
         if layout:
             index = layout.indexOf(widget)
-            previous = layout_entry(layout, index - 1) if index >= 1 else None
+            previous = layout_entry(layout, index - 1, parent) if index >= 1 else None
             if isinstance(previous, QLabel) and previous.text():
                 return previous.text()
     if isinstance(widget, QTabBar):

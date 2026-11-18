@@ -185,7 +185,7 @@ class HeaderTests(unittest.TestCase):
                 for timer in window.findChildren(QTimer):
                     timer.stop()
                 header = window.app_header
-                self.assertIs(layout_entry(window.centralWidget().layout(), 0), header)
+                self.assertIs(layout_entry(window.centralWidget().layout(), 0, window.centralWidget()), header)
                 self.assertIs(window.findChild(QCheckBox, 'research_mode_status'), header.disclosure)
                 header.disclosure.setChecked(True)
                 self.assertFalse(header.explanation.isHidden())

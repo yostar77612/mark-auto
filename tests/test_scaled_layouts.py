@@ -22,7 +22,7 @@ def layout_defects(page):
 
     def inspect(layout):
         widgets = []
-        for entry in layout_entries(layout):
+        for entry in layout_entries(layout, layout.parentWidget()):
             if isinstance(entry, QLayout):
                 widgets.extend(inspect(entry))
             elif entry.isVisibleTo(page):

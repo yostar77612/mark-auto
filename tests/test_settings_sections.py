@@ -53,7 +53,7 @@ class SettingsSectionsTests(unittest.TestCase):
         self.assertEqual(
             [group.title() for group in page.settings_sections], [ui_text('settings.' + key) for key in ('connection', 'general', 'backup', 'about')]
         )
-        top_groups = layout_entries(page.layout())
+        top_groups = layout_entries(page.layout(), page)
         self.assertEqual([group for group in top_groups if isinstance(group, QGroupBox)], page.settings_sections)
         visible = [widget for widget in page.findChildren(QLabel) + page.findChildren(QLineEdit) if widget.isVisibleTo(page)]
         for widget in visible:

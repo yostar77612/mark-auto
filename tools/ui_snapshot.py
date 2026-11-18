@@ -71,7 +71,7 @@ def _has_label(widget, page):
                 return True
         index = layout.indexOf(widget)
         if index > 0:
-            previous = layout_entry(layout, index - 1)
+            previous = layout_entry(layout, index - 1, widget.parentWidget())
             if isinstance(previous, QLabel) and previous.text().strip() and previous.isVisibleTo(page):
                 return True
         return any(in_layout(child) for child in child_layouts(layout))

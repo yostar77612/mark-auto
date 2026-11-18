@@ -58,7 +58,7 @@ class PanelCardTests(unittest.TestCase):
             panel.title_bar.layout().activate()
             panel.controls.layout().activate()
             self.assertEqual(panel.title_bar.height(), PANEL_TITLE_HEIGHT)
-            self.assertEqual(layout_entries(panel.controls.layout())[:2], controls)
+            self.assertEqual(layout_entries(panel.controls.layout(), panel.controls)[:2], controls)
             self.assertLess(controls[0].geometry().right(), controls[1].x())
             offsets.append(panel.title_bar.width() - panel.controls.geometry().right())
         self.assertEqual(offsets[0], offsets[1])

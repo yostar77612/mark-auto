@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
+import shiboken6
 from desktop_app.shell.onboarding import GettingStarted, WORKFLOW_ORDER
 from desktop_app.strings.catalog import ui_text
 from desktop_app.shell.theme import build_app_stylesheet
@@ -20,6 +21,14 @@ from tests import test_paper as paper_fixtures
 # e0e604f GettingStarted, shared interpreter, offscreen, dark AND light QSS: 288 px.
 # This historical measurement is a bound for reclamation, not a platform font oracle.
 BASELINE_E0E604F_HEIGHT = 288
+
+
+def item_is_empty(layout, index):
+    """QLayoutItem.isEmpty() without leaving the item wrapper pinned (see desktop_app/components/layout_items.py)."""
+    item = layout.itemAt(index)
+    empty = item.isEmpty()
+    shiboken6.invalidate(item)
+    return empty
 
 
 class CompactOnboardingTests(unittest.TestCase):
@@ -94,13 +103,13 @@ class CompactOnboardingTests(unittest.TestCase):
         layout.addWidget(content)
         parent.ensurePolished()
         visible_height = layout.sizeHint().height()
-        self.assertFalse(layout.itemAt(0).isEmpty())
+        self.assertFalse(item_is_empty(layout, 0))
         self.shell._dataset_ready = True
         bar.refresh()
         self.assertFalse(bar.isHidden(), 'partial completion must still show completed and pending steps')
         bar.set_dismissed(True)
         self.assertTrue(bar.isHidden())
-        self.assertTrue(layout.itemAt(0).isEmpty())
+        self.assertTrue(item_is_empty(layout, 0))
         self.assertEqual(layout.sizeHint().height(), visible_height - bar.sizeHint().height())
         self.assertEqual(layout.sizeHint().height(), content.sizeHint().expandedTo(content.minimumSize()).height())
 
