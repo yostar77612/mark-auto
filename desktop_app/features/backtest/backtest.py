@@ -16,6 +16,7 @@ from desktop_app.components.async_status import AsyncStatus
 from desktop_app.components.equity import EquityPlot
 from desktop_app.components.result_widgets import KpiCards, TaipeiFillsTable
 from desktop_app.components.design import card, section
+from desktop_app.components.layout_items import layout_entry
 from desktop_app.shell.palette_commands import page_index
 from desktop_app.features.strategy.forms import FAMILY_LABELS
 
@@ -27,7 +28,7 @@ class BacktestPage(QWidget):
         self.state = host.state
         layout = self.host.mount_page(self, ui_text('ui.backtest_page.title'))
         setup = card(layout, 'redesign.backtest.conditions')
-        self._setup_panel = layout.itemAt(layout.count() - 1).widget()
+        self._setup_panel = layout_entry(layout, layout.count() - 1)
         self.setup_toggle = QToolButton()
         self.setup_toggle.setObjectName('backtest_setup_toggle')
         self.setup_toggle.setText(ui_text('redesign.backtest.setup_again'))
@@ -82,7 +83,7 @@ class BacktestPage(QWidget):
         self.result_empty.set_state('empty', message=ui_text('ui.show_result.no_result'))
         layout.addWidget(self.result_empty)
         self._report_layout = section(layout, 'redesign.backtest.details', key='redesign_backtest_report', state=self.state)
-        report_section = layout.itemAt(layout.count() - 1).widget()
+        report_section = layout_entry(layout, layout.count() - 1)
         self._report_layout.addWidget(self.result_detail)
         self.result_card = BacktestSummaryCard()
         self._report_layout.addWidget(self.result_card)
@@ -91,7 +92,7 @@ class BacktestPage(QWidget):
         self._report_layout.addWidget(self.kpis)
         self.fills_table = TaipeiFillsTable()
         fills = section(layout, 'redesign.backtest.fills', key='redesign_backtest_fills', state=self.state)
-        fills_section = layout.itemAt(layout.count() - 1).widget()
+        fills_section = layout_entry(layout, layout.count() - 1)
         fills.addWidget(self.fills_table)
         self.fills_table.setMaximumHeight(280)
         compare_button = self.host.button(layout, ui_text('redesign.backtest.compare'), 'backtest_to_compare', self.compare_result)
@@ -112,7 +113,7 @@ class BacktestPage(QWidget):
             report_button,
             notice,
             paper_button,
-            layout.itemAt(layout.count() - 1).widget(),
+            layout_entry(layout, layout.count() - 1),
         )
         for kind, caption in (('signal', ui_text('ui.backtest_page.show_signals')), ('fill', ui_text('ui.backtest_page.show_fills'))):
             toggle = QCheckBox(caption)

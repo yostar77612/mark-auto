@@ -6,13 +6,14 @@ from zoneinfo import ZoneInfo
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QToolButton, QVBoxLayout
 
+from desktop_app.components.layout_items import layout_entry
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.domain.models import Environment
 
 
 def install_context_header(window):
     outer = window.centralWidget().layout()
-    header, summary_row = outer.itemAt(0).layout(), outer.itemAt(1).layout()
+    header, summary_row = layout_entry(outer, 0), layout_entry(outer, 1)
     header.removeWidget(window.context)
     for widget in (window.summary, window.research_job, window.cancel_research_button):
         summary_row.removeWidget(widget)

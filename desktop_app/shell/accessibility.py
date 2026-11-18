@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QSizePolicy,
 )
+from desktop_app.components.layout_items import layout_entry
 from desktop_app.strings.catalog import ui_text
 
 INTERACTIVE = (QAbstractButton, QLineEdit, QComboBox, QAbstractSpinBox, QTabBar, QAbstractItemView, QPlainTextEdit, QTextEdit)
@@ -38,11 +39,10 @@ def semantic_name(widget):
             if isinstance(label, QLabel):
                 return label.text()
         if layout:
-            for i in range(1, layout.count()):
-                if layout.itemAt(i).widget() is widget:
-                    previous = layout.itemAt(i - 1).widget()
-                    if isinstance(previous, QLabel) and previous.text():
-                        return previous.text()
+            index = layout.indexOf(widget)
+            previous = layout_entry(layout, index - 1) if index >= 1 else None
+            if isinstance(previous, QLabel) and previous.text():
+                return previous.text()
     if isinstance(widget, QTabBar):
         return ui_text('access.tabs')
     if isinstance(widget, QAbstractItemView):

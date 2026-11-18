@@ -9,6 +9,7 @@ from desktop_app.features.market.history_dialog import MarketHistoryDialog
 from desktop_app.shell.host import PageHost
 from desktop_app.features.data.data_gaps import GapPanel
 from desktop_app.components.design import card, section
+from desktop_app.components.layout_items import layout_entry
 from desktop_app.shell.palette_commands import page_index
 from desktop_app.components.result_widgets import taipei_time
 
@@ -31,10 +32,10 @@ class DataPage(QWidget):
         self.overview.setWordWrap(True)
         layout.addWidget(QLabel(ui_text('redesign.data.flow')))
         current = card(layout, 'redesign.data.loaded')
-        self.current_panel = layout.itemAt(layout.count() - 1).widget()
+        self.current_panel = layout_entry(layout, layout.count() - 1)
         current.setContentsMargins(16, 10, 16, 10)
         current.setSpacing(6)
-        current.itemAt(0).widget().hide()
+        layout_entry(current, 0).hide()
         current_row = QHBoxLayout()
         current.addLayout(current_row)
         current_row.addWidget(self.data_card, 1)

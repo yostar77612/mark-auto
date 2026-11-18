@@ -53,6 +53,7 @@ def _input_widgets(page):
 
 def _has_label(widget, page):
     from PySide6.QtWidgets import QAbstractButton, QFormLayout, QLabel
+    from desktop_app.components.layout_items import child_layouts, layout_entry
 
     if widget.accessibleName().strip():
         return True
@@ -68,15 +69,12 @@ def _has_label(widget, page):
             label = layout.labelForField(widget)
             if isinstance(label, QLabel) and label.text().strip() and label.isVisibleTo(page):
                 return True
-        for index in range(layout.count()):
-            item = layout.itemAt(index)
-            if item.widget() is widget and index:
-                previous = layout.itemAt(index - 1).widget()
-                if isinstance(previous, QLabel) and previous.text().strip() and previous.isVisibleTo(page):
-                    return True
-            if item.layout() and in_layout(item.layout()):
+        index = layout.indexOf(widget)
+        if index > 0:
+            previous = layout_entry(layout, index - 1)
+            if isinstance(previous, QLabel) and previous.text().strip() and previous.isVisibleTo(page):
                 return True
-        return False
+        return any(in_layout(child) for child in child_layouts(layout))
 
     parent = widget.parentWidget()
     return bool(parent and parent.layout() and in_layout(parent.layout()))

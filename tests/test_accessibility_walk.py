@@ -365,6 +365,26 @@ class WorkspaceAccessibilityTests(unittest.TestCase):
 
 
 class AccessibilityWalkTests(WindowFixture):
+    def test_building_the_window_pins_no_layout_items(self):
+        # PySide6 keeps each item QLayout.itemAt() returns alive under the layout's wrapper; once Qt deletes that
+        # item itself the wrapper dangles (stale objects, native crashes). See desktop_app/components/layout_items.py.
+        import gc
+        from PySide6.QtWidgets import QLayout, QLayoutItem
+
+        def in_window(layout):
+            owner = layout.parentWidget() if shiboken6.isValid(layout) else None
+            return owner is not None and (owner is self.window or self.window.isAncestorOf(owner))
+
+        gc.collect()
+        pinned = [
+            type(item).__name__
+            for item in gc.get_objects()
+            if isinstance(item, QLayoutItem) and not isinstance(item, QLayout)
+            for holder in gc.get_referrers(item)
+            if isinstance(holder, QLayout) and in_window(holder)
+        ]
+        self.assertEqual(pinned, [])
+
     def test_all_controls_including_hidden_sections_have_names(self):
         offenders = []
         for widget in self.window.findChildren(QWidget):

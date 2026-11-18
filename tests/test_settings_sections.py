@@ -13,6 +13,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QToolButton, QGroupBox
 from desktop_app.strings.catalog import ui_text
 from tests.test_t9_onboarding import sandbox_ui
+from desktop_app.components.layout_items import layout_entries
 
 
 class SettingsSectionsTests(unittest.TestCase):
@@ -52,7 +53,7 @@ class SettingsSectionsTests(unittest.TestCase):
         self.assertEqual(
             [group.title() for group in page.settings_sections], [ui_text('settings.' + key) for key in ('connection', 'general', 'backup', 'about')]
         )
-        top_groups = [page.layout().itemAt(i).widget() for i in range(page.layout().count())]
+        top_groups = layout_entries(page.layout())
         self.assertEqual([group for group in top_groups if isinstance(group, QGroupBox)], page.settings_sections)
         visible = [widget for widget in page.findChildren(QLabel) + page.findChildren(QLineEdit) if widget.isVisibleTo(page)]
         for widget in visible:
