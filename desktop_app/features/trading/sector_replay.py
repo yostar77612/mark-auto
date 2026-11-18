@@ -151,10 +151,11 @@ class SectorReplayDialog(QDialog):
         else:
             self.step(1)
 
-    def closeEvent(self, event):
-        self._generation += 1  # answers still in flight are now stale
+    def done(self, result):
+        # Close, Esc and reject all end here: stop playback and mark answers still in flight as stale.
+        self._generation += 1
         self.stop()
-        super().closeEvent(event)
+        super().done(result)
 
     # --- rendering --------------------------------------------------------------
     def render(self, view):
