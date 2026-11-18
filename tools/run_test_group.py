@@ -534,6 +534,11 @@ def main(argv=None):
     parser.add_argument('--worker-index', type=int, choices=(0, 1), help=argparse.SUPPRESS)
     parser.add_argument('--worker-token', help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if os.name == 'nt' and os.environ.get('MARKAUTO_CRASH_DUMPS') == '1':
+        # CI collects native crash dumps through Windows Error Reporting; the runner's inherited
+        # SEM_NOGPFAULTERRORBOX would skip it. Children (research workers) inherit the cleared mode.
+        kernel = ctypes.windll.kernel32
+        kernel.SetErrorMode(kernel.GetErrorMode() & ~0x2)
     if args.core_slice is not None and (
         sys.platform != 'linux'
         or args.group != 'core'

@@ -127,10 +127,14 @@ jobs:
           'WerSvc: ' + (Get-Service WerSvc -ErrorAction SilentlyContinue).Status
           Add-Type -Namespace Probe -Name Kernel -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint GetErrorMode();'
           'Shell error mode: 0x{0:x}' -f [Probe.Kernel]::GetErrorMode()
+          # The runner's inherited error mode (0x8003) includes SEM_NOGPFAULTERRORBOX, which skips WER;
+          # run_test_group clears that bit when MARKAUTO_CRASH_DUMPS=1, and so does the self-check.
+          Add-Content $env:GITHUB_ENV 'MARKAUTO_CRASH_DUMPS=1'
+          $crash = 'import ctypes, faulthandler; k = ctypes.windll.kernel32; k.SetErrorMode(k.GetErrorMode() & ~2); faulthandler._read_null()'
           # Self-check twice (with and without faulthandler): a deliberate crash must leave a dump, then it is removed.
           foreach ($handler in '1', '') {
             $env:PYTHONFAULTHANDLER = $handler
-            python -c "import faulthandler; faulthandler._read_null()" 2>$null
+            python -c $crash 2>$null
             "self-check exit code (faulthandler '$handler'): $LASTEXITCODE"
             $deadline = (Get-Date).AddSeconds(10)
             while (-not (Get-ChildItem $dumps -Filter *.dmp) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
