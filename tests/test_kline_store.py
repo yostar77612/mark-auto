@@ -8,6 +8,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+import unittest.mock
 
 from quantlab.trading.adapters.storage.kline_store import KlineStore
 from quantlab.trading.domain.live_bars import LiveBar
@@ -40,6 +41,42 @@ class KlineStoreTests(unittest.TestCase):
         self.store.close()
         self.store = KlineStore(self.path)
         self.assertEqual(self.store.last_bar('TWSE:2330').close, Decimal('10.123456789123456789'))
+
+    def test_repeated_reads_decode_only_new_or_upserted_rows_and_match_a_fresh_store(self):
+        import quantlab.trading.adapters.storage.kline_store as module
+
+        self.store.upsert(tuple(minute(offset) for offset in range(10)), source='LIVE_TICKS')
+        hour = timedelta(hours=1)
+        self.assertEqual(len(self.store.read('TWSE:2330', START, START + hour)), 10)
+        decoded = []
+        original = module._decode
+
+        def counting(row):
+            decoded.append(row[1])
+            return original(row)
+
+        with unittest.mock.patch.object(module, '_decode', counting):
+            # Nothing changed: the sliding window decodes nothing again.
+            self.assertEqual(len(self.store.read('TWSE:2330', START, START + hour + timedelta(seconds=5))), 10)
+            self.assertEqual(decoded, [])
+            # An official correction of an old bar and a new bar: only rows from the corrected bar on are decoded.
+            self.store.upsert((minute(3, close='20'),))
+            self.store.upsert((minute(10, close='21'),), source='LIVE_TICKS')
+            # A live bar never replaces an official one; the read must still show the official price.
+            self.store.upsert((minute(3, close='30'),), source='LIVE_TICKS')
+            bars = self.store.read('TWSE:2330', START + timedelta(minutes=1), START + hour + timedelta(seconds=10))
+            self.assertEqual(len(decoded), 8)
+        self.assertEqual([bar.start for bar in bars], [minute(offset).start for offset in range(1, 11)])
+        self.assertEqual(bars[2].close, Decimal('20'))
+        self.assertEqual(bars[-1].close, Decimal('21'))
+        # A range ending earlier than the cached one is a plain read; every answer equals a fresh store's.
+        # A narrow read that ends before a later correction keeps that correction pending for the next wide read.
+        self.store.upsert((minute(8, close='40'),))
+        self.assertEqual(len(self.store.read('TWSE:2330', START, START + timedelta(minutes=5))), 5)
+        self.assertEqual(self.store.read('TWSE:2330', START, START + hour + timedelta(seconds=20))[8].close, Decimal('40'))
+        with closing(KlineStore(self.path)) as fresh:
+            self.assertEqual(self.store.read('TWSE:2330', START, START + timedelta(minutes=4)), fresh.read('TWSE:2330', START, START + timedelta(minutes=4)))
+            self.assertEqual(self.store.read('TWSE:2330', START, START + hour), fresh.read('TWSE:2330', START, START + hour))
 
     def test_official_history_overwrites_live_and_live_cannot_overwrite_official(self):
         self.store.upsert((minute(close='11'),), source='LIVE_TICKS')

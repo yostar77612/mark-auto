@@ -49,7 +49,7 @@ class FreshnessTests(unittest.TestCase):
             {'snapshot_bar_tail': 0},
             {'snapshot_bar_tail': 33},
             {'series_page_limit': 0},
-            {'series_page_limit': 1001},
+            {'series_page_limit': 4001},
         ):
             with self.subTest(changes=changes), self.assertRaises(DomainError):
                 replace(settings, **changes)

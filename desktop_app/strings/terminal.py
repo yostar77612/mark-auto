@@ -48,5 +48,5 @@ ENTRIES = (
     (56, 2676, 'terminal.diagnostics', '進階診斷'),
     (56, 2677, 'terminal.search_icon', '搜尋商品'),
     (56, 2678, 'terminal.state_dot', '●'),
-    (56, 2679, 'terminal.cache_rebuilt', '本機 K 線庫已重建，原檔已保留；可重新更新歷史'),
+    (56, 2679, 'terminal.cache_rebuilt', '本機 K 線庫已重建，原檔已保留；歷史 K 線會自動重新下載'),
 )

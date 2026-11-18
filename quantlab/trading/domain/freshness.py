@@ -23,7 +23,8 @@ class LiveMarketSettings:
     queue_limit: int = 10000
     subscription_limit: int = 20
     snapshot_bar_tail: int = 2
-    series_page_limit: int = 1000
+    # About 480 bytes per bar on the wire: 4000 bars stay well under the 4 MiB IPC frame and cut a year of 1m bars to 17 pages.
+    series_page_limit: int = 4000
 
     def __post_init__(self) -> None:
         for name in ('delayed_seconds', 'stopped_seconds', 'buffer_trade_days', 'queue_limit', 'subscription_limit', 'snapshot_bar_tail', 'series_page_limit'):

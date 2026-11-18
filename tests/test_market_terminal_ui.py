@@ -376,6 +376,22 @@ class TerminalTests(unittest.TestCase):
             self.assertEqual(restored.layouts['Research'], terminal_preset())
             self.assertFalse((Path(folder) / FILE_NAME).exists())
 
+    def test_switching_back_to_a_period_paints_its_last_bars_at_once_and_history_refreshes_itself(self):
+        self.assertIsNone(self.widget.findChild(QAbstractButton, 'terminal_refresh_history'))
+        key = self.widget.current_instrument
+        self.widget.select_period('5m')
+        self.wait_for(lambda: self.widget.period == '5m' and not self.widget._requests)
+        five = self.widget.chart.bars
+        self.widget.select_period('1m')
+        self.wait_for(lambda: self.widget.period == '1m' and not self.widget._requests)
+        self.assertNotEqual(self.widget.chart.bars, five)
+        # Before any answer arrives, the cached 5m page is already on the chart.
+        self.widget.select_period('5m')
+        self.assertEqual(self.widget.chart.bars, five)
+        self.assertEqual(self.widget._last_series[:2], (key, '5m'))
+        self.wait_for(lambda: not self.widget._requests)
+        self.assertEqual(self.widget.chart.bars, five)
+
     def test_accessible_controls_and_status_diagnostics(self):
         self.assertEqual(self.widget.chart.price_rect.top(), 86)  # the plain chart keeps its three header rows
         self.assertEqual(self.widget.index_chart.price_rect.top(), 12)
