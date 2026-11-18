@@ -70,6 +70,12 @@ def phase_text(view):
     return text + (' · ' + reason_text(view.error_code) if view.error_code else '')
 
 
+def code_hint(code):
+    """The public reason code for the hover text; an unknown, possibly vendor, value is never shown."""
+    known = code == 'operation_failed' or reason_text(code) != ui_text('m2.connection.operation_failed')
+    return ui_text('v2.failure_code').format(code) if code and known else ''
+
+
 def certificate_text(status):
     return {
         'NOT_REQUIRED': ui_text('m2.connection.ca_not_required'),

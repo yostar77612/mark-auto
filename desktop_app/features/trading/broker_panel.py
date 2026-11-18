@@ -48,6 +48,7 @@ class BrokerPanel(QWidget):
         self._loading, self._initialized, self._busy = False, False, False
         self._connection_dirty, self._certificate_dirty, self._failure = False, False, ''
         self._available = True
+        self._unavailable_hint = ''
         self.account_boxes = {}
         self.account_guidance = {}
         self._layout = QVBoxLayout(self)
@@ -305,8 +306,9 @@ class BrokerPanel(QWidget):
             self._paint(self.readiness_labels[item.code], text.readiness_text(item), 'BLOCKED' if item.code == 'production_orders' else item.state)
         self._enabled()
 
-    def unavailable(self):
+    def unavailable(self, reason=''):
         self._available = False
+        self._unavailable_hint = ui_text('v2.failure_code').format(reason) if reason else ''
         self._failure = ui_text('m2.connection.outcome_unknown')
         for item in self.view.readiness:
             self._paint(
@@ -387,3 +389,5 @@ class BrokerPanel(QWidget):
         self.draft_notice.setVisible(self.dirty)
         message = ui_text('m2.connection.busy') if self._busy else self._failure or text.phase_text(self.view)
         self._paint(self.status, message, 'CONNECTING' if self._busy else 'FAILED' if self._failure or self.view.error_code else self.view.phase)
+        # The wording stays plain; the exact public code sits in the hover text for reports and diagnosis.
+        self.status.setToolTip('' if self._busy else self._unavailable_hint if not self._available else text.code_hint(self.view.error_code))

@@ -219,6 +219,22 @@ class SinopacPanelUiTests(unittest.TestCase):
         self.panel.apply(SinopacConnectionView(revision=1, error_code='VENDOR_UNSAFE_DETAIL'))
         self.assertNotIn('VENDOR_UNSAFE_DETAIL', self.panel.status.text())
 
+    def test_status_hover_names_a_known_public_code_but_never_an_unknown_one(self):
+        self.panel.apply(SinopacConnectionView(revision=1, error_code='callback_failed'))
+        self.assertNotIn('callback_failed', self.panel.status.text())
+        self.assertIn('callback_failed', self.panel.status.toolTip())
+        self.panel.apply(SinopacConnectionView(revision=2, error_code='VENDOR_UNSAFE_DETAIL'))
+        self.assertEqual(self.panel.status.toolTip(), '')
+        self.panel.apply(SinopacConnectionView(revision=3))
+        self.assertEqual(self.panel.status.toolTip(), '')
+
+    def test_unreachable_engine_hover_carries_the_failure_class(self):
+        self.panel.unavailable('ConnectionError')
+        self.assertIn('ConnectionError', self.panel.status.toolTip())
+        self.assertNotIn('ConnectionError', self.panel.status.text())
+        self.panel.apply(SinopacConnectionView(revision=9))
+        self.assertEqual(self.panel.status.toolTip(), '')
+
     def test_production_readiness_is_always_blocked_even_for_inconsistent_snapshot(self):
         view = connected_view()
         self.panel.apply(
