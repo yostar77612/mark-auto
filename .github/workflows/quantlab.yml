@@ -127,6 +127,11 @@ jobs:
           'WerSvc: ' + (Get-Service WerSvc -ErrorAction SilentlyContinue).Status
           Add-Type -Namespace Probe -Name Kernel -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint GetErrorMode();'
           'Shell error mode: 0x{0:x}' -f [Probe.Kernel]::GetErrorMode()
+          # Diagnostic: job-object limits seen by a child python (DIE_ON_UNHANDLED_EXCEPTION = 0x400) and debugger availability.
+          python -c "import ctypes; from ctypes import wintypes as w; k = ctypes.windll.kernel32; b = (ctypes.c_byte * 144)(); r = w.DWORD(); ok = k.QueryInformationJobObject(None, 9, b, 144, ctypes.byref(r)); print('python error mode', hex(k.GetErrorMode()), 'job query', ok, 'limit flags', hex(int.from_bytes(bytes(b[16:20]), 'little')))"
+          'cdb: ' + ((Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64', 'C:\Program Files\Windows Kits\10\Debuggers\x64' -Filter cdb.exe -ErrorAction SilentlyContinue | Select-Object -First 1).FullName)
+          'procdump/windbg on PATH: ' + ((Get-Command procdump.exe, procdump64.exe, windbg.exe, cdb.exe -ErrorAction SilentlyContinue).Source -join ', ')
+          'AeDebug: ' + ((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug' -ErrorAction SilentlyContinue) | Select-Object Debugger, Auto | Out-String).Trim()
           # The runner's inherited error mode (0x8003) includes SEM_NOGPFAULTERRORBOX, which skips WER;
           # run_test_group clears that bit when MARKAUTO_CRASH_DUMPS=1, and so does the self-check.
           Add-Content $env:GITHUB_ENV 'MARKAUTO_CRASH_DUMPS=1'
