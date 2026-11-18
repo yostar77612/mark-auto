@@ -109,6 +109,8 @@ jobs:
       # Windows Error Reporting dumps, so WER LocalDumps cannot do this.
       - name: Enable native crash dumps
         if: runner.os == 'Windows'
+        # Diagnostics only: this step can never fail the job.
+        continue-on-error: true
         shell: pwsh
         run: |
           $dumps = Join-Path $env:RUNNER_TEMP 'crash-dumps'
@@ -125,10 +127,11 @@ jobs:
           Add-Content $env:GITHUB_ENV 'MARKAUTO_CRASH_DUMPS=1'
           # Self-check: a deliberate crash must leave a dump and a stack, then both are removed.
           python -c 'import ctypes, faulthandler; k = ctypes.windll.kernel32; k.SetErrorMode(k.GetErrorMode() & ~2); faulthandler._read_null()' 2>$null
+          $log = Join-Path $dumps 'cdb.log'
           $deadline = (Get-Date).AddSeconds(60)
-          while (-not (Select-String -Path "$dumps\cdb.log" -Pattern 'quit:' -Quiet -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
+          while (-not ((Test-Path $log) -and (Select-String -Path $log -Pattern 'quit:' -Quiet)) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
           if (Get-ChildItem $dumps -Filter *.dmp) { 'Native crash dumps enabled.' } else { '::warning::The self-check crash left no dump.' }
-          Get-Content "$dumps\cdb.log" -ErrorAction SilentlyContinue | Select-String -Pattern 'ExceptionCode|python3|00 ' | Select-Object -First 6
+          if (Test-Path $log) { Get-Content $log | Select-String -Pattern 'ExceptionCode|python3|00 ' | Select-Object -First 6 }
           Start-Sleep -Seconds 2
           Get-ChildItem $dumps | Remove-Item -Force -ErrorAction SilentlyContinue
           exit 0
