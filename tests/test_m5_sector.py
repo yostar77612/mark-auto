@@ -597,6 +597,47 @@ class BoardWidgetTests(unittest.TestCase):
             completed(None, RuntimeError('late failure'))
             self.assertEqual(pending, [], how)
 
+    def test_escape_stops_playback_and_a_late_answer_does_not_touch_the_hidden_dialog(self):
+        from PySide6.QtTest import QTest
+
+        from desktop_app.features.trading.sector_replay import SectorReplayDialog
+        from quantlab.trading.application.sector_contracts import HistoryRow, SectorHistoryView
+
+        row = HistoryRow('a', 'A', 10, 500, 6000, 1, 300_000_000, 5, True)
+        view = SectorHistoryView(('2026-11-12',), '2026-11-12', ('09:00', '09:01'), '09:01', (row,))
+        pending = []
+        dialog = release(self, SectorReplayDialog(SimpleNamespace(sector_history=lambda query: view), lambda op, done: pending.append((op, done))))
+        while pending:
+            operation, completed = pending.pop(0)
+            completed(operation(), None)
+        dialog.show()
+        dialog.toggle_play()
+        self.assertTrue(dialog.timer.isActive())
+        dialog.slider.setValue(0)
+        late = pending.pop()  # the minute read this move started is still in flight
+        before = dialog.table.item(0, 1).text()
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        self.assertFalse(dialog.isVisible())
+        self.assertFalse(dialog.timer.isActive())  # closed by Esc must not keep playing in the background
+        late[1](SectorHistoryView(('2026-11-12',), '2026-11-12', ('09:00', '09:01'), '09:00', (HistoryRow('z', 'Z', 99, 500, 6000, 1, 0, 5, True),)), None)
+        self.assertEqual(dialog.table.item(0, 1).text(), before)  # the stale answer was dropped
+
+    def test_closing_the_dialog_marks_in_flight_answers_stale(self):
+        from desktop_app.features.trading.sector_replay import SectorReplayDialog
+        from quantlab.trading.application.sector_contracts import HistoryRow, SectorHistoryView
+
+        row = HistoryRow('a', 'A', 10, 500, 6000, 1, 300_000_000, 5, True)
+        view = SectorHistoryView(('2026-11-12',), '2026-11-12', ('09:00',), '09:00', (row,))
+        pending = []
+        dialog = release(self, SectorReplayDialog(SimpleNamespace(sector_history=lambda query: view), lambda op, done: pending.append((op, done))))
+        dialog.show()
+        generation = dialog._generation
+        dialog.close()
+        self.assertGreater(dialog._generation, generation)
+        operation, completed = pending.pop()
+        completed(operation(), None)
+        self.assertEqual(dialog.table.rowCount(), 0)  # nothing was rendered into the closed dialog
+
     def test_a_failed_minute_read_clears_the_previous_rows_and_a_new_day_keeps_the_selection(self):
         from desktop_app.features.trading.sector_replay import SectorReplayDialog
         from quantlab.trading.application.sector_contracts import HistoryRow, SectorHistoryView
