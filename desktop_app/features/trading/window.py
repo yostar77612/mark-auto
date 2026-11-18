@@ -357,7 +357,7 @@ class TradingWindow(QMainWindow):
         if self._operation is not None and self._operation.command is not None and self._operation.command.action is UiAction.BUILD_AUTO_STRATEGY:
             self.auto_strategies.failed()
         self._engine_reachable = False
-        self.broker_panel.unavailable()
+        self.broker_panel.unavailable(reason)
         self._feedback(ui_text('v2.connection_failed') + (' ' + ui_text('v2.failure_code').format(reason) if reason else ''))
 
     def _finished(self) -> None:
