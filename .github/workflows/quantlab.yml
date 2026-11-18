@@ -103,10 +103,10 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       # The intermittent Windows "access violation" shows only Python frames.
-      # cdb (preinstalled with the Windows SDK) is registered as the post-mortem
-      # debugger: a crashed python.exe gets a full dump and a logged native stack,
-      # with no code of ours inside the crashing process. Hosted runners write no
-      # Windows Error Reporting dumps, so WER LocalDumps cannot do this.
+      # Hosted runners neither write Windows Error Reporting dumps nor start a
+      # post-mortem debugger, so Sysinternals ProcDump attaches to the test
+      # python.exe and writes a full dump only on an unhandled exception. It does
+      # not wrap the process: the test step's exit code is unchanged.
       - name: Enable native crash dumps
         if: runner.os == 'Windows'
         # Diagnostics only: this step can never fail the job.
@@ -114,26 +114,25 @@ jobs:
         shell: pwsh
         run: |
           $dumps = Join-Path $env:RUNNER_TEMP 'crash-dumps'
-          New-Item -ItemType Directory -Force $dumps | Out-Null
-          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64', 'C:\Program Files\Windows Kits\10\Debuggers\x64' -Filter cdb.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $cdb) { '::warning::cdb.exe not found; native crash dumps are off.'; exit 0 }
-          $commands = ".dump /ma /u $dumps\python.dmp; .ecxr; kn 80; lmv m Qt6*; q"
-          $debugger = '"{0}" -p %ld -e %ld -g -loga "{1}\cdb.log" -c "{2}"' -f $cdb.FullName, $dumps, $commands
-          $aedebug = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug'
-          New-ItemProperty -Force $aedebug -Name Debugger -PropertyType String -Value $debugger | Out-Null
-          New-ItemProperty -Force $aedebug -Name Auto -PropertyType String -Value '1' | Out-Null
-          # The runner's inherited error mode (0x8003) has SEM_NOGPFAULTERRORBOX, which skips the
-          # post-mortem debugger; run_test_group clears that bit when MARKAUTO_CRASH_DUMPS=1.
-          Add-Content $env:GITHUB_ENV 'MARKAUTO_CRASH_DUMPS=1'
-          # Self-check: a deliberate crash must leave a dump and a stack, then both are removed.
-          python -c 'import ctypes, faulthandler; k = ctypes.windll.kernel32; k.SetErrorMode(k.GetErrorMode() & ~2); faulthandler._read_null()' 2>$null
-          $log = Join-Path $dumps 'cdb.log'
-          $deadline = (Get-Date).AddSeconds(60)
-          while (-not ((Test-Path $log) -and (Select-String -Path $log -Pattern 'quit:' -Quiet)) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
-          if (Get-ChildItem $dumps -Filter *.dmp) { 'Native crash dumps enabled.' } else { '::warning::The self-check crash left no dump.' }
-          if (Test-Path $log) { Get-Content $log | Select-String -Pattern 'ExceptionCode|python3|00 ' | Select-Object -First 6 }
+          $tool = Join-Path $env:RUNNER_TEMP 'procdump'
+          New-Item -ItemType Directory -Force $dumps, $tool | Out-Null
+          Invoke-WebRequest https://download.sysinternals.com/files/Procdump.zip -OutFile "$tool\procdump.zip"
+          Expand-Archive "$tool\procdump.zip" $tool -Force
+          $exe = Join-Path $tool 'procdump64.exe'
+          $signature = Get-AuthenticodeSignature $exe
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notlike '*O=Microsoft Corporation*') {
+            "::warning::ProcDump signature is not a valid Microsoft signature ($($signature.Status)); native crash dumps are off."
+            exit 0
+          }
+          # Self-check in the same attach mode: a deliberate crash must leave a dump, then it is removed.
+          $watch = Start-Process $exe -ArgumentList '-accepteula', '-ma', '-e', '-w', 'python.exe', $dumps -PassThru -WindowStyle Hidden
           Start-Sleep -Seconds 2
+          python -c 'import time, faulthandler; time.sleep(3); faulthandler._read_null()' 2>$null
+          $watch | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue
+          if (Get-ChildItem $dumps -Filter *.dmp) { 'Native crash dumps enabled.' } else { '::warning::The self-check crash left no dump; native crash dumps are off.'; exit 0 }
           Get-ChildItem $dumps | Remove-Item -Force -ErrorAction SilentlyContinue
+          # Attach to the next python.exe: the test runner started by the following step.
+          Start-Process $exe -ArgumentList '-accepteula', '-ma', '-e', '-w', 'python.exe', $dumps -WindowStyle Hidden -RedirectStandardOutput "$tool\procdump.log"
           exit 0
       - name: Run exact-coverage offline test group
         # Use the job-owned runner temp volume for every Windows producer;
@@ -147,8 +146,16 @@ jobs:
         timeout-minutes: 4
         shell: pwsh
         run: |
-          $log = Join-Path $env:RUNNER_TEMP 'crash-dumps\cdb.log'
-          if (Test-Path $log) { Get-Content $log } else { 'No native crash dump.' }
+          Start-Sleep -Seconds 5
+          Get-Content (Join-Path $env:RUNNER_TEMP 'procdump\procdump.log') -ErrorAction SilentlyContinue
+          $files = @(Get-ChildItem (Join-Path $env:RUNNER_TEMP 'crash-dumps') -Filter *.dmp -ErrorAction SilentlyContinue)
+          if (-not $files) { 'No native crash dump.'; exit 0 }
+          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64', 'C:\Program Files\Windows Kits\10\Debuggers\x64' -Filter cdb.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $cdb) { '::warning::cdb.exe not found; download the crash-dumps artifact.'; exit 0 }
+          foreach ($file in $files) {
+            "== $($file.Name)"
+            & $cdb.FullName -z $file.FullName -y 'srv*C:\symbols*https://msdl.microsoft.com/download/symbols' -c '.ecxr; kn 80; lmv m Qt6*; q'
+          }
           exit 0
       - name: Preserve native crash dumps
         if: failure() && runner.os == 'Windows'
