@@ -73,6 +73,12 @@ class BidAskTests(unittest.TestCase):
         stream.on_bidask(None, raw_bidask(levels=3))
         self.assertIsNone(stream.latest(STOCK.instrument_id))
 
+    def test_callback_accepts_the_sdk_single_argument_call(self):
+        stream = ShioajiBidAskStream({'2330': STOCK.instrument_id})
+        stream.set_active({STOCK.instrument_id})
+        stream.on_bidask(raw_bidask())  # bind=False delivers only the quote
+        self.assertIsNotNone(stream.latest(STOCK.instrument_id))
+
     def test_only_active_instruments_keep_the_latest_snapshot(self):
         stream = ShioajiBidAskStream({'2330': STOCK.instrument_id, '6104': OTHER.instrument_id})
         stream.on_bidask(None, raw_bidask())

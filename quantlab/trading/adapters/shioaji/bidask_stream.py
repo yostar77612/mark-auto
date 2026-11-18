@@ -47,7 +47,8 @@ class ShioajiBidAskStream:
             self._active = frozenset(instrument_ids)
             self._latest = {key: value for key, value in self._latest.items() if key in self._active}
 
-    def on_bidask(self, exchange: object, raw: object) -> None:
+    def on_bidask(self, *args: object) -> None:
+        raw = args[-1]  # bind=False delivers (quote); a bound or legacy call is (context/exchange, quote)
         try:
             instrument_id = self.by_code[sdk_text(sdk_value(raw, 'code'))]
             with self._lock:

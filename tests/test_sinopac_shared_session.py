@@ -59,6 +59,7 @@ class SharedSessionTests(unittest.TestCase):
         self.callbacks['order'][0]('order')
         self.assertEqual(seen, [('order',)])
         self.assertEqual(self.owner.callback_errors, 1)
+        self.assertEqual(self.owner.last_callback_error, 'set_order_callback:ValueError')  # class only, never the private text
         with self.assertRaises(DomainError):
             self.engine.login(api_key='fake', secret_key='fake', subscribe_trade=True)
         self.owner.close()

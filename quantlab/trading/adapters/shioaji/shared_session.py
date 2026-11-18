@@ -5,12 +5,15 @@ the terminal and a trading view retains one remote subscription. A consumer's
 logout only releases its leases. Only the owner can log out the native client.
 """
 
+import logging
 from threading import Lock, RLock
 from typing import Callable
 
 from quantlab.trading.domain.validation import DomainError, identity
 from .sdk import sdk_text, sdk_value
 from .sdk_facade import ShioajiSDKFacade
+
+logger = logging.getLogger(__name__)
 
 
 class SharedSDKSession:
@@ -25,6 +28,7 @@ class SharedSDKSession:
         self._closed = False
         self.logout_confirmed = False
         self.callback_errors = 0
+        self.last_callback_error = ''
 
     def login(self, *, api_key: str, secret_key: str) -> list[object]:
         with self._operations:
@@ -62,10 +66,13 @@ class SharedSDKSession:
         for callback in callbacks:
             try:
                 callback(*args)
-            except Exception:
-                # Do not leak native payloads or stop another consumer's delivery.
+            except Exception as error:
+                # Do not leak native payloads or stop another consumer's delivery. Only the callback name and the
+                # exception class are kept, so the engine log shows which handler failed without vendor text.
                 with self._lock:
                     self.callback_errors += 1
+                    self.last_callback_error = name + ':' + type(error).__name__
+                logger.error('Shared SDK callback %s failed with %s', name, type(error).__name__)
 
     def _active(self, consumer: str) -> None:
         if self._closed or consumer not in self._consumers:

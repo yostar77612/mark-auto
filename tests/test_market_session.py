@@ -163,6 +163,22 @@ class MarketSessionTests(unittest.TestCase):
         self.assertIsNone(self.session.facade)
         self.assertIn(('logout',), self.api.calls)
 
+    def test_stock_tick_callback_accepts_the_sdk_single_argument_call(self):
+        self.session.connect()
+        self.session.subscribe(STOCK)
+        raw = SimpleNamespace(code='2330', datetime=datetime(2026, 10, 30, 9, 0, 20), close=101, volume=3)
+        self.api.callbacks['stock'](raw)  # bind=False delivers only the tick; a two-argument handler raised TypeError for every tick
+        self.api.callbacks['stock'](None, raw)
+        self.assertEqual(('TWSE:2330', 'TWSE:2330'), tuple(tick.instrument_id for tick in self.session.drain_ticks(10)))
+
+    def test_index_callback_accepts_the_sdk_exchange_and_quote_pair(self):
+        self.session.connect()
+        self.session.subscribe(FIXED_INDICES[0])
+        quote = SimpleNamespace(code='IX0001', datetime=datetime(2026, 10, 30, 9, 0, 20), close=20000)
+        self.api.callbacks['index'](None, quote)  # a one-argument callback raised TypeError and marked the whole connection callback_failed
+        self.api.callbacks['index'](quote)
+        self.assertEqual(('INDEX:IX0001', 'INDEX:IX0001'), tuple(tick.instrument_id for tick in self.session.drain_ticks(10)))
+
     def test_stock_tick_naive_taipei_and_index_callback(self):
         self.session.connect()
         self.session.subscribe(STOCK)

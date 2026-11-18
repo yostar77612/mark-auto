@@ -146,7 +146,9 @@ class MarketSession:
     def _session_down(self, *args) -> None:
         self.connected = False
 
-    def _index_quote(self, raw: object) -> None:
+    def _index_quote(self, *args: object) -> None:
+        # The SDK delivers (exchange, quote) like the other quote callbacks; accept both shapes, the quote is last.
+        raw = args[-1]
         # Index QuoteIdxV1 carries the same datetime/close/code fields. Volume
         # is not share volume; omit it rather than mislabel index turnover.
         self.tick_stream.on_tick(None, IndexTick(raw))

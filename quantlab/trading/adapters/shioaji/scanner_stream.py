@@ -69,8 +69,9 @@ class ShioajiScannerStream:
         except (self.sdk.ShioajiError, OSError):
             raise DomainError('market_data_not_connected', 'scanner subscription') from None
 
-    def on_event(self, raw: object) -> None:
+    def on_event(self, *args: object) -> None:
         """Normalize only SDK boundary fields; never log raw vendor messages."""
+        raw = args[-1]  # (event) or (exchange, event); the event is last
         try:
             # Quote-scanner and gap events share this callback with signal events.
             if not hasattr(raw, 'scanner'):
