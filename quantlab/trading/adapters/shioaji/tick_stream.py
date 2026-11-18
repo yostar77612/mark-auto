@@ -89,8 +89,9 @@ class ShioajiTickStream:
             self._ticks = deque(tick for tick in self._ticks if tick.instrument_id in self._active)
             self._losses = {key: loss for key, loss in self._losses.items() if key in self._active}
 
-    def on_tick(self, exchange: object, raw: object) -> None:
+    def on_tick(self, *args: object) -> None:
         """The single callback guard; never expose vendor exception text."""
+        raw = args[-1]  # bind=False delivers (tick); a bound or legacy call is (context/exchange, tick)
         try:
             if not self.connected():
                 return
