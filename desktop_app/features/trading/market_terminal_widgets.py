@@ -80,9 +80,7 @@ def chart_panel(host):
         controls.addWidget(item)
     controls.addStretch()
     host.toggle_watch = button('terminal_toggle_watch', ui_text('terminal.add_watch'))
-    host.refresh_history = button('terminal_refresh_history', ui_text('terminal.refresh_history'))
     controls.addWidget(host.toggle_watch)
-    controls.addWidget(host.refresh_history)
     layout.addLayout(controls)
     identify(host.chart, 'watch_chart', ui_text('watch.chart'))
     host.chart.setMinimumSize(100, 90)
@@ -153,7 +151,6 @@ def build_terminal(host, layout_store, alerts_panel, panel_factory):
     host.message_timer.setInterval(5000)
     host.message_timer.timeout.connect(host.message.clear)
     host.toggle_watch.clicked.connect(host.toggle_current_watch)
-    host.refresh_history.clicked.connect(lambda: host.load_series(retry=True))
     host.retry.clicked.connect(lambda: host.load_series(retry=True))
 
 
@@ -224,6 +221,10 @@ def render_status(host):
 def render_chart(host, page):
     bars = series_bars(page)
     key = page.instrument_id, page.period
+    host._series_cache.pop(key, None)
+    if len(host._series_cache) >= 6:
+        host._series_cache.pop(next(iter(host._series_cache)))
+    host._series_cache[key] = page
     previous = host._last_series
     old = previous[2] if previous is not None and previous[:2] == key else ()
     if previous != (*key, bars):

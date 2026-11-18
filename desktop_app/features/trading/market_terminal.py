@@ -29,6 +29,8 @@ class MarketTerminalWidget(QWidget):
         self._book_loading = False
         self._directory, self._history_only, self._terminal_status = tuple(FIXED_INDICES), False, None
         self._sorts, self._last_series, self._occurred_at = {}, None, None
+        # The last page per (instrument, period), so switching back paints at once while the refresh runs.
+        self._series_cache = {}
         self._last_warning = ''
         self.latest_alert = ''
         identify(self, 'market_terminal', ui_text('terminal.title'))
@@ -164,8 +166,12 @@ class MarketTerminalWidget(QWidget):
             return
         self._selecting = True
         if changed:
-            self.chart.set_series(())
-            self._last_series = None
+            cached = self._series_cache.get((instrument_id, self.period))
+            if cached is not None:
+                render_chart(self, cached)
+            else:
+                self.chart.set_series(())
+                self._last_series = None
         self.render(self.state)
         key, period, generation = self.current_instrument, self.period, self._generation
 
@@ -197,6 +203,9 @@ class MarketTerminalWidget(QWidget):
     def select_period(self, period):
         self.periods[self.current_instrument] = period
         self.period = period
+        cached = self._series_cache.get((self.current_instrument, period))
+        if cached is not None:
+            render_chart(self, cached)
         self.select_instrument(self.current_instrument)
 
     def load_series(self, *, retry=False):
