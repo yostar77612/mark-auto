@@ -116,13 +116,29 @@ jobs:
           New-ItemProperty -Force $key -Name DumpFolder -PropertyType ExpandString -Value $dumps | Out-Null
           New-ItemProperty -Force $key -Name DumpType -PropertyType DWord -Value 1 | Out-Null
           New-ItemProperty -Force $key -Name DumpCount -PropertyType DWord -Value 5 | Out-Null
-          # Self-check: a deliberate crash must leave a dump, then it is removed.
-          python -c "import faulthandler; faulthandler._read_null()" 2>$null
-          $deadline = (Get-Date).AddSeconds(30)
-          while (-not (Get-ChildItem $dumps -Filter *.dmp) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
-          if (Get-ChildItem $dumps -Filter *.dmp) { 'Native crash dumps enabled.' } else { '::warning::Windows Error Reporting wrote no dump for the self-check crash.' }
-          Start-Sleep -Seconds 2
-          Get-ChildItem $dumps | Remove-Item -Force
+          # Hosted images may turn Windows Error Reporting off; turn it on for this VM only.
+          $wer = 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting'
+          'WER policy before: Disabled=' + (Get-ItemProperty $wer -ErrorAction SilentlyContinue).Disabled + ' DontShowUI=' + (Get-ItemProperty $wer -ErrorAction SilentlyContinue).DontShowUI
+          'WER policy (Policies) before: ' + ((Get-ItemProperty 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting' -ErrorAction SilentlyContinue) | Out-String).Trim()
+          New-ItemProperty -Force $wer -Name Disabled -PropertyType DWord -Value 0 | Out-Null
+          New-ItemProperty -Force $wer -Name DontShowUI -PropertyType DWord -Value 1 | Out-Null
+          Set-Service WerSvc -StartupType Manual -ErrorAction SilentlyContinue
+          Start-Service WerSvc -ErrorAction SilentlyContinue
+          'WerSvc: ' + (Get-Service WerSvc -ErrorAction SilentlyContinue).Status
+          Add-Type -Namespace Probe -Name Kernel -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint GetErrorMode();'
+          'Shell error mode: 0x{0:x}' -f [Probe.Kernel]::GetErrorMode()
+          # Self-check twice (with and without faulthandler): a deliberate crash must leave a dump, then it is removed.
+          foreach ($handler in '1', '') {
+            $env:PYTHONFAULTHANDLER = $handler
+            python -c "import faulthandler; faulthandler._read_null()" 2>$null
+            "self-check exit code (faulthandler '$handler'): $LASTEXITCODE"
+            $deadline = (Get-Date).AddSeconds(10)
+            while (-not (Get-ChildItem $dumps -Filter *.dmp) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }
+            if (Get-ChildItem $dumps -Filter *.dmp) { "Native crash dump written (faulthandler '$handler')." } else { "::warning::No dump for the self-check crash (faulthandler '$handler')." }
+            Start-Sleep -Seconds 2
+            Get-ChildItem $dumps | Remove-Item -Force -ErrorAction SilentlyContinue
+          }
+          $env:PYTHONFAULTHANDLER = '1'
           exit 0
       - name: Run exact-coverage offline test group
         # Use the job-owned runner temp volume for every Windows producer;
@@ -133,6 +149,7 @@ jobs:
         run: python tools/run_test_group.py --group ${{ matrix.group }} --manifest dist/validation/test-inventory.json --workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }} ${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}
       - name: Print native crash stacks
         if: failure() && runner.os == 'Windows'
+        timeout-minutes: 4
         shell: pwsh
         run: |
           Start-Sleep -Seconds 5
