@@ -106,33 +106,39 @@ jobs:
       # Hosted runners neither write Windows Error Reporting dumps nor start a
       # post-mortem debugger, so Sysinternals ProcDump attaches to the test
       # python.exe and writes a full dump only on an unhandled exception. It does
-      # not wrap the process: the test step's exit code is unchanged.
+      # not wrap the process: the test step's exit code is unchanged. Every path
+      # of this diagnostic ends with exit 0.
       - name: Enable native crash dumps
         if: runner.os == 'Windows'
-        # Diagnostics only: this step can never fail the job.
-        continue-on-error: true
         shell: pwsh
         run: |
-          $dumps = Join-Path $env:RUNNER_TEMP 'crash-dumps'
-          $tool = Join-Path $env:RUNNER_TEMP 'procdump'
-          New-Item -ItemType Directory -Force $dumps, $tool | Out-Null
-          Invoke-WebRequest https://download.sysinternals.com/files/Procdump.zip -OutFile "$tool\procdump.zip"
-          Expand-Archive "$tool\procdump.zip" $tool -Force
-          $exe = Join-Path $tool 'procdump64.exe'
-          $signature = Get-AuthenticodeSignature $exe
-          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notlike '*O=Microsoft Corporation*') {
-            "::warning::ProcDump signature is not a valid Microsoft signature ($($signature.Status)); native crash dumps are off."
-            exit 0
+          try {
+            $dumps = Join-Path $env:RUNNER_TEMP 'crash-dumps'
+            $tool = Join-Path $env:RUNNER_TEMP 'procdump'
+            New-Item -ItemType Directory -Force $dumps, $tool | Out-Null
+            Invoke-WebRequest https://download.sysinternals.com/files/Procdump.zip -OutFile "$tool\procdump.zip"
+            Expand-Archive "$tool\procdump.zip" $tool -Force
+            $exe = Join-Path $tool 'procdump64.exe'
+            $signature = Get-AuthenticodeSignature $exe
+            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch '(^|, )O=Microsoft Corporation(,|$)') {
+              "::warning::ProcDump is not validly signed by Microsoft ($($signature.Status)); native crash dumps are off."
+              exit 0
+            }
+            # Self-check: a deliberate crash must leave a dump, then it is removed.
+            $check = Start-Process $exe -ArgumentList '-accepteula', '-ma', '-e', '-w', 'python.exe', $dumps -PassThru -WindowStyle Hidden
+            Start-Sleep -Seconds 2
+            python -c 'import time, faulthandler; time.sleep(3); faulthandler._read_null()' 2>$null
+            $check | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue
+            if (-not (Get-ChildItem $dumps -Filter *.dmp)) { '::warning::The self-check crash left no dump; native crash dumps are off.'; exit 0 }
+            Get-ChildItem $dumps | Remove-Item -Force -ErrorAction SilentlyContinue
+            # Each step's processes end with the step, so the watcher for the next python.exe
+            # (the test runner of the following step) is started through WMI, outside this step.
+            $line = 'cmd /c ""{0}" -accepteula -ma -e -w python.exe "{1}" > "{2}\procdump.log" 2>&1"' -f $exe, $dumps, $tool
+            $started = Invoke-CimMethod Win32_Process -MethodName Create -Arguments @{ CommandLine = $line }
+            "Native crash dumps enabled (watcher process $($started.ProcessId), result $($started.ReturnValue))."
+          } catch {
+            "::warning::Native crash dumps are off: $($_.Exception.Message)"
           }
-          # Self-check in the same attach mode: a deliberate crash must leave a dump, then it is removed.
-          $watch = Start-Process $exe -ArgumentList '-accepteula', '-ma', '-e', '-w', 'python.exe', $dumps -PassThru -WindowStyle Hidden
-          Start-Sleep -Seconds 2
-          python -c 'import time, faulthandler; time.sleep(3); faulthandler._read_null()' 2>$null
-          $watch | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue
-          if (Get-ChildItem $dumps -Filter *.dmp) { 'Native crash dumps enabled.' } else { '::warning::The self-check crash left no dump; native crash dumps are off.'; exit 0 }
-          Get-ChildItem $dumps | Remove-Item -Force -ErrorAction SilentlyContinue
-          # Attach to the next python.exe: the test runner started by the following step.
-          Start-Process $exe -ArgumentList '-accepteula', '-ma', '-e', '-w', 'python.exe', $dumps -WindowStyle Hidden -RedirectStandardOutput "$tool\procdump.log"
           exit 0
       - name: Run exact-coverage offline test group
         # Use the job-owned runner temp volume for every Windows producer;
@@ -142,19 +148,22 @@ jobs:
           TMP: ${{ runner.temp }}
         run: python tools/run_test_group.py --group ${{ matrix.group }} --manifest dist/validation/test-inventory.json --workers ${{ runner.os == 'Windows' && matrix.group == 'research' && 2 || 1 }} ${{ matrix.shard && format('--core-shard {0}', matrix.shard) || '' }}
       - name: Print native crash stacks
-        if: failure() && runner.os == 'Windows'
+        if: always() && runner.os == 'Windows'
         timeout-minutes: 4
         shell: pwsh
         run: |
-          Start-Sleep -Seconds 5
-          Get-Content (Join-Path $env:RUNNER_TEMP 'procdump\procdump.log') -ErrorAction SilentlyContinue
-          $files = @(Get-ChildItem (Join-Path $env:RUNNER_TEMP 'crash-dumps') -Filter *.dmp -ErrorAction SilentlyContinue)
-          if (-not $files) { 'No native crash dump.'; exit 0 }
-          $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64', 'C:\Program Files\Windows Kits\10\Debuggers\x64' -Filter cdb.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $cdb) { '::warning::cdb.exe not found; download the crash-dumps artifact.'; exit 0 }
-          foreach ($file in $files) {
-            "== $($file.Name)"
-            & $cdb.FullName -z $file.FullName -y 'srv*C:\symbols*https://msdl.microsoft.com/download/symbols' -c '.ecxr; kn 80; lmv m Qt6*; q'
+          try {
+            Get-Content (Join-Path $env:RUNNER_TEMP 'procdump\procdump.log') -ErrorAction SilentlyContinue | Where-Object { $_.Trim() }
+            $files = @(Get-ChildItem (Join-Path $env:RUNNER_TEMP 'crash-dumps') -Filter *.dmp -ErrorAction SilentlyContinue)
+            if (-not $files) { 'No native crash dump.'; exit 0 }
+            $cdb = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64', 'C:\Program Files\Windows Kits\10\Debuggers\x64' -Filter cdb.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $cdb) { '::warning::cdb.exe not found; download the crash-dumps artifact.'; exit 0 }
+            foreach ($file in $files) {
+              "== $($file.Name)"
+              & $cdb.FullName -z $file.FullName -y 'srv*C:\symbols*https://msdl.microsoft.com/download/symbols' -c '.ecxr; kn 80; lmv m Qt6*; q'
+            }
+          } catch {
+            "::warning::Could not print native crash stacks: $($_.Exception.Message)"
           }
           exit 0
       - name: Preserve native crash dumps
