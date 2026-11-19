@@ -113,6 +113,8 @@ def install_page_help(shell):
         layout = page.layout()
         heading = layout.takeAt(0)
         title_row = QHBoxLayout()
+        # Insert the row while it is empty: Qt 6.11's insertLayout() binding pins wrappers for a child's existing items.
+        layout.insertLayout(0, title_row)
         if heading.widget() is not None:
             title_row.addWidget(heading.widget(), 1)
         else:
@@ -121,7 +123,6 @@ def install_page_help(shell):
         help_row = QHBoxLayout(help_box)
         help_row.setContentsMargins(0, 0, 0, 0)
         title_row.addWidget(help_box)
-        layout.insertLayout(0, title_row)
         hint = QLabel(hints[name])
         hint.setObjectName(name + '_page_hint')
         hint.setProperty('page_hint', True)
