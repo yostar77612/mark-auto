@@ -29,7 +29,9 @@ BASELINE = {
     # Headerless-stream fix (owner approved 2026-10-23) refreshed the same 5 provider-derived digests.
     # Completed-items compatibility: exactly 9 digest leaves (5 identities); no other fixture leaf changed.
     # Windows long-path storage: exactly 49 source/derived-digest leaves; other observations retained.
-    'ui_operations_golden.json': '76028f3e7dab0de0bf62f8cea05097d2160374a0e7e7bd754c2bca4b967c2fa2',
+    # OPT-1 P3 (O(N) KD): exactly the 23 analysis hash leaves bound to quantlab/indicators.py source bytes
+    # (docs/analysis/opt1_p3_golden_changes.md); every non-hash observation is unchanged.
+    'ui_operations_golden.json': 'acb26cc75224b7efb66e41504cf7d707a8c5aea821dda205a286b47f3ac880d9',
 }
 
 
@@ -39,7 +41,8 @@ class GoldenMetadataTests(unittest.TestCase):
         # Only the 26 owner-approved, formula-verified source/derived hashes
         # may differ, with the complete new corpus independently pinned too.
         canonical = json.dumps(document, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
-        self.assertEqual(hashlib.sha256(canonical).hexdigest(), '56133b5b080c8d355816dd02e7b220c9731d7aeb873005c312919df6022aab54')
+        # Re-pinned for OPT-1 P3: only the 23 indicators.py-bound analysis hash leaves changed.
+        self.assertEqual(hashlib.sha256(canonical).hexdigest(), '74124b74d550bb9133204f827b5699f1076b63ee0da842536c2edd72f48d681e')
         changes = json.loads((FIXTURES / 'ui_operations_atomic_provenance_delta.json').read_text(encoding='utf-8'))
         self.assertEqual(len(changes), 26)
         self.assertEqual(len({tuple(row['path']) for row in changes}), 26)
