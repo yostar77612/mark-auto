@@ -32,11 +32,44 @@ class _Credential(ctypes.Structure):
     ]
 
 
-def _write(target: str, payload: bytes) -> None:
+_GENERIC, _LOCAL_MACHINE = 1, 2
+_MAX_COPIES = 8
+
+
+def _advapi():
+    return ctypes.WinDLL('Advapi32.dll', use_last_error=True)
+
+
+def _stored(library, target: str) -> tuple[int, int] | None:
+    """(persistence, payload size) of the copy Windows currently returns for `target`, or None."""
+    pointer = ctypes.POINTER(_Credential)()
+    if not library.CredReadW(target, _GENERIC, 0, ctypes.byref(pointer)):
+        return None
+    try:
+        return pointer.contents.Persist, pointer.contents.CredentialBlobSize
+    finally:
+        library.CredFree(pointer)
+
+
+def _write(target: str, payload: bytes, library=None) -> None:
+    """Replace every stored copy of `target` with one local-machine copy, then prove Windows returns that copy.
+
+    One target name can exist twice: a roaming (enterprise) copy, e.g. one created in the Credential Manager UI or
+    by cmdkey, and a local-machine copy. Windows returns whichever its vault loaded last, so a stale empty roaming
+    copy came back over a fresh key whenever another program changed a roaming credential (seen 2026-11-20).
+    """
+    library = library if library is not None else _advapi()
+    for _ in range(_MAX_COPIES):
+        if not library.CredDeleteW(target, _GENERIC, 0):
+            break
+    else:
+        raise OSError('could not remove the existing copies of ' + target)
     blob = (ctypes.c_ubyte * len(payload)).from_buffer_copy(payload)
-    cred = _Credential(Type=1, TargetName=target, CredentialBlobSize=len(payload), CredentialBlob=blob, Persist=2, UserName='sinopac')
-    if not ctypes.windll.advapi32.CredWriteW(ctypes.byref(cred), 0):
+    cred = _Credential(Type=_GENERIC, TargetName=target, CredentialBlobSize=len(payload), CredentialBlob=blob, Persist=_LOCAL_MACHINE, UserName='sinopac')
+    if not library.CredWriteW(ctypes.byref(cred), 0):
         raise OSError(ctypes.get_last_error() or 'CredWriteW failed')
+    if _stored(library, target) != (_LOCAL_MACHINE, len(payload)):
+        raise OSError('Windows does not return the saved copy of ' + target)
 
 
 def main() -> int:
@@ -51,7 +84,7 @@ def main() -> int:
     from quantlab.trading.adapters.shioaji.secrets import WindowsSecretResolver
 
     WindowsSecretResolver().broker_credentials(TARGET)
-    print(f'成功：已存入 {TARGET}，MarkAuto 讀取驗證通過。')
+    print(f'成功：已存入 {TARGET}（舊的重複項目已清除），MarkAuto 讀取驗證通過。')
     return 0
 
 
