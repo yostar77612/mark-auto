@@ -1,5 +1,6 @@
 """Presentation-only labels and disabled-action explanations for the desktop host."""
 
+from desktop_app.components.layout_items import child_layouts
 from desktop_app.strings.catalog import ui_text
 from PySide6.QtCore import QObject, QEvent
 from PySide6.QtWidgets import QLabel, QPushButton, QBoxLayout, QFormLayout
@@ -43,20 +44,17 @@ class DisabledHint(QObject):
 
 
 def _insert_after(layout, widget, label, *, before=False):
-    for index in range(layout.count()):
-        item = layout.itemAt(index)
-        if item.widget() is widget:
-            if isinstance(layout, QBoxLayout):
-                layout.insertWidget(index if before else index + 1, label)
-            elif isinstance(layout, QFormLayout):
-                row, _ = layout.getWidgetPosition(widget)
-                layout.insertRow(row if before else row + 1, label)
-            else:
-                return False
-            return True
-        if item.layout() and _insert_after(item.layout(), widget, label, before=before):
-            return True
-    return False
+    index = layout.indexOf(widget)
+    if index >= 0:
+        if isinstance(layout, QBoxLayout):
+            layout.insertWidget(index if before else index + 1, label)
+        elif isinstance(layout, QFormLayout):
+            row, _ = layout.getWidgetPosition(widget)
+            layout.insertRow(row if before else row + 1, label)
+        else:
+            return False
+        return True
+    return any(_insert_after(child, widget, label, before=before) for child in child_layouts(layout))
 
 
 def _label_field(widget, text):

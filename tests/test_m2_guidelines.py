@@ -19,6 +19,7 @@ from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.domain.models import Environment
 from tests import test_m2_trading_page as support
+from desktop_app.components.layout_items import layout_entries
 
 
 class M2GuidelinesTests(unittest.TestCase):
@@ -31,7 +32,7 @@ class M2GuidelinesTests(unittest.TestCase):
         for index, name in ((0, 'overview'), (3, 'trading'), (4, 'performance'), (5, 'settings')):
             self.window.navigation.setCurrentRow(index)
             header = self.window.page_headers[name]
-            title_controls = [header.itemAt(i).widget() for i in range(header.count())]
+            title_controls = layout_entries(header, header.parentWidget())
             rows = self.window.pages.widget(index).findChildren(HelpText)
             self.assertTrue(rows, name)
             for row in rows:

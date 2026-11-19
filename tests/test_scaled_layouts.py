@@ -1,11 +1,12 @@
 """Logical layout checks: no PNG rasterisation, one window across font variants."""
 
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QLabel, QPushButton, QWidget, QScrollArea
+from PySide6.QtWidgets import QLabel, QLayout, QPushButton, QWidget, QScrollArea
 from tests.t10_fixture import WindowFixture
 from unittest.mock import patch
 import tempfile
 from pathlib import Path
+from desktop_app.components.layout_items import layout_entries
 
 
 def layout_defects(page):
@@ -21,12 +22,11 @@ def layout_defects(page):
 
     def inspect(layout):
         widgets = []
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if item.widget() and item.widget().isVisibleTo(page):
-                widgets.append(item.widget())
-            if item.layout():
-                widgets.extend(inspect(item.layout()))
+        for entry in layout_entries(layout, layout.parentWidget()):
+            if isinstance(entry, QLayout):
+                widgets.extend(inspect(entry))
+            elif entry.isVisibleTo(page):
+                widgets.append(entry)
         for i, first in enumerate(widgets):
             for second in widgets[i + 1 :]:
                 if first.parentWidget() is second.parentWidget() and first.geometry().intersects(second.geometry()):

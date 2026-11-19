@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QDialog, QToolButton, QVBoxLayout
+from PySide6.QtWidgets import QDialog, QLayout, QToolButton, QVBoxLayout
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.domain.models import Environment
@@ -12,7 +12,10 @@ from quantlab.trading.domain.models import Environment
 
 def install_context_header(window):
     outer = window.centralWidget().layout()
-    header, summary_row = outer.itemAt(0).layout(), outer.itemAt(1).layout()
+    # The first two rows are layouts; read them by indexOf(): QLayout.itemAt() would pin item wrappers that dangle
+    # once Qt deletes those items (see desktop_app/components/layout_items.py).
+    rows = sorted(outer.findChildren(QLayout, options=Qt.FindChildOption.FindDirectChildrenOnly), key=outer.indexOf)
+    header, summary_row = [row for row in rows if outer.indexOf(row) >= 0][:2]
     header.removeWidget(window.context)
     for widget in (window.summary, window.research_job, window.cancel_research_button):
         summary_row.removeWidget(widget)

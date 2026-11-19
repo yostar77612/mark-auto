@@ -25,6 +25,7 @@ from tests.test_t9_onboarding import sandbox_ui
 from quantlab.research_core.adapters.workspace_store import AppPaths
 from desktop_app.research_bootstrap import create_job_manager
 from quantlab.research_core.adapters.settings_store import SettingsStore
+from desktop_app.components.layout_items import layout_entry
 
 
 NOW = datetime(2026, 10, 20, 3, 4, 5, tzinfo=timezone.utc)
@@ -184,7 +185,7 @@ class HeaderTests(unittest.TestCase):
                 for timer in window.findChildren(QTimer):
                     timer.stop()
                 header = window.app_header
-                self.assertIs(window.centralWidget().layout().itemAt(0).widget(), header)
+                self.assertIs(layout_entry(window.centralWidget().layout(), 0, window.centralWidget()), header)
                 self.assertIs(window.findChild(QCheckBox, 'research_mode_status'), header.disclosure)
                 header.disclosure.setChecked(True)
                 self.assertFalse(header.explanation.isHidden())

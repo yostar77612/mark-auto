@@ -21,6 +21,7 @@ from desktop_app.shell.theme import apply_theme, build_app_stylesheet, theme_col
 import desktop_app.shell.theme as theme_module
 from quantlab.paper import RiskLimits
 from tests.test_b4_appearance import contrast_ratio
+from desktop_app.components.layout_items import layout_entries
 # Source scans below use current physical paths.
 
 
@@ -57,7 +58,7 @@ class PanelCardTests(unittest.TestCase):
             panel.title_bar.layout().activate()
             panel.controls.layout().activate()
             self.assertEqual(panel.title_bar.height(), PANEL_TITLE_HEIGHT)
-            self.assertEqual([panel.controls.layout().itemAt(i).widget() for i in range(2)], controls)
+            self.assertEqual(layout_entries(panel.controls.layout(), panel.controls)[:2], controls)
             self.assertLess(controls[0].geometry().right(), controls[1].x())
             offsets.append(panel.title_bar.width() - panel.controls.geometry().right())
         self.assertEqual(offsets[0], offsets[1])

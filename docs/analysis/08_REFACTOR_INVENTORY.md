@@ -1006,6 +1006,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/features/trading/auto_preflight.py` | 44 | presentation | `desktop_app/features/trading/auto_preflight.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/sector_replay.py` | 200 | presentation | `desktop_app/features/trading/sector_replay.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `desktop_app/features/trading/flow_layout.py` | 63 | presentation | `desktop_app/features/trading/flow_layout.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/components/layout_items.py` | 36 | presentation | `desktop_app/components/layout_items.py` | layout_items: QLayout reads without itemAt() wrappers |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

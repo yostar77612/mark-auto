@@ -19,6 +19,7 @@ from desktop_app.strings.catalog import ui_text
 from quantlab.core import ValidationError
 from quantlab.errors import ERROR_TABLE
 from quantlab.wf_estimate import MEASURED_EVALUATION_SECONDS, estimated_seconds
+from desktop_app.components.layout_items import layout_entry
 
 
 class GuidanceTests(unittest.TestCase):
@@ -168,8 +169,8 @@ class GuidanceTests(unittest.TestCase):
         )
         wizard.sync_consent = lambda: WalkForwardWizard.sync_consent(wizard)
         self.assertTrue(WalkForwardWizard.go_to(wizard, 4))
-        self.assertIs(layouts[4].itemAt(0).widget(), label)
-        self.assertIs(layouts[4].itemAt(1).widget(), page.walk_forward_consent)
+        self.assertIs(layout_entry(layouts[4], 0, steps[4]), label)
+        self.assertIs(layout_entry(layouts[4], 1, steps[4]), page.walk_forward_consent)
         self.assertFalse(label.isHidden())
         self.assertFalse(page.walk_forward_consent.isChecked())
         self.assertFalse(page.walk_forward_start.isEnabled())

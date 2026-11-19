@@ -7,6 +7,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+import shiboken6
+
 from PySide6.QtCore import QRect, Qt, QTimer
 from PySide6.QtWidgets import QApplication, QLabel, QSizePolicy, QToolButton
 
@@ -67,7 +69,10 @@ class CompactHelpTests(unittest.TestCase):
                     layout = button.parentWidget().layout()
                     index = layout.indexOf(button)
                     self.assertEqual(layout.stretch(index), 0)
-                    self.assertTrue(layout.itemAt(index).alignment() & Qt.AlignmentFlag.AlignLeft)
+                    item = layout.itemAt(index)
+                    alignment = item.alignment()
+                    shiboken6.invalidate(item)  # itemAt() pins the item wrapper; see desktop_app/components/layout_items.py
+                    self.assertTrue(alignment & Qt.AlignmentFlag.AlignLeft)
                     layout.setGeometry(QRect(0, 0, 1000, 1800))
                     self.assertLessEqual(button.width(), 40)
                     self.assertTrue(button.focusPolicy() & Qt.FocusPolicy.TabFocus)
