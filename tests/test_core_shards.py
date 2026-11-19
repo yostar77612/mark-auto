@@ -1583,6 +1583,25 @@ class DeferredDeleteFlushTests(unittest.TestCase):
         self.assertEqual(len(result.stopped_ids), 2)  # both tests still finished
         self.assertEqual(report.call_count, 2)  # and each failed flush was reported
 
+    def test_the_flush_delivers_the_test_s_other_posted_events_first(self):
+        from PySide6.QtCore import QCoreApplication, QEvent, QObject
+        from PySide6.QtWidgets import QApplication
+
+        QApplication.instance() or QApplication([])
+        delivered = []
+
+        class Receiver(QObject):
+            def event(self, event):
+                if event.type() == QEvent.Type.User:
+                    delivered.append(True)
+                    return True
+                return super().event(event)
+
+        receiver = Receiver()
+        QCoreApplication.postEvent(receiver, QEvent(QEvent.Type.User))
+        group.flush_deferred_deletes()
+        self.assertEqual(delivered, [True])
+
     def test_without_qt_or_an_application_the_flush_does_nothing(self):
         with patch.dict(sys.modules, {'PySide6.QtCore': None}):
             group.flush_deferred_deletes()
