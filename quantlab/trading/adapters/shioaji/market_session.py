@@ -5,6 +5,7 @@ exceptions are sanitized at this SDK boundary; credentials are never retained.
 """
 
 from datetime import datetime, timedelta, timezone
+import logging
 from types import SimpleNamespace
 from threading import Lock, RLock
 from zoneinfo import ZoneInfo
@@ -24,6 +25,7 @@ from .bidask_stream import ShioajiBidAskStream
 from .tick_stream import ShioajiTickStream, normalise_tick
 
 TAIPEI = ZoneInfo('Asia/Taipei')
+logger = logging.getLogger(__name__)
 
 
 def history_time(value: object) -> datetime:
@@ -301,28 +303,50 @@ class MarketSession:
         aware(end)
         if not start < end or end - start > timedelta(days=29):
             raise DomainError('validation_failed', 'history query range')
+        if not self.connected or self.facade is None:
+            raise DomainError('market_data_not_connected')
         try:
             raw = self.facade.market_kbars(self._contract(instrument), start.astimezone(TAIPEI).date().isoformat(), end.astimezone(TAIPEI).date().isoformat())
-            columns = [sdk_value(raw, key) for key in ('ts', 'Open', 'High', 'Low', 'Close', 'Volume')]
-            if len({len(column) for column in columns}) != 1:
-                raise DomainError('validation_failed', 'history column lengths')
-            bars = []
-            for stamp, opening, high, low, close, volume in zip(*columns):
-                finish = history_time(stamp)
-                begin = finish - timedelta(minutes=1)
-                if not start <= begin < end:
-                    continue
+        except DomainError as error:
+            if error.code != 'market_data_not_connected':
+                logger.error('Market history contract rejected: %s', error.code)
+            raise DomainError('market_data_not_connected' if error.code == 'market_data_not_connected' else 'history_query_failed') from None
+        except Exception as error:
+            # Only the exception class is logged (no vendor text), so the engine log tells a refused query from a lost link.
+            logger.error('Market history kbars query failed with %s', type(error).__name__)
+            raise DomainError('history_query_failed' if self.connected else 'market_data_not_connected') from None
+        try:
+            return self._history_bars(instrument, raw, start, end)
+        except DomainError as error:
+            logger.error('Market history response rejected: %s', error)
+            raise DomainError('history_query_failed') from None
+        except Exception as error:
+            logger.error('Market history response rejected with %s', type(error).__name__)
+            raise DomainError('history_query_failed') from None
+
+    def _history_bars(self, instrument: WatchInstrument, raw: object, start: datetime, end: datetime) -> tuple[LiveBar, ...]:
+        now = self.clock.now()
+        columns = [sdk_value(raw, key) for key in ('ts', 'Open', 'High', 'Low', 'Close', 'Volume')]
+        if len({len(column) for column in columns}) != 1:
+            raise DomainError('validation_failed', 'history column lengths')
+        bars = []
+        for stamp, opening, high, low, close, volume in zip(*columns):
+            finish = history_time(stamp)
+            begin = finish - timedelta(minutes=1)
+            if not start <= begin < end:
+                continue
+            try:
                 prices = tuple(sdk_decimal(value, 'bar price') for value in (opening, high, low, close))
                 if type(volume) is not int or volume < 0 or min(prices) <= 0 or prices[1] < max(prices) or prices[2] > min(prices):
                     raise DomainError('validation_failed', 'history OHLCV')
-                bars.append(
-                    LiveBar(instrument.instrument_id, begin, finish, finish.astimezone(TAIPEI).date(), 'DAY', *prices, volume, final=finish <= self.clock.now())
-                )
-            if not bars:
-                self.usage()
-            return tuple(sorted(bars, key=lambda bar: bar.start))
-        except Exception:
-            raise DomainError('market_data_not_connected') from None
+            except DomainError:
+                if finish > now:
+                    continue  # An intraday query also returns the still-forming minute; live ticks build that one.
+                raise
+            bars.append(LiveBar(instrument.instrument_id, begin, finish, finish.astimezone(TAIPEI).date(), 'DAY', *prices, volume, final=finish <= now))
+        if not bars:
+            self.usage()
+        return tuple(sorted(bars, key=lambda bar: bar.start))
 
     def usage(self) -> HistoryUsage | None:
         if not self.connected:
