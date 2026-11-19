@@ -154,6 +154,44 @@ class MarketSessionTests(unittest.TestCase):
         self.assertIn(('subscribe', '2330', 'tick'), self.api.calls)
         self.assertNotIn('price_tick', self.session.quote_details(STOCK.instrument_id))
 
+    @staticmethod
+    def wall(hour, minute):
+        return int(datetime(2026, 10, 30, hour, minute, tzinfo=timezone.utc).timestamp() * 1e9)
+
+    def test_intraday_history_skips_an_invalid_still_forming_minute(self):
+        self.session.connect()
+        self.api.raw = SimpleNamespace(ts=[self.wall(9, 1), self.wall(9, 2)], Open=[100, 0], High=[102, 0], Low=[99, 0], Close=[101, 0], Volume=[4, 0])
+        self.session.clock = SimpleNamespace(now=lambda: datetime(2026, 10, 30, 9, 1, 30, tzinfo=TAIPEI))
+        start = datetime(2026, 10, 30, tzinfo=TAIPEI).astimezone(timezone.utc)
+        bars = self.session.history(STOCK, start, start + timedelta(hours=12))
+        self.assertEqual([datetime(2026, 10, 30, 1, 0, tzinfo=timezone.utc)], [bar.start for bar in bars])
+        self.assertTrue(bars[0].final)
+
+    def test_history_failures_keep_a_specific_code_and_log_only_the_reason(self):
+        self.session.connect()
+        start = datetime(2026, 10, 30, tzinfo=TAIPEI).astimezone(timezone.utc)
+        logger = 'quantlab.trading.adapters.shioaji.market_session'
+
+        def refuse(**kwargs):
+            raise TimeoutError('vendor text SECRET_FAKE_API_KEY')
+
+        self.api.kbars = refuse
+        with self.assertLogs(logger, 'ERROR') as logs, self.assertRaises(DomainError) as caught:
+            self.session.history(STOCK, start, start + timedelta(days=1))
+        self.assertEqual('history_query_failed', caught.exception.code)  # connected: not reported as a lost link
+        self.assertIn('TimeoutError', logs.output[0])
+        self.assertNotIn('SECRET', '\n'.join(logs.output))
+        del self.api.kbars
+        self.api.raw = SimpleNamespace(ts=[self.wall(9, 1)], Open=[100], High=[90], Low=[99], Close=[101], Volume=[4])
+        with self.assertLogs(logger, 'ERROR') as logs, self.assertRaises(DomainError) as caught:
+            self.session.history(STOCK, start, start + timedelta(days=1))  # a finished bar must still be consistent
+        self.assertEqual('history_query_failed', caught.exception.code)
+        self.assertIn('history OHLCV', logs.output[0])
+        self.session.disconnect()
+        with self.assertRaises(DomainError) as caught:
+            self.session.history(STOCK, start, start + timedelta(days=1))
+        self.assertEqual('market_data_not_connected', caught.exception.code)
+
     def test_login_error_never_contains_credentials_or_vendor_message(self):
         self.api.fail_login = True
         with self.assertRaises(DomainError) as caught:
