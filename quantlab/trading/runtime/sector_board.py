@@ -125,8 +125,9 @@ class SectorPoller:
             if self.service.due():
                 try:
                     self.service.refresh()
-                except Exception:
-                    pass
+                except Exception as error:
+                    # Only the class name is logged (no vendor text); the poller keeps its schedule.
+                    logger.warning('sector snapshot refresh failed (%s)', type(error).__name__)
             self._kick.wait(max(0.5, self.service.interval_seconds - (monotonic() - started)))
             self._kick.clear()
 

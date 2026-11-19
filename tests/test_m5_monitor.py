@@ -480,5 +480,49 @@ class BoardDisplayTests(unittest.TestCase):
         self.assertEqual(sorted(sides), ['57%', '—'])
 
 
+class FailingMarks:
+    """Durable cooldown marks whose storage fails with a private detail that must never be logged."""
+
+    def alert_marks(self, trade_date, kind):
+        raise DomainError('storage_unavailable', 'C:/Users/private/market/sector_minutes.sqlite3')
+
+    def mark_alert(self, trade_date, kind, group_id, direction, minute):
+        raise DomainError('storage_unavailable', 'C:/Users/private/market/sector_minutes.sqlite3')
+
+
+class SilentFailureLoggingTests(unittest.TestCase):
+    """OPT-1 P1: swallowed storage/refresh faults keep their behaviour and leave one code-only log line."""
+
+    def test_failed_cooldown_marks_keep_the_alerts_and_log_only_the_code(self):
+        _, _, expected = replay()
+        with self.assertLogs('quantlab.trading.application.sector_monitor', 'WARNING') as logs:
+            _, _, observed = replay(marks=FailingMarks())
+        self.assertEqual(observed, expected)
+        text = ' '.join(logs.output)
+        self.assertNotIn('private', text)
+        self.assertNotIn('sqlite3', text)
+        loads = [line for line in logs.output if 'cooldown marks load failed' in line]
+        stores = [line for line in logs.output if 'cooldown mark store failed' in line]
+        self.assertEqual(len(loads), 1)  # one trading day, one load
+        self.assertEqual(len(stores), len(expected))
+        self.assertTrue(all(line.endswith('(storage_unavailable)') for line in loads + stores))
+
+    def test_failed_snapshot_refresh_keeps_polling_and_logs_only_the_class_name(self):
+        from quantlab.trading.runtime.sector_board import SectorPoller
+
+        calls = []
+
+        def refresh():
+            calls.append(1)
+            poller.stop()
+            raise RuntimeError('vendor text C:/Users/private token=secret')
+
+        poller = SectorPoller(SimpleNamespace(due=lambda: True, refresh=refresh, interval_seconds=0))
+        with self.assertLogs('quantlab.trading.runtime.sector_board', 'WARNING') as logs:
+            poller._run()  # returns normally: the exception is still swallowed
+        self.assertEqual(calls, [1])
+        self.assertEqual(logs.output, ['WARNING:quantlab.trading.runtime.sector_board:sector snapshot refresh failed (RuntimeError)'])
+
+
 if __name__ == '__main__':
     unittest.main()
