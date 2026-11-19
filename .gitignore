@@ -157,7 +157,8 @@ quantlab-output/
 
 # Local task scratch and runtime captures are never review artifacts.
 /.t*-work/
-/.tmp*/
+/.tmp*
+/tmp*/
 /.worktrees/
 
 # Ruff local cache
