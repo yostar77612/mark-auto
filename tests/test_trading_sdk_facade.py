@@ -247,10 +247,16 @@ class SDKFacadeTests(unittest.TestCase):
                 self.bridge.subscribe(contract(), quote_type='tick', version=value)
 
     def test_bounded_history_snapshot_and_order_routes_have_injected_budgets(self):
-        custom = ShioajiSDKFacade(self.vendor, self.sdk_module, environment=Environment.BROKER_SIMULATION, query_timeout_ms=1700, order_timeout_ms=8000)
+        self.bridge.kbars(contract=contract(), start='2026-10-01', end='2026-10-02')
+        self.assertEqual(self.vendor._seen[-1][2]['timeout'], 15000)  # history has its own, longer default budget
+        custom = ShioajiSDKFacade(
+            self.vendor, self.sdk_module, environment=Environment.BROKER_SIMULATION, query_timeout_ms=1700, order_timeout_ms=8000, history_timeout_ms=12000
+        )
         base = contract()
         custom.kbars(contract=base, start='2026-10-01', end='2026-10-02')
-        self.assertEqual(self.vendor._seen[-1][2]['timeout'], 1700)
+        self.assertEqual(self.vendor._seen[-1][2]['timeout'], 12000)
+        custom.market_kbars(base, '2026-10-01', '2026-10-02')
+        self.assertEqual(self.vendor._seen[-1][2]['timeout'], 12000)
         custom.snapshots([base])
         self.assertEqual(self.vendor._seen[-1][2]['timeout'], 1700)
         model = custom.Order(action='Buy', quantity=1, price=100.0, price_type='LMT', order_type='ROD')
@@ -297,7 +303,7 @@ class SDKFacadeTests(unittest.TestCase):
         with self.assertRaises(DomainError):
             ShioajiSDKFacade(self.vendor, wrong, environment=Environment.BROKER_SIMULATION)
         for value in (None, False, 0, -1, 30001, 2.5, '2500'):
-            for field in ('query_timeout_ms', 'order_timeout_ms'):
+            for field in ('query_timeout_ms', 'order_timeout_ms', 'history_timeout_ms'):
                 with self.subTest(field=field, value=value), self.assertRaises(DomainError):
                     ShioajiSDKFacade(self.vendor, self.sdk_module, environment=Environment.BROKER_SIMULATION, **{field: value})
 

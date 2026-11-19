@@ -154,7 +154,12 @@ class SharedFacadeView(ShioajiSDKFacade):
     def __init__(self, owner: SharedSDKSession, name: str):
         parent = owner.facade
         super().__init__(
-            parent._client, parent._module, environment=parent.environment, query_timeout_ms=parent.query_timeout_ms, order_timeout_ms=parent.order_timeout_ms
+            parent._client,
+            parent._module,
+            environment=parent.environment,
+            query_timeout_ms=parent.query_timeout_ms,
+            order_timeout_ms=parent.order_timeout_ms,
+            history_timeout_ms=parent.history_timeout_ms,
         )
         self._owner, self._name = owner, name
 
