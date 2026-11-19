@@ -5,6 +5,7 @@ sector service may call back into it (board views) while holding the service loc
 """
 
 from collections import deque
+import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
 from threading import RLock
@@ -18,6 +19,8 @@ from quantlab.trading.domain.sector_flow import BASELINE_MINUTES, WARMUP_MINUTES
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument
+
+logger = logging.getLogger(__name__)
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 _MINUTE = timedelta(minutes=1)
@@ -163,8 +166,9 @@ class SectorMonitor:
                 self._buckets, self._history, self._finalized, self._since, self._sides, self._last_alert = {}, {}, {}, {}, {}, {}
                 try:
                     self._last_alert = self.marks.alert_marks(minute.date(), 'FLOW')
-                except DomainError:
-                    pass  # the cooldown then starts empty, as it did before marks were stored
+                except DomainError as error:
+                    # The cooldown then starts empty, as it did before marks were stored; log the code only.
+                    logger.warning('sector flow cooldown marks load failed (%s)', error.code)
             reselect = self._selected_minute != minute
             if reselect:
                 self._selected_minute = minute
@@ -275,8 +279,9 @@ class SectorMonitor:
         self._last_alert[(group_id, direction)] = minute
         try:
             self.marks.mark_alert(minute.date(), 'FLOW', group_id, direction, minute)
-        except DomainError:
-            pass  # the alert still fires; only the restart memory of this cooldown is lost
+        except DomainError as error:
+            # The alert still fires; only the restart memory of this cooldown is lost. Log the code only.
+            logger.warning('sector flow cooldown mark store failed (%s)', error.code)
         counts = {gid: (monitored, total) for gid, monitored, total in self._counts}
         monitored, total = counts.get(group_id, (0, 0))
         return SectorAlert(minute, group_id, name, 'FLOW', direction, net, minutes, None, big, total, monitored)
