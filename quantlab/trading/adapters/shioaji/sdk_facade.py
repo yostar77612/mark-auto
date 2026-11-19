@@ -126,7 +126,16 @@ class ShioajiSDKFacade:
 
     login_reached_broker = False
 
-    def __init__(self, client: object, sdk_module: object, *, environment: Environment, query_timeout_ms: int = 2500, order_timeout_ms: int = 10000):
+    def __init__(
+        self,
+        client: object,
+        sdk_module: object,
+        *,
+        environment: Environment,
+        query_timeout_ms: int = 2500,
+        order_timeout_ms: int = 10000,
+        history_timeout_ms: int = 15000,
+    ):
         if getattr(sdk_module, '__version__', None) != SDK_VERSION:
             raise DomainError('capability_missing', 'pinned SDK version required')
         if not isinstance(environment, Environment) or environment not in (Environment.BROKER_SIMULATION, Environment.LIVE):
@@ -136,6 +145,9 @@ class ShioajiSDKFacade:
         self._module = sdk_module
         self.query_timeout_ms = _budget(query_timeout_ms)
         self.order_timeout_ms = _budget(order_timeout_ms)
+        # K-line history runs on the background history worker; 2.5 s timed out for ordinary 29-day chunks (live
+        # ShioajiTimeoutError, 2026-11-19), most of all during the session, so it gets its own longer budget.
+        self.history_timeout_ms = _budget(history_timeout_ms)
         self.contracts = ShioajiContractStore(client)
 
     @property
@@ -184,7 +196,7 @@ class ShioajiSDKFacade:
         return _callable(self.contracts._store(), 'info')(contract)
 
     def market_kbars(self, contract: object, start: str, end: str) -> object:
-        return _callable(self._client, 'kbars')(contract=contract, start=start, end=end, timeout=self.query_timeout_ms)
+        return _callable(self._client, 'kbars')(contract=contract, start=start, end=end, timeout=self.history_timeout_ms)
 
     def market_subscribe(self, contract: object, *, remove: bool = False) -> None:
         quote_type = 'quote' if sdk_text(sdk_value(contract, 'security_type')) == 'IND' else 'tick'
@@ -238,7 +250,7 @@ class ShioajiSDKFacade:
 
     def kbars(self, *, contract: object, start: str, end: str) -> object:
         _contract_identity(contract)
-        return _callable(self._client, 'kbars')(contract=contract, start=start, end=end, timeout=self.query_timeout_ms)
+        return _callable(self._client, 'kbars')(contract=contract, start=start, end=end, timeout=self.history_timeout_ms)
 
     def snapshots(self, contracts: list[object]) -> list[object]:
         if not contracts:
