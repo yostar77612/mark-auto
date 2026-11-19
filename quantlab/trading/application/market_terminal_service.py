@@ -3,6 +3,7 @@
 from collections import deque
 from dataclasses import dataclass, replace
 from datetime import date, datetime, time, timedelta, timezone
+import logging
 from threading import RLock
 from typing import Callable
 from zoneinfo import ZoneInfo
@@ -17,6 +18,8 @@ from .contracts import MarketSeriesPage, MarketSeriesQuery, MarketWatchView, Ove
 from .history_sync import HistorySync, HistorySyncState
 from .market_terminal_views import watch_view
 from .order_book_contracts import OrderBookView, TapeEntry
+
+logger = logging.getLogger(__name__)
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 TAPE_LIMIT = 200
@@ -182,8 +185,9 @@ class MarketTerminalService:
     def _try(subscribe: Callable[[WatchInstrument], bool], item: WatchInstrument) -> None:
         try:
             subscribe(item)
-        except DomainError:
-            pass
+        except DomainError as error:
+            # One refused instrument must not fail the connection; log the fixed code only.
+            logger.warning('market subscription refused (%s)', error.code)
 
     def _subscribe(self, item: WatchInstrument) -> bool:
         if item.instrument_id in self.subscriptions:
