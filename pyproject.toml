@@ -69,10 +69,20 @@ line-ending = "lf"
 quote-style = "preserve"
 
 [tool.ruff.lint]
-select = ["E402", "E711", "E712", "E713", "E714", "E721", "E722", "E9", "F"]
+# OPT-1 P5: flake8-bugbear and Perflint, every stable rule except the six that would need hundreds of edits
+# (B007 unused loop variable 19, B008 call in default 37, B009 getattr constant 81, B023 loop variable in
+# closure 248, B905 zip strict 133, PERF401 manual comprehension 24); those stay off until a dedicated change.
+select = [
+    "E402", "E711", "E712", "E713", "E714", "E721", "E722", "E9", "F",
+    "B002", "B003", "B004", "B005", "B006", "B010", "B011", "B012", "B013", "B014", "B015", "B016", "B017", "B018",
+    "B019", "B020", "B021", "B022", "B024", "B025", "B026", "B027", "B028", "B029", "B030", "B031", "B032", "B033",
+    "B034", "B035", "B039", "B904", "B911", "B912",
+    "PERF101", "PERF102", "PERF203", "PERF402", "PERF403",
+]
 
 [tool.ruff.lint.per-file-ignores]
-"desktop.py" = ["F401"]
+# B012: the return in finally deliberately turns any report-write failure into exit 1; changing it alters control flow.
+"desktop.py" = ["F401", "B012"]
 "desktop_app/features/assistant/connection.py" = ["E402"]
 "desktop_app/components/forms.py" = ["E402"]
 "desktop_app/features/backtest/backtest.py" = ["F401"]
@@ -91,7 +101,6 @@ select = ["E402", "E711", "E712", "E713", "E714", "E721", "E722", "E9", "F"]
 "quantlab/walk_forward.py" = ["F401"]
 "tools/research_app.py" = ["F401"]
 "tests/test_analysis_recovery_ui.py" = ["E402"]
-"tests/test_chatgpt_auth.py" = ["E402"]
 "tests/test_desktop_market.py" = ["E402"]
 "tests/test_desktop_market_integration.py" = ["E402"]
 "tests/test_desktop_saved_candidate_pool.py" = ["E402"]
@@ -105,3 +114,13 @@ select = ["E402", "E711", "E712", "E713", "E714", "E721", "E722", "E9", "F"]
 "tools/diagnose_research_phases.py" = ["E402"]
 "tools/install_desktop_auth.py" = ["E402"]
 "tools/validate_core_shards.py" = ["E402"]
+# OPT-1 P5 per-file exceptions (existing code kept byte-identical):
+# B904 explicit chaining would change the raised exception's __cause__/__context__ display.
+"tools/ci_changes.py" = ["B904"]
+"tests/test_chatgpt_provenance.py" = ["B904"]
+# B018: bare attribute reads in tests evaluate lazy properties for their side effect (fixture/panel creation).
+# B020: tests deliberately reuse the previous value of the loop variable in the iterable they build.
+"tests/test_chatgpt_plan.py" = ["B018"]
+"tests/test_desktop_analysis.py" = ["B018"]
+"tests/test_chatgpt_auth.py" = ["E402", "B020"]
+"tests/test_error_catalog_b1.py" = ["B020"]
