@@ -81,7 +81,9 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# B012: the return in finally deliberately turns any report-write failure into exit 1; changing it alters control flow.
+# B012 (desktop.py:378): in smoke mode the finally-level return deliberately replaces any earlier return value or
+# uncaught BaseException with the published report's status code ("no precomputed zero return code"); changing it
+# alters control flow.
 "desktop.py" = ["F401", "B012"]
 "desktop_app/features/assistant/connection.py" = ["E402"]
 "desktop_app/components/forms.py" = ["E402"]
