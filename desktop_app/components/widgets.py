@@ -92,9 +92,10 @@ class WidgetTools(PageContext):
             raise ValueError('Unknown button role')
         button.setProperty('role', role)
         row = QHBoxLayout()
+        # Attach the row while it is empty: Qt 6.11's addLayout() binding pins wrappers for a child's existing items.
+        layout.addRow(row) if isinstance(layout, QFormLayout) else layout.addLayout(row)
         row.addWidget(button)
         row.addStretch()
-        layout.addRow(row) if isinstance(layout, QFormLayout) else layout.addLayout(row)
         self.actions.append(button)
         return button
 
