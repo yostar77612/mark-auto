@@ -344,26 +344,40 @@ def kd(highs, lows, closes, *, period=9, k_period=3, d_period=3):
         raise ValueError('OHLC sequences must have matching lengths')
     if len(highs) * period > MAX_WINDOW_WORK:
         raise IndicatorResourceLimitError('KD rolling-window work limit exceeded')
-    window, kvals, dvals = deque(), [], []
+    # Monotonic deques of (position, value) replace per-step max/min over the window. Popping only strictly
+    # smaller highs (larger lows) keeps the earliest of equal extremes in front, exactly the element that
+    # max()/min() returned, so equal Decimals with different exponents give the same digits as before.
+    highs_window, lows_window, kvals, dvals = deque(), deque(), [], []
+    size = 0
     k, d = Decimal(50), Decimal(50)
     for high, low, close in zip(highs, lows, closes):
         high, low, close = map(_number, (high, low, close))
         if high is None or low is None or close is None:
-            window.clear()
+            highs_window.clear()
+            lows_window.clear()
+            size = 0
             k, d = Decimal(50), Decimal(50)
             kvals.append(None)
             dvals.append(None)
             continue
         if not low <= close <= high:
             raise ValueError('close outside high/low range')
-        window.append((high, low))
-        if len(window) > period:
-            window.popleft()
-        if len(window) < period:
+        while highs_window and highs_window[-1][1] < high:
+            highs_window.pop()
+        highs_window.append((size, high))
+        while lows_window and lows_window[-1][1] > low:
+            lows_window.pop()
+        lows_window.append((size, low))
+        size += 1
+        if highs_window[0][0] <= size - 1 - period:
+            highs_window.popleft()
+        if lows_window[0][0] <= size - 1 - period:
+            lows_window.popleft()
+        if size < period:
             kvals.append(None)
             dvals.append(None)
             continue
-        highest, lowest = max(x[0] for x in window), min(x[1] for x in window)
+        highest, lowest = highs_window[0][1], lows_window[0][1]
         rsv = Decimal(50) if highest == lowest else 100 * (close - lowest) / (highest - lowest)
         k = ((k_period - 1) * k + rsv) / k_period
         d = ((d_period - 1) * d + k) / d_period
