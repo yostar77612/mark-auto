@@ -1,9 +1,10 @@
 """OPT-1 P2: `views.snapshot` must return exactly the UiState of the frozen pre-change implementation."""
 
 from dataclasses import replace
-from datetime import timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
+import random
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -12,6 +13,7 @@ from quantlab.trading.application import views
 from quantlab.trading.application.contracts import StrategyForm, UiAction, UiCommand
 from quantlab.trading.application.facade import LocalFacade
 from quantlab.trading.application.workflows import fill_local_pending, step
+from quantlab.trading.domain.calendar import TradingCalendar, TradingSession
 from quantlab.trading.domain.models import Environment, HoldingKind, Market, OrderPlan, Side
 from quantlab.trading.runtime.build import create_engine
 from tests.trading_snapshot_reference import _reference_order_trading_day, reference_snapshot
@@ -169,6 +171,34 @@ class SnapshotEquivalenceTests(unittest.TestCase):
         self.assertSameSnapshot()
         self.engine.state = replace(state, strategies=())
         self.assertSameSnapshot()
+
+
+class SessionDayTests(unittest.TestCase):
+    """The bisect lookup returns the first session the former linear scan found, including touching sessions."""
+
+    def test_random_calendars_with_touching_and_gapped_sessions(self):
+        generator = random.Random(20261120)
+        start = datetime(2026, 1, 5, 0, 45, tzinfo=timezone.utc)
+        for case in range(200):
+            sessions, cursor = [], start
+            for index in range(generator.randint(1, 25)):
+                opens = cursor + timedelta(minutes=generator.choice((0, 0, 1, 30, 600)))  # 0 = touches the previous close
+                closes = opens + timedelta(minutes=generator.choice((1, 5, 300)))
+                sessions.append(TradingSession(date(2026, 1, 5) + timedelta(days=index), opens, closes, generator.choice(('DAY', 'NIGHT'))))
+                cursor = closes
+            calendar = TradingCalendar('bench', 'v1', 'test', tuple(sessions))
+            probes = [start - timedelta(minutes=1), cursor + timedelta(minutes=1)]
+            probes += [
+                moment
+                for session in sessions
+                for moment in (session.opens_at, session.closes_at, session.opens_at + (session.closes_at - session.opens_at) / 2)
+            ]
+            probes += [session.opens_at - timedelta(microseconds=1) for session in sessions]
+            starts = {}
+            for moment in probes:
+                expected = next((session.trade_date for session in calendar.sessions if session.opens_at <= moment <= session.closes_at), None)
+                with self.subTest(case=case, moment=moment.isoformat()):
+                    self.assertEqual(views._session_day(calendar, moment, starts), expected)
 
 
 if __name__ == '__main__':
