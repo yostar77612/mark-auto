@@ -516,10 +516,15 @@ def flush_deferred_deletes():
     processEvents() alone does not run deferred deletions, so windows piled up across modules until some later
     test happened to spin an event loop (QTest.qWait) and the whole pile was destroyed inside that test: CI then
     blamed an unrelated test for a native crash. Flushing here keeps each test's destruction inside that test.
+
+    The test's other posted events (queued signal calls, layout and update requests) are delivered first, for the
+    same reason: left queued, the next module's first processEvents() delivered them and crashed there when their
+    receiver was already gone (PR #241: DeferredDeleteFlushTests crashed in its first processEvents()).
     """
     qtcore = sys.modules.get('PySide6.QtCore')
     if qtcore is None or qtcore.QCoreApplication.instance() is None:
         return
+    qtcore.QCoreApplication.sendPostedEvents(None, 0)
     qtcore.QCoreApplication.sendPostedEvents(None, qtcore.QEvent.Type.DeferredDelete)
 
 
