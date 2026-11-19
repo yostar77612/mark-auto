@@ -22,7 +22,8 @@ import threading
 import time
 import uuid
 
-from .windows_paths import canonical_path, native_path, sqlite_uri
+from .shared.sqlite_open import open_sqlite
+from .windows_paths import canonical_path, native_path
 
 VERSION = 1
 MAX_DATABASE = 16 * 1024 * 1024
@@ -268,7 +269,7 @@ def _connect(path, *, write=False):
     for suffix in ('-journal', '-wal', '-shm'):
         _path(Path(str(path) + suffix), exists=False)
     query_deadline = time.monotonic() + 2
-    db = sqlite3.connect(sqlite_uri(path) + ('?mode=rw' if write else '?mode=ro'), uri=True, timeout=LOCK_TIMEOUT)
+    db = open_sqlite(path, mode='rw' if write else 'ro', timeout=LOCK_TIMEOUT)
     try:
         db.set_progress_handler(lambda: 1 if time.monotonic() > query_deadline else 0, 1000)
         db.execute('PRAGMA trusted_schema=OFF')

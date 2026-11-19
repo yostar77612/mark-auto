@@ -5,7 +5,7 @@ import json
 import hashlib
 from quantlab.core import Dataset, ValidationError, content_hash, canonical_json
 from quantlab.reporting import read_json, load_dataset
-from quantlab.windows_paths import canonical_path as _canonical_path, native_path as _native_path, sqlite_uri as _sqlite_uri
+from quantlab.windows_paths import canonical_path as _canonical_path, native_path as _native_path
 
 
 class WorkerRepository:
@@ -80,13 +80,14 @@ class WorkerRepository:
         if not _canonical_path(path.resolve()).is_relative_to(_canonical_path(campaigns)):
             raise ValidationError(self.text('ui.candidate_record.invalid_version_path'))
         state = read_json(path)
-        import sqlite3
         from contextlib import closing
+
+        from quantlab.shared.sqlite_open import open_sqlite
 
         journal = path.with_name('campaign.sqlite3')
         if not _canonical_path(journal.resolve()).is_relative_to(_canonical_path(campaigns)) or not journal.is_file():
             raise ValidationError(self.text('ui.candidate_record.transaction_missing'))
-        with closing(sqlite3.connect(_sqlite_uri(journal.resolve()) + '?mode=ro', uri=True, timeout=1)) as database:
+        with closing(open_sqlite(journal.resolve(), mode='ro', timeout=1)) as database:
             row = database.execute('SELECT payload FROM state WHERE id=1').fetchone()
         if not row or canonical_json(json.loads(row[0])) != canonical_json(state):
             raise ValidationError(self.text('ui.candidate_record.export_transaction_mismatch'))
