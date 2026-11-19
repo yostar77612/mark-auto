@@ -1009,6 +1009,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `desktop_app/components/layout_items.py` | 36 | presentation | `desktop_app/components/layout_items.py` | layout_items: QLayout reads without itemAt() wrappers |
 | `tools/bulk_kline_backfill.py` | 117 | tooling | `tools/bulk_kline_backfill.py` | bulk_kline_backfill: top-N 1-year K-line download tool |
 | `tools/bench_snapshot.py` | 153 | tooling | `tools/bench_snapshot.py` | bench_snapshot: offline views.snapshot timing on a scaled LOCAL engine (OPT-1 P2) |
+| `quantlab/shared/sqlite_open.py` | 14 | shared | `quantlab/shared/sqlite_open.py` | sqlite_open: the single sqlite_uri + mode SQLite open (OPT-1 P4; five call sites) |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

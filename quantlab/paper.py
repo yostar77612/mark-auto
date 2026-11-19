@@ -29,7 +29,8 @@ Default limits: 3 consecutive losses, 20 orders per 60 seconds.
 
 from __future__ import annotations
 
-from .windows_paths import native_path, sqlite_uri
+from .shared.sqlite_open import open_sqlite
+from .windows_paths import native_path
 
 from contextlib import contextmanager
 from copy import deepcopy
@@ -500,7 +501,7 @@ class PaperBroker:
         reader._storage_uncertain = False
         reader._verified_restore = None
         with localcontext(Context(prec=34, rounding=ROUND_HALF_EVEN)):
-            db = sqlite3.connect(sqlite_uri(reader.path.resolve()) + '?mode=ro', uri=True)
+            db = open_sqlite(reader.path.resolve(), mode='ro', timeout=5.0)  # 5.0 s is sqlite3.connect's default
             try:
                 db.execute('PRAGMA query_only=ON')
                 db.execute('BEGIN')

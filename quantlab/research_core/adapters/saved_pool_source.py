@@ -13,7 +13,8 @@ from decimal import Decimal
 from pathlib import Path
 from quantlab.core import Bar, Dataset, canonical_json, content_hash
 from quantlab.data import parse_timestamp, validate_dataset
-from quantlab.windows_paths import canonical_path, native_path, sqlite_uri
+from quantlab.shared.sqlite_open import open_sqlite
+from quantlab.windows_paths import canonical_path, native_path
 from quantlab.research import _keys, _unique_keys
 from quantlab.research_core.domain.saved_pool import SavedCandidatePoolError, _hash, _fail, _safe_boundary, MAX_AUDIT_BYTES, MAX_SOURCE_BARS
 
@@ -204,7 +205,7 @@ def _read_campaign(folder):
     if not journal.is_file() or not export.is_file() or not journal.resolve().is_relative_to(folder) or not export.resolve().is_relative_to(folder):
         _fail('Missing or escaping source campaign journal/export')
     try:
-        with closing(sqlite3.connect(sqlite_uri(journal) + '?mode=ro', uri=True, timeout=1)) as db:
+        with closing(open_sqlite(journal, mode='ro', timeout=1)) as db:
             _prepare_bounded_read(db, {'state': [('id', 'INTEGER', 0, None, 1, 0), ('payload', 'TEXT', 1, None, 0, 0)]})
             metadata = db.execute('SELECT id, typeof(payload), length(CAST(payload AS BLOB)) FROM state').fetchmany(2)
             if len(metadata) != 1 or metadata[0][0] != 1 or metadata[0][1] != 'text' or not 0 < metadata[0][2] <= MAX_AUDIT_BYTES:
@@ -257,7 +258,7 @@ def _validate_source_registry(state, holdout, selected_path):
     try:
         if not selected.is_file() or selected.stat().st_size > MAX_AUDIT_BYTES:
             _fail('Source registry is missing or exceeds audit byte limit')
-        with closing(sqlite3.connect(sqlite_uri(selected) + '?mode=ro', uri=True, timeout=1)) as db:
+        with closing(open_sqlite(selected, mode='ro', timeout=1)) as db:
             _prepare_bounded_read(
                 db,
                 {
