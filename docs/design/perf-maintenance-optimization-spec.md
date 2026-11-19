@@ -175,7 +175,7 @@ Implementation／Verification（逐階段，只記錄實際跑過的指令與結
 | 階段 | Implementation | Verification |
 |---|---|---|
 | P0 | `.gitignore`：`/.tmp*/` 改為 `/.tmp*`（同時擋檔案），新增 `/tmp*/`；`/t/` 與 `*.log`（含 `t2-*.log`、`shioaji.log`）原本已忽略，未重複加入。未刪除任何檔案；worktree 清單寫在 PR 說明，是否清除由 owner 決定。 | 主 checkout `git status --short` 原為 174 筆；以新規則模擬（`git ls-files -o --directory --exclude-standard --exclude-from=<新 .gitignore>`）剩 13 筆，`.tmp-*` 與 `tmp*/` 全數不再列出。`git gc`（預設 prune 期限）exit 0；`git count-objects -vH` 前：count 267、packs 4、size-pack 113.24 MiB、prune-packable 242、garbage 77；後：count 0、packs 2、size-pack 108.34 MiB、prune-packable 0、garbage 0。`test_repo_layout`、`test_docs_layering`、`test_dev_setup`、`test_layer_gate`、`test_quality_gate` OK；`check_layers.py` 0 findings；`ruff check` passed。 |
-| P1 | NOT STARTED | NOT RUN |
+| P1 | AST 掃描 68 處 `except …: pass`；G3 7 處不碰。其餘 61 處分類（表格見 PR）：加記錄 4 處（`MarketTerminalService._try`、`SectorMonitor.on_round`、`SectorMonitor._flow_alert`、`SectorPoller._run`，只記 DomainError 代碼或例外類別名稱，行為不變）；預期無害保留 35；fail-closed／對帳／憑證／下單路徑「已審查，保留」17；桌面 GUI 程序無任何 logging handler（加記錄無可觀測性）保留 5。 | 新測試先在舊實作確認行為部分通過（log 斷言如預期失敗），改後 `python -m unittest tests.test_m5_monitor`、`tests.test_market_terminal_service` OK；`tools/affected_tests.py` 選出的 164 模組逐一執行（`PYTHONPATH=tests`）162 OK，`test_trading_acceptance_combinations`（Windows 檔案鎖 PermissionError）與 `test_trading_installer_guard`（偵測到本機正在執行的 MarkAuto）在未修改的 P0 樹上同樣失敗，屬主機環境；`check_layers.py` 0、`check_trading_architecture.py` 0、`ruff check` 通過。 |
 | P3 | NOT STARTED | NOT RUN |
 | P2 | NOT STARTED | NOT RUN |
 | P4 | NOT STARTED | NOT RUN |
