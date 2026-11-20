@@ -89,6 +89,16 @@ def _table(name, headers, stretch=0, name_width=112):
     return table
 
 
+def _detail_series(facade, key, period, cached):
+    """The selected stock's whole chart series: every page, pinned to the first page's market revision."""
+    page = facade.market_series(MarketSeriesQuery(key, period))
+    bars = page.bars
+    while page.next_offset is not None:
+        page = facade.market_series(MarketSeriesQuery(key, period, offset=page.next_offset, market_revision=page.market_revision))
+        bars += page.bars
+    return page, bars
+
+
 class SectorBoardWidget(QWidget):
     def __init__(self, facade, chart, parent=None, *, colours=None, style=None, open_in_watch=None, add_to_watch=None):
         super().__init__(parent)
@@ -273,11 +283,7 @@ class SectorBoardWidget(QWidget):
         self._detail_loading = (key, period)
 
         def fetch():
-            page = self.facade.market_series(MarketSeriesQuery(key, period))
-            bars = page.bars
-            while page.next_offset is not None:
-                page = self.facade.market_series(MarketSeriesQuery(key, period, offset=page.next_offset, market_revision=page.market_revision))
-                bars += page.bars
+            page, bars = _detail_series(self.facade, key, period, None)
             return page, bars, self.facade.order_book(key)
 
         def completed(value, error):

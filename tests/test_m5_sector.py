@@ -24,6 +24,7 @@ from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
+from desktop_app.features.trading.sector_board import _detail_series
 
 TAIPEI = timezone(timedelta(hours=8))
 OPEN = datetime(2026, 11, 9, 10, 0, tzinfo=TAIPEI)  # a Monday, in session
@@ -781,6 +782,117 @@ class BoardWidgetTests(unittest.TestCase):
         self.assertEqual(amount_text(320_000_000), '3.2 億')
         self.assertEqual(percent_text(Decimal('1.234')), '+1.23%')
         self.assertEqual(percent_text(None), '—')
+
+
+class _SeriesFacade:
+    """The two facade reads the detail chart uses, served by a real LiveMarketService."""
+
+    def __init__(self, service):
+        self.service = service
+        self.reads = []
+
+    def market_series(self, query):
+        self.reads.append((query.offset, query.market_revision))
+        return self.service.series(query)
+
+
+class _LossMarket:
+    """History stub plus a tick-loss source, over the simulated live tick feed."""
+
+    def __init__(self, broker, history):
+        from test_live_market_service import HistoryMarketStub
+
+        self.inner = HistoryMarketStub(broker, history)
+        self.pending = []
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+    def drain_tick_losses(self):
+        losses, self.pending = tuple(self.pending), []
+        return losses
+
+
+class DetailSeriesEquivalenceTests(unittest.TestCase):
+    """OPT-1 P8: the cached detail read must equal a fresh whole-series read bar for bar, every round."""
+
+    KEY = 'WATCH:0'
+
+    def setUp(self):
+        from quantlab.trading.application.live_market import LiveMarketService
+        from quantlab.trading.ports.contracts import DataBatch, HistoryBar
+        from test_tick_adapters_contract import simulated_connector
+        from test_trading_adapters import NOW, D
+
+        self.now, self.D = NOW, D
+        self.broker, self.clock, resolver = simulated_connector()
+        self.depth, self.shift = 600, 0
+
+        def history(instrument_id, start, end):
+            bars = tuple(
+                HistoryBar(
+                    self.KEY,
+                    NOW - timedelta(minutes=m),
+                    NOW - timedelta(minutes=m - 1),
+                    D('100'),
+                    D('103'),
+                    D('99'),
+                    D(100 + (m + self.shift) % 3),
+                    1 + m % 5,
+                    'TEST',
+                )
+                for m in range(self.depth, 0, -1)
+            )
+            return DataBatch(self.KEY, tuple(bar for bar in bars if start <= bar.start < end), 'TEST', True)
+
+        self.market = _LossMarket(self.broker, history)
+        self.service = LiveMarketService(self.market, self.clock, resolver)
+        self.service.allocate((self.KEY,))
+        self.backfill()
+        self.facade = _SeriesFacade(self.service)
+
+    def backfill(self):
+        self.service.backfill(self.KEY, self.now - timedelta(days=2), self.now + timedelta(minutes=1))
+
+    def step(self, seconds=10):
+        self.clock.value = self.clock.value + timedelta(seconds=seconds)
+        self.service.poll(in_session=True)
+
+    def lose_recent(self, minutes):
+        from quantlab.trading.ports.tick_stream import TickLoss
+
+        end = self.clock.value
+        self.market.pending.append(TickLoss(self.KEY, end - timedelta(minutes=minutes), end, 7))
+
+    def assertSameSeries(self, cached_page_bars, period):
+        page, bars = cached_page_bars
+        full_page, full_bars = _detail_series(self.facade, self.KEY, period, None)
+        self.assertEqual(repr(bars), repr(full_bars))  # repr keeps Decimal exponents and every flag
+        self.assertEqual((page.instrument_id, page.period, page.gaps, page.total), (full_page.instrument_id, full_page.period, full_page.gaps, full_page.total))
+
+    def test_cached_reads_equal_whole_reads_through_ticks_backfills_and_losses(self):
+        cache = {}
+        for round_number in range(90):
+            period = '1m' if round_number < 60 else '5m'
+            self.step()
+            if round_number % 17 == 5:
+                self.depth += 45  # older history arrives: every index after it shifts
+                self.backfill()
+            if round_number % 11 == 3:
+                self.lose_recent(2)
+            if round_number == 40:
+                self.lose_recent(30)  # a long loss marks many recent bars incomplete
+            result = _detail_series(self.facade, self.KEY, period, cache.get(period))
+            with self.subTest(round=round_number, period=period):
+                self.assertSameSeries(result, period)
+            cache[period] = result
+        self.assertGreater(len(cache['1m'][1]), 600)
+
+    def test_stale_or_missing_cache_still_reads_the_whole_series(self):
+        first = _detail_series(self.facade, self.KEY, '1m', None)
+        self.assertSameSeries(first, '1m')
+        self.step(120)
+        self.assertSameSeries(_detail_series(self.facade, self.KEY, '1m', first), '1m')
 
 
 if __name__ == '__main__':
