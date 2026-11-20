@@ -55,7 +55,7 @@ class CoreSplitProfileTests(unittest.TestCase):
         self.assertEqual(dict(SOURCE_COMPONENTS), CURRENT_SOURCES)
         self.assertEqual(len(SOURCE_COMPONENTS), len(CURRENT_SOURCES))
         self.assertEqual(PROFILE['protocol'], 'mark_auto_0_2_2_campaign_core_split_siwc_v1')
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 31)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 32)
         self.assertIs(pools.SUPPORTED_PRODUCERS[29], PROFILE)
         self.assertEqual(PROFILE['provider_modes'], ['fixture', 'openai_compatible', 'chatgpt_plan'])
         for mode in ('fixture', 'openai_compatible'):
@@ -91,7 +91,7 @@ class CoreSplitProfileTests(unittest.TestCase):
         for name, expected in PROFILE['engine_source_hashes'].items():
             if name == 'research.py':
                 # Reviewed prospective-E1 reservation change; the current producer carries its identity.
-                expected = pools.STOCK_SIGNAL_PROFILE_V1['engine_source_hashes'][name]
+                expected = pools.STOCK_SIGNAL_PROFILE_V2['engine_source_hashes'][name]
             raw = (
                 layered_source_bytes('quantlab/' + name).replace(b'\r\n', b'\n')
                 if name in ('core.py', 'backtest.py')
@@ -134,7 +134,7 @@ class CoreSplitProfileTests(unittest.TestCase):
         baseline = frozen_blocks(layered_source_bytes('quantlab/saved_candidate_pool.py'))
         current = frozen_blocks((ROOT / 'quantlab/saved_candidate_pool.py').read_bytes())
         self.assertEqual(len(baseline), 29)
-        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1', 'STOCK_SIGNAL_PROFILE_V1'})
+        self.assertEqual(set(current), set(baseline) | {'CORE_SPLIT_SIWC_PROFILE_V1', 'STOCK_SIGNAL_PROFILE_V1', 'STOCK_SIGNAL_PROFILE_V2'})
         for name, block in baseline.items():
             with self.subTest(name=name):
                 allowed = (block, block.replace(b'\n', b'\r\n'))

@@ -53,6 +53,13 @@ def spec(**params):
     return StrategySpec('fixture', 'channel_breakout', {'lookback': 2, **params}, {})
 
 
+def run_with(engine, data, targets, cfg=None, st=None):
+    """run(), against a chosen engine."""
+    signals = tuple(Signal(data.bars[i].end, C, target, 'golden intent') for i, target in targets)
+    with patch('quantlab.backtest.generate_signals', return_value=signals):
+        return engine(data, st or spec(), cfg or config())
+
+
 def run(data, targets, cfg=None, st=None):
     signals = tuple(Signal(data.bars[i].end, C, target, 'golden intent') for i, target in targets)
     with patch('quantlab.backtest.generate_signals', return_value=signals):
@@ -371,3 +378,111 @@ class EngineTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def _frozen_engine():
+    """The pre-OPT-1 P7 engine (exact bytes in tests/fixtures/backtest_pre_opt1_p7.py.txt), loaded beside the live one.
+
+    In memory only: relative imports become absolute; `Path(__file__)` points at the live module so both engines
+    hash the same source files (equal run hashes then mean equal outputs); generate_signals and calculate_costs
+    are looked up on quantlab.backtest so a test patch reaches both engines.
+    """
+    import types
+
+    import quantlab.backtest as live
+
+    source = (Path(__file__).parent / 'fixtures' / 'backtest_pre_opt1_p7.py.txt').read_text(encoding='utf-8')
+    replacements = (
+        ('from .core import', 'from quantlab.core import'),
+        ('from .strategies import', 'from quantlab.strategies import'),
+        ('Path(__file__)', 'Path(_live.__file__)'),
+        ('signals=generate_signals(', 'signals=_live.generate_signals('),
+        ('commission,tax=calculate_costs(', 'commission,tax=_live.calculate_costs('),
+    )
+    for old, new in replacements:
+        assert old in source, old
+        source = source.replace(old, new)
+    module = types.ModuleType('frozen_backtest_pre_opt1_p7')
+    module._live = live
+    exec(compile(source, 'backtest_pre_opt1_p7.py', 'exec'), module.__dict__)  # the committed frozen fixture
+    return module
+
+
+class FrozenEngineEquivalenceTests(unittest.TestCase):
+    """OPT-1 P7: every EngineTests scenario gives the frozen engine's exact result or exact error."""
+
+    def test_every_engine_scenario_matches_the_frozen_engine(self):
+        import quantlab.backtest as live
+
+        frozen = _frozen_engine()
+        compared = []
+
+        def dual(data, strategy, cfg):
+            from unittest.mock import Mock
+
+            mocks = [value for value in (live.generate_signals, live.calculate_costs) if isinstance(value, Mock)]
+            outcomes, calls, live_outcome = [], [], None
+            for engine in (frozen.run_backtest, live.run_backtest):  # live last: the scenario's own assertions see it
+                for mock in mocks:
+                    mock.reset_mock()
+                try:
+                    live_outcome = engine(data, strategy, cfg)
+                    outcomes.append(('result', repr(live_outcome), live_outcome.manifest['run_hash']))
+                except Exception as error:  # the exact type and message must match too
+                    live_outcome = error
+                    outcomes.append(('error', type(error), str(error)))
+                calls.append([mock.mock_calls for mock in mocks])
+            compared.append(outcomes)
+            self.assertEqual(outcomes[0], outcomes[1])
+            self.assertEqual(calls[0], calls[1])  # the same patched calls, in the same order
+            if isinstance(live_outcome, Exception):
+                raise live_outcome
+            return live_outcome
+
+        with patch(__name__ + '.run_backtest', dual):
+            result = unittest.TestResult()
+            unittest.defaultTestLoader.loadTestsFromTestCase(EngineTests).run(result)
+        self.assertEqual((result.failures, result.errors), ([], []))
+        self.assertGreater(len(compared), 40)
+        self.assertTrue(any(outcome[0][0] == 'error' for outcome in compared))
+        self.assertTrue(any(outcome[0][0] == 'result' for outcome in compared))
+
+    def test_fixed_synthetic_datasets_match_for_every_builtin_strategy_and_repeat_run(self):
+        import quantlab.backtest as live
+        from quantlab.reporting import demo_config, synthetic_dataset
+        from quantlab.strategies import builtin_strategies
+
+        frozen = _frozen_engine()
+        cfg = demo_config()
+        for count in (300, 5000):
+            data = synthetic_dataset(count)
+            for strategy in builtin_strategies():
+                with self.subTest(bars=count, strategy=strategy.strategy_id):
+                    expected = frozen.run_backtest(data, strategy, cfg)
+                    for _ in range(2):  # the second run of the same Dataset object reuses its verified bars
+                        observed = live.run_backtest(data, strategy, cfg)
+                        self.assertEqual(observed.manifest['run_hash'], expected.manifest['run_hash'])
+                        self.assertEqual(repr(observed), repr(expected))
+
+    def test_expiry_day_taipei_cutoff_matches_the_frozen_engine(self):
+        import quantlab.backtest as live
+
+        frozen = _frozen_engine()
+        cutoff = datetime(2026, 10, 1, 5, 30, tzinfo=timezone.utc)  # 13:30 Asia/Taipei on the expiry day
+        cases = 0
+        for last_end in (cutoff - timedelta(minutes=1), cutoff, cutoff + timedelta(minutes=1)):
+            bars = tuple(
+                Bar(last_end - timedelta(minutes=k + 1), last_end - timedelta(minutes=k), '2026-10-01', 'day', C, D('100'), D('100'), D('100'), D('100'), 10)
+                for k in range(3, -1, -1)
+            )
+            outcomes = []
+            for engine in (frozen.run_backtest, live.run_backtest):
+                try:
+                    result = run_with(engine, dataset(bars), [], config(instrument_expiries={C: '2026-10-01'}))
+                    outcomes.append(('result', repr(result)))
+                except ValidationError as error:
+                    outcomes.append(('error', str(error)))
+            with self.subTest(last_end=last_end.isoformat()):
+                self.assertEqual(outcomes[0], outcomes[1])
+                cases += outcomes[0][0] == 'error'
+        self.assertGreaterEqual(cases, 1)  # the cutoff really rejects at least one series
