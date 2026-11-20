@@ -22,8 +22,9 @@ REFRESH_MS = 2000
 # The 2 s detail refresh re-reads only this many trailing bars: the forming bar, the tail of an aggregated
 # period and recent tick-loss marks (a loss marks the minutes it covers, which are the newest ones).
 SERIES_TAIL_BARS = 240
-# A whole-series read still happens at least this often, so a rewrite of older bars that keeps the same
-# count and gaps (a same-size history re-backfill) is shown within this bound.
+# A whole-series read still happens at least this often. It bounds how long a change confined to bars older
+# than the re-read window stays unshown when the window itself still lines up: a same-size history re-backfill,
+# a loss mark on old minutes, or a session trim and an older backfill landing in the same refresh.
 SERIES_RESYNC_SECONDS = 120.0
 FILTERS = (('all', 'sector.filter_all'), ('INDUSTRY', 'sector.filter_industry'), ('CONCEPT', 'sector.filter_concept'))
 PERIODS = (('1m', 'terminal.period_1m'), ('5m', 'terminal.period_5m'), ('15m', 'terminal.period_15m'), ('1d', 'terminal.period_1d'))
