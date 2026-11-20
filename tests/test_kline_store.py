@@ -196,5 +196,50 @@ class KlineStoreTests(unittest.TestCase):
         self.assertEqual(self.store.missing_ranges('TWSE:2330', START, START + timedelta(minutes=1)), ((START, START + timedelta(minutes=1)),))
 
 
+def _corrupt_middle(path):
+    """Overwrite 2,000 bytes in the middle of the file: quick_check fails, the schema still reads."""
+    raw = bytearray(path.read_bytes())
+    middle = len(raw) // 2
+    raw[middle : middle + 2000] = b'\xff' * 2000
+    path.write_bytes(bytes(raw))
+    return bytes(raw)
+
+
+class IntegrityCheckScheduleTests(unittest.TestCase):
+    """OPT-1 P10: when the full integrity check must run, a corrupt cache is still preserved and rebuilt."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.path = Path(self.temp.name) / 'market' / 'klines.sqlite3'
+        store = KlineStore(self.path)
+        store.upsert(tuple(minute(index) for index in range(3000)))
+        self.store = store
+
+    def tearDown(self):
+        self.store.close()
+        self.temp.cleanup()
+
+    def assertPreservedAndRebuilt(self, corrupted):
+        self.assertEqual(self.store.warning_code, 'kline_store_unavailable')
+        self.assertEqual(self.store.recovered_path.read_bytes(), corrupted)
+        self.assertIsNone(self.store.last_bar('TWSE:2330'))
+        self.store.upsert((minute(),))
+        self.assertEqual(self.store.last_bar('TWSE:2330'), minute())
+
+    def test_corruption_after_an_unclean_exit_is_preserved_and_rebuilt(self):
+        self.store._db.close()  # the process ends without KlineStore.close()
+        corrupted = _corrupt_middle(self.path)
+        self.store = KlineStore(self.path)
+        self.assertPreservedAndRebuilt(corrupted)
+
+    def test_corruption_after_a_clean_close_with_a_non_empty_wal_is_preserved(self):
+        self.store.close()
+        corrupted = _corrupt_middle(self.path)
+        wal = Path(str(self.path) + '-wal')
+        wal.write_bytes(b'\x00' * 4096)  # left behind by a writer that did not checkpoint
+        self.store = KlineStore(self.path)
+        self.assertPreservedAndRebuilt(corrupted)
+
+
 if __name__ == '__main__':
     unittest.main()
