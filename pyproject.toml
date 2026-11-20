@@ -81,7 +81,9 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# B012: the return in finally deliberately turns any report-write failure into exit 1; changing it alters control flow.
+# B012 (desktop.py:378): in smoke mode the finally-level return deliberately replaces any earlier return value or
+# uncaught BaseException with the published report's status code ("no precomputed zero return code"); changing it
+# alters control flow.
 "desktop.py" = ["F401", "B012"]
 "desktop_app/features/assistant/connection.py" = ["E402"]
 "desktop_app/components/forms.py" = ["E402"]
@@ -118,9 +120,11 @@ select = [
 # B904 explicit chaining would change the raised exception's __cause__/__context__ display.
 "tools/ci_changes.py" = ["B904"]
 "tests/test_chatgpt_provenance.py" = ["B904"]
-# B018: bare attribute reads in tests evaluate lazy properties for their side effect (fixture/panel creation).
-# B020: tests deliberately reuse the previous value of the loop variable in the iterable they build.
+# B018 test_chatgpt_plan: four bare `self.tmp_path` reads are no-op leftovers; ignored rather than editing the test
+# file, which this configuration-only phase keeps byte-identical.
 "tests/test_chatgpt_plan.py" = ["B018"]
+# B018 test_desktop_analysis: `w.chatgpt_panel` is an existence check (the descriptor raises AttributeError if missing).
 "tests/test_desktop_analysis.py" = ["B018"]
+# B020: tests deliberately reuse the previous value of the loop variable in the iterable they build.
 "tests/test_chatgpt_auth.py" = ["E402", "B020"]
 "tests/test_error_catalog_b1.py" = ["B020"]
