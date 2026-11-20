@@ -66,6 +66,20 @@ _DISTINCT_IDS = (
     'SELECT id FROM ids'
 )
 _CACHED_INSTRUMENTS = 4
+# OPT-1 P10: the full integrity check runs after an unclean exit, with a non-empty WAL, or when it is this old.
+_FULL_CHECK_INTERVAL = timedelta(days=7)
+# Each open store keeps one meta row under this prefix until close(); a row left behind marks an unclean exit.
+_OPEN_TOKEN = 'open:'
+
+
+def _wal_bytes(path: Path) -> int | None:
+    """Size of the database's -wal file, 0 when absent, None when it cannot be read."""
+    try:
+        return Path(str(path) + '-wal').stat().st_size
+    except FileNotFoundError:
+        return 0
+    except OSError:
+        return None
 
 
 class KlineStore:
@@ -85,6 +99,7 @@ class KlineStore:
         # read_cached's decoded ranges; upsert marks the earliest start it touched so the next read re-decodes only from there.
         self._recent: dict[str, tuple[str, str, list[str], tuple[LiveBar, ...]]] = {}
         self._dirty: dict[str, str] = {}
+        self._token = _OPEN_TOKEN + uuid4().hex
         try:
             self._open()
         except (sqlite3.DatabaseError, DomainError) as exc:
@@ -104,9 +119,11 @@ class KlineStore:
             self._open()
 
     def _open(self) -> None:
+        wal_pending = _wal_bytes(self.path) != 0  # unreadable counts as pending
         self._db = sqlite3.connect(self.path, timeout=2, check_same_thread=False)
-        if self._db.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
-            raise DomainError('kline_store_unavailable', 'database integrity')
+        full = wal_pending or self._full_check_due()
+        if full:
+            self._full_check()
         self._db.execute('PRAGMA journal_mode=WAL')
         self._db.execute('PRAGMA synchronous=FULL')
         if self._db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").fetchone():
@@ -129,7 +146,47 @@ class KlineStore:
             if len(self._db.execute(f'PRAGMA table_info({table})').fetchall()) != expected:
                 raise DomainError('kline_store_unavailable', 'invalid cache schema')
         self._db.commit()
+        if not self._record_open(full) and not full:
+            self._full_check()  # without the open flag an unclean exit could go unseen, so check now
         self.daily = DailyStockStorage(self._db, self._lock, arrival_clock=self._arrival_clock)
+
+    def _full_check(self) -> None:
+        if self._db.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
+            raise DomainError('kline_store_unavailable', 'database integrity')
+
+    def _full_check_due(self) -> bool:
+        """True unless every earlier store closed cleanly and a full check passed within _FULL_CHECK_INTERVAL."""
+        if not self._db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").fetchone():
+            return True
+        if self._db.execute('SELECT 1 FROM meta WHERE key GLOB ? LIMIT 1', (_OPEN_TOKEN + '*',)).fetchone():
+            return True  # a store that is still open, or one that exited without close()
+        row = self._db.execute("SELECT value FROM meta WHERE key='last_full_check'").fetchone()
+        try:
+            checked = datetime.fromisoformat(row[0])
+        except (TypeError, ValueError):
+            return True
+        now = datetime.now(timezone.utc)
+        return checked.tzinfo is None or not now - _FULL_CHECK_INTERVAL < checked <= now
+
+    def _record_open(self, full_checked: bool) -> bool:
+        """Keep this store's open token until close(); False when it could not be written.
+
+        Under the write lock, an empty WAL means no other store has written since the last one closed, and every store
+        writes its token on open, so any token present was left by an unclean exit. Those are cleared only after the
+        full check has run on this open.
+        """
+        try:
+            self._db.execute('BEGIN IMMEDIATE')
+            if full_checked and _wal_bytes(self.path) == 0:
+                self._db.execute('DELETE FROM meta WHERE key GLOB ?', (_OPEN_TOKEN + '*',))
+            self._db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)', (self._token, datetime.now(timezone.utc).isoformat()))
+            if full_checked:
+                self._db.execute("INSERT OR REPLACE INTO meta VALUES('last_full_check',?)", (datetime.now(timezone.utc).isoformat(),))
+            self._db.commit()
+        except sqlite3.Error:
+            self._db.rollback()
+            return False
+        return True
 
     @property
     def revision(self) -> int:
@@ -276,4 +333,10 @@ class KlineStore:
 
     def close(self) -> None:
         with self._lock:
+            try:
+                self._db.rollback()  # closing has always discarded an unfinished transaction
+                self._db.execute('DELETE FROM meta WHERE key=?', (self._token,))
+                self._db.commit()
+            except sqlite3.Error:
+                pass  # the token stays, so the next open runs the full check
             self._db.close()

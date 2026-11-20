@@ -10,6 +10,7 @@ import tempfile
 import unittest
 import unittest.mock
 
+from quantlab.trading.adapters.storage import kline_store as kline_store_module
 from quantlab.trading.adapters.storage.kline_store import KlineStore
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.validation import DomainError
@@ -194,6 +195,234 @@ class KlineStoreTests(unittest.TestCase):
     def test_live_bar_does_not_claim_query_coverage(self):
         self.store.upsert((minute(),), source='LIVE_TICKS')
         self.assertEqual(self.store.missing_ranges('TWSE:2330', START, START + timedelta(minutes=1)), ((START, START + timedelta(minutes=1)),))
+
+
+def _corrupt_middle(path):
+    """Overwrite 2,000 bytes in the middle of the file: quick_check fails, the schema still reads."""
+    raw = bytearray(path.read_bytes())
+    middle = len(raw) // 2
+    raw[middle : middle + 2000] = b'\xff' * 2000
+    path.write_bytes(bytes(raw))
+    return bytes(raw)
+
+
+class IntegrityCheckScheduleTests(unittest.TestCase):
+    """OPT-1 P10: when the full integrity check must run, a corrupt cache is still preserved and rebuilt."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.path = Path(self.temp.name) / 'market' / 'klines.sqlite3'
+        store = KlineStore(self.path)
+        store.upsert(tuple(minute(index) for index in range(3000)))
+        self.store = store
+
+    def tearDown(self):
+        self.store.close()
+        self.temp.cleanup()
+
+    def assertPreservedAndRebuilt(self, corrupted):
+        self.assertEqual(self.store.warning_code, 'kline_store_unavailable')
+        self.assertEqual(self.store.recovered_path.read_bytes(), corrupted)
+        self.assertIsNone(self.store.last_bar('TWSE:2330'))
+        self.store.upsert((minute(),))
+        self.assertEqual(self.store.last_bar('TWSE:2330'), minute())
+
+    def test_corruption_after_an_unclean_exit_is_preserved_and_rebuilt(self):
+        self.store._db.close()  # the process ends without KlineStore.close()
+        corrupted = _corrupt_middle(self.path)
+        self.store = KlineStore(self.path)
+        self.assertPreservedAndRebuilt(corrupted)
+
+    def test_corruption_after_a_clean_close_with_a_non_empty_wal_is_preserved(self):
+        self.store.close()
+        corrupted = _corrupt_middle(self.path)
+        wal = Path(str(self.path) + '-wal')
+        wal.write_bytes(b'\x00' * 4096)  # left behind by a writer that did not checkpoint
+        self.store = KlineStore(self.path)
+        self.assertPreservedAndRebuilt(corrupted)
+
+
+def _failing_connection(fragment):
+    """A sqlite3 connection whose statements containing fragment fail, as a full or locked disk would."""
+
+    class Failing(sqlite3.Connection):
+        def execute(self, sql, *args):
+            if fragment in sql:
+                raise sqlite3.OperationalError('disk I/O error')
+            return super().execute(sql, *args)
+
+    real = sqlite3.connect
+    return unittest.mock.patch.object(sqlite3, 'connect', lambda *a, **k: real(*a, factory=Failing, **k))
+
+
+TOKEN_WRITE = 'INSERT OR REPLACE INTO meta VALUES(?,?)'
+TOKEN_DELETE = 'DELETE FROM meta WHERE key=?'
+
+
+class IntegrityCheckFlagTests(unittest.TestCase):
+    """OPT-1 P10: quick_check is skipped only when every earlier store closed cleanly, the WAL is empty and the check is recent."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.path = Path(self.temp.name) / 'market' / 'klines.sqlite3'
+        self.store = KlineStore(self.path)
+        self.store.upsert(tuple(minute(index) for index in range(3000)))
+        self.others = []
+
+    def tearDown(self):
+        for store in (self.store, *self.others):
+            store.close()
+        self.temp.cleanup()
+
+    def meta(self, key):
+        with closing(sqlite3.connect(self.path)) as db:
+            row = db.execute('SELECT value FROM meta WHERE key=?', (key,)).fetchone()
+        return row[0] if row else None
+
+    def tokens(self):
+        with closing(sqlite3.connect(self.path)) as db:
+            return {key for (key,) in db.execute("SELECT key FROM meta WHERE key GLOB 'open:*'")}
+
+    def set_meta(self, key, value):
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)', (key, value))
+            db.commit()
+
+    def checks(self, open_store):
+        with unittest.mock.patch.object(KlineStore, '_full_check', autospec=True, side_effect=KlineStore._full_check) as check:
+            store = open_store()
+        return store, check.call_count
+
+    def reopen(self):
+        self.store, count = self.checks(lambda: KlineStore(self.path))
+        return count
+
+    def another(self):
+        store, count = self.checks(lambda: KlineStore(self.path))
+        self.others.append(store)
+        return store, count
+
+    def test_clean_close_and_recent_check_skip_the_full_check(self):
+        self.assertEqual(self.tokens(), {self.store._token})
+        checked = self.meta('last_full_check')
+        self.assertIsNotNone(checked)
+        self.store.close()
+        self.assertEqual(self.tokens(), set())
+        self.assertEqual(self.reopen(), 0)
+        self.assertEqual(self.meta('last_full_check'), checked)
+        self.assertEqual(self.store.warning_code, '')
+        self.assertEqual(len(self.store.read('TWSE:2330', minute().start, minute(3000).start)), 3000)
+
+    def test_token_left_by_an_unclean_exit_runs_the_full_check_and_is_then_cleared(self):
+        self.store._db.close()  # the process ends without KlineStore.close()
+        self.assertEqual(len(self.tokens()), 1)
+        self.assertEqual(self.reopen(), 1)
+        self.assertEqual(self.tokens(), {self.store._token})  # the checked open clears the stale token
+        self.store.close()
+        self.assertEqual(self.reopen(), 0)
+
+    def test_non_empty_wal_runs_the_full_check(self):
+        self.store.close()
+        Path(str(self.path) + '-wal').write_bytes(b'\x00' * 4096)
+        self.assertEqual(self.reopen(), 1)
+
+    def test_unreadable_wal_counts_as_non_empty(self):
+        with unittest.mock.patch.object(Path, 'stat', side_effect=PermissionError):
+            self.assertIsNone(kline_store_module._wal_bytes(self.path))
+        with unittest.mock.patch.object(Path, 'stat', side_effect=FileNotFoundError):
+            self.assertEqual(kline_store_module._wal_bytes(self.path), 0)
+        self.store.close()
+        with unittest.mock.patch.object(kline_store_module, '_wal_bytes', return_value=None):
+            self.assertEqual(self.reopen(), 1)
+
+    def test_missing_check_time_runs_the_full_check(self):
+        self.store.close()
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute("DELETE FROM meta WHERE key='last_full_check'")
+            db.commit()
+        self.assertEqual(self.reopen(), 1)
+
+    def test_overdue_future_or_unreadable_check_time_runs_the_full_check(self):
+        now = datetime.now(timezone.utc)
+        for value in (
+            (now - timedelta(days=8)).isoformat(),
+            (now + timedelta(days=1)).isoformat(),
+            now.replace(tzinfo=None).isoformat(),
+            'not a time',
+        ):
+            with self.subTest(value=value):
+                self.store.close()
+                self.set_meta('last_full_check', value)
+                self.assertEqual(self.reopen(), 1)
+                self.assertNotEqual(self.meta('last_full_check'), value)  # the passed check is recorded
+        self.store.close()
+        self.set_meta('last_full_check', (now - timedelta(days=6)).isoformat())
+        self.assertEqual(self.reopen(), 0)
+
+    def test_a_store_that_dies_while_another_closes_last_is_still_seen(self):
+        other, count = self.another()
+        self.assertEqual(count, 1)  # the first store's token is live
+        self.store._db.close()  # the first store exits without close() while the other is open
+        other.close()  # the other store is the last connection: SQLite checkpoints and deletes the WAL
+        self.others.remove(other)
+        self.assertFalse(Path(str(self.path) + '-wal').exists())
+        self.assertEqual(self.reopen(), 1)
+        self.store.close()
+        self.assertEqual(self.reopen(), 0)
+
+    def test_a_live_store_keeps_its_token_when_another_store_opens(self):
+        other, _ = self.another()
+        other.close()
+        self.others.remove(other)
+        third, count = self.another()
+        self.assertEqual(count, 1)
+        self.assertIn(self.store._token, self.tokens())  # a non-empty WAL means it may be live: never cleared
+        self.store._db.close()  # now the first store dies, and the third store closes last
+        third.close()
+        self.others.remove(third)
+        self.assertEqual(self.reopen(), 1)
+
+    def test_a_locked_full_check_is_still_temporarily_unavailable_without_recovery(self):
+        self.store._db.close()  # the left-over token forces the full check
+        with _failing_connection('PRAGMA quick_check'), self.assertRaises(DomainError) as raised:
+            KlineStore(self.path)
+        self.assertEqual((raised.exception.code, raised.exception.detail), ('kline_store_unavailable', 'cache is temporarily unavailable'))
+        self.assertEqual([name for name in self.path.parent.iterdir() if '.bad-' in name.name], [])
+        self.assertEqual(self.reopen(), 1)
+
+    def test_failed_open_token_write_falls_back_to_the_full_check(self):
+        self.store.close()
+        with _failing_connection(TOKEN_WRITE):
+            self.assertEqual(self.reopen(), 1)
+        self.assertEqual(self.store.warning_code, '')
+        self.assertEqual(self.tokens(), set())  # the failed write was rolled back
+        self.store.upsert((minute(3000),))
+        self.assertEqual(self.store.last_bar('TWSE:2330'), minute(3000))
+
+    def test_failed_close_token_delete_leaves_the_next_open_checking(self):
+        self.store.close()
+        with _failing_connection(TOKEN_DELETE):
+            store = KlineStore(self.path)
+            store.close()
+        self.assertEqual(self.tokens(), {store._token})
+        self.assertEqual(self.reopen(), 1)
+
+    def test_corruption_found_by_the_fallback_check_is_preserved_and_rebuilt(self):
+        self.store.close()
+        corrupted = _corrupt_middle(self.path)
+        with _failing_connection(TOKEN_WRITE):
+            self.store = KlineStore(self.path)
+        self.assertEqual(self.store.warning_code, 'kline_store_unavailable')
+        self.assertEqual(self.store.recovered_path.read_bytes(), corrupted)
+        self.assertIsNone(self.store.last_bar('TWSE:2330'))
+
+    def test_corruption_found_by_the_periodic_check_is_preserved_and_rebuilt(self):
+        self.store.close()
+        self.set_meta('last_full_check', (datetime.now(timezone.utc) - timedelta(days=8)).isoformat())
+        corrupted = _corrupt_middle(self.path)
+        self.store = KlineStore(self.path)
+        self.assertEqual(self.store.warning_code, 'kline_store_unavailable')
+        self.assertEqual(self.store.recovered_path.read_bytes(), corrupted)
 
 
 if __name__ == '__main__':

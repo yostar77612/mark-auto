@@ -2,7 +2,9 @@
 
 Creates a K-line cache with KlineStore's own schema in a temporary directory, fills bars_1m with synthetic
 one-minute rows until the file reaches each target size, then measures (a) the whole KlineStore(path)
-construction, which runs _open, and (b) one PRAGMA quick_check on a fresh connection. The OS file cache
+construction after a clean close, which runs _open; (b) the same after an unclean exit (an open token is
+left in meta, untimed, before each run), the path that still runs the full check; and (c) one PRAGMA
+quick_check on a fresh connection. The OS file cache
 is warm (the file was just written); a cold first open after reboot can only be slower. No network,
 broker, credentials or user data. Usage: python tools/bench_kline_open.py [--repeat N] [--sizes 10,200,1024]
 """
@@ -60,13 +62,23 @@ def fill(path, target_bytes):
     return rows
 
 
-def timed(action, repeat):
+def timed(action, repeat, setup=None):
     runs = []
     for _ in range(repeat):
+        if setup:
+            setup()
         started = time.perf_counter()
         action()
         runs.append((time.perf_counter() - started) * 1000)
     return statistics.median(runs)
+
+
+def leave_open_flag(path):
+    """What an exit without KlineStore.close() leaves behind."""
+    db = sqlite3.connect(path)
+    with db:
+        db.execute("INSERT OR REPLACE INTO meta VALUES('open:bench-unclean-exit','')")  # a token no close() removed
+    db.close()
 
 
 def quick_check(path):
@@ -83,14 +95,15 @@ def main(argv=None):
     parser.add_argument('--sizes', default='10,200,1024', help='target sizes in MiB')
     args = parser.parse_args(argv)
     print(f'python {sys.version.split()[0]}; sqlite {sqlite3.sqlite_version}; repeat {args.repeat}; warm OS cache; median ms')
-    print('target MiB | file MiB | rows | KlineStore open ms | quick_check ms | quick_check share')
+    print('target MiB | file MiB | rows | clean-close open ms | unclean-exit open ms | quick_check ms')
     with tempfile.TemporaryDirectory(prefix='bench-kline-') as folder:
         for size in (int(value) for value in args.sizes.split(',')):
             path = Path(folder) / f'klines-{size}.sqlite3'
             rows = fill(path, size * 1024 * 1024)
             opened = timed(lambda: KlineStore(path).close(), args.repeat)
+            unclean = timed(lambda: KlineStore(path).close(), args.repeat, setup=lambda: leave_open_flag(path))
             check = timed(lambda: quick_check(path), args.repeat)
-            print(f'{size} | {path.stat().st_size / 1048576:.1f} | {rows} | {opened:.1f} | {check:.1f} | {check / opened:.0%}')
+            print(f'{size} | {path.stat().st_size / 1048576:.1f} | {rows} | {opened:.1f} | {unclean:.1f} | {check:.1f}')
             path.unlink()
     return 0
 
