@@ -7982,8 +7982,8 @@ read-only market session; five levels are refused with `validation_failed`; no C
 order or catalogue surface is added and production orders stay disabled. Sessions: day
 08:45-13:45, night 15:00-05:00 belonging to the next trading day (verified day set for
 holidays, next weekday beyond its coverage), display-only and never execution evidence.
-Change is measured against the broker reference, falling back to the previous trade date's
-last bar. Stock-only alert kinds (limit up/down, price jump, volume burst) are refused for
+Change is measured against the broker reference (read at subscribe, used only for the trade
+date it was read in), falling back to the previous trade date's last bar. Stock-only alert kinds (limit up/down, price jump, volume burst) are refused for
 futures. The symbol directory is version 3; version 2 caches remain readable. Strings
 orders3391-3395. Real continuous-contract get/kbars/ticks and the night display are
 unverified against the broker and pending owner check.
