@@ -584,7 +584,7 @@ class RuntimeBundle:
             attach_market(candidate)
             self.watch_settings.restore(candidate)
             caches = {}
-            for account, gateway in candidate.gateways.items():
+            for gateway in candidate.gateways.values():
                 if id(gateway) not in caches:
                     scoped = tuple(ref for ref, port in candidate.gateways.items() if port is gateway)
                     caches[id(gateway)] = ReadOnlyGatewayCache(gateway, scoped, self.launch.environment, candidate.clock)

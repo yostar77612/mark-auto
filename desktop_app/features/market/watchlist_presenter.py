@@ -61,7 +61,7 @@ class MarketPresenter:
     def _fill_contracts(self):
         self.view.contract_combo.blockSignals(True)
         self.view.contract_combo.clear()
-        for key, item in self.view._series.items():
+        for key in self.view._series.keys():
             self.view.contract_combo.addItem(_friendly_contract(key), key)
         self.view.contract_combo.setCurrentIndex(self.view.contract_combo.findData(self.view._selected))
         self.view.contract_combo.blockSignals(False)
