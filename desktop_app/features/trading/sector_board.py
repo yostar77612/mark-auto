@@ -19,6 +19,13 @@ from quantlab.trading.application.sector_contracts import SectorGroupsCommand, S
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 REFRESH_MS = 2000
+# The 2 s detail refresh re-reads only this many trailing bars: the forming bar, the tail of an aggregated
+# period and recent tick-loss marks (a loss marks the minutes it covers, which are the newest ones).
+SERIES_TAIL_BARS = 240
+# A whole-series read still happens at least this often. It bounds how long a change confined to bars older
+# than the re-read window stays unshown when the window itself still lines up: a same-size history re-backfill,
+# a loss mark on old minutes, or a session trim and an older backfill landing in the same refresh.
+SERIES_RESYNC_SECONDS = 120.0
 FILTERS = (('all', 'sector.filter_all'), ('INDUSTRY', 'sector.filter_industry'), ('CONCEPT', 'sector.filter_concept'))
 PERIODS = (('1m', 'terminal.period_1m'), ('5m', 'terminal.period_5m'), ('15m', 'terminal.period_15m'), ('1d', 'terminal.period_1d'))
 RANK_COLUMNS = ('group', 'kind', 'pct', 'breadth', 'limit_up', 'amount', 'share', 'share_vs', 'count')
@@ -89,6 +96,37 @@ def _table(name, headers, stretch=0, name_width=112):
     return table
 
 
+def _detail_series(facade, key, period, cached):
+    """The selected stock's chart series as (page, bars, whole).
+
+    With `cached` (page, bars) from the previous read of the same stock and period, only the last
+    SERIES_TAIL_BARS are re-read and spliced on. Any sign that the earlier part may differ falls back to
+    the whole read: more than one page of new bars, a shorter series, changed gaps, or a mismatch in the
+    re-read window (a history backfill or trim shifts every index, so the window no longer lines up).
+    """
+    if cached is not None and cached[1]:
+        spliced = _detail_tail(facade, key, period, *cached)
+        if spliced is not None:
+            return (*spliced, False)
+    page = facade.market_series(MarketSeriesQuery(key, period))
+    bars = page.bars
+    while page.next_offset is not None:
+        page = facade.market_series(MarketSeriesQuery(key, period, offset=page.next_offset, market_revision=page.market_revision))
+        bars += page.bars
+    return page, bars, True
+
+
+def _detail_tail(facade, key, period, cached_page, cached_bars):
+    offset = max(0, len(cached_bars) - SERIES_TAIL_BARS)
+    page = facade.market_series(MarketSeriesQuery(key, period, offset=offset))
+    stable = len(cached_bars) - offset - 1  # cached bars in the window except the last, which may still be forming
+    if page.next_offset is not None or page.total < len(cached_bars) or page.gaps != cached_page.gaps:
+        return None
+    if len(page.bars) <= stable or page.bars[stable].start != cached_bars[-1].start or page.bars[:stable] != cached_bars[offset:-1]:
+        return None
+    return page, cached_bars[:offset] + page.bars
+
+
 class SectorBoardWidget(QWidget):
     def __init__(self, facade, chart, parent=None, *, colours=None, style=None, open_in_watch=None, add_to_watch=None):
         super().__init__(parent)
@@ -101,6 +139,7 @@ class SectorBoardWidget(QWidget):
         self.rank_sort, self.member_sort = (2, Qt.SortOrder.DescendingOrder), (3, Qt.SortOrder.DescendingOrder)
         self.view = None
         self._requests, self._loading, self._detail_loading, self._selecting, self._again = PendingRequests(), False, None, False, False
+        self._detail_cache = None  # (key, period, (page, bars), monotonic time of the last whole read)
         self.destroyed.connect(self._requests.cancel)
         self._wanted = ''
         self._flash, self._seen_alerts, self._alerts_primed = {}, set(), False
@@ -272,21 +311,23 @@ class SectorBoardWidget(QWidget):
         key, period = self.stock_id, self.period
         self._detail_loading = (key, period)
 
+        cache = self._detail_cache
+        fresh = cache is not None and cache[:2] == (key, period) and monotonic() - cache[3] < SERIES_RESYNC_SECONDS
+        reuse = cache[2] if fresh else None
+
         def fetch():
-            page = self.facade.market_series(MarketSeriesQuery(key, period))
-            bars = page.bars
-            while page.next_offset is not None:
-                page = self.facade.market_series(MarketSeriesQuery(key, period, offset=page.next_offset, market_revision=page.market_revision))
-                bars += page.bars
-            return page, bars, self.facade.order_book(key)
+            page, bars, whole = _detail_series(self.facade, key, period, reuse)
+            return page, bars, whole, self.facade.order_book(key)
 
         def completed(value, error):
             if self._detail_loading == (key, period):
                 self._detail_loading = None
             if error is not None and key == self.stock_id:
+                self._detail_cache = None
                 self.order_book.clear(ui_text('sector.error'))
             if error is None and key == self.stock_id and period == self.period:
-                page, bars, book = value
+                page, bars, whole, book = value
+                self._detail_cache = (key, period, (page, bars), monotonic() if whole else cache[3])
                 self.chart.set_series(series_bars(replace(page, bars=bars, offset=0)))
                 self.order_book.render_view(book, *self.colours(self))
 
