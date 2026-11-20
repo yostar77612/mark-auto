@@ -24,7 +24,7 @@ from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
-from desktop_app.features.trading.sector_board import _detail_series
+from desktop_app.features.trading.sector_board import SERIES_TAIL_BARS, _detail_series
 
 TAIPEI = timezone(timedelta(hours=8))
 OPEN = datetime(2026, 11, 9, 10, 0, tzinfo=TAIPEI)  # a Monday, in session
@@ -837,7 +837,7 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
                     D('100'),
                     D('103'),
                     D('99'),
-                    D(100 + (m + self.shift) % 3),
+                    D(100 + (m + (self.shift if m > 400 else 0)) % 3),
                     1 + m % 5,
                     'TEST',
                 )
@@ -865,13 +865,14 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
         self.market.pending.append(TickLoss(self.KEY, end - timedelta(minutes=minutes), end, 7))
 
     def assertSameSeries(self, cached_page_bars, period):
-        page, bars = cached_page_bars
-        full_page, full_bars = _detail_series(self.facade, self.KEY, period, None)
+        page, bars = cached_page_bars[:2]
+        full_page, full_bars, whole = _detail_series(self.facade, self.KEY, period, None)
+        self.assertTrue(whole)
         self.assertEqual(repr(bars), repr(full_bars))  # repr keeps Decimal exponents and every flag
         self.assertEqual((page.instrument_id, page.period, page.gaps, page.total), (full_page.instrument_id, full_page.period, full_page.gaps, full_page.total))
 
     def test_cached_reads_equal_whole_reads_through_ticks_backfills_and_losses(self):
-        cache = {}
+        cache, wholes = {}, []
         for round_number in range(90):
             period = '1m' if round_number < 60 else '5m'
             self.step()
@@ -885,14 +886,65 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
             result = _detail_series(self.facade, self.KEY, period, cache.get(period))
             with self.subTest(round=round_number, period=period):
                 self.assertSameSeries(result, period)
-            cache[period] = result
+            cache[period] = result[:2]
+            wholes.append((round_number, result[2]))
         self.assertGreater(len(cache['1m'][1]), 600)
+        whole_rounds = {number for number, whole in wholes if whole}
+        # The first read of each period, and every backfill that shifted the indexes, read the whole series.
+        self.assertLessEqual({0, 60, 5, 22, 39, 56, 73}, whole_rounds)
+        self.assertGreater(len(wholes) - len(whole_rounds), 70)  # every other round only re-read the tail
+
+    def test_same_size_rewrite_of_older_bars_is_shown_after_the_next_whole_read(self):
+        cached = _detail_series(self.facade, self.KEY, '1m', None)[:2]
+        self.step()
+        self.shift = 1  # same window and count, different closes only for bars older than the tail window
+        self.backfill()
+        page, bars, whole = _detail_series(self.facade, self.KEY, '1m', cached)
+        full_bars = _detail_series(self.facade, self.KEY, '1m', None)[1]
+        self.assertFalse(whole)
+        self.assertNotEqual(repr(bars[:-SERIES_TAIL_BARS]), repr(full_bars[:-SERIES_TAIL_BARS]))  # the documented bound
+        self.assertEqual(repr(bars[-SERIES_TAIL_BARS:]), repr(full_bars[-SERIES_TAIL_BARS:]))
+        self.assertSameSeries(_detail_series(self.facade, self.KEY, '1m', None), '1m')  # the resync read
 
     def test_stale_or_missing_cache_still_reads_the_whole_series(self):
         first = _detail_series(self.facade, self.KEY, '1m', None)
         self.assertSameSeries(first, '1m')
         self.step(120)
-        self.assertSameSeries(_detail_series(self.facade, self.KEY, '1m', first), '1m')
+        self.assertSameSeries(_detail_series(self.facade, self.KEY, '1m', first[:2]), '1m')
+
+    def test_widget_reuses_the_cache_resyncs_after_the_bound_and_drops_it_on_error(self):
+        from unittest.mock import patch
+
+        from PySide6.QtWidgets import QApplication
+
+        from desktop_app.components.charts import CandlestickChart
+        from desktop_app.features.trading import sector_board
+
+        QApplication.instance() or QApplication([])
+        self.facade.order_book = lambda key: None
+        self.facade.sector_board = lambda query: None
+        widget = release(self, sector_board.SectorBoardWidget(self.facade, CandlestickChart()))
+        widget._submit = lambda operation, completed: completed(operation(), None)
+        widget.order_book.render_view = lambda *args: None
+        widget.stock_id = self.KEY
+        clock = [1000.0]
+        with patch.object(sector_board, 'monotonic', lambda: clock[0]):
+            widget._refresh_detail()
+            whole = list(self.facade.reads)
+            self.assertEqual(whole[0], (0, None))
+            self.step()
+            del self.facade.reads[:]
+            widget._refresh_detail()
+            self.assertEqual(len(self.facade.reads), 1)  # one tail page
+            self.assertGreater(self.facade.reads[0][0], 0)
+            self.assertEqual(repr(widget._detail_cache[2][1]), repr(_detail_series(self.facade, self.KEY, '1m', None)[1]))
+            clock[0] += sector_board.SERIES_RESYNC_SECONDS
+            del self.facade.reads[:]
+            widget._refresh_detail()
+            self.assertEqual(self.facade.reads[0], (0, None))  # the periodic whole read
+            widget._submit = lambda operation, completed: completed(None, RuntimeError('lost'))
+            widget._refresh_detail()
+            self.assertIsNone(widget._detail_cache)
 
 
 if __name__ == '__main__':
