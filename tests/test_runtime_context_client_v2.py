@@ -197,7 +197,7 @@ class RuntimeContextClientTests(unittest.TestCase):
             self.app.processEvents()
 
     def drain(self):
-        # Starting a new owned host has the existing 15s startup deadline;
+        # Starting a new owned host waits while it runs (context_client._STARTUP_SECONDS);
         # ordinary UI operations retain the production IPC 10s deadline.
         deadline = time.monotonic() + 16
         while (self.window._operation is not None or self.window._priority_operation is not None) and time.monotonic() < deadline:
