@@ -53,6 +53,13 @@ def spec(**params):
     return StrategySpec('fixture', 'channel_breakout', {'lookback': 2, **params}, {})
 
 
+def run_with(engine, data, targets, cfg=None, st=None):
+    """run(), against a chosen engine."""
+    signals = tuple(Signal(data.bars[i].end, C, target, 'golden intent') for i, target in targets)
+    with patch('quantlab.backtest.generate_signals', return_value=signals):
+        return engine(data, st or spec(), cfg or config())
+
+
 def run(data, targets, cfg=None, st=None):
     signals = tuple(Signal(data.bars[i].end, C, target, 'golden intent') for i, target in targets)
     with patch('quantlab.backtest.generate_signals', return_value=signals):
@@ -456,3 +463,26 @@ class FrozenEngineEquivalenceTests(unittest.TestCase):
                         observed = live.run_backtest(data, strategy, cfg)
                         self.assertEqual(observed.manifest['run_hash'], expected.manifest['run_hash'])
                         self.assertEqual(repr(observed), repr(expected))
+
+    def test_expiry_day_taipei_cutoff_matches_the_frozen_engine(self):
+        import quantlab.backtest as live
+
+        frozen = _frozen_engine()
+        cutoff = datetime(2026, 10, 1, 5, 30, tzinfo=timezone.utc)  # 13:30 Asia/Taipei on the expiry day
+        cases = 0
+        for last_end in (cutoff - timedelta(minutes=1), cutoff, cutoff + timedelta(minutes=1)):
+            bars = tuple(
+                Bar(last_end - timedelta(minutes=k + 1), last_end - timedelta(minutes=k), '2026-10-01', 'day', C, D('100'), D('100'), D('100'), D('100'), 10)
+                for k in range(3, -1, -1)
+            )
+            outcomes = []
+            for engine in (frozen.run_backtest, live.run_backtest):
+                try:
+                    result = run_with(engine, dataset(bars), [], config(instrument_expiries={C: '2026-10-01'}))
+                    outcomes.append(('result', repr(result)))
+                except ValidationError as error:
+                    outcomes.append(('error', str(error)))
+            with self.subTest(last_end=last_end.isoformat()):
+                self.assertEqual(outcomes[0], outcomes[1])
+                cases += outcomes[0][0] == 'error'
+        self.assertGreaterEqual(cases, 1)  # the cutoff really rejects at least one series
