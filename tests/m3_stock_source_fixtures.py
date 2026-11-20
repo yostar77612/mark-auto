@@ -7,9 +7,9 @@ from pathlib import Path
 
 ARCHIVE_SHA256 = '32b78b3424371a1f4e1684cd8e53b0b48cc719cefe0b551369e67d61cf19bcdb'
 CURRENT_SHA256 = {
-    'quantlab/backtest.py': 'b30ad2909f70682e7076862253f3f0d1748640d96d16c84252c1fb02e91a44ea',
+    'quantlab/backtest.py': '97a13a0e4e0fe4d04ca8e4a2c6bfb8b769154df2e1de78f279c9d8554e30e76d',  # OPT-1 P7, owner-approved
     'quantlab/core.py': 'b508d19fd2eee49adf49dc612c4c4aad74a0b2f68c27b3c5cdaed7dad3f92c81',
-    'quantlab/saved_candidate_pool.py': '7d58d4123d23a9a195c15c03cd5b7bed14a927a3c040457aa9d7e530f2490c49',
+    'quantlab/saved_candidate_pool.py': '84b5aaf1632b0e208d3013851869a87c865bf971e809ea6472fdccbf2678df4c',  # + STOCK_SIGNAL_PROFILE_V2
 }
 
 
