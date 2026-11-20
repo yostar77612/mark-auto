@@ -2,8 +2,8 @@
 
 Creates a K-line cache with KlineStore's own schema in a temporary directory, fills bars_1m with synthetic
 one-minute rows until the file reaches each target size, then measures (a) the whole KlineStore(path)
-construction after a clean close, which runs _open; (b) the same after an unclean exit (the open flag in
-meta is left set, untimed, before each run), the path that still runs the full check; and (c) one PRAGMA
+construction after a clean close, which runs _open; (b) the same after an unclean exit (an open token is
+left in meta, untimed, before each run), the path that still runs the full check; and (c) one PRAGMA
 quick_check on a fresh connection. The OS file cache
 is warm (the file was just written); a cold first open after reboot can only be slower. No network,
 broker, credentials or user data. Usage: python tools/bench_kline_open.py [--repeat N] [--sizes 10,200,1024]
@@ -77,7 +77,7 @@ def leave_open_flag(path):
     """What an exit without KlineStore.close() leaves behind."""
     db = sqlite3.connect(path)
     with db:
-        db.execute("INSERT OR REPLACE INTO meta VALUES('open_state','open')")
+        db.execute("INSERT OR REPLACE INTO meta VALUES('open:bench-unclean-exit','')")  # a token no close() removed
     db.close()
 
 
