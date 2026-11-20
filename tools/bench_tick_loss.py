@@ -6,7 +6,6 @@ of new losses. No network, broker or credentials. Usage: python tools/bench_tick
 """
 
 import argparse
-from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
