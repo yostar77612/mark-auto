@@ -24,6 +24,10 @@ from .config import RuntimeLaunch, RuntimeProfile, load_profile, read_runtime_do
 from .ipc import IpcFacade, read_session
 
 _STARTED: dict[Path, subprocess.Popen] = {}
+# How long a newly started engine may take to publish its session while it is still running. Opening the K-line cache
+# runs its full integrity check after an unclean exit or once a week (OPT-1 P10); on a multi-GB cache that alone takes
+# tens of seconds, so the former 15 s budget reported startup_failed and left a healthy engine running unowned.
+_STARTUP_SECONDS = 180
 
 
 def _alive(process_id: int) -> bool:
@@ -135,7 +139,7 @@ def ensure_engine(root: Path, *, launch: RuntimeLaunch | None = None, configurat
             args, stdin=subprocess.DEVNULL, stdout=log, stderr=log, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0, close_fds=True
         )
         _STARTED[root] = process
-    deadline = time.monotonic() + 15
+    deadline = time.monotonic() + _STARTUP_SECONDS
     while time.monotonic() < deadline:
         if process.poll() is not None:
             raise DomainError('startup_failed', 'configured runtime did not start; existing data retained')

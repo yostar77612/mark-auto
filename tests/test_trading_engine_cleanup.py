@@ -1,9 +1,11 @@
 """Real-process regressions for disposable engine fixture lifetime."""
 
 from pathlib import Path
+import itertools
 import json
 import subprocess
 import tempfile
+import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -94,11 +96,22 @@ class FixtureCleanupRegressionTests(unittest.TestCase):
     def test_startup_deadline_before_endpoint_publication_still_normally_closes_owned_engine(self):
         # Only the caller's clock is controlled. The real child still starts,
         # publishes its real authenticated endpoint and must exit normally.
-        caller_clock = SimpleNamespace(monotonic=Mock(side_effect=(0, 16)))
+        caller_clock = SimpleNamespace(monotonic=Mock(side_effect=(0, context_client._STARTUP_SECONDS + 1)))
         with self.assertRaisesRegex(DomainError, 'runtime startup deadline'):
             with OwnedEngineProcesses() as owned:
                 with patch.object(context_client, 'time', caller_clock):
                     ensure_engine(self.root / 'deadline')
+        self.assert_closed(owned)
+
+    def test_engine_publishing_after_the_former_15_second_budget_is_still_adopted(self):
+        # The K-line cache's full integrity check can keep a healthy engine from publishing for tens of seconds;
+        # the caller keeps waiting while that engine runs instead of reporting startup_failed and orphaning it.
+        caller_clock = SimpleNamespace(monotonic=Mock(side_effect=itertools.chain((0,), itertools.repeat(16))))
+        with OwnedEngineProcesses() as owned:
+            with patch.object(context_client, 'time', SimpleNamespace(monotonic=caller_clock.monotonic, sleep=time.sleep)):
+                facade = ensure_engine(self.root / 'slow')
+            self.assertEqual(read_session(self.root / 'slow').process_id, owned.owned[0][0].pid)
+            self.assertEqual(facade.snapshot().environment, Environment.LOCAL)
         self.assert_closed(owned)
 
     def test_test_setup_and_teardown_exceptions_do_not_bypass_registered_cleanup(self):
