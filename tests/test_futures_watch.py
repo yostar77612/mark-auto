@@ -326,11 +326,11 @@ class ServiceTests(unittest.TestCase):
         self.store = KlineStore(Path(self.temp.name) / 'klines.sqlite3')
         self.session = Session()
         self.now = datetime(2026, 11, 20, 3, 40, tzinfo=timezone.utc)  # 11:40 Taipei
-        self.history = HistorySync(self.store, self.session, now=lambda: self.now, autostart=False)
-        self.service = MarketTerminalService(self.store, self.history, self.session, lambda: (*FIXED_INDICES, BIG, SMALL), now=lambda: self.now)
+        self.sync = HistorySync(self.store, self.session, now=lambda: self.now, autostart=False)
+        self.service = MarketTerminalService(self.store, self.sync, self.session, lambda: (*FIXED_INDICES, BIG, SMALL), now=lambda: self.now)
         self.addCleanup(self.temp.cleanup)
         self.addCleanup(self.store.close)
-        self.addCleanup(self.history.close)
+        self.addCleanup(self.sync.close)
 
     def bar(self, instrument, start, day, session, close='20000'):
         price = Decimal(close)
@@ -362,7 +362,7 @@ class ServiceTests(unittest.TestCase):
     def test_watching_futures_counts_against_the_same_limit_as_stocks(self):
         service = MarketTerminalService(
             self.store,
-            self.history,
+            self.sync,
             self.session,
             lambda: (*FIXED_INDICES, BIG, SMALL, MICRO),
             now=lambda: self.now,
