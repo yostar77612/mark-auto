@@ -241,5 +241,128 @@ class IntegrityCheckScheduleTests(unittest.TestCase):
         self.assertPreservedAndRebuilt(corrupted)
 
 
+def _failing_connection(fragment):
+    """A sqlite3 connection whose statements containing fragment fail, as a full or locked disk would."""
+
+    class Failing(sqlite3.Connection):
+        def execute(self, sql, *args):
+            if fragment in sql:
+                raise sqlite3.OperationalError('disk I/O error')
+            return super().execute(sql, *args)
+
+    real = sqlite3.connect
+    return unittest.mock.patch.object(sqlite3, 'connect', lambda *a, **k: real(*a, factory=Failing, **k))
+
+
+class IntegrityCheckFlagTests(unittest.TestCase):
+    """OPT-1 P10: quick_check is skipped only after a clean close with an empty WAL and a recent full check."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.path = Path(self.temp.name) / 'market' / 'klines.sqlite3'
+        self.store = KlineStore(self.path)
+        self.store.upsert(tuple(minute(index) for index in range(3000)))
+
+    def tearDown(self):
+        self.store.close()
+        self.temp.cleanup()
+
+    def meta(self, key):
+        with closing(sqlite3.connect(self.path)) as db:
+            row = db.execute('SELECT value FROM meta WHERE key=?', (key,)).fetchone()
+        return row[0] if row else None
+
+    def set_meta(self, key, value):
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)', (key, value))
+            db.commit()
+
+    def reopen(self):
+        with unittest.mock.patch.object(KlineStore, '_full_check', autospec=True, side_effect=KlineStore._full_check) as check:
+            self.store = KlineStore(self.path)
+        return check.call_count
+
+    def test_clean_close_and_recent_check_skip_the_full_check(self):
+        self.assertEqual(self.meta('open_state'), 'open')
+        checked = self.meta('last_full_check')
+        self.assertIsNotNone(checked)
+        self.store.close()
+        self.assertEqual(self.meta('open_state'), 'closed')
+        self.assertEqual(self.reopen(), 0)
+        self.assertEqual(self.meta('last_full_check'), checked)
+        self.assertEqual(self.store.warning_code, '')
+        self.assertEqual(len(self.store.read('TWSE:2330', minute().start, minute(3000).start)), 3000)
+
+    def test_flag_left_by_an_unclean_exit_runs_the_full_check(self):
+        self.store._db.close()  # the process ends without KlineStore.close()
+        self.assertEqual(self.meta('open_state'), 'open')
+        self.assertEqual(self.reopen(), 1)
+
+    def test_non_empty_wal_runs_the_full_check(self):
+        self.store.close()
+        Path(str(self.path) + '-wal').write_bytes(b'\x00' * 4096)
+        self.assertEqual(self.reopen(), 1)
+
+    def test_missing_flag_or_check_time_runs_the_full_check(self):
+        for key in ('open_state', 'last_full_check'):
+            with self.subTest(key=key):
+                self.store.close()
+                with closing(sqlite3.connect(self.path)) as db:
+                    db.execute('DELETE FROM meta WHERE key=?', (key,))
+                    db.commit()
+                self.assertEqual(self.reopen(), 1)
+
+    def test_overdue_future_or_unreadable_check_time_runs_the_full_check(self):
+        now = datetime.now(timezone.utc)
+        for value in (
+            (now - timedelta(days=8)).isoformat(),
+            (now + timedelta(days=1)).isoformat(),
+            now.replace(tzinfo=None).isoformat(),
+            'not a time',
+        ):
+            with self.subTest(value=value):
+                self.store.close()
+                self.set_meta('last_full_check', value)
+                self.assertEqual(self.reopen(), 1)
+                self.assertNotEqual(self.meta('last_full_check'), value)  # the passed check is recorded
+        self.store.close()
+        self.set_meta('last_full_check', (now - timedelta(days=6)).isoformat())
+        self.assertEqual(self.reopen(), 0)
+
+    def test_failed_open_flag_write_falls_back_to_the_full_check(self):
+        self.store.close()
+        with _failing_connection("'open_state','open'"):
+            self.assertEqual(self.reopen(), 1)
+        self.assertEqual(self.store.warning_code, '')
+        self.assertEqual(self.meta('open_state'), 'closed')  # the failed write was rolled back
+        self.store.upsert((minute(3000),))
+        self.assertEqual(self.store.last_bar('TWSE:2330'), minute(3000))
+
+    def test_failed_close_flag_write_leaves_the_next_open_checking(self):
+        self.store.close()
+        with _failing_connection("'open_state','closed'"):
+            store = KlineStore(self.path)
+            store.close()
+        self.assertEqual(self.meta('open_state'), 'open')
+        self.assertEqual(self.reopen(), 1)
+
+    def test_corruption_found_by_the_fallback_check_is_preserved_and_rebuilt(self):
+        self.store.close()
+        corrupted = _corrupt_middle(self.path)
+        with _failing_connection("'open_state','open'"):
+            self.store = KlineStore(self.path)
+        self.assertEqual(self.store.warning_code, 'kline_store_unavailable')
+        self.assertEqual(self.store.recovered_path.read_bytes(), corrupted)
+        self.assertIsNone(self.store.last_bar('TWSE:2330'))
+
+    def test_corruption_found_by_the_periodic_check_is_preserved_and_rebuilt(self):
+        self.store.close()
+        self.set_meta('last_full_check', (datetime.now(timezone.utc) - timedelta(days=8)).isoformat())
+        corrupted = _corrupt_middle(self.path)
+        self.store = KlineStore(self.path)
+        self.assertEqual(self.store.warning_code, 'kline_store_unavailable')
+        self.assertEqual(self.store.recovered_path.read_bytes(), corrupted)
+
+
 if __name__ == '__main__':
     unittest.main()
