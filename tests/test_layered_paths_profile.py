@@ -57,7 +57,7 @@ class LayeredPathsProfileTests(unittest.TestCase):
             current['source_sha256'] = to_dict(old['source_sha256'])
         self.assertEqual(restored, previous)
         self.assertIs(pools.SUPPORTED_PRODUCERS[28], PROFILE)
-        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 31)
+        self.assertEqual(len(pools.SUPPORTED_PRODUCERS), 32)
 
     def test_exact_current_lf_crlf_sources_and_original_manifest(self):
         for index, implementation in enumerate(PROFILE['chatgpt_plan_implementations']):

@@ -83,7 +83,7 @@ class CampaignExposureTests(unittest.TestCase):
         self.assertEqual(state['status'], 'completed')
         self.assertEqual(observed, ['previously_consumed'] * 4)
         self.assertEqual(state['holdout_registry']['holdout_hash'], content_hash(self.protected.bars))
-        self.assertEqual(self.admit(state).admission['producer'], pools.STOCK_SIGNAL_PROFILE_V1)
+        self.assertEqual(self.admit(state).admission['producer'], pools.STOCK_SIGNAL_PROFILE_V2)
         with closing(sqlite3.connect(self.registry)) as db:
             self.assertEqual(db.execute('SELECT count(*) FROM reservations').fetchone()[0], 1)
 
@@ -180,15 +180,22 @@ class CampaignExposureTests(unittest.TestCase):
             for node in ast.parse(raw).body
             if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Name) and node.value.func.id == 'freeze'
         ]
-        self.assertEqual(len(blocks), 31)
+        self.assertEqual(len(blocks), 32)
         self.assertEqual(hashlib.sha256(b''.join(blocks[:30])).hexdigest(), 'ee8714e467ca21e8840158757bc9ea85d7502551c746f4b20270bf45a244c8f9')
         profile = pools.STOCK_SIGNAL_PROFILE_V1
         self.assertEqual(content_hash(profile), '2adad40bc8d95363c6ec121756b6621f457df416fa10519a7d8a95acd82480e9')
         expected = dict(pools.CORE_SPLIT_SIWC_PROFILE_V1['engine_source_hashes'])
-        for name in ('research.py', 'core.py', 'backtest.py'):
+        for name in ('research.py', 'core.py'):
             expected[name] = content_hash((Path(research.__file__).parent / name).read_text(encoding='utf-8'))
+        # OPT-1 P7 (owner-approved) changed backtest.py after V1; V1 keeps the pre-change engine identity.
+        frozen = (Path(__file__).parent / 'fixtures' / 'backtest_pre_opt1_p7.py.txt').read_text(encoding='utf-8')
+        expected['backtest.py'] = content_hash(frozen)
         self.assertEqual(profile['engine_source_hashes'], expected)
         self.assertIs(pools.SUPPORTED_PRODUCERS[30], profile)
+        current = pools.STOCK_SIGNAL_PROFILE_V2
+        expected['backtest.py'] = content_hash((Path(research.__file__).parent / 'backtest.py').read_text(encoding='utf-8'))
+        self.assertEqual(current['engine_source_hashes'], expected)
+        self.assertIs(pools.SUPPORTED_PRODUCERS[31], current)
 
 
 if __name__ == '__main__':
