@@ -1013,6 +1013,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tools/bench_series.py` | 126 | tooling | `tools/bench_series.py` | bench_series: offline LiveMarketService.series() timing and payload (OPT-1 P8) |
 | `tools/bench_tick_loss.py` | 121 | tooling | `tools/bench_tick_loss.py` | bench_tick_loss: offline LiveMarketService.poll() timing under retained tick losses (OPT-1 P9) |
 | `tools/bench_kline_open.py` | 99 | tooling | `tools/bench_kline_open.py` | bench_kline_open: offline KlineStore open / quick_check timing (OPT-1 P10, measure only) |
+| `quantlab/trading/domain/futures_hours.py` | 80 | domain | `quantlab/trading/domain/futures_hours.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
