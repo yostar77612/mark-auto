@@ -274,7 +274,7 @@ class TickLossEquivalenceTests(unittest.TestCase):
         generator = random.Random(20261120)
         new, reference = self.stack(LiveMarketService), self.stack(ReferenceLiveMarketService)
         sequence = 0
-        for step in range(160):
+        for step in range(240):
             now = NOW + timedelta(seconds=20 * step)
             ticks, losses = [], []
             for _ in range(generator.randint(0, 30)):
@@ -286,6 +286,8 @@ class TickLossEquivalenceTests(unittest.TestCase):
                 span = generator.choice((0, 0, 1, 5, 90, 1500))  # zero-length, short, long and wider-than-retention losses
                 last = now - timedelta(minutes=generator.randint(0, 1300), seconds=generator.randint(0, 59))
                 first = last - timedelta(minutes=span, seconds=generator.randint(0, 59))
+                if generator.random() < 0.05:
+                    first, last = last + timedelta(minutes=2), first  # an inverted envelope, which matches no minute
                 key = generator.choice((*self.KEYS, 'WATCH:9'))  # an unallocated instrument only reaches issues
                 losses.append(TickLoss(key, first, last, generator.randint(1, 50)))
             for service, market, clock in (new, reference):

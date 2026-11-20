@@ -5,7 +5,7 @@ suffix. Each deque has a hard minute bound as well as trade-date retention.
 Callers schedule poll/backfill and supply calendar-session facts explicitly.
 """
 
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right
 from collections import deque
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
@@ -43,6 +43,27 @@ def _affected_minute(timestamp: datetime, loss: TickLoss) -> bool:
     return loss.first_source_at.replace(second=0, microsecond=0) <= start <= loss.last_source_at.replace(second=0, microsecond=0)
 
 
+def _loss_spans(losses) -> tuple[list[datetime], list[datetime]]:
+    """Ordered, non-overlapping minute spans whose union is exactly the minutes `_affected_minute` matches."""
+    starts: list[datetime] = []
+    ends: list[datetime] = []
+    for first, last in sorted((loss.first_source_at.replace(second=0, microsecond=0), loss.last_source_at.replace(second=0, microsecond=0)) for loss in losses):
+        if ends and first <= ends[-1]:
+            ends[-1] = max(ends[-1], last)
+        else:
+            starts.append(first)
+            ends.append(last)
+    return starts, ends
+
+
+def _covered(spans: tuple[list[datetime], list[datetime]], timestamp: datetime) -> bool:
+    """Equals any(_affected_minute(timestamp, loss) for loss in the losses the spans were built from)."""
+    starts, ends = spans
+    minute = timestamp.replace(second=0, microsecond=0)
+    index = bisect_right(starts, minute) - 1
+    return index >= 0 and minute <= ends[index]
+
+
 @dataclass(frozen=True)
 class SubscriptionAllocation:
     active: tuple[str, ...] = ()
@@ -64,6 +85,8 @@ class _InstrumentBuffer:
     gaps: tuple[DataGap, ...] = ()
     history_revision: int = 0
     prefix: '_HistoryPrefix | None' = None
+    # Spans of `losses`, rebuilt after losses change; the deque stays the source of truth (and its maxlen eviction).
+    loss_spans: tuple[list[datetime], list[datetime]] | None = None
 
 
 @dataclass(frozen=True)
@@ -93,6 +116,31 @@ def _replace_bars(buffer: _InstrumentBuffer, bars: deque[LiveBar], kept) -> None
     bars.clear()
     bars.extend(kept)
     buffer.history_revision += 1
+
+
+def _mark_losses(buffer: _InstrumentBuffer, batch: list[TickLoss]) -> None:
+    """One pass per deque for a batch, with the per-loss effects of marking the losses one at a time.
+
+    Marking per loss replaced every affected bar with a new object, so `_replace_bars` (identity compare)
+    bumped history_revision once for each loss and deque with at least one affected bar; that count is kept.
+    """
+    buffer.losses.extend(batch)
+    buffer.loss_spans = None
+    spans = _loss_spans(batch)
+    if buffer.minute is not None and _covered(spans, buffer.minute.bar.start):
+        buffer.minute = replace(buffer.minute, bar=replace(buffer.minute.bar, incomplete=True))
+    for bars in (buffer.history, buffer.live):
+        hits: set[int] = set()
+        kept = []
+        for bar in bars:
+            if _covered(spans, bar.start):
+                hits.update(index for index, loss in enumerate(batch) if _affected_minute(bar.start, loss))
+                bar = replace(bar, incomplete=True)
+            kept.append(bar)
+        if hits:
+            bars.clear()
+            bars.extend(kept)
+            buffer.history_revision += len(hits)
 
 
 class LiveMarketService:
@@ -202,7 +250,9 @@ class LiveMarketService:
             if tick.instrument_id not in self._buffers:
                 continue
             buffer = self._buffers[tick.instrument_id]
-            update = compose_minute(buffer.minute, tick, incomplete=any(_affected_minute(tick.source_at, loss) for loss in buffer.losses))
+            if buffer.loss_spans is None:
+                buffer.loss_spans = _loss_spans(buffer.losses)
+            update = compose_minute(buffer.minute, tick, incomplete=_covered(buffer.loss_spans, tick.source_at))
             if buffer.minute is not None and buffer.minute.bar.final and update.state.bar.start > buffer.minute.bar.start:
                 buffer.live.append(buffer.minute.bar)
             buffer.minute = update.state
@@ -213,17 +263,14 @@ class LiveMarketService:
                 if buffer.tick is None or tick.source_at >= buffer.tick.source_at:
                     buffer.tick = tick
         if self._loss_source is not None:
+            batches: dict[str, list[TickLoss]] = {}
             for loss in self._loss_source.drain_tick_losses():
                 self.issues.append(loss)
-                if loss.instrument_id not in self._buffers:
-                    continue
-                buffer = self._buffers[loss.instrument_id]
-                buffer.losses.append(loss)
-                if buffer.minute is not None and _affected_minute(buffer.minute.bar.start, loss):
-                    buffer.minute = replace(buffer.minute, bar=replace(buffer.minute.bar, incomplete=True))
-                for bars in (buffer.history, buffer.live):
-                    _replace_bars(buffer, bars, (replace(bar, incomplete=True) if _affected_minute(bar.start, loss) else bar for bar in bars))
-                self._view_cache.pop(loss.instrument_id, None)
+                if loss.instrument_id in self._buffers:
+                    batches.setdefault(loss.instrument_id, []).append(loss)
+            for instrument_id, batch in batches.items():
+                _mark_losses(self._buffers[instrument_id], batch)
+                self._view_cache.pop(instrument_id, None)
         for key, buffer in self._buffers.items():
             if buffer.minute is not None:
                 buffer.minute = finalize_minute(buffer.minute, now=now)
