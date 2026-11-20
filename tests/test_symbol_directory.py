@@ -28,7 +28,7 @@ class SymbolDirectoryTests(unittest.TestCase):
         ]
         indices = [SimpleNamespace(code='IX0999', exchange='TSE')]
         facade = SimpleNamespace(
-            market_contracts=lambda kind: stocks if kind == 'STK' else indices,
+            market_contracts=lambda kind: {'STK': stocks, 'IND': indices, 'FUT': []}[kind],
             market_contract_info=lambda base: calls.append(base.code) or SimpleNamespace(name='Name ' + base.code),
         )
         now = datetime(2026, 11, 1, 0, tzinfo=timezone.utc)
@@ -42,7 +42,7 @@ class SymbolDirectoryTests(unittest.TestCase):
             directory.refresh(facade, now + timedelta(hours=2))
             self.assertEqual(5, len(calls))
             self.assertEqual(items, SymbolDirectory(path).items)
-            self.assertEqual(2, json.loads(path.read_text(encoding='utf-8'))['version'])
+            self.assertEqual(3, json.loads(path.read_text(encoding='utf-8'))['version'])
             self.assertGreaterEqual(directory.refresh_seconds, 0)
             directory.refresh(facade, now + timedelta(days=1))
             self.assertEqual(10, len(calls))

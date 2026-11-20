@@ -147,4 +147,9 @@ ENTRIES = (
     (78, 3386, 'sector.replay_failed', '讀取歷史資料失敗，請稍後再試。'),
     (78, 3387, 'sector.replay_incomplete', '（不完整）'),
     (78, 3388, 'sector.col_minute_amount', '本分鐘成交'),
+    (78, 3391, 'terminal.exchange_taifex', '期貨'),
+    (78, 3392, 'terminal.tab_future', '期貨'),
+    (78, 3393, 'terminal.volume_future', '{0}口'),
+    (78, 3394, 'orderbook.no_future', '期貨暫無五檔'),
+    (78, 3395, 'alert.future_stock_only', '漲停、跌停、急漲跌與爆量大單警示只適用個股，期貨不提供。'),
 )

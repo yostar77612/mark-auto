@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.alert_contracts import AlertActions
 from quantlab.trading.domain.alerts import DEFAULT_PARAMS, SCANNER_KINDS, SECTOR_KINDS, AlertKind, AlertRule
+from quantlab.trading.domain.futures_hours import is_future
 from quantlab.trading.domain.validation import DomainError
 
 
@@ -114,8 +115,10 @@ class AlertRuleDialog(QDialog):
         self.kind = QComboBox()
         self.kind.setObjectName('alert_kind')
         self.kind.setAccessibleName(ui_text('alert.kind'))
+        future = is_future(instrument_id)
         for kind, label in KIND_LABELS.items():
-            if kind not in SECTOR_KINDS:
+            # Market-signal kinds come from the stock scanner; a future cannot choose them.
+            if kind not in SECTOR_KINDS and not (future and kind in SCANNER_KINDS):
                 self.kind.addItem(label, kind)
         form.addRow(ui_text('alert.kind'), self.kind)
         self.scope = QComboBox()
@@ -131,6 +134,11 @@ class AlertRuleDialog(QDialog):
         self.cooldown.setValue(60)
         self.cooldown.setAccessibleName(ui_text('alert.cooldown'))
         form.addRow(ui_text('alert.cooldown'), self.cooldown)
+        if future:
+            note = QLabel(ui_text('alert.future_stock_only'))
+            note.setObjectName('alert_future_note')
+            note.setWordWrap(True)
+            outer.addWidget(note)
         self.error = QLabel()
         self.error.setWordWrap(True)
         outer.addWidget(self.error)

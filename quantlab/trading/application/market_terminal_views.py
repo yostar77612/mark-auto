@@ -5,6 +5,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.freshness import LiveMarketSettings, classify_freshness
+from quantlab.trading.domain.futures_hours import in_session as future_in_session, is_future
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.ticks import Tick
@@ -27,10 +28,13 @@ def watch_view(
     if tick is None:
         return MarketWatchView(instrument_id=instrument_id, health=MarketHealthView(instrument_id, history_error=history_error))
     local = now.astimezone(_TAIPEI)
-    in_session = local.weekday() < 5 and time(9) <= local.time() <= time(13, 30)
+    future = is_future(instrument_id)
+    in_session = future_in_session(now) if future else local.weekday() < 5 and time(9) <= local.time() <= time(13, 30)
     freshness = classify_freshness(tick.received_at, now=now, connected=connected, in_session=in_session, settings=settings).value
-    prior = next((bar.close for bar in reversed(bars) if bar.trade_date < tick.trade_date), None)
-    prior = prior if prior is not None else details.get('reference_price')
+    previous_close = next((bar.close for bar in reversed(bars) if bar.trade_date < tick.trade_date), None)
+    reference = details.get('reference_price')
+    # A future's change is against the broker's reference (the previous settlement), not the last bar's close.
+    prior = (reference if reference is not None else previous_close) if future else (previous_close if previous_close is not None else reference)
     today = tuple(bar for bar in bars if bar.trade_date == tick.trade_date)
     change = tick.price - prior if prior is not None else None
     percent = change / prior * Decimal('100') if prior else None

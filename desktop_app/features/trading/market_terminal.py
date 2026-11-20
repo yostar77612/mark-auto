@@ -10,7 +10,7 @@ from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text, _change_direction
 from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
 from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiCommand, UiAction
-from quantlab.trading.domain.watch import FIXED_INDICES
+from quantlab.trading.domain.watch import FIXED_INDICES, WatchKind
 from quantlab.trading.domain.validation import DomainError
 
 
@@ -84,6 +84,7 @@ class MarketTerminalWidget(QWidget):
         directory = {item.instrument_id: item for item in self._directory}
         render_quote_table(self, self.table, [directory[key] for key in state.watchlist if key in directory])
         render_quote_table(self, self.index_table, FIXED_INDICES)
+        render_quote_table(self, self.future_table, [item for item in self._directory if item.kind is WatchKind.FUTURE])
         view = self._view(self.current_instrument)
         instrument = directory.get(self.current_instrument)
         name = instrument.code + ' ' + instrument.name if instrument is not None else self.current_instrument

@@ -12,7 +12,8 @@ from quantlab.trading.domain.freshness import LiveMarketSettings
 from quantlab.trading.domain.live_bars import LiveBar, MinuteState, aggregate_bars, compose_minute, finalize_minute
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
+from quantlab.trading.domain.futures_hours import DAY_CLOSE
+from quantlab.trading.domain.watch import FIXED_INDICES, FUTURE_NAMES, WatchInstrument, WatchKind
 from quantlab.trading.ports.history import HistoryUsage, KlineStorePort, MarketSessionPort
 from .contracts import MarketSeriesPage, MarketSeriesQuery, MarketWatchView, OverviewMarketSummary
 from .history_sync import HistorySync, HistorySyncState
@@ -83,8 +84,14 @@ class MarketTerminalService:
         items = {item.instrument_id: item for item in (*FIXED_INDICES, *self.directory())}
         for key in self.store.instrument_ids():
             prefix, _, code = key.partition(':')
-            exchange = {'TWSE': 'TSE', 'TPEX': 'OTC', 'INDEX': 'INDEX'}.get(prefix)
-            if key not in items and exchange is not None:
+            exchange = {'TWSE': 'TSE', 'TPEX': 'OTC', 'INDEX': 'INDEX', 'TAIFEX': 'TAIFEX'}.get(prefix)
+            if key in items or exchange is None:
+                continue
+            if prefix == 'TAIFEX':
+                # The shared bar store also keys executable TMF contracts; only the watched continuous codes are watch items.
+                if code in FUTURE_NAMES:
+                    items[key] = WatchInstrument(key, WatchKind.FUTURE, exchange, code, FUTURE_NAMES[code])
+            else:
                 items[key] = WatchInstrument(key, WatchKind.INDEX if prefix == 'INDEX' else WatchKind.STOCK, exchange, code, code)
         return items
 
@@ -341,11 +348,12 @@ class MarketTerminalService:
                         for bar in bars:
                             groups.setdefault(bar.trade_date, []).append(bar)
                         local = now.astimezone(_TAIPEI)
+                        close = DAY_CLOSE if item.kind is WatchKind.FUTURE else time(13, 30)
                         bars = tuple(
                             result
                             for day, members in groups.items()
                             for result in aggregate_bars(
-                                tuple(members), '1d', now=now, trade_date_closed=day < local.date() or day == local.date() and local.time() >= time(13, 30)
+                                tuple(members), '1d', now=now, trade_date_closed=day < local.date() or day == local.date() and local.time() >= close
                             )
                         )
                     else:

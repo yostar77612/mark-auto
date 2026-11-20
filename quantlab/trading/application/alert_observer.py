@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.alerts import BAR_KINDS, AlertKind, AlertObservation
 from quantlab.trading.domain.freshness import Freshness
+from quantlab.trading.domain.futures_hours import DAY_CLOSE, is_future, minutes_since_open
 from quantlab.trading.domain.live_bars import LiveBar, aggregate_bars
 from quantlab.trading.domain.ticks import Tick
 from .alert_service import AlertService
@@ -65,7 +66,7 @@ class AlertTickObserver:
             previous_low,
             high,
             low,
-            (now.hour * 60 + now.minute) - 540,
+            minutes_since_open(tick.source_at) if is_future(key) else (now.hour * 60 + now.minute) - 540,
             Freshness(facts.health.freshness),
             self.backfilling(key),
         )
@@ -79,7 +80,7 @@ class AlertTickObserver:
         """Evaluate newly closed periods; the caller supplies only live, non-backfill bars."""
         if instrument_id not in self._seeds:
             return ()
-        closed = occurred_at.astimezone(ZoneInfo('Asia/Taipei')).time() >= time(13, 30)
+        closed = occurred_at.astimezone(ZoneInfo('Asia/Taipei')).time() >= (DAY_CLOSE if is_future(instrument_id) else time(13, 30))
         finals = tuple(bar for bar in memory if bar.final and bar.end <= occurred_at)
         if not finals or self._minute_ends.get(instrument_id) == finals[-1].end:
             return ()
