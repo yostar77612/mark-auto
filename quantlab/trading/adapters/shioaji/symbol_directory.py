@@ -1,6 +1,6 @@
 """Contract V2 directory cache; all name lookups happen during refresh, never search."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 import os
@@ -79,7 +79,8 @@ class SymbolDirectory:
         result = tuple({item.instrument_id: item for item in (*items, *FIXED_INDICES)}.values())
         body = {
             'version': VERSION,
-            'fetched_at': now.astimezone(timezone.utc).isoformat(),
+            # An incomplete list is stored as stale, so a restart on the same day refreshes it again.
+            'fetched_at': (now if listed is not None else now - timedelta(days=2)).astimezone(timezone.utc).isoformat(),
             'items': [[i.instrument_id, i.kind.value, i.exchange, i.code, i.name, i.category] for i in result],
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)

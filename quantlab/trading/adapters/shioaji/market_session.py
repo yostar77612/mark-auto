@@ -229,7 +229,9 @@ class MarketSession:
                 reference = sdk_decimal(reference, 'reference')
                 if reference > 0:
                     with self._quote_lock:
-                        self._details.setdefault(instrument.instrument_id, {})['reference_price'] = reference
+                        details = self._details.setdefault(instrument.instrument_id, {})
+                        details['reference_price'] = reference
+                        details.pop('reference_date', None)  # the next tick names the trade date this reference serves
             self.tick_stream.by_code[instrument.code] = instrument.instrument_id
             # A continuous contract may deliver ticks under the delivery month it currently points at.
             target = getattr(contract, 'target_code', None)

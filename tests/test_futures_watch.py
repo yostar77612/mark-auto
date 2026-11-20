@@ -165,6 +165,20 @@ class DirectoryTests(unittest.TestCase):
         retried = directory.refresh(self.facade, self.now + timedelta(hours=1))  # same day, but the cache was incomplete
         self.assertIn('TAIFEX:TXFR1', {item.instrument_id for item in retried})
 
+    def test_an_incomplete_cache_is_refreshed_again_after_a_restart_the_same_day(self):
+        self.facade.market_contracts = lambda kind: self._broken(kind)
+        SymbolDirectory(self.path).refresh(self.facade, self.now)
+        restarted = SymbolDirectory(self.path)
+        self.facade.market_contracts = lambda kind: [SimpleNamespace(code='TXFR1', exchange='TAIFEX')] if kind == 'FUT' else []
+        items = restarted.refresh(self.facade, self.now + timedelta(hours=1))
+        self.assertIn('TAIFEX:TXFR1', {item.instrument_id for item in items})
+
+    @staticmethod
+    def _broken(kind):
+        if kind == 'FUT':
+            raise RuntimeError('vendor text')
+        return [SimpleNamespace(code='2330', exchange='TSE')] if kind == 'STK' else []
+
     def test_a_version_two_cache_still_loads_and_is_rebuilt_on_the_next_refresh(self):
         self.path.parent.mkdir(parents=True)
         old = {'version': 2, 'fetched_at': self.now.isoformat(), 'items': [['TWSE:2330', 'STOCK', 'TSE', '2330', 'TSMC', '']]}
@@ -285,6 +299,16 @@ class FuturesSessionTests(SessionHarness):
         self.assertIn('reference_price', self.session.quote_details(BIG.instrument_id))  # same trade date
         deliver(SimpleNamespace(code='TXFR1', datetime=datetime(2026, 11, 20, 16, 0, 1), close=20030, volume=1))  # Monday's night
         self.assertNotIn('reference_price', self.session.quote_details(BIG.instrument_id))
+
+    def test_a_resubscribe_on_a_later_trade_date_keeps_its_fresh_reference(self):
+        self.session.subscribe(BIG)
+        deliver = self.api.callbacks['fop']
+        deliver(SimpleNamespace(code='TXFR1', datetime=datetime(2026, 11, 19, 10, 0, 1), close=20010, volume=1))
+        self.session.unsubscribe(BIG.instrument_id)
+        self.api.contracts.info = lambda base: SimpleNamespace(name='n', reference=Decimal('20100'))
+        self.session.subscribe(BIG)
+        deliver(SimpleNamespace(code='TXFR1', datetime=datetime(2026, 11, 20, 10, 0, 1), close=20110, volume=1))
+        self.assertEqual(Decimal('20100'), self.session.quote_details(BIG.instrument_id)['reference_price'])
 
     def wall(self, *parts):
         return int(datetime(*parts, tzinfo=timezone.utc).timestamp() * 1e9)
