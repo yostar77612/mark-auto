@@ -11,11 +11,11 @@ from threading import Lock, RLock
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.freshness import LiveMarketSettings
-from quantlab.trading.domain.futures_hours import is_future, trade_date_at
+from quantlab.trading.domain.futures_hours import trade_date_at
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError, aware
-from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+from quantlab.trading.domain.watch import WatchInstrument, WatchKind, is_future
 from quantlab.trading.ports.history import HistoryUsage
 from quantlab.trading.ports.market_settings import MarketSessionSettings
 from quantlab.trading.ports.interfaces import Clock

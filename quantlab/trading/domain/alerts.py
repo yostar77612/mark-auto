@@ -8,9 +8,9 @@ from types import MappingProxyType
 from typing import Mapping
 
 from .freshness import Freshness
-from .futures_hours import is_future
 from .live_bars import LiveBar
 from .validation import DomainError, aware, decimal_value, identity
+from .watch import is_future
 
 
 class AlertKind(str, Enum):

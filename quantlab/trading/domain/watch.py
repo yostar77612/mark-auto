@@ -52,5 +52,9 @@ FIXED_INDICES = (
 )
 
 
+def is_future(instrument_id: str) -> bool:
+    return instrument_id.startswith('TAIFEX:')
+
+
 def watch_future(code: str) -> WatchInstrument:
     return WatchInstrument(f'TAIFEX:{code}', WatchKind.FUTURE, 'TAIFEX', code, FUTURE_NAMES[code])

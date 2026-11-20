@@ -8,7 +8,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QHeaderView, QLabel, QProgressBar, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 from desktop_app.strings.catalog import ui_text
-from quantlab.trading.domain.futures_hours import is_future
+from quantlab.trading.domain.watch import is_future
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 _SIDE_KEYS = {'BUY': 'orderbook.side_buy', 'SELL': 'orderbook.side_sell', 'NONE': 'orderbook.side_none'}

@@ -6,9 +6,10 @@ from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.alerts import BAR_KINDS, AlertKind, AlertObservation
 from quantlab.trading.domain.freshness import Freshness
-from quantlab.trading.domain.futures_hours import DAY_CLOSE, is_future, minutes_since_open
+from quantlab.trading.domain.futures_hours import DAY_CLOSE, minutes_since_open
 from quantlab.trading.domain.live_bars import LiveBar, aggregate_bars
 from quantlab.trading.domain.ticks import Tick
+from quantlab.trading.domain.watch import is_future
 from .alert_service import AlertService
 from .contracts import MarketWatchView
 

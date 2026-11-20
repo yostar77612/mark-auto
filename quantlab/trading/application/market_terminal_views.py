@@ -5,7 +5,8 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.freshness import LiveMarketSettings, classify_freshness
-from quantlab.trading.domain.futures_hours import in_session as future_in_session, is_future
+from quantlab.trading.domain.futures_hours import in_session as future_in_session
+from quantlab.trading.domain.watch import is_future
 from quantlab.trading.domain.arithmetic import decimal_operation
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.ticks import Tick

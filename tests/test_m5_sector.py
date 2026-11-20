@@ -207,7 +207,7 @@ class DirectoryTests(unittest.TestCase):
             items = {item.code: item for item in directory.refresh(self.facade(), now)}
             self.assertEqual(items['2330'].category, '24')
             self.assertEqual(items['6104'].category, '')
-            self.assertEqual(json.loads(path.read_text(encoding='utf-8'))['version'], 2)
+            self.assertEqual(json.loads(path.read_text(encoding='utf-8'))['version'], 3)
             self.assertEqual({item.code: item.category for item in SymbolDirectory(path).items}['2330'], '24')
             old = json.loads(path.read_text(encoding='utf-8'))
             old['version'] = 1
@@ -216,7 +216,7 @@ class DirectoryTests(unittest.TestCase):
             reloaded = SymbolDirectory(path)
             self.assertIsNone(reloaded.fetched_at)
             self.assertEqual({item.code: item.category for item in reloaded.refresh(self.facade(), now)}['2330'], '24')
-            self.assertEqual(json.loads(path.read_text(encoding='utf-8'))['version'], 2)
+            self.assertEqual(json.loads(path.read_text(encoding='utf-8'))['version'], 3)
 
 
 class Source:

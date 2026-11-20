@@ -21,10 +21,6 @@ _DAY_END = time(13, 46)
 _NIGHT_END = time(5, 1)
 
 
-def is_future(instrument_id: str) -> bool:
-    return instrument_id.startswith('TAIFEX:')
-
-
 def session_kind_at(moment: datetime) -> str | None:
     """DAY, NIGHT, or None between sessions; weekends are decided by trade_date_at."""
     local = moment.astimezone(TAIPEI).time()

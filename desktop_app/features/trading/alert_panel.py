@@ -27,8 +27,8 @@ from PySide6.QtWidgets import (
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.alert_contracts import AlertActions
 from quantlab.trading.domain.alerts import DEFAULT_PARAMS, SCANNER_KINDS, SECTOR_KINDS, AlertKind, AlertRule
-from quantlab.trading.domain.futures_hours import is_future
 from quantlab.trading.domain.validation import DomainError
+from quantlab.trading.domain.watch import is_future
 
 
 KIND_LABELS = {
