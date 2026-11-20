@@ -845,8 +845,8 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
             )
             return DataBatch(self.KEY, tuple(bar for bar in bars if start <= bar.start < end), 'TEST', True)
 
-        self.market = _LossMarket(self.broker, history)
-        self.service = LiveMarketService(self.market, self.clock, resolver)
+        self.feed = _LossMarket(self.broker, history)
+        self.service = LiveMarketService(self.feed, self.clock, resolver)
         self.service.allocate((self.KEY,))
         self.backfill()
         self.facade = _SeriesFacade(self.service)
@@ -862,7 +862,7 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
         from quantlab.trading.ports.tick_stream import TickLoss
 
         end = self.clock.value
-        self.market.pending.append(TickLoss(self.KEY, end - timedelta(minutes=minutes), end, 7))
+        self.feed.pending.append(TickLoss(self.KEY, end - timedelta(minutes=minutes), end, 7))
 
     def assertSameSeries(self, cached_page_bars, period):
         page, bars = cached_page_bars[:2]
