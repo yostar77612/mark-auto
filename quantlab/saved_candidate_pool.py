@@ -1545,7 +1545,7 @@ def admit_saved_campaign_pool(*, source_campaign_dir: Path, source_campaign_ref:
             _validate_legacy_receipts(provider, state, current_schema=current_schema)
         # Reservation semantics come from the audited producer, never a source flag.
         protected = splits['holdout']
-        if producer['protocol'] == STOCK_SIGNAL_PROFILE_V1['protocol']:
+        if producer['protocol'] in (STOCK_SIGNAL_PROFILE_V1['protocol'], STOCK_SIGNAL_PROFILE_V2['protocol']):
             protected = Dataset(splits['oos'].bars + splits['holdout'].bars, {}, {})
         _validate_source_selection(state, config, by_id, splits, producer, protected)
         registry_identity = _validate_source_registry(state, protected, authoritative_registry_path)
