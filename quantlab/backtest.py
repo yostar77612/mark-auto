@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 import hashlib
 import platform
+import weakref
 from zoneinfo import ZoneInfo
 from decimal import Decimal, ROUND_FLOOR, ROUND_HALF_UP, ROUND_CEILING, ROUND_HALF_EVEN, Context, localcontext
 from .core import (BacktestConfig, BacktestResult, CostSpec, Dataset, Fill,
@@ -16,6 +17,28 @@ from .strategies import generate_signals, validate_strategy, _validate_bars
 ENGINE_VERSION = 'quantlab-event-v1'
 MULTIPLIER = Decimal('10')
 ROUNDINGS = {'none': None, 'floor_twd': ROUND_FLOOR, 'half_up_twd': ROUND_HALF_UP, 'ceiling_twd': ROUND_CEILING}
+
+
+_TAIPEI=ZoneInfo('Asia/Taipei')
+# Facts about one immutable Dataset object (frozen dataclass, bars a tuple of frozen Bars), so repeated replays of
+# the same object (campaigns, walk-forward) skip re-validating and re-hashing its bars. Keyed by object identity
+# and confirmed by a weak reference and the bars tuple's identity; the entry is dropped when the Dataset is freed.
+_DATASET_FACTS={}
+
+
+def _dataset_fact(dataset,name):
+    entry=_DATASET_FACTS.get(id(dataset))
+    if entry is None or entry['ref']() is not dataset or entry['bars'] is not dataset.bars:
+        return None
+    return entry.get(name)
+
+
+def _remember(dataset,**facts):
+    entry=_DATASET_FACTS.get(id(dataset))
+    if entry is None or entry['ref']() is not dataset or entry['bars'] is not dataset.bars:
+        entry=_DATASET_FACTS[id(dataset)]={'ref':weakref.ref(dataset),'bars':dataset.bars}
+        weakref.finalize(dataset,_DATASET_FACTS.pop,id(dataset),None)
+    entry.update(facts)
 
 
 def _performance_metrics(ledger, equity, initial_cash):
@@ -127,13 +150,18 @@ def run_backtest(dataset, spec, config):
         return _run(dataset,spec,config)
 
 
-def _run(dataset,spec,config):
+def _validate_inputs(dataset,spec,config):
+    """Input checks of _run, in their original order; returns the facts the replay needs."""
     if not isinstance(dataset,Dataset) or not isinstance(config,BacktestConfig): raise ValidationError('Dataset and BacktestConfig required')
-    config.__post_init__(); validate_strategy(spec); _validate_bars(dataset.bars)
+    config.__post_init__(); validate_strategy(spec)
+    if not _dataset_fact(dataset,'bars_valid'):
+        _validate_bars(dataset.bars); _remember(dataset,bars_valid=True)
     if dataset.quality.get('valid') is not True or dataset.quality.get('errors') or dataset.quality.get('missing_intervals',0):
         raise ValidationError('data quality invalid or unverified')
     if dataset.manifest.get('validation_status') != 'valid': raise ValidationError('data validation status not valid')
-    actual_hash=content_hash(dataset.bars)
+    actual_hash=_dataset_fact(dataset,'bars_hash')
+    if actual_hash is None:
+        actual_hash=content_hash(dataset.bars); _remember(dataset,bars_hash=actual_hash)
     if dataset.manifest.get('data_hash') != actual_hash: raise ValidationError('data hash missing or mismatched')
     if dataset.manifest.get('source_type') not in ('synthetic','proxy','official_local'): raise ValidationError('data source type required')
     if config.settlement_mode not in ('unsettled_pnl','daily_mtm'): raise ValidationError('unsupported settlement mode')
@@ -168,6 +196,9 @@ def _run(dataset,spec,config):
     active_contract=(min(roll_map.items())[1]['from_contract'] if roll_map else dataset.bars[0].contract_id)
     if active_contract not in groups[dataset.bars[0].timestamp]: raise ValidationError('initial active contract missing')
     settlement_map={}; final_times={}
+    bars_by_close=defaultdict(list)  # one pass instead of a full scan per settlement event
+    for item in (dataset.bars if config.settlement_events else ()):
+        bars_by_close[(item.end,item.contract_id)].append(item)
     for event in config.settlement_events:
         if not isinstance(event,dict): raise ValidationError('invalid settlement event')
         base_keys={'timestamp','known_at','contract_id','price','version'}
@@ -182,7 +213,7 @@ def _run(dataset,spec,config):
             raise ValidationError('invalid or future-known settlement')
         key=(event['timestamp'],event['contract_id'])
         if key in settlement_map: raise ValidationError('duplicate settlement')
-        matching=[b for b in dataset.bars if b.end==key[0] and b.contract_id==key[1]]
+        matching=bars_by_close.get(key,[])
         if len(matching)!=1: raise ValidationError('settlement timestamp must equal supplied bar close availability')
         if kind=='final':
             if config.instrument_expiries.get(key[1])!=matching[0].trade_date:
@@ -202,8 +233,8 @@ def _run(dataset,spec,config):
         if expiry:
             validate_date(expiry)
             if b.trade_date>expiry: raise ValidationError('bar after contract expiry')
-            local_start=b.timestamp.astimezone(ZoneInfo('Asia/Taipei'))
-            local_end=b.end.astimezone(ZoneInfo('Asia/Taipei'))
+            local_start=b.timestamp.astimezone(_TAIPEI)
+            local_end=b.end.astimezone(_TAIPEI)
             if local_start.date().isoformat()>expiry or (local_start.date().isoformat()==expiry and (b.session=='night' or (local_end.hour,local_end.minute,local_end.second,local_end.microsecond)>(13,30,0,0))):
                 raise ValidationError('expired contract cannot trade after expiry-day 13:30 or in expiry-day night session')
         if b.contract_id in final_times and b.timestamp>=final_times[b.contract_id]:
@@ -211,6 +242,11 @@ def _run(dataset,spec,config):
     if dataset.manifest['source_type'] != 'synthetic' and any(b.contract_id not in config.instrument_expiries for b in dataset.bars):
         raise ValidationError('explicit instrument expiry required for real/proxy data')
     if not isinstance(config.source_commit,str) or not config.source_commit: raise ValidationError('source_commit must be an explicit string')
+    return actual_hash,groups,roll_map,active_contract,settlement_map,final_times
+
+
+def _run(dataset,spec,config):
+    actual_hash,groups,roll_map,active_contract,settlement_map,final_times=_validate_inputs(dataset,spec,config)
     signals=generate_signals(dataset.bars,spec)
     by_time=defaultdict(list)
     for s in signals: by_time[s.timestamp].append(s)
