@@ -404,7 +404,7 @@ def _frozen_engine():
         source = source.replace(old, new)
     module = types.ModuleType('frozen_backtest_pre_opt1_p7')
     module._live = live
-    exec(compile(source, 'backtest_pre_opt1_p7.py', 'exec'), module.__dict__)  # noqa: S102 -- committed test fixture
+    exec(compile(source, 'backtest_pre_opt1_p7.py', 'exec'), module.__dict__)  # the committed frozen fixture
     return module
 
 
