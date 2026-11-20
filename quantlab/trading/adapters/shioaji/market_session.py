@@ -180,7 +180,11 @@ class MarketSession:
         if type(total) is int and total >= 0 and not instrument_id.startswith('INDEX:'):
             details['total_volume'] = total
         with self._quote_lock:
-            self._details.setdefault(instrument_id, {}).update(details)
+            current = self._details.setdefault(instrument_id, {})
+            current.update(details)
+            if is_future(instrument_id) and current.setdefault('reference_date', tick.trade_date) != tick.trade_date:
+                # The reference is the previous settlement read at subscribe time; a later trade date must not reuse it.
+                current.pop('reference_price', None)
         return tick
 
     def quote_details(self, instrument_id: str) -> dict[str, object]:

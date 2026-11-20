@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 import json
+import logging
 import os
 from pathlib import Path
 from time import perf_counter
@@ -14,6 +15,7 @@ from .sdk import sdk_text, sdk_value
 from .sdk_facade import ShioajiSDKFacade
 
 
+logger = logging.getLogger(__name__)
 VERSION = 3
 # Version 2 caches hold the same row shape without futures: still readable, but due for an immediate rebuild.
 READABLE_VERSIONS = (2, VERSION)
@@ -65,8 +67,14 @@ class SymbolDirectory:
                 category = '' if security == 'IND' else str(getattr(base, 'category', '') or '')
                 items.append(WatchInstrument(f'{prefix}:{code}', kind, exchange, code, name, category))
         # Only the three whitelisted continuous contracts; the rest of the futures list is never read into the directory.
-        listed = {sdk_text(sdk_value(base, 'code')) for base in facade.market_contracts('FUT')}
-        items.extend(watch_future(code) for code in FUTURE_NAMES if code in listed)
+        try:
+            listed = {sdk_text(sdk_value(base, 'code')) for base in facade.market_contracts('FUT')}
+        except Exception as error:
+            # SDK boundary: an unreadable futures list must never take stock and index market data down with it.
+            logger.error('Futures contract list unavailable (%s); futures stay out of the directory', type(error).__name__)
+            listed = None
+        else:
+            items.extend(watch_future(code) for code in FUTURE_NAMES if code in listed)
         self.refresh_seconds = perf_counter() - started
         result = tuple({item.instrument_id: item for item in (*items, *FIXED_INDICES)}.values())
         body = {
@@ -81,5 +89,6 @@ class SymbolDirectory:
             os.replace(temporary, self.path)
         finally:
             temporary.unlink(missing_ok=True)
-        self.items, self.fetched_at = result, now
+        # Without the futures list the cache is incomplete: keep it, but refresh again at the next connection.
+        self.items, self.fetched_at = result, now if listed is not None else None
         return result

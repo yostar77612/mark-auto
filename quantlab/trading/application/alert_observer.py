@@ -81,7 +81,9 @@ class AlertTickObserver:
         """Evaluate newly closed periods; the caller supplies only live, non-backfill bars."""
         if instrument_id not in self._seeds:
             return ()
-        closed = occurred_at.astimezone(ZoneInfo('Asia/Taipei')).time() >= (DAY_CLOSE if is_future(instrument_id) else time(13, 30))
+        local = occurred_at.astimezone(ZoneInfo('Asia/Taipei'))
+        # A future's trade date closes with its day session; an evening or after-midnight night tick belongs to a later, open one.
+        closed = trade_date == local.date() and local.time() >= DAY_CLOSE if is_future(instrument_id) else local.time() >= time(13, 30)
         finals = tuple(bar for bar in memory if bar.final and bar.end <= occurred_at)
         if not finals or self._minute_ends.get(instrument_id) == finals[-1].end:
             return ()

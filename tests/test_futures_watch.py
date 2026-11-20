@@ -148,6 +148,23 @@ class DirectoryTests(unittest.TestCase):
         items = SymbolDirectory(self.path).refresh(self.facade, self.now)
         self.assertEqual(['TAIFEX:TXFR1'], [item.instrument_id for item in items if item.kind is WatchKind.FUTURE])
 
+    def test_an_unreadable_futures_list_never_blocks_stocks_and_is_retried_at_the_next_connection(self):
+        def broken(kind):
+            if kind == 'FUT':
+                raise RuntimeError('vendor text')
+            return [SimpleNamespace(code='2330', exchange='TSE')] if kind == 'STK' else []
+
+        self.facade.market_contracts = broken
+        directory = SymbolDirectory(self.path)
+        with self.assertLogs('quantlab.trading.adapters.shioaji.symbol_directory', 'ERROR') as logs:
+            items = directory.refresh(self.facade, self.now)
+        self.assertNotIn('vendor text', ' '.join(logs.output))
+        self.assertIn('TWSE:2330', {item.instrument_id for item in items})
+        self.assertFalse(any(item.kind is WatchKind.FUTURE for item in items))
+        self.facade.market_contracts = lambda kind: [SimpleNamespace(code='TXFR1', exchange='TAIFEX')] if kind == 'FUT' else []
+        retried = directory.refresh(self.facade, self.now + timedelta(hours=1))  # same day, but the cache was incomplete
+        self.assertIn('TAIFEX:TXFR1', {item.instrument_id for item in retried})
+
     def test_a_version_two_cache_still_loads_and_is_rebuilt_on_the_next_refresh(self):
         self.path.parent.mkdir(parents=True)
         old = {'version': 2, 'fetched_at': self.now.isoformat(), 'items': [['TWSE:2330', 'STOCK', 'TSE', '2330', 'TSMC', '']]}
@@ -258,6 +275,16 @@ class FuturesSessionTests(SessionHarness):
         details = self.session.quote_details(BIG.instrument_id)
         self.assertEqual((100, Decimal('20100'), Decimal('19900')), (details['total_volume'], details['high'], details['low']))
         self.assertNotIn('bid', details)
+
+    def test_the_previous_settlement_is_not_reused_on_a_later_trade_date(self):
+        self.session.subscribe(BIG)
+        deliver = self.api.callbacks['fop']
+        deliver(SimpleNamespace(code='TXFR1', datetime=datetime(2026, 11, 20, 10, 0, 1), close=20010, volume=1))
+        self.assertEqual(Decimal('20000'), self.session.quote_details(BIG.instrument_id)['reference_price'])
+        deliver(SimpleNamespace(code='TXFR1', datetime=datetime(2026, 11, 20, 13, 44, 1), close=20020, volume=1))
+        self.assertIn('reference_price', self.session.quote_details(BIG.instrument_id))  # same trade date
+        deliver(SimpleNamespace(code='TXFR1', datetime=datetime(2026, 11, 20, 16, 0, 1), close=20030, volume=1))  # Monday's night
+        self.assertNotIn('reference_price', self.session.quote_details(BIG.instrument_id))
 
     def wall(self, *parts):
         return int(datetime(*parts, tzinfo=timezone.utc).timestamp() * 1e9)
@@ -527,6 +554,38 @@ class ObserverTests(unittest.TestCase):
             moment = local.astimezone(timezone.utc)
             observer.on_tick(Tick(BIG.instrument_id, Decimal('20000'), 1, moment, moment, day, session), ())
             self.assertEqual(expected, capture.seen[-1].minutes_since_open)
+
+    def test_a_daily_alert_bar_is_final_only_after_the_day_session_closes(self):
+        class Rules:
+            def __init__(self):
+                self.rules = (SimpleNamespace(enabled=True, kind=AlertKind.VOLUME_SURGE, params={'period': '1d'}),)
+                self.periods = []
+
+            def observe(self, observation):
+                if observation.bars:
+                    self.periods.append((observation.period, observation.bars[-1].trade_date))
+                return ()
+
+        def minute(start, day, session):
+            moment = start.astimezone(timezone.utc)
+            return LiveBar(BIG.instrument_id, moment, moment + timedelta(minutes=1), day, session, *([Decimal('20000')] * 4), 3, final=True)
+
+        for local, day, session, expected in (
+            (taipei(2026, 11, 20, 20, 7), date(2026, 11, 23), 'NIGHT', []),  # Friday evening: Monday's trade date is still open
+            (taipei(2026, 11, 21, 1, 7), date(2026, 11, 23), 'NIGHT', []),
+            (taipei(2026, 11, 20, 13, 30), date(2026, 11, 20), 'DAY', []),  # before the 13:45 close
+            (taipei(2026, 11, 20, 13, 46), date(2026, 11, 20), 'DAY', [('1d', date(2026, 11, 20))]),
+        ):
+            with self.subTest(local=local):
+                service = Rules()
+                observer = AlertTickObserver(service, lambda key: MarketWatchView(instrument_id=key), lambda key: (), lambda key: False)
+                moment = local.astimezone(timezone.utc)
+                observer.on_tick(Tick(BIG.instrument_id, Decimal('20000'), 1, moment, moment, day, session), ())
+                first = minute(local - timedelta(minutes=2), day, session)
+                second = minute(local - timedelta(minutes=1), day, session)
+                observer.on_bars(BIG.instrument_id, (first,), moment, day)  # the first evaluation only records the baseline
+                observer.on_bars(BIG.instrument_id, (first, second), moment + timedelta(minutes=1), day)
+                self.assertEqual(expected, service.periods)
 
 
 if __name__ == '__main__':
