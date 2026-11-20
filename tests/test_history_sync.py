@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from quantlab.trading.adapters.storage.kline_store import KlineStore
-from quantlab.trading.application.history_sync import HistorySettings, HistorySync
+from quantlab.trading.application.history_sync import RETRY_DELAYS, HistorySettings, HistorySync
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
@@ -185,13 +185,74 @@ class HistorySyncTests(unittest.TestCase):
         self.drain()
         self.assertEqual(len(self.session.calls), 3)
 
+    def drain_with_retries(self):
+        self.drain()
+        while (delay := self.sync.next_retry_in()) is not None:
+            self.elapsed += delay
+            self.drain()
+
     def test_sdk_failure_retains_only_code_and_does_not_claim_coverage(self):
         self.session.error = RuntimeError('secret-key-must-not-leak')
         self.sync.browse(STOCK)
-        self.drain()
+        self.drain_with_retries()
         self.assertEqual(dict(self.sync.state().history_error)[STOCK.instrument_id], 'history_query_failed')
         self.assertNotIn('secret', repr(self.sync.state()))
         self.assertEqual(self.store.missing_ranges(STOCK.instrument_id, NOW - timedelta(days=60), NOW), ((NOW - timedelta(days=60), NOW),))
+
+    def test_failed_query_is_retried_after_backoff_without_showing_an_error(self):
+        self.session.error = DomainError('history_query_failed')
+        self.sync.request(STOCK, NOW - timedelta(minutes=10), NOW)
+        self.drain()
+        self.assertEqual(len(self.session.calls), 1)
+        self.assertEqual(self.sync.state().history_error, ())
+        self.assertTrue(self.sync.is_backfilling(STOCK.instrument_id))
+        self.assertEqual(self.sync.next_retry_in(), RETRY_DELAYS[0])
+        self.elapsed += RETRY_DELAYS[0] - 1
+        self.drain()
+        self.assertEqual(len(self.session.calls), 1)  # not before its delay
+        self.session.error = None
+        self.elapsed += 1
+        self.drain()
+        self.assertEqual(len(self.session.calls), 2)
+        self.assertEqual(self.sync.state().history_error, ())
+        self.assertFalse(self.sync.is_backfilling(STOCK.instrument_id))
+        self.assertEqual(self.store.missing_ranges(STOCK.instrument_id, NOW - timedelta(minutes=10), NOW), ())
+        self.assertIsNone(self.sync.next_retry_in())
+
+    def test_error_is_shown_only_after_every_backoff_retry_failed(self):
+        self.session.error = DomainError('history_query_failed')
+        self.sync.request(STOCK, NOW - timedelta(minutes=10), NOW)
+        self.drain_with_retries()
+        self.assertEqual(len(self.session.calls), 1 + len(RETRY_DELAYS))
+        self.assertEqual(dict(self.sync.state().history_error), {STOCK.instrument_id: 'history_query_failed'})
+        self.assertFalse(self.sync.is_backfilling(STOCK.instrument_id))
+        self.session.error = None
+        self.sync.refresh(STOCK)  # the retry button starts a fresh set of attempts at once
+        self.drain()
+        self.assertEqual(self.sync.state().history_error, ())
+
+    def test_lost_connection_is_not_retried_by_backoff(self):
+        self.session.error = DomainError('market_data_not_connected')
+        self.sync.request(STOCK, NOW - timedelta(minutes=10), NOW)
+        self.drain()
+        self.assertIsNone(self.sync.next_retry_in())
+        self.assertEqual(dict(self.sync.state().history_error), {STOCK.instrument_id: 'market_data_not_connected'})
+
+    def test_retry_button_and_removal_cancel_a_waiting_backoff(self):
+        self.session.error = DomainError('history_query_failed')
+        self.sync.request(STOCK, NOW - timedelta(minutes=10), NOW)
+        self.drain()
+        self.session.error = None
+        self.sync.refresh(STOCK)
+        self.drain()
+        self.assertIsNone(self.sync.next_retry_in())
+        self.assertEqual(self.store.missing_ranges(STOCK.instrument_id, NOW - timedelta(minutes=10), NOW), ())
+        self.session.error = DomainError('history_query_failed')
+        self.sync.request(OTHER, NOW - timedelta(minutes=10), NOW)
+        self.drain()
+        self.assertTrue(self.sync.watch_removed(OTHER.instrument_id))
+        self.assertIsNone(self.sync.next_retry_in())
+        self.assertFalse(self.sync.is_backfilling(OTHER.instrument_id))
 
     def test_retry_retains_failed_after_close_force_even_with_existing_coverage(self):
         start = NOW.replace(hour=1)

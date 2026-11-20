@@ -55,6 +55,12 @@ class HistorySyncState:
     history_error: tuple[tuple[str, str], ...]
 
 
+# A failed query (most often the broker timing out while the session opens: every K-line query timed out
+# between 09:01 and 09:13 on 2026-11-20, then the same queries returned within 4 s) is retried after these
+# delays before its error is shown; the user's retry button still retries at once.
+RETRY_DELAYS = (30.0, 60.0, 120.0, 240.0, 300.0)
+
+
 class HistorySync:
     """Requests are nonblocking; exactly one worker issues SDK calls.
 
@@ -85,6 +91,8 @@ class HistorySync:
         self._queue: list[HistoryRequest] = []
         self._errors: dict[str, str] = {}
         self._failed: dict[str, HistoryRequest] = {}
+        self._deferred: list[tuple[float, HistoryRequest]] = []
+        self._attempts: dict[str, int] = {}
         self._running = ''
         self._paused = False
         self._paused_day: date | None = None
@@ -139,6 +147,9 @@ class HistorySync:
     def refresh(self, instrument: WatchInstrument, period: str = '1m', is_watchlisted: bool = False) -> None:
         with self._condition:
             failed = self._failed.pop(instrument.instrument_id, None)
+            deferred = [item for _, item in self._deferred if item.instrument.instrument_id == instrument.instrument_id]
+            self._forget_retries(instrument.instrument_id)
+        failed = failed or (deferred[0] if deferred else None)
         if failed is not None:
             self.request(instrument, failed.start, failed.end, 0, force=failed.force)
         self.browse(instrument, period, is_watchlisted)
@@ -153,6 +164,7 @@ class HistorySync:
         try:
             self._generations[instrument_id] = self._generations.get(instrument_id, 0) + 1
             self._failed.pop(instrument_id, None)
+            self._forget_retries(instrument_id)
             self._queue = [item for item in self._queue if item.instrument.instrument_id != instrument_id]
             return True
         finally:
@@ -198,22 +210,62 @@ class HistorySync:
 
     def is_backfilling(self, instrument_id: str) -> bool:
         with self._condition:
-            return self._running == instrument_id or any(item.instrument.instrument_id == instrument_id for item in self._queue)
+            return self._pending(instrument_id)
 
     def progress(self, instrument_id: str) -> tuple[bool, HistorySyncState] | None:
         """Nonblocking research observation; None means the publication lock is busy."""
         if not self._condition.acquire(blocking=False):
             return None
         try:
-            pending = self._running == instrument_id or any(item.instrument.instrument_id == instrument_id for item in self._queue)
-            return pending, self.state()
+            return self._pending(instrument_id), self.state()
         finally:
             self._condition.release()
+
+    def next_retry_in(self) -> float | None:
+        """Seconds until the earliest scheduled retry, or None when no retry is waiting."""
+        with self._condition:
+            return max(0.0, min(due for due, _ in self._deferred) - self.clock()) if self._deferred else None
+
+    def _pending(self, instrument_id: str) -> bool:
+        return (
+            self._running == instrument_id
+            or any(item.instrument.instrument_id == instrument_id for item in self._queue)
+            or any(item.instrument.instrument_id == instrument_id for _, item in self._deferred)
+        )
+
+    def _forget_retries(self, instrument_id: str) -> None:
+        self._attempts.pop(instrument_id, None)
+        self._deferred = [(due, item) for due, item in self._deferred if item.instrument.instrument_id != instrument_id]
+
+    def _promote_due_retries(self) -> None:
+        now = self.clock()
+        due = [item for at, item in self._deferred if at <= now]
+        if due:
+            self._deferred = [(at, item) for at, item in self._deferred if at > now]
+            for item in due:
+                self.request(item.instrument, item.start, item.end, item.priority, force=item.force)
+
+    def _schedule_retry(self, item: HistoryRequest) -> bool:
+        with self._condition:
+            instrument_id = item.instrument.instrument_id
+            attempt = self._attempts.get(instrument_id, 0)
+            if attempt >= len(RETRY_DELAYS) or item.generation != self._generations.get(instrument_id, 0):
+                self._attempts.pop(instrument_id, None)
+                return False
+            self._attempts[instrument_id] = attempt + 1
+            self._deferred.append((self.clock() + RETRY_DELAYS[attempt], item))
+            self._condition.notify_all()
+            return True
 
     def _work(self) -> None:
         while True:
             with self._condition:
-                self._condition.wait_for(lambda: self._stopped.is_set() or self._queue and not self._paused)
+                while not self._stopped.is_set():
+                    self._promote_due_retries()
+                    if self._queue and not self._paused:
+                        break
+                    wake = min((due for due, _ in self._deferred), default=None)
+                    self._condition.wait(None if wake is None else max(0.05, wake - self.clock()))
                 if self._stopped.is_set():
                     return
             self.run_next()
@@ -252,6 +304,7 @@ class HistorySync:
     def run_next(self) -> bool:
         with self._serial:
             with self._condition:
+                self._promote_due_retries()
                 if self._stopped.is_set() or self._paused or not self._queue:
                     return False
                 index = min(range(len(self._queue)), key=lambda i: self._queue[i].priority)
@@ -260,12 +313,14 @@ class HistorySync:
             try:
                 self._sync(item)
             except DomainError as exc:
-                self._errors[item.instrument.instrument_id] = exc.code
-                self._failed[item.instrument.instrument_id] = item
+                if exc.code != 'history_query_failed' or not self._schedule_retry(item):
+                    self._errors[item.instrument.instrument_id] = exc.code
+                    self._failed[item.instrument.instrument_id] = item
             except (OSError, RuntimeError, ValueError):
                 # The cache/session ports perform external disk and SDK I/O.
-                self._errors[item.instrument.instrument_id] = 'history_query_failed'
-                self._failed[item.instrument.instrument_id] = item
+                if not self._schedule_retry(item):
+                    self._errors[item.instrument.instrument_id] = 'history_query_failed'
+                    self._failed[item.instrument.instrument_id] = item
             finally:
                 with self._condition:
                     self._running = ''
@@ -312,6 +367,8 @@ class HistorySync:
                     return
         self._errors.pop(item.instrument.instrument_id, None)
         self._failed.pop(item.instrument.instrument_id, None)
+        with self._condition:
+            self._attempts.pop(item.instrument.instrument_id, None)
         self.on_complete(item.instrument.instrument_id)
 
     def close(self, timeout: float = 2) -> bool:

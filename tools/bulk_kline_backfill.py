@@ -94,7 +94,13 @@ def main(argv: list[str] | None = None) -> int:
             history.request(item, start, end, priority=rank)
         started = time.monotonic()
         done = set()
-        while history.run_next():
+        while True:
+            if not history.run_next():
+                wait = history.next_retry_in()
+                if wait is None or history.state().paused:
+                    break
+                time.sleep(wait + 0.1)  # a failed query is retried after a delay; wait for it instead of quitting
+                continue
             state = history.state()
             for rank, (item, _) in enumerate(top, 1):
                 instrument = item.instrument_id
