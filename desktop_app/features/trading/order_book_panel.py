@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QHeaderView, QLabel, QProgressBar, QSplitter, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 from desktop_app.strings.catalog import ui_text
+from quantlab.trading.domain.watch import is_future
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 _SIDE_KEYS = {'BUY': 'orderbook.side_buy', 'SELL': 'orderbook.side_sell', 'NONE': 'orderbook.side_none'}
@@ -131,7 +132,7 @@ class OrderBookPanel(QWidget):
 
     def render_view(self, view, up: str, down: str) -> None:
         if not view.supported:
-            self.clear(ui_text('orderbook.no_index'))
+            self.clear(ui_text('orderbook.no_future') if is_future(view.instrument_id) else ui_text('orderbook.no_index'))
             return
         buy, sell = QColor(up), QColor(down)
         rows = ladder_rows(view)

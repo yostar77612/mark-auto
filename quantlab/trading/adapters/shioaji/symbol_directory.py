@@ -1,7 +1,8 @@
 """Contract V2 directory cache; all name lookups happen during refresh, never search."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
+import logging
 import os
 from pathlib import Path
 from time import perf_counter
@@ -9,12 +10,15 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
+from quantlab.trading.domain.watch import FIXED_INDICES, FUTURE_NAMES, WatchInstrument, WatchKind, watch_future
 from .sdk import sdk_text, sdk_value
 from .sdk_facade import ShioajiSDKFacade
 
 
-VERSION = 2
+logger = logging.getLogger(__name__)
+VERSION = 3
+# Version 2 caches hold the same row shape without futures: still readable, but due for an immediate rebuild.
+READABLE_VERSIONS = (2, VERSION)
 
 
 class SymbolDirectory:
@@ -28,7 +32,7 @@ class SymbolDirectory:
     def load(self) -> tuple[WatchInstrument, ...]:
         try:
             body = json.loads(self.path.read_text(encoding='utf-8'))
-            if body['version'] != VERSION:
+            if body['version'] not in READABLE_VERSIONS:
                 # A version 1 cache has no industry codes: treat it as missing so the next refresh rebuilds it.
                 raise ValueError('directory version')
             fetched = datetime.fromisoformat(body['fetched_at'])
@@ -37,7 +41,7 @@ class SymbolDirectory:
             items = tuple(WatchInstrument(row[0], WatchKind(row[1]), *row[2:]) for row in body['items'])
         except (OSError, ValueError, KeyError, TypeError, IndexError, DomainError):
             return self.items
-        self.fetched_at = fetched
+        self.fetched_at = fetched if body['version'] == VERSION else None
         self.items = tuple({item.instrument_id: item for item in (*items, *FIXED_INDICES)}.values())
         return self.items
 
@@ -62,11 +66,21 @@ class SymbolDirectory:
                 prefix = {'TSE': 'TWSE', 'OTC': 'TPEX', 'INDEX': 'INDEX'}[exchange]
                 category = '' if security == 'IND' else str(getattr(base, 'category', '') or '')
                 items.append(WatchInstrument(f'{prefix}:{code}', kind, exchange, code, name, category))
+        # Only the three whitelisted continuous contracts; the rest of the futures list is never read into the directory.
+        try:
+            listed = {sdk_text(sdk_value(base, 'code')) for base in facade.market_contracts('FUT')}
+        except Exception as error:
+            # SDK boundary: an unreadable futures list must never take stock and index market data down with it.
+            logger.error('Futures contract list unavailable (%s); futures stay out of the directory', type(error).__name__)
+            listed = None
+        else:
+            items.extend(watch_future(code) for code in FUTURE_NAMES if code in listed)
         self.refresh_seconds = perf_counter() - started
         result = tuple({item.instrument_id: item for item in (*items, *FIXED_INDICES)}.values())
         body = {
             'version': VERSION,
-            'fetched_at': now.astimezone(timezone.utc).isoformat(),
+            # An incomplete list is stored as stale, so a restart on the same day refreshes it again.
+            'fetched_at': (now if listed is not None else now - timedelta(days=2)).astimezone(timezone.utc).isoformat(),
             'items': [[i.instrument_id, i.kind.value, i.exchange, i.code, i.name, i.category] for i in result],
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -76,5 +90,6 @@ class SymbolDirectory:
             os.replace(temporary, self.path)
         finally:
             temporary.unlink(missing_ok=True)
-        self.items, self.fetched_at = result, now
+        # Without the futures list the cache is incomplete: keep it, but refresh again at the next connection.
+        self.items, self.fetched_at = result, now if listed is not None else None
         return result

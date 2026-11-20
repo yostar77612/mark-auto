@@ -307,3 +307,20 @@
 - Append phase72/orders3111–3123 in a new file; repin once separately after
   feature completion. This PR is appearance-only; merge after full green CI as
   explicitly authorized by the owner.
+
+## 2026-11-20 — M1-4 期指觀察商品（TXFR1／MXFR1／TMFR1）
+
+- 漲跌基準：選券商 `info.reference`（前一日結算價）；缺值才退回前一交易日最後一根收盤。
+  選項：只用收盤（與股票一致，但與結算價有差）、只用 reference。選擇兩者並以 reference 優先，最貼近看盤軟體的漲跌。
+  reference 只在訂閱時讀一次，且只用於讀到它的那個交易日；tick 的交易日改變（例如日盤→夜盤）就丟棄，改用前一交易日最後一根收盤，
+  避免沿用過期結算價。SDK 的 reference 是否會跨交易日自動更新，無法離線驗證（待實機確認）。
+- 目錄刷新時期貨清單讀取失敗只記錄 log、不影響股票／指數連線，且下次連線會再試。
+- 警示的日 K 判定：期貨只在該交易日的日盤收盤（13:45）後視為收盤，夜盤進行中的日 K 不算完成。
+- 夜盤歸屬：既有交易日曆（`sinopac_calendar`、`automatic_calendar`）只有日盤，沒有夜盤；因此不改它們，
+  另在 domain 以固定官方時段加既有已驗證日集合推算夜盤交易日（`futures_hours.py`）。涵蓋範圍（2026）之外退回下一個平日。
+- 代碼白名單放在 `WatchInstrument`：避免整個期貨清單進入目錄，也避免與可執行的 `TAIFEX:TMF:<交割月>` 混淆。
+- 目錄快取 v2 仍可讀（保留股票搜尋），但把 `fetched_at` 視為過期，下次連線立即重建；不重新要求使用者做任何事。
+- 連續月合約的 tick 代碼可能是指向的交割月代碼：同時登記合約的 `target_code`。
+- 影響：`watch.py`、`futures_hours.py`、`symbol_directory.py`、`market_session.py`、`market_terminal_service.py`、
+  `market_terminal_views.py`、`alert_observer.py`、`alerts.py`、期貨分頁／搜尋／五檔面板／警示對話框。
+- 已知未處理：`HistorySync.after_close` 仍以 13:35 後補 09:00–13:31（股票時段）；期貨收盤補洞留待實機觀察。

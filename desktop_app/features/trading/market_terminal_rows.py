@@ -25,6 +25,8 @@ def price_number(value, instrument, tick=None):
     digits = (
         max(0, -tick.as_tuple().exponent)
         if tick is not None
+        else 0
+        if instrument is not None and instrument.exchange == 'TAIFEX'
         else (2 if instrument is None or instrument.exchange == 'INDEX' or value < Decimal('50') else 1 if value < Decimal('500') else 0)
     )
     return format(value, f'.{digits}f')
@@ -49,7 +51,7 @@ def quote_values(instrument, view):
         price_number(view.price if known else None, instrument, view.price_tick),
         number(view.change, signed=True),
         number(view.change_percent, signed=True, percent=True),
-        ui_text('terminal.volume_stock').format(f'{view.total_volume:,}')
+        (ui_text('terminal.volume_future') if instrument.exchange == 'TAIFEX' else ui_text('terminal.volume_stock')).format(f'{view.total_volume:,}')
         if instrument.exchange != 'INDEX' and view.total_volume is not None
         else ui_text('watch.unknown'),
     )

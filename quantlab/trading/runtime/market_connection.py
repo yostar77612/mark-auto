@@ -19,6 +19,7 @@ from quantlab.trading.application.market_settings import MarketDataSettings
 from quantlab.trading.application.errors import ERROR_TABLE
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
+from .sinopac_calendar import built_in_calendar
 
 
 class MarketClock:
@@ -27,7 +28,7 @@ class MarketClock:
 
 
 def create_market_session(settings, directory):
-    return MarketSession(settings, WindowsSecretResolver(), load_pinned_sdk(), MarketClock(), directory)
+    return MarketSession(settings, WindowsSecretResolver(), load_pinned_sdk(), MarketClock(), directory, trading_days=built_in_calendar().days)
 
 
 class MarketConnection:

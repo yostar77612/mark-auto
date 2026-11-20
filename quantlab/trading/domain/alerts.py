@@ -10,6 +10,7 @@ from typing import Mapping
 from .freshness import Freshness
 from .live_bars import LiveBar
 from .validation import DomainError, aware, decimal_value, identity
+from .watch import is_future
 
 
 class AlertKind(str, Enum):
@@ -119,6 +120,8 @@ class AlertRule:
         if self.scope == 'INSTRUMENT':
             identity(self.instrument_id, 'instrument_id')
             if self.instrument_id.startswith('INDEX:') and self.kind in (AlertKind.VOLUME_SURGE, *SCANNER_KINDS):
+                raise DomainError('alert_invalid_params', 'stock-only rule')
+            if is_future(self.instrument_id) and self.kind in SCANNER_KINDS:
                 raise DomainError('alert_invalid_params', 'stock-only rule')
         if self.scope == 'MARKET' and self.kind not in SCANNER_KINDS:
             raise DomainError('alert_invalid_params', 'market scope requires scanner')

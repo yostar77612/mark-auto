@@ -179,7 +179,7 @@ class ShioajiSDKFacade:
         return _callable(self._client, 'logout')()
 
     def market_contracts(self, security_type: str) -> list[object]:
-        if security_type not in ('STK', 'IND'):
+        if security_type not in ('STK', 'IND', 'FUT'):
             raise DomainError('validation_failed', 'watch security type')
         return _rows(_callable(self.contracts._store(), 'list')(security_type))
 

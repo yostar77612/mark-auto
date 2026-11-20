@@ -59,7 +59,12 @@ class SymbolSearch(QWidget):
     def search(self):
         self.results.clear()
         matches = search_symbols(self.directory(), self.input.text())
-        exchanges = {'TSE': ui_text('terminal.exchange_tse'), 'OTC': ui_text('terminal.exchange_otc'), 'INDEX': ui_text('terminal.exchange_index')}
+        exchanges = {
+            'TSE': ui_text('terminal.exchange_tse'),
+            'OTC': ui_text('terminal.exchange_otc'),
+            'INDEX': ui_text('terminal.exchange_index'),
+            'TAIFEX': ui_text('terminal.exchange_taifex'),
+        }
         for instrument in matches:
             item = QListWidgetItem(f'{instrument.code}  {instrument.name}  {exchanges[instrument.exchange]}')
             item.setData(Qt.ItemDataRole.UserRole, instrument)

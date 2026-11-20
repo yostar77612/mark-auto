@@ -4,17 +4,18 @@ The caller explicitly loads the pinned SDK only for a connect intent. Native
 exceptions are sanitized at this SDK boundary; credentials are never retained.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import logging
 from types import SimpleNamespace
 from threading import Lock, RLock
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.freshness import LiveMarketSettings
+from quantlab.trading.domain.futures_hours import trade_date_at
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError, aware
-from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+from quantlab.trading.domain.watch import WatchInstrument, WatchKind, is_future
 from quantlab.trading.ports.history import HistoryUsage
 from quantlab.trading.ports.market_settings import MarketSessionSettings
 from quantlab.trading.ports.interfaces import Clock
@@ -39,9 +40,18 @@ def history_time(value: object) -> datetime:
 
 
 class WatchSessionResolver:
-    """Display-only sessions from a received stock/index timestamp, never risk evidence."""
+    """Display-only sessions from a received timestamp, never risk evidence.
+
+    Stocks and indices are always the local day session. Watched futures also trade a night session
+    that belongs to the next trading day; the optional verified day set only supplies holidays.
+    """
+
+    def __init__(self, trading_days: tuple[date, ...] = ()):
+        self.trading_days = trading_days
 
     def session_at(self, instrument_id: str, timestamp: datetime):
+        if is_future(instrument_id):
+            return trade_date_at(timestamp, self.trading_days)
         return timestamp.astimezone(TAIPEI).date(), 'DAY'
 
 
@@ -74,7 +84,9 @@ class MarketSession:
         clock: Clock,
         directory: SymbolDirectory,
         live_settings: LiveMarketSettings = LiveMarketSettings(),
+        trading_days: tuple[date, ...] = (),
     ):
+        self.resolver = WatchSessionResolver(trading_days)
         self.settings, self.secret_resolver, self.sdk_module = settings, secret_resolver, sdk_module
         self.clock, self.directory, self.live_settings = clock, directory, live_settings
         self.connected = False
@@ -133,7 +145,7 @@ class MarketSession:
             self.facade,
             self.clock,
             (),
-            WatchSessionResolver(),
+            self.resolver,
             lambda: self.connected,
             self.live_settings,
             self._session_down,
@@ -168,7 +180,11 @@ class MarketSession:
         if type(total) is int and total >= 0 and not instrument_id.startswith('INDEX:'):
             details['total_volume'] = total
         with self._quote_lock:
-            self._details.setdefault(instrument_id, {}).update(details)
+            current = self._details.setdefault(instrument_id, {})
+            current.update(details)
+            if is_future(instrument_id) and current.setdefault('reference_date', tick.trade_date) != tick.trade_date:
+                # The reference is the previous settlement read at subscribe time; a later trade date must not reuse it.
+                current.pop('reference_price', None)
         return tick
 
     def quote_details(self, instrument_id: str) -> dict[str, object]:
@@ -179,8 +195,11 @@ class MarketSession:
         if not self.connected:
             raise DomainError('market_data_not_connected')
         contract = self.facade.market_contract(instrument.code)
-        expected_exchange = ('TSE', 'OTC') if instrument.kind is WatchKind.INDEX else (instrument.exchange,)
-        security = 'IND' if instrument.kind is WatchKind.INDEX else 'STK'
+        security, expected_exchange = {
+            WatchKind.STOCK: ('STK', (instrument.exchange,)),
+            WatchKind.INDEX: ('IND', ('TSE', 'OTC')),
+            WatchKind.FUTURE: ('FUT', ('TAIFEX',)),
+        }[instrument.kind]
         if (
             contract is None
             or sdk_text(sdk_value(contract, 'code')) != instrument.code
@@ -210,8 +229,14 @@ class MarketSession:
                 reference = sdk_decimal(reference, 'reference')
                 if reference > 0:
                     with self._quote_lock:
-                        self._details.setdefault(instrument.instrument_id, {})['reference_price'] = reference
+                        details = self._details.setdefault(instrument.instrument_id, {})
+                        details['reference_price'] = reference
+                        details.pop('reference_date', None)  # the next tick names the trade date this reference serves
             self.tick_stream.by_code[instrument.code] = instrument.instrument_id
+            # A continuous contract may deliver ticks under the delivery month it currently points at.
+            target = getattr(contract, 'target_code', None)
+            if instrument.kind is WatchKind.FUTURE and target:
+                self.tick_stream.by_code[sdk_text(target)] = instrument.instrument_id
             self.tick_stream.set_active(set(self.subscriptions) | {instrument.instrument_id})
             self.facade.market_subscribe(contract)
             self.subscriptions[instrument.instrument_id] = contract
@@ -343,7 +368,14 @@ class MarketSession:
                 if finish > now:
                     continue  # An intraday query also returns the still-forming minute; live ticks build that one.
                 raise
-            bars.append(LiveBar(instrument.instrument_id, begin, finish, finish.astimezone(TAIPEI).date(), 'DAY', *prices, volume, final=finish <= now))
+            if instrument.kind is WatchKind.FUTURE:
+                try:
+                    trade_date, session = self.resolver.session_at(instrument.instrument_id, begin)
+                except DomainError:
+                    continue  # Outside the regular futures sessions: never label it DAY or NIGHT.
+            else:
+                trade_date, session = finish.astimezone(TAIPEI).date(), 'DAY'
+            bars.append(LiveBar(instrument.instrument_id, begin, finish, trade_date, session, *prices, volume, final=finish <= now))
         if not bars:
             self.usage()
         return tuple(sorted(bars, key=lambda bar: bar.start))

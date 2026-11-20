@@ -12,6 +12,7 @@ from quantlab.trading.application.contracts import UiAction
 from quantlab.trading.application.sinopac_contracts import SinopacAccountView, SinopacReadiness
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.validation import DomainError
+from .sinopac_calendar import built_in_calendar
 
 
 def readiness(owner):
@@ -169,7 +170,7 @@ def connect_candidate(owner, ticket):
         finally:
             del credentials
         accounts = discover_accounts(facade.list_accounts(), owner.configuration.environment, alias_key=owner.preferences.alias_key)
-        market = MarketSession(owner.settings, owner.secrets, facade._module, owner.clock, owner.directory)
+        market = MarketSession(owner.settings, owner.secrets, facade._module, owner.clock, owner.directory, trading_days=built_in_calendar().days)
         market.attach_authenticated(candidate.consumer('terminal'))
         accept_candidate(owner, candidate, market, accounts, ticket)
     except Exception as error:
