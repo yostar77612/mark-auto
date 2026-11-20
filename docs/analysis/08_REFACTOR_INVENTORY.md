@@ -1012,6 +1012,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/shared/sqlite_open.py` | 14 | shared | `quantlab/shared/sqlite_open.py` | sqlite_open: the single sqlite_uri + mode SQLite open (OPT-1 P4; five call sites) |
 | `tools/bench_series.py` | 126 | tooling | `tools/bench_series.py` | bench_series: offline LiveMarketService.series() timing and payload (OPT-1 P8) |
 | `tools/bench_tick_loss.py` | 121 | tooling | `tools/bench_tick_loss.py` | bench_tick_loss: offline LiveMarketService.poll() timing under retained tick losses (OPT-1 P9) |
+| `tools/bench_kline_open.py` | 99 | tooling | `tools/bench_kline_open.py` | bench_kline_open: offline KlineStore open / quick_check timing (OPT-1 P10, measure only) |
 | `tools/bench_backtest_repeat.py` | 82 | tooling | `tools/bench_backtest_repeat.py` | bench_backtest_repeat: frozen vs live run_backtest timing on one Dataset (OPT-1 P7) |
 
 ## 3 跨層匯入違規（GitNexus + AST）

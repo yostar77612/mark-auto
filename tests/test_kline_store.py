@@ -33,6 +33,19 @@ class KlineStoreTests(unittest.TestCase):
         self.store.close()
         self.temp.cleanup()
 
+    def test_instrument_ids_match_the_full_union_scan_for_minute_and_daily_rows(self):
+        self.assertEqual(self.store.instrument_ids(), ())
+        for instrument, offsets in (('TWSE:2330', range(5)), ('TPEX:6488', range(3)), ('INDEX:IX0001', range(2)), ('TWSE:1101', range(1))):
+            self.store.upsert(tuple(replace(minute(offset), instrument_id=instrument) for offset in offsets))
+        with self.store._db:
+            for instrument in ('TWSE:2330', 'TWSE:0050', 'TWSE:9999'):
+                self.store._db.execute('INSERT INTO bars_1d VALUES(?,?,?,?,?,?,?,?,?)', (instrument, '2026-10-29', '1', '1', '1', '1', 1, 'digest', 'OFFICIAL'))
+        union = tuple(
+            row[0] for row in self.store._db.execute('SELECT instrument_id FROM bars_1m UNION SELECT instrument_id FROM bars_1d ORDER BY instrument_id')
+        )
+        self.assertEqual(self.store.instrument_ids(), union)
+        self.assertEqual(union, ('INDEX:IX0001', 'TPEX:6488', 'TWSE:0050', 'TWSE:1101', 'TWSE:2330', 'TWSE:9999'))
+
     def test_decimal_roundtrip_sorted_half_open_read_and_last(self):
         self.store.upsert((minute(2), minute(0), minute(1)))
         self.assertEqual(self.store.read('TWSE:2330', START, START + timedelta(minutes=2)), (minute(0), minute(1)))

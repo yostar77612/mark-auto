@@ -60,6 +60,11 @@ def _decode(row: tuple) -> LiveBar:
 
 
 _READ = 'SELECT * FROM bars_1m WHERE instrument_id=? AND start_utc>=? AND start_utc<? ORDER BY start_utc'
+_DISTINCT_IDS = (
+    'WITH RECURSIVE ids(id) AS (SELECT MIN(instrument_id) FROM {table} '
+    'UNION ALL SELECT (SELECT MIN(instrument_id) FROM {table} WHERE instrument_id > ids.id) FROM ids WHERE ids.id IS NOT NULL) '
+    'SELECT id FROM ids'
+)
 _CACHED_INSTRUMENTS = 4
 
 
@@ -252,8 +257,12 @@ class KlineStore:
         return int(row[0]) if row else 0
 
     def instrument_ids(self) -> tuple[str, ...]:
+        # Hop from one instrument to the next along each table's (instrument_id, ...) primary key: one index seek per
+        # instrument instead of a scan of every bar. The scan took about 1.2 s per call at 12 million minute bars, and
+        # connecting called it 8 times, which overran the 8 s connection deadline (2026-11-20).
         with self._lock:
-            return tuple(row[0] for row in self._db.execute('SELECT instrument_id FROM bars_1m UNION SELECT instrument_id FROM bars_1d ORDER BY instrument_id'))
+            ids = {row[0] for table in ('bars_1m', 'bars_1d') for row in self._db.execute(_DISTINCT_IDS.format(table=table)) if row[0] is not None}
+        return tuple(sorted(ids))
 
     def record_queried_bars(self, day: date, count: int) -> None:
         integer(count, 'queried bars')
