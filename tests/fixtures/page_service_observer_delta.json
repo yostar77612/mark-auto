@@ -486,17 +486,6 @@
             "symbol": "OrderBookServiceTests.setUp"
           },
           "count": 1
-        },
-        {
-          "row": {
-            "file": "tests/test_m5_sector.py",
-            "kind": "assignment",
-            "name": "market",
-            "occurrence": 1,
-            "receiver": "self",
-            "symbol": "DetailSeriesEquivalenceTests.setUp"
-          },
-          "count": 1
         }
       ]
     },
