@@ -184,3 +184,115 @@ class LiveMarketServiceTests(unittest.TestCase):
         service.poll(in_session=True)
         self.assertIn(first_start, tuple(bar.start for bar in service.watch(key).bars))
         self.assertTrue(service.watch(key, period='5m').bars)
+
+
+class _ScriptedMarket:
+    """Ticks and tick losses handed out once per poll, identically to every service under comparison."""
+
+    def __init__(self):
+        self.ticks, self.losses = (), ()
+
+    def subscribe(self, instrument_ids):
+        from quantlab.trading.ports.contracts import SubscriptionReceipt
+
+        return SubscriptionReceipt('scripted', tuple(instrument_ids), True, NOW)
+
+    def unsubscribe(self, subscription_id):
+        pass
+
+    def history(self, instrument_id, start, end):
+        raise AssertionError('history is not read in this comparison')
+
+    def drain_ticks(self, max_items):
+        ticks, self.ticks = self.ticks[:max_items], self.ticks[max_items:]
+        return ticks
+
+    def drain_tick_losses(self):
+        losses, self.losses = self.losses, ()
+        return losses
+
+
+class _ScriptedClock:
+    def __init__(self):
+        self.value = NOW
+
+    def now(self):
+        return self.value
+
+
+class _DayResolver:
+    def session_at(self, instrument_id, timestamp):
+        return timestamp.date(), 'DAY'
+
+
+class TickLossEquivalenceTests(unittest.TestCase):
+    """OPT-1 P9: poll() under tick losses equals the frozen pre-change poll in every observable field."""
+
+    KEYS = ('WATCH:0', 'WATCH:1')
+
+    def stack(self, cls):
+        from quantlab.trading.application.live_market import LiveBar
+
+        market, clock = _ScriptedMarket(), _ScriptedClock()
+        service = cls(market, clock, _DayResolver(), settings=LiveMarketSettings(buffer_trade_days=1))  # deques hold 1,440
+        service.allocate(self.KEYS)
+        for index, key in enumerate(self.KEYS):
+            buffer = service._buffers[key]
+            for minute in range(1200, 0, -1):
+                start = NOW - timedelta(minutes=minute)
+                price = D(100 + (minute + index) % 7)
+                buffer.history.append(LiveBar(key, start, start + timedelta(minutes=1), start.date(), 'DAY', price, price + 1, price - 1, price, 3, final=True))
+        return service, market, clock
+
+    @staticmethod
+    def state(service):
+        buffers = tuple(
+            (
+                key,
+                repr(tuple(buffer.history)),
+                repr(tuple(buffer.live)),
+                repr(buffer.minute),
+                repr(buffer.tick),
+                buffer.history_revision,
+                repr(tuple(buffer.losses)),
+                buffer.first_live_start,
+                buffer.freshness,
+            )
+            for key, buffer in sorted(service._buffers.items())
+        )
+        views = tuple(repr(service.watch(key, period=period)) for key in TickLossEquivalenceTests.KEYS for period in ('1m', '5m'))
+        return buffers, repr(tuple(service.issues)), service.market_revision, tuple(sorted(service._view_cache)), views
+
+    def test_random_ticks_and_losses_match_the_frozen_poll(self):
+        import random
+
+        from quantlab.trading.application.live_market import LiveMarketService
+        from quantlab.trading.domain.ticks import Tick
+        from quantlab.trading.ports.tick_stream import TickLoss
+        from tests.live_market_poll_reference import ReferenceLiveMarketService
+
+        generator = random.Random(20261120)
+        new, reference = self.stack(LiveMarketService), self.stack(ReferenceLiveMarketService)
+        sequence = 0
+        for step in range(160):
+            now = NOW + timedelta(seconds=20 * step)
+            ticks, losses = [], []
+            for _ in range(generator.randint(0, 30)):
+                sequence += 1
+                at = now - timedelta(seconds=generator.randint(0, 90))
+                key = generator.choice(self.KEYS)
+                ticks.append(Tick(key, D(100 + generator.randint(0, 9)), 1, at, now, at.date(), sequence=sequence))
+            for _ in range(generator.choice((0, 0, 1, 3, 40, 120))):
+                span = generator.choice((0, 0, 1, 5, 90, 1500))  # zero-length, short, long and wider-than-retention losses
+                last = now - timedelta(minutes=generator.randint(0, 1300), seconds=generator.randint(0, 59))
+                first = last - timedelta(minutes=span, seconds=generator.randint(0, 59))
+                key = generator.choice((*self.KEYS, 'WATCH:9'))  # an unallocated instrument only reaches issues
+                losses.append(TickLoss(key, first, last, generator.randint(1, 50)))
+            for service, market, clock in (new, reference):
+                clock.value = now
+                market.ticks, market.losses = tuple(ticks), tuple(losses)
+                service.poll(in_session=True)
+            with self.subTest(step=step):
+                self.assertEqual(self.state(new[0]), self.state(reference[0]))
+        self.assertTrue(all(len(new[0]._buffers[key].losses) == new[0]._buffers[key].losses.maxlen == 1440 for key in self.KEYS))  # evicted
+        self.assertTrue(any(bar.incomplete for key in self.KEYS for bar in new[0]._buffers[key].history))
