@@ -2,13 +2,15 @@
 
 Status: IN PROGRESS (per-phase status in the Rollout section). P7: NOT STARTED, awaiting owner approval.
 Audience: implementing agent. 觀察基準：`main` @ `d6c8d10f`，2026-11-20。
-本文件的「現況」皆來自讀程式碼與 grep，**尚未實測效能**；所有速度目標都要先量測再主張。
+本文件的「現況」來自讀程式碼與 grep；僅標示「實測」者附有量測數字，其餘**尚未實測效能**；所有速度目標都要先量測再主張。
 範本對照：[TEMPLATE.md](TEMPLATE.md)；工作規則沿用 [m1-implementation-spec.md](m1-implementation-spec.md) §0。
 
 ## Problem
 
 一次抽樣程式碼檢視（回測、指標、交易檢視層、專案結構）找到下列可優化處。排序依「風險由低到高、
-投入產出比由高到低」。每個階段（P0–P7）各一個 PR，可獨立交付與回退。
+投入產出比由高到低」。每個階段（P0–P10）各一個 PR，可獨立交付與回退。
+P8–P10 為第二輪檢視（2026-11-20，`main` @ `88c571fb`）新增，P7 同步擴充；其中標示「實測」者附有量測數字，
+其餘為讀程式碼推斷，**必須先量測再動手**。
 
 | 階段 | 主題 | 風險 | 是否碰 G3 |
 |---|---|---|---|
@@ -19,7 +21,10 @@ Audience: implementing agent. 觀察基準：`main` @ `d6c8d10f`，2026-11-20。
 | P4 | SQLite 開檔樣板收斂 | 低 | 否（G3 檔跳過） |
 | P5 | Ruff 規則擴充（非凍結碼） | 低 | 否 |
 | P6 | 超長函式拆分 | 中 | 否（凍結檔跳過） |
-| P7 | 回測引擎查找與驗證拆分 | **高** | **是，需 owner 明確核准** |
+| P7 | 回測引擎查找與驗證拆分；重複雜湊／驗證快取（見 P7 第 6 項） | **高** | **是，需 owner 明確核准** |
+| P8 | 板塊看盤詳情圖不再每 2 秒整段重抓 | 低 | 否 |
+| P9 | 即時行情 tick 遺失處理的平方級掃描 | 中 | 否（先量測） |
+| P10 | K 線資料庫開啟時的 `quick_check` 成本 | 中（動到 fail-closed 閘門） | 否（先量測，取捨需 owner 同意） |
 
 ### 現況證據
 
@@ -50,6 +55,22 @@ Audience: implementing agent. 觀察基準：`main` @ `d6c8d10f`，2026-11-20。
   `[b for b in dataset.bars if b.end==… and b.contract_id==…]`（O(事件數×K 棒數)）；199–210 行每根 K 棒重建
   `ZoneInfo('Asia/Taipei')`；`_run` 前約 90 行為輸入驗證。`backtest.py` 在 G3 清單內，且其原始碼雜湊進入 run manifest
   （`engine_hash`／`source_hashes`）與歷史 profile。
+  **實測**（5,000 根合成 K 棒、單次 `run_backtest` 329 ms，無 profiler）：`content_hash(dataset.bars)` 53 ms；
+  `_validate_bars` 28 ms，且在 `_run` 與 `generate_signals` 各跑一次；`canonical_json(result)`
+  （`BacktestResult.__post_init__`）51 ms。三項合計約佔一半，且在同一份不可變資料集上反覆回測（campaign、walk-forward）
+  時每次重算。profiler 下 `canonical_json` 單項佔累積時間 52%。涉及的 `backtest.py`、`strategies.py`、`core.py` 皆為 G3。
+- **P8**（讀碼推斷；單次抓取成本**實測**）：[desktop_app/features/trading/sector_board.py:249](../../desktop_app/features/trading/sector_board.py)
+  `refresh()` 由 2 秒計時器（`REFRESH_MS`）觸發，並呼叫 `_refresh_detail()`；後者只擋「同一鍵正在載入中」，載入完成
+  即重新抓取選定個股的**整段**序列（`market_series` 分頁抓完）與五檔。
+  `LiveMarketService.series()`（[live_market.py:341](../../quantlab/trading/application/live_market.py)）對回傳的每根
+  K 棒逐一 `dumps(bar)` 估大小。實測 8,100 根 1 分 K：該迴圈 151 ms、3.76 MB（尚未含傳輸與解碼）。
+  另 `bars += page.bars`（tuple 反覆串接）為 O(頁數²)，量小。
+- **P9**（讀碼推斷）：[live_market.py:206](../../quantlab/trading/application/live_market.py) 每個 tick 對
+  `buffer.losses` 做 `any(_affected_minute(...))`；處理每筆遺失時對整段 `history` 與 `live` 各做一次
+  `_replace_bars` 全掃。上限皆為 `buffer_trade_days(30)×24×60 = 43,200`。只有大量 tick 遺失（斷線、佇列溢位）才會明顯。
+- **P10**（讀碼推斷）：[kline_store.py:103](../../quantlab/trading/adapters/storage/kline_store.py) `_open` 每次開啟都執行
+  `PRAGMA quick_check`，成本隨資料庫大小線性增加；批次回補工具（`tools/bulk_kline_backfill.py`）會讓資料庫持續變大。
+  這是 fail-closed 的完整性閘門，且損毀時會把檔案連同 WAL 保留為 `.bad-*` 後重建。
 
 ## Goals/Non-goals
 
@@ -135,6 +156,42 @@ Non-goals
 4. 依 CONTRIBUTING 與 `f05328b` 先例處理：新原始碼身分需要新的 current profile，**不得**把歷史 profile 重新 pin 到新原始碼；
    `r7_base.json` 等基準以獨立 fixture-only commit 更新並記錄原因，交 QA 重驗。
 5. 必須用同一組固定資料集在新舊實作各跑一次，比對 `run_hash`／`reproducibility_hash`／fills／ledger 完全一致。
+6. **重複雜湊／驗證快取**（依上方實測）：在同一個不可變 `Dataset` 實例上快取 `content_hash(bars)` 與「`_validate_bars` 已通過」
+   結果，使同一資料集的第二次以後回測不再重算。限制：
+   - 快取以物件身分為鍵，且僅在 `bars` 為不可變 tuple、`Dataset` 為凍結時成立；先確認這兩個前提，不成立就放棄本項。
+   - 首次仍須完整驗證並比對 `manifest['data_hash']`；錯誤碼與訊息不變。
+   - `BacktestResult.__post_init__` 的 `canonical_json(self)` 保留，除非能證明其保證已由建構過程確保；否則只做資料集側快取。
+   - 兩次驗證之一（`_run` 與 `generate_signals` 內的 `_validate_bars`）可合併，但不得改變驗證順序與丟出的第一個錯誤。
+   - 同樣需要新 current profile 與 fixture-only commit（見第 4 項），並附前後實測（5,000 根與一次多候選 campaign）。
+
+### P8 板塊看盤詳情圖增量更新
+1. **先量測**：新增 `tools/bench_series.py`（未來檔案，須登記 refactor inventory），量 `LiveMarketService.series()`
+   在 1,000／8,100／43,200 根 1 分 K 下的耗時與 payload 大小，以及 `period` 為 `5m`／`1d` 時的結果。
+2. **等價測試**：寫一個模擬器依序餵入多輪 tick（含新增 K 棒、末根更新、歷史回補、遺失標記），斷言「首次整段＋之後每輪只取尾端再合併」
+   的結果，與「每輪整段重抓」逐根相等。**先用現有整段策略建立 oracle。**
+3. **實作**（[sector_board.py](../../desktop_app/features/trading/sector_board.py)）：
+   - 首次載入（或選股／週期改變、`retry_history`、`gaps` 改變、回傳 `offset`／`total` 與快取不連續、`total` 小於快取）仍整段重抓。
+   - 之後的 2 秒刷新只抓尾端 `K` 根（`K` 取足以涵蓋末根更新與聚合週期尾巴的小常數，PR 說明理由），以回傳的 `offset` 取代快取尾端。
+   - 每隔一段固定時間（例如數分鐘）做一次整段校正，防止漂移。
+   - 五檔（`order_book`）照舊每次取得。
+   - 可選：若量測顯示 `series()` 內逐根 `dumps` 仍是瓶頸，**在不削弱頁面位元組預算上限保證**的前提下降低估算成本；做不到就不做。
+4. UI 原始碼雜湊可能綁入 golden fixture（P3 先例：`ui_operations_golden.json` 需 fixture-only commit 重生）；動手前先搜尋 `sector_board` 的雜湊綁定。
+5. 目標：穩態下每次刷新的序列 payload 由整段降為尾端 `K` 根；PR 附前後實測（耗時、位元組）。
+
+### P9 即時行情 tick 遺失處理（先量測，可能結案為不動）
+1. 以合成資料量測：`losses` 數量 ∈ {0, 100, 1,000, 10,000}、每個 deque 約 43,200 根時，`poll()` 處理 1,000 個 tick 與一批遺失的耗時。
+2. 若在合理負載下 `poll()` 無明顯影響，**結案為不動**，把數字寫進 PR 與本文件，不改程式。
+3. 若確有影響：把 `buffer.losses` 維護成合併後、不重疊且有序的分鐘區間，tick 時以 `bisect` 判斷；一批遺失只對 `history`／`live`
+   做**單趟**掃描標記 `incomplete`。必須保持：`_replace_bars` 以身分比較決定是否遞增 `history_revision`、`_view_cache` 的失效時機、
+   `buffer.minute` 的 `incomplete` 設定、`issues` 佇列內容。以舊實作凍結副本為 oracle 做等價測試。
+
+### P10 K 線資料庫開啟成本（先量測；改動需 owner 明確同意）
+1. 量測 `KlineStore._open` 在 {10 MB、200 MB、1 GB} 資料庫上的耗時，並拆出 `quick_check` 佔比。
+2. 若 `quick_check` 佔比小，**結案為不動**。
+3. 若顯著，且 owner 在對話中明確同意放寬此閘門，才可採：在 `meta` 表記錄「開啟中」旗標，正常 `close()` 清除；開啟時若旗標殘留
+   （異常結束）或 `-wal` 非空，才跑 `quick_check`；其餘情況改跑成本固定的檢查（既有的 schema／`table_info` 驗證），
+   並定期（記錄時間於 `meta`）補跑完整檢查。任何失敗仍走既有的 `.bad-*` 保留與重建流程與同一錯誤碼 `kline_store_unavailable`；
+   旗標寫入失敗時一律退回「跑 `quick_check`」（保守方向）。
 
 ## Safety constraints (live trading disabled, G3, OOS/budget)
 
@@ -143,7 +200,8 @@ Non-goals
 - P1 的記錄內容受隱私限制（見上）；OOS／final-holdout 資料不得出現在任何記錄或基準資料中。
 - 所有 timeout（Paper 30 s、smoke 40 s、每個 job 15 分鐘）與 fail-closed 驗證保持原樣。
 - P0 不做不可逆刪除；`git gc` 不使用 `--prune=now`。
-- G3 檔案（見 [CONTRIBUTING.md](../CONTRIBUTING.md)）除 P7 且經 owner 核准外一律不編輯。
+- G3 檔案（見 [CONTRIBUTING.md](../CONTRIBUTING.md)）除 P7（含第 6 項）且經 owner 核准外一律不編輯。
+- P8–P10 不改交易、風控、下單語意；P10 不得削弱完整性檢查的保證，只能改變「何時」執行，且失敗時退回較保守的做法。
 
 ## Test plan
 
@@ -161,13 +219,17 @@ Non-goals
 | P4 | 各遷移站點的既有測試（`test_paper*`、`test_analysis_recovery*`） | `open_sqlite` 對唯讀／讀寫／不存在檔案的行為與舊寫法相同 |
 | P5 | ruff 全專案 | 無 |
 | P6 | 被拆函式所在模組的全部既有測試與 GitNexus `detect_changes` | 拆分前後行為相等的 characterization 測試（若原本缺） |
-| P7 | `tests/test_r7_characterization.py`、回測相關全套 | 新舊實作同資料集 hash 完全相等；G3 pins／profile 測試 |
+| P7 | `tests/test_r7_characterization.py`、回測相關全套 | 新舊實作同資料集 hash 完全相等；G3 pins／profile 測試；第 6 項另測「同一資料集連跑兩次結果相同」「資料遭竄改仍丟出原錯誤」 |
+| P8 | sector board／market series 相關既有測試（用 `grep sector_board tests` 找出）、`test_trading_ui`、UI 快照測試不得變更基準 | 增量合併與整段重抓逐根相等的模擬器測試；`tools/bench_series.py` 前後數據 |
+| P9 | `tests/test_live_market*.py`、`test_m5_monitor`、行情相關測試 | 量測腳本；若實作，舊實作凍結副本為 oracle 的等價測試（含 `history_revision` 遞增時機） |
+| P10 | kline store 相關既有測試（`grep kline_store tests`） | 開啟耗時量測；若實作：旗標殘留／`-wal` 非空／旗標寫入失敗／損毀檔案四種情境的測試，損毀仍產生 `.bad-*` 並使用同一錯誤碼 |
 
 UI 無新增畫面，故不要求新的 accessibility walk；若 P2/P6 動到 UI 呼叫端，需跑既有 UI 快照測試且不得變更基準。
 
 ## Rollout/Verification status
 
-順序：P0 → P1 → P3 → P2 → P4 → P5 → P6 →（P7，待核准）。P3 排在 P2 前，因為它不碰 G3 且等價性最容易證明；
+順序：P0 → P1 → P3 → P2 → P4 → P5 → P6 → P8 → P9 → P10 →（P7，待核准）。P8 不碰 G3、收益最明確，排在 P6 之後即可開工；
+P9、P10 為「先量測、可能結案為不動」的階段。P3 排在 P2 前，因為它不碰 G3 且等價性最容易證明；
 P2 需先有量測基準，故在 P1 之後。每階段一個 PR、可單獨回退（revert 該 PR）。每個 PR 經獨立 QA（aiworkflow-qa）
 驗收、CI 全綠後才合併；controller 不得自行驗收自己的實作。
 Implementation／Verification（逐階段，只記錄實際跑過的指令與結果）：
@@ -181,7 +243,10 @@ Implementation／Verification（逐階段，只記錄實際跑過的指令與結
 | P4 | 新增 `quantlab/shared/sqlite_open.py` 的 `open_sqlite(path, *, mode, timeout)`（即 `sqlite3.connect(sqlite_uri(path) + "?mode=" + mode, uri=True, timeout=timeout)`，已登記 inventory）；遷移 5 處非 G3 站點：`analysis_recovery._connect`、`PaperBroker.read_snapshot`（原隱含預設 timeout 5.0）、`saved_pool_source._read_campaign`／`_validate_source_registry`、`WorkerRepository.candidate_state`（helper 於函式內延遲 import）。放棄：G3 檔；`research_analysis.py`、`walk_forward.py`（原始碼雜湊進 golden，遷移需改基準）；`e1_store.py` 與 `windows_paths.py`（在 `e1_protocol.SOURCE_FILES`）；`paper_replay.py`（非 URI 樣板）。 | `tests/test_sqlite_open.py`：呼叫形狀與舊寫法逐一相等（mock 記錄）、唯讀／讀寫／rwc／不存在檔案的實際行為相同，OK。`affected_tests.py` 選出 270 模組逐一執行 265 OK；`test_e1_qualification`、`test_paper_diagnostics`、`test_test_group`、`test_trading_installer_guard`、`test_windows_recovery_feasibility`（retained handle）在不含 P4 的樹上同樣失敗，屬主機環境。`test_layer_gate`、`check_layers.py`、`ruff check` 通過。 |
 | P5 | NOT STARTED | NOT RUN |
 | P6 | NOT STARTED | NOT RUN |
-| P7 | NOT STARTED（需 owner 明確核准編輯 `quantlab/backtest.py`） | NOT RUN |
+| P7 | NOT STARTED（需 owner 明確核准編輯 `quantlab/backtest.py`；含第 6 項快取） | NOT RUN |
+| P8 | NOT STARTED | NOT RUN |
+| P9 | NOT STARTED（先量測） | NOT RUN |
+| P10 | NOT STARTED（先量測；改動需 owner 同意） | NOT RUN |
 
 Real-App visual check: 不適用（無 UI 變更）。
 本階段不更動 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與驗收分數；不建立 Release 或 tag。
