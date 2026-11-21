@@ -529,6 +529,19 @@ class LogIntegrationTests(unittest.TestCase):
             panel.select_event(panel.table.item(0, 0))
             self.assertEqual((chosen, groups), (['TWSE:1234'], []))
 
+    def test_a_breakout_download_entry_reads_as_breakout_and_is_coloured_up(self):
+        from desktop_app.features.trading.alert_panel import event_direction, event_text
+        from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+
+        instrument = WatchInstrument('TWSE:1234', WatchKind.STOCK, 'TSE', '1234', '測試股', '24')
+        with TemporaryDirectory(dir=Path.cwd()) as folder:
+            runtime = self.make(folder)
+            runtime.record_screen(instrument, 'BREAKOUT', DAY.replace(hour=10, minute=2))
+            (event,) = runtime.service.events
+            self.assertEqual(
+                (event.rule_id, event_text(event), event_direction(event)), ('screen.breakout', '已加入 K 線下載：1234 測試股（帶量突破新高）', 'UP')
+            )
+
     def test_sector_kinds_cannot_be_added_as_rules(self):
         from PySide6.QtWidgets import QApplication
 

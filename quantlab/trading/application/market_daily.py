@@ -47,7 +47,13 @@ class MarketDaily:
     """What the screener asks of the daily store: statistics before a day, how many days exist, and the closing write."""
 
     def __init__(
-        self, store: DailyStorePort, params: Callable[[], ScreenerParams], now: Callable[[], datetime], *, ttl: float = STATS_TTL, clock: Callable[[], float] = monotonic
+        self,
+        store: DailyStorePort,
+        params: Callable[[], ScreenerParams],
+        now: Callable[[], datetime],
+        *,
+        ttl: float = STATS_TTL,
+        clock: Callable[[], float] = monotonic,
     ):
         self.store, self.params, self.now, self.ttl, self.clock = store, params, now, ttl, clock
         self._cache: tuple[tuple, dict[str, DailyStats], float] | None = None
@@ -149,4 +155,3 @@ class MarketDailyBackfill:
                 self._stopped.wait(min(1800.0, 60.0 * 2**failures))
                 continue
             self._stopped.wait(self.pause if worked else self.idle)
-

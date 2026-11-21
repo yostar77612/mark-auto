@@ -110,6 +110,38 @@ class MarketRuntimeTests(unittest.TestCase):
         self.assertEqual(self.bundle.screener.params(), changed)  # the next round judges with the saved values
         self.assertEqual(self.bundle.market_preferences.screener, changed)
 
+    def test_the_daily_store_is_its_own_file_and_nothing_is_fetched_until_the_engine_asks(self):
+        store = self.bundle.market_daily_store
+        self.assertEqual(store.path, (Path(self.temp.name) / 'market' / 'market_daily.sqlite3').resolve())
+        self.assertIsNone(self.bundle.market_daily_backfill)  # building a runtime never starts a network worker
+        self.assertIs(self.bundle.screener.daily.store, store)
+        self.assertFalse((Path(self.temp.name) / 'market' / 'market_daily.sqlite3-journal').exists())
+
+    def test_start_market_daily_runs_the_backfill_through_the_given_fetcher_and_it_can_be_closed(self):
+        import time
+
+        from quantlab.trading.runtime.market_daily import start_market_daily
+
+        fixtures = Path(__file__).parent / 'fixtures' / 'market_daily'
+        urls = []
+
+        def fetch(url):
+            urls.append(url)
+            return (fixtures / ('twse_holiday.json' if 'twse' in url else 'tpex_holiday.json')).read_bytes()
+
+        start_market_daily(self.bundle, fetch)
+        start_market_daily(self.bundle, fetch)  # asking twice does not start a second worker
+        deadline = time.monotonic() + 5
+        while not urls and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertTrue(urls)
+        self.assertTrue(
+            all(url.startswith(('https://www.twse.com.tw/exchangeReport/MI_INDEX?', 'https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?')) for url in urls)
+        )
+        backfill = self.bundle.market_daily_backfill
+        backfill.close()
+        self.assertFalse(backfill._thread.is_alive())
+
     def test_a_failing_sector_hook_still_lets_the_screener_see_the_round(self):
         from quantlab.trading.domain.sector import QuoteRow
         from quantlab.trading.domain.watch import WatchInstrument, WatchKind

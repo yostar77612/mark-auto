@@ -20,6 +20,7 @@ from quantlab.trading.application.stock_screener import (
     surge_pattern,
     typical_amount,
 )
+from quantlab.trading.domain.market_daily import DailyStats
 from quantlab.trading.domain.sector import QuoteRow
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import WatchInstrument, WatchKind
@@ -353,6 +354,105 @@ class ServiceTests(unittest.TestCase):
         order = sorted(sync._queue, key=lambda item: item.priority)
         self.assertEqual([item.instrument.code for item in order], ['2345', '1234'])
         sync.close()
+
+
+class FakeDaily:
+    def __init__(self, stats, days=240):
+        self.by_code, self.day_count, self.closed = stats, days, []
+
+    def stats(self, day):
+        return self.by_code
+
+    def days(self, day):
+        return self.day_count
+
+    def record_close(self, day, rows):
+        self.closed.append((day, sorted(rows)))
+
+
+def history(highs=((60, Decimal(105)),), avg_volume=1000, avg_amount=80_000_000):
+    return DailyStats(240, highs, avg_volume, avg_amount)
+
+
+class BreakoutTests(unittest.TestCase):
+    def setUp(self):
+        self.history, self.logged, self.params = Recorder(), [], ScreenerParams()
+        self.stocks = tuple(stock(code) for code in ('1234', '2345', '3456'))
+        self.daily = FakeDaily({'1234': history()})
+        self.screener = StockScreener(
+            lambda: self.params, lambda: self.stocks, self.history, lambda item, condition, when: self.logged.append((item.code, condition)), daily=self.daily
+        )
+
+    def rows(self, *rows):
+        return {row.code: row for row in rows}
+
+    def test_a_breakout_in_session_is_provisional_downloads_once_and_is_logged_as_breakout(self):
+        self.screener.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))
+        (entry,) = self.screener.result().breakouts
+        self.assertEqual((entry.code, entry.window, entry.strength, entry.provisional), ('1234', 60, Decimal(4), True))
+        self.assertEqual([code for code, *_ in self.history.requests], ['1234'])
+        self.assertEqual(self.logged, [('1234', 'BREAKOUT')])
+        self.screener.on_round(MONDAY_1000 + timedelta(seconds=10), self.rows(quote(when=MONDAY_1000)))
+        self.assertEqual(len(self.history.requests), 1)
+
+    def test_a_price_below_the_earlier_high_or_a_low_ratio_is_not_a_breakout(self):
+        self.screener.on_round(MONDAY_1000, self.rows(quote(price='105', pct='5', open='100', high='105.5', when=MONDAY_1000)))
+        self.assertEqual(self.screener.result().breakouts, ())  # equal to the 60-day high is not above it
+        self.screener.on_round(MONDAY_1000, self.rows(quote(ratio='1.99', when=MONDAY_1000)))
+        self.assertEqual(self.screener.result().breakouts, ())
+
+    def test_after_the_close_the_judgement_is_final_on_the_volume_against_the_average(self):
+        closing = MONDAY_1340
+        self.screener.on_round(closing, self.rows(quote(volume=2000, when=at(9, 13, 30))))
+        (entry,) = self.screener.result().breakouts
+        self.assertEqual((entry.provisional, entry.strength), (False, Decimal(2)))
+        self.screener.on_round(closing, self.rows(quote(volume=1999, when=at(9, 13, 30))))
+        self.assertEqual(self.screener.result().breakouts, ())
+
+    def test_windows_the_history_does_not_cover_are_not_judged(self):
+        self.daily.by_code = {'1234': DailyStats(59, (), 1000, 80_000_000)}
+        self.daily.day_count = 59
+        self.screener.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))
+        result = self.screener.result()
+        self.assertEqual((result.breakouts, result.history_days), ((), 59))
+        self.assertEqual(self.history.requests, [])
+
+    def test_the_longest_window_comes_first_and_the_download_switch_only_stops_the_download(self):
+        self.daily.by_code = {
+            '1234': history(((60, Decimal(105)), (120, Decimal(108))), avg_amount=10**9),
+            '2345': history(((60, Decimal(105)),), avg_amount=10**9),
+        }
+        self.params = ScreenerParams(download_breakout=False)
+        self.screener.on_round(MONDAY_1000, self.rows(quote('2345', ratio='9', when=MONDAY_1000), quote('1234', when=MONDAY_1000)))
+        self.assertEqual([(entry.code, entry.window) for entry in self.screener.result().breakouts], [('1234', 120), ('2345', 60)])
+        self.assertEqual((self.history.requests, self.logged), ([], []))
+
+    def test_the_stocks_own_average_amount_decides_whether_it_is_usually_quiet(self):
+        busy_estimate = quote(amount=400_000_000, when=MONDAY_1000)  # 400M / ratio 4 = 100M: not quiet by the estimate
+        self.daily.by_code = {'1234': history(avg_amount=20_000_000)}
+        self.screener.on_round(MONDAY_1000, self.rows(busy_estimate))
+        self.assertEqual(self.screener.result().surges[0].pattern, SURGE_RED)  # its real 20-day average is quiet
+        self.daily.by_code = {'1234': history(avg_amount=80_000_000)}
+        self.screener.on_round(MONDAY_1000, self.rows(quote(amount=40_000_000, when=MONDAY_1000)))
+        self.assertEqual(self.screener.result().surges[0].pattern, '')  # quiet by the estimate (10M) but busy by the average
+        self.daily.by_code = {'1234': DailyStats(5, (), None, None)}
+        self.screener.on_round(MONDAY_1000, self.rows(quote(amount=40_000_000, when=MONDAY_1000)))
+        self.assertEqual(self.screener.result().surges[0].pattern, SURGE_RED)  # too little history: the estimate again
+
+    def test_only_the_closing_round_of_a_trading_day_writes_the_daily_row(self):
+        self.screener.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))
+        self.assertEqual(self.daily.closed, [])
+        self.screener.on_round(MONDAY_1340, self.rows(quote(when=at(9, 13, 30)), quote('2345', when=at(8, 13, 30))))
+        self.assertEqual(self.daily.closed, [(date(2026, 11, 9), ['1234'])])  # a stale row is not part of that day
+        self.daily.closed.clear()
+        self.screener.on_round(at(14, 10, 0), self.rows(quote(when=at(13, 13, 30))))  # a Saturday: Friday's data again
+        self.assertEqual(self.daily.closed, [])
+
+    def test_without_daily_quotes_nothing_is_judged_for_breakouts(self):
+        plain = StockScreener(lambda: self.params, lambda: self.stocks, self.history, lambda *args: None)
+        plain.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))
+        result = plain.result()
+        self.assertEqual((result.breakouts, result.history_days), ((), 0))
 
 
 if __name__ == '__main__':

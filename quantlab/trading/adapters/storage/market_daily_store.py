@@ -98,7 +98,9 @@ class MarketDailyStore:
             raise DomainError('validation_failed', 'market')
         identity(url)
         with self._lock, self._db:
-            self._db.execute('INSERT OR REPLACE INTO ledger VALUES (?,?,?,?,?)', (trade_date.isoformat(), market, url, rows, at.astimezone(timezone.utc).isoformat()))
+            self._db.execute(
+                'INSERT OR REPLACE INTO ledger VALUES (?,?,?,?,?)', (trade_date.isoformat(), market, url, rows, at.astimezone(timezone.utc).isoformat())
+            )
             self.revision += 1
 
     def fetched(self, trade_date: date) -> dict[str, int]:
