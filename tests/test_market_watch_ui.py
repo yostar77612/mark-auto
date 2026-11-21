@@ -10,6 +10,7 @@ from pathlib import Path
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 from PySide6.QtCore import Qt, QThreadPool
 from PySide6.QtGui import QFont
@@ -18,6 +19,7 @@ from PySide6.QtWidgets import QApplication
 
 from desktop_app.components.charts import CandlestickChart
 from desktop_app.strings.catalog import ui_text
+from desktop_app.features.trading import market_watch as market_watch_module, series_reader
 from desktop_app.features.trading.market_watch import MarketWatchWidget
 from desktop_app.features.trading.market_watch_rows import (
     freshness_text,
@@ -42,10 +44,12 @@ from quantlab.trading.application.contracts import (
 from quantlab.trading.application.errors import ERROR_TABLE
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.runtime.bootstrap import build_runtime
 from quantlab.trading.runtime.config import RuntimeLaunch
 from quantlab.trading.runtime.protocol import Operation, Request
 from quantlab.trading.runtime.server import _dispatch
+from tests import series_read_simulator as simulator
 
 NOW = datetime(2026, 10, 28, 1, 0, tzinfo=timezone.utc)
 
@@ -377,3 +381,182 @@ class PersistenceTests(unittest.TestCase):
                 self.assertEqual(empty_reopened.engine.live_market.allocation.active, ())
             finally:
                 empty_reopened.close()
+
+
+def series_state():
+    """Both simulated stocks watched, so the table can select either one."""
+    items = (simulator.STOCK, simulator.OTHER)
+    views = tuple(MarketWatchView(instrument_id=item.instrument_id, health=MarketHealthView(item.instrument_id, 'LIVE')) for item in items)
+    return UiState(
+        Environment.LOCAL,
+        'local-stock',
+        'CONNECTED',
+        '',
+        Decimal('0'),
+        None,
+        None,
+        '',
+        1,
+        '',
+        True,
+        market_watch=views,
+        market_health=OverviewMarketSummary(tuple(view.health for view in views), 2),
+        watchlist=tuple(item.instrument_id for item in items),
+    )
+
+
+class SeriesFacade:
+    """The legacy watch's facade with every chart read served by a real engine (OPT-1 P11)."""
+
+    def __init__(self, feed):
+        self.feed, self.state = feed, series_state()
+
+    def snapshot(self):
+        return self.state
+
+    def market_series(self, query):
+        return self.feed.facade.market_series(query)
+
+
+class WatchSeriesReadTests(unittest.TestCase):
+    """OPT-1 P11: what each read hands the legacy watch's chart equals a whole-series read, bar for bar."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.feed = simulator.TerminalFeed(self.temp.name)
+        self.facade = SeriesFacade(self.feed)
+        self.chart = RecordingChart()
+        self.widget = MarketWatchWidget(self.facade, self.chart, self.facade.state)
+        self.widget.resize(1000, 650)
+        self.widget.show()
+        deadline = time.monotonic() + 3
+        while not (self.chart.bars and not self.widget._requests) and time.monotonic() < deadline:
+            self.app.processEvents()
+            QTest.qWait(5)
+        self.assertTrue(self.chart.bars)
+        self.widget._submit = simulator.run_inline  # from here on every request completes at once: one deterministic step per call
+        self.clock = [1000.0]
+        patcher = patch.object(market_watch_module, 'monotonic', lambda: self.clock[0])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.key, self.period = simulator.STOCK.instrument_id, '1m'
+        self.widget._series_read = None  # the first read above was timed by the real clock: start over on the test's clock
+        self.widget.load_series()
+
+    def tearDown(self):
+        QThreadPool.globalInstance().waitForDone(3000)
+        self.app.processEvents()
+        self.widget.close()
+        self.widget.deleteLater()
+        self.app.processEvents()
+        self.feed.close()
+        self.temp.cleanup()
+
+    def chart_matches_whole_read(self):
+        expected = series_bars(self.feed.whole(self.key, self.period))
+        return repr(self.chart.bars) == repr(expected)  # repr keeps Decimal exponents and every flag
+
+    def refresh(self, retry=False):
+        """One read: the queries it sent, and whether they read the selected instrument from its first page."""
+        del self.feed.facade.queries[:]
+        self.widget.load_series(retry=retry)
+        return self.feed.facade.queries, simulator.whole_round(self.feed.facade.queries, self.key)
+
+    def play(self, rounds=90):
+        """The mismatching rounds and the rounds that read the whole series, over a script of every kind of change."""
+        mismatches, wholes = [], []
+        for number in range(rounds):
+            self.clock[0] += 1.0
+            self.feed.tick()
+            if number % 17 == 5:
+                self.feed.backfill_older()  # older history arrives: every index shifts
+            if number % 11 == 3:
+                self.feed.tick(lost=True)
+            if number == 30:
+                self.feed.tick(6 * 3600)  # the day session closes and the night session opens under the next trade date
+            if number == 40:
+                for _ in range(4):
+                    self.feed.tick(lost=True)
+            if number == 45:
+                self.feed.tick(14 * 3600)  # the next morning's day session
+            del self.feed.facade.queries[:]
+            if number in (20, 22):
+                self.key = simulator.OTHER.instrument_id if number == 20 else simulator.STOCK.instrument_id
+                self.widget.table.selectRow(1 if number == 20 else 0)
+            if number in (33, 48, 58):
+                self.period = {33: '5m', 48: '1d', 58: '1m'}[number]
+                self.widget.select_period(self.period)
+            self.widget.load_series(retry=number in (66, 80))
+            if not self.chart_matches_whole_read():
+                mismatches.append(number)
+            if simulator.whole_round(self.feed.facade.queries, self.key):
+                wholes.append(number)
+            if number in (66, 80):
+                retries = [query for query in self.feed.facade.queries if query.retry_history]
+                self.assertEqual([(query.instrument_id, query.offset) for query in retries], [(self.key, 0)])  # the first page of the whole read, once
+        return mismatches, wholes
+
+    def test_chart_bars_equal_whole_reads_through_every_kind_of_change(self):
+        mismatches, wholes = self.play()
+        self.assertEqual(mismatches, [])
+        # Another instrument, another period, the retry button and every backfill of a long series read the whole series.
+        self.assertLessEqual({20, 22, 33, 48, 58, 66, 80, 5, 39, 56, 73}, set(wholes))
+        self.assertGreater(90 - len(wholes), 55)  # every other round only re-read the tail
+
+    def test_removing_the_window_comparison_is_caught(self):
+        with patch.object(series_reader, '_read_tail', simulator.without_window_check):
+            mismatches, _ = self.play()
+        self.assertTrue(mismatches)
+
+    def test_steady_reads_are_one_bar_and_the_tail_and_the_chart_is_drawn_as_before(self):
+        del self.chart.calls[:]
+        for _ in range(12):
+            self.feed.tick()
+            queries, whole = self.refresh()
+            self.assertFalse(whole)
+            self.assertEqual([(query.offset > 0, query.limit == 1) for query in queries], [(False, True), (True, False)])
+            self.assertTrue(self.chart_matches_whole_read())
+        # The chart's own drawing is unchanged: a new minute appends, the forming minute is replaced, and the minute
+        # that finishes (its last bar changes) sets the series again. Ticks come every 20 s, three to a minute.
+        self.assertEqual(self.chart.calls, ['append', 'replace', 'set', 'replace', 'replace', 'set', 'replace', 'replace', 'set', 'replace', 'replace', 'set'])
+
+    def test_the_cache_resyncs_after_the_bound_and_is_dropped_on_an_error_and_for_another_selection(self):
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        self.clock[0] += series_reader.SERIES_RESYNC_SECONDS
+        self.assertTrue(self.refresh()[1])  # the periodic whole read
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        with patch.object(self.facade, 'market_series', side_effect=DomainError('state_conflict')):
+            self.widget.load_series()
+        self.assertIsNone(self.widget._series_read)
+        self.feed.tick()
+        self.assertTrue(self.refresh()[1])  # nothing is reused after an error
+        self.assertTrue(self.chart_matches_whole_read())
+        self.key = simulator.OTHER.instrument_id
+        self.widget.table.selectRow(1)
+        self.assertEqual({bar.contract_id for bar in self.chart.bars}, {self.key})  # no bar of the first stock is left behind
+        self.assertTrue(self.chart_matches_whole_read())
+
+    def test_a_read_queued_behind_one_in_flight_builds_on_what_the_first_one_read(self):
+        requests = []
+        self.widget._submit = lambda operation, completed: requests.append((operation, completed))
+        self.widget._series_read = None
+        self.widget.load_series()  # a whole read starts and stays in flight
+        self.widget.load_series()  # the market moved on: this one queues behind it
+        self.assertEqual(len(requests), 1)
+        operation, completed = requests.pop()
+        del self.feed.facade.queries[:]
+        completed(operation(), None)  # the first read ends; its answer is superseded, so the queued read starts at once
+        self.assertEqual(len(requests), 1)
+        self.assertTrue(simulator.whole_round(self.feed.facade.queries, self.key))
+        self.feed.tick()
+        del self.feed.facade.queries[:]
+        operation, completed = requests.pop()
+        completed(operation(), None)
+        self.assertFalse(simulator.whole_round(self.feed.facade.queries, self.key))  # it read only the tail of what the first one read
+        self.assertTrue(self.chart_matches_whole_read())

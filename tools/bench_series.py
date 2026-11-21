@@ -8,6 +8,9 @@ For each size and period the reads are:
   whole  every page, exactly as the market terminal and the legacy watch read before OPT-1 P11
          (first page, then each next_offset with the page's market revision)
   tail   one read of the last TAIL bars of the live engine (the sector board's OPT-1 P8 read; live only)
+  steady the shared reader's refresh once it holds the previous read: only the tail is read and spliced on.
+         The terminal engine needs the pinned tail (a one-bar first-page read, then the tail of that snapshot),
+         as the market terminal and the legacy watch use it; the live engine reads the tail directly.
   index  the market terminal's TAIEX mini-chart read (terminal only): the first page, then the last page
 Columns, all per read: engine ms (series() calls), codec ms (codec dumps + loads of every returned page's bars,
 which the IPC adds on top of the engine), ui ms (series_bars of the whole result plus the prefix compare that
@@ -30,6 +33,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from desktop_app.features.trading.market_watch_rows import series_bars  # noqa: E402
+from desktop_app.features.trading.series_reader import read_series  # noqa: E402
 from quantlab.trading.application.codec import dumps, loads  # noqa: E402
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery  # noqa: E402
 from quantlab.trading.application.live_market import LiveMarketService  # noqa: E402
@@ -191,6 +195,19 @@ def tail_read(facade, key, period, tail, total):
     return facade.market_series(MarketSeriesQuery(key, period, offset=max(0, total - tail))).bars
 
 
+def steady_read(facade, key, period, cached, pinned):
+    """A refresh through the shared reader (OPT-1 P11) that must not fall back to the whole series."""
+    _, bars, whole = read_series(facade, key, period, cached, pinned_tail=pinned)
+    if whole:
+        raise RuntimeError(f'steady read of {key} {period} fell back to the whole series')
+    return bars
+
+
+def prime(facade, key, period, pinned):
+    """The (page, bars) a widget holds after its first, whole read."""
+    return read_series(facade, key, period, None, pinned_tail=pinned)[:2]
+
+
 def index_read(facade, key, period):
     """The market terminal's TAIEX mini-chart read: the first page, then the last page when there are more."""
     index = facade.market_series(MarketSeriesQuery(key, '1m'))
@@ -251,6 +268,8 @@ def run_live(sizes, repeat, tail):
             total = len(whole_read(facade, KEY, period))
             report('live', count, period, 'whole', measure(facade, lambda: whole_read(facade, KEY, period), repeat, period))
             report('live', count, period, 'tail', measure(facade, lambda: tail_read(facade, KEY, period, tail, total), repeat, period))
+            cached = prime(facade, KEY, period, False)
+            report('live', count, period, 'steady', measure(facade, lambda: steady_read(facade, KEY, period, cached, False), repeat, period))
 
 
 def run_terminal(sizes, repeat, tail):
@@ -264,6 +283,8 @@ def run_terminal(sizes, repeat, tail):
             for period in PERIODS:
                 whole_read(facade, TERMINAL_KEY, period)  # warm the store read cache
                 report('terminal', count, period, 'whole', measure(facade, lambda: whole_read(facade, TERMINAL_KEY, period), repeat, period))
+                cached = prime(facade, TERMINAL_KEY, period, True)
+                report('terminal', count, period, 'steady', measure(facade, lambda: steady_read(facade, TERMINAL_KEY, period, cached, True), repeat, period))
             report('terminal', count, '1m', 'index', measure(facade, lambda: index_read(facade, INDEX_KEY, '1m'), repeat, '1m'))
         finally:
             engine.close()

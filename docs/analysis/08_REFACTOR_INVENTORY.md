@@ -1028,6 +1028,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/domain/market_daily.py` | 92 | domain | `quantlab/trading/domain/market_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/ports/market_daily.py` | 14 | application | `quantlab/trading/ports/market_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/runtime/market_daily.py` | 99 | composition | `quantlab/trading/runtime/market_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/series_reader.py` | 57 | presentation | `desktop_app/features/trading/series_reader.py` | series_reader: tail-first chart series reads shared by the sector board, market terminal and legacy watch (OPT-1 P8, P11) |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 
