@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from threading import Event, Thread
 from time import monotonic
 
@@ -12,6 +13,8 @@ from quantlab.trading.application.sector_group_editor import SectorGroupEditor
 from quantlab.trading.application.sector_minutes import MinuteAggregator, sector_history
 from quantlab.trading.application.sector_monitor import SectorMonitor
 from quantlab.trading.application.sector_service import SectorService
+from quantlab.trading.application.stock_screener import ScreenerParams, StockScreener
+from quantlab.trading.domain.alerts import AlertKind
 from quantlab.trading.domain.validation import DomainError
 from .sector_settings import SectorAlertSettings
 
@@ -132,6 +135,16 @@ class SectorPoller:
             self._kick.clear()
 
 
+def _logged_screen_triggers(events):
+    """Screener triggers already in the alert log as (day, code, condition), so a restart does not repeat them."""
+    taipei = ZoneInfo('Asia/Taipei')
+    return tuple(
+        (event.occurred_at.astimezone(taipei).date(), event.instrument_id.split(':')[-1], event.message_args[0])
+        for event in events
+        if event.kind is AlertKind.SCREEN_DOWNLOAD
+    )
+
+
 def attach_sector(bundle):
     connection = bundle.market_connection
     store = SectorGroupStore(bundle.launch.root / 'market' / 'sector_groups.json')
@@ -145,13 +158,29 @@ def attach_sector(bundle):
     minutes = MinuteAggregator(minute_store, settings.get, service.group_name)
     monitor = SectorMonitor(service.candidates, MonitorSubscriptions(connection), settings.get, service.group_name, minute_store)
 
+    # The screener works from the same round (no extra snapshot call) and queues K-line downloads at a low priority.
+    screener = StockScreener(
+        ScreenerParams,
+        service.stocks,
+        bundle.market_history,
+        bundle.alerts.record_screen,
+        lookback_days=bundle.market_history.settings.daily_lookback_days,
+    )
+    screener.seed(_logged_screen_triggers(bundle.alerts.service.events))
+
     def on_round(now, stats):
-        alerts = minutes.on_round(now, stats)
+        alerts = ()
+        if not service.after_close_round:  # the one extra after-close round exists for the screener only
+            alerts = minutes.on_round(now, stats)
+            try:
+                alerts = (*alerts, *monitor.on_round(now, stats))
+            except Exception:
+                logger.error('sector monitor round failed')
         try:
-            return (*alerts, *monitor.on_round(now, stats))
-        except Exception:
-            logger.error('sector monitor round failed')
-            return alerts
+            screener.on_round(now, service.quotes())
+        except Exception as error:
+            logger.error('stock screener round failed (%s)', type(error).__name__)
+        return alerts
 
     service.on_round = on_round
     service.monitor_info, service.side_ratio = monitor.info, monitor.side_ratio
@@ -172,7 +201,7 @@ def attach_sector(bundle):
         old_disconnected()
 
     connection.on_connected, connection.on_disconnected = connected, disconnected
-    bundle.sector, bundle.sector_poller = service, poller
+    bundle.sector, bundle.sector_poller, bundle.screener = service, poller, screener
     bundle.sector_settings, bundle.sector_minute_store = settings, minute_store
     bundle.sector_history = lambda query: sector_history(minute_store, query, service.group_name)
     bundle.sector_groups = SectorGroupEditor(store, lambda: connection.directory.items, service.recompute)

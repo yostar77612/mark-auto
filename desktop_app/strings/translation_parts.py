@@ -103,10 +103,13 @@ from .minute_research_ui import ENTRIES as _part_minute_research_ui
 
 from .m5_sector import ENTRIES as _part_m5_sector
 
+from .m6_screener import ENTRIES as _part_m6_screener
+
 from .auto_connect import ENTRIES as _part_auto_connect
 
 PARTS = (
     _part_auto_connect,
+    _part_m6_screener,
     _part_m5_sector,
     _part_minute_research_ui,
     _part_strategy_explain,

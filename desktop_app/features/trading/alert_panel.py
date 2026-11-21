@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 
 from desktop_app.strings.catalog import ui_text
 from quantlab.trading.application.alert_contracts import AlertActions
-from quantlab.trading.domain.alerts import DEFAULT_PARAMS, SCANNER_KINDS, SECTOR_KINDS, AlertKind, AlertRule
+from quantlab.trading.domain.alerts import DEFAULT_PARAMS, LOG_ONLY_KINDS, SCANNER_KINDS, SCREEN_KINDS, SECTOR_KINDS, AlertKind, AlertRule
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import is_future
 
@@ -46,6 +46,7 @@ KIND_LABELS = {
     AlertKind.VOLUME_BURST: ui_text('alert.kind_volume_burst'),
     AlertKind.SECTOR_BURST: ui_text('alert.kind_sector_burst'),
     AlertKind.SECTOR_FLOW: ui_text('alert.kind_sector_flow'),
+    AlertKind.SCREEN_DOWNLOAD: ui_text('alert.kind_screen_download'),
 }
 PARAM_LABELS = {
     'price': ui_text('alert.param_price'),
@@ -67,13 +68,21 @@ PARAM_LABELS = {
 
 
 def event_direction(event):
-    """UP/DOWN/ANY for colouring; sector events carry it third, rule events second."""
+    """UP/DOWN/ANY for colouring; sector events carry it third, rule events second, screener events are the pattern."""
+    if event.kind in SCREEN_KINDS:
+        return _SCREEN_DIRECTIONS.get(event.message_args[0], 'ANY')
     index = 2 if event.kind in SECTOR_KINDS else 1
     return event.message_args[index] if len(event.message_args) > index else 'ANY'
 
 
+_SCREEN_DIRECTIONS = {'SURGE_RED': 'UP', 'SURGE_BLACK': 'DOWN'}
+_SCREEN_CONDITIONS = {'SURGE_RED': ui_text('screen.cond_surge_red'), 'SURGE_BLACK': ui_text('screen.cond_surge_black')}
+
+
 def event_text(event):
     args = list(event.message_args)
+    if event.kind in SCREEN_KINDS:
+        args[0] = _SCREEN_CONDITIONS[args[0]]
     if event.kind in SECTOR_KINDS:
         words = {'UP': ui_text('alert.sector_dir_up'), 'DOWN': ui_text('alert.sector_dir_down'), 'NEUTRAL': ''}
         args[2] = words.get(args[2], '')
@@ -96,6 +105,7 @@ EVENT_LABELS = {
     AlertKind.PRICE_JUMP: ui_text('alert.event.price_jump'),
     AlertKind.SECTOR_BURST: ui_text('alert.event.sector_burst'),
     AlertKind.SECTOR_FLOW: ui_text('alert.event.sector_flow'),
+    AlertKind.SCREEN_DOWNLOAD: ui_text('alert.event.screen_download'),
     AlertKind.VOLUME_BURST: ui_text('alert.event.volume_burst'),
 }
 WARNING_LABELS = {
@@ -118,7 +128,7 @@ class AlertRuleDialog(QDialog):
         future = is_future(instrument_id)
         for kind, label in KIND_LABELS.items():
             # Market-signal kinds come from the stock scanner; a future cannot choose them.
-            if kind not in SECTOR_KINDS and not (future and kind in SCANNER_KINDS):
+            if kind not in LOG_ONLY_KINDS and not (future and kind in SCANNER_KINDS):
                 self.kind.addItem(label, kind)
         form.addRow(ui_text('alert.kind'), self.kind)
         self.scope = QComboBox()

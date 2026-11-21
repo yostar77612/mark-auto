@@ -69,6 +69,33 @@ class MarketRuntimeTests(unittest.TestCase):
         self.bundle.sector_minutes.baselines = (ShareBaseline('industry.24', 120, 3),)
         self.assertEqual(self.bundle.sector.share_baselines(), (ShareBaseline('industry.24', 120, 3),))
 
+    def test_each_sector_round_feeds_the_screener_after_the_sector_hooks_and_the_extra_close_round_only_the_screener(self):
+        from quantlab.trading.domain.sector import QuoteRow
+        from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+
+        taipei = timezone(timedelta(hours=8))
+        clock = {'now': datetime(2026, 11, 9, 10, 0, tzinfo=taipei)}
+        row = QuoteRow('1234', Decimal('110'), Decimal(10), '', 2000, 40_000_000, Decimal(4), clock['now'], Decimal(100), Decimal('110.5'), Decimal(99))
+        sector = self.bundle.sector
+        sector.directory = lambda: (WatchInstrument('TWSE:1234', WatchKind.STOCK, 'TSE', '1234', 'N1234', '24'),)
+        sector.source = SimpleNamespace(connected=True, snapshots=lambda instruments: (row,))
+        sector.now = lambda: clock['now']
+        calls, requests = [], []
+        self.bundle.sector_minutes.on_round = lambda now, stats: calls.append('minutes') or ()
+        self.bundle.session_bridge.monitor.on_round = lambda now, stats: calls.append('monitor') or ()
+        self.bundle.screener.history = SimpleNamespace(request=lambda *args: requests.append(args))
+        sector.refresh()
+        self.assertEqual(calls, ['minutes', 'monitor'])
+        self.assertEqual([(item.code, priority) for item, _, _, priority in requests], [('1234', 10_000)])
+        (event,) = (item for item in self.bundle.alerts.service.events if item.kind is AlertKind.SCREEN_DOWNLOAD)
+        self.assertEqual((event.instrument_id, event.message_args), ('TWSE:1234', ('SURGE_RED',)))
+        clock['now'] = datetime(2026, 11, 9, 13, 40, tzinfo=taipei)
+        self.assertTrue(sector.due())
+        sector.refresh()
+        self.assertEqual(calls, ['minutes', 'monitor'])  # the extra after-close round skips the sector hooks
+        self.assertEqual(len(requests), 2)  # the screener extended today's download to now
+        self.assertEqual(requests[1][2], clock['now'])
+
     def test_independent_connection_without_trading_fields_and_real_wire_roundtrips(self):
         self.assertTrue(self.command(UiAction.SAVE_MARKET_DATA_SETTINGS, market_data_settings=MarketDataSettings(enabled=True)).accepted)
         self.assertEqual(self.bundle.snapshot().watchlist, ())

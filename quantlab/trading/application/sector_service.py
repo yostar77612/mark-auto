@@ -67,6 +67,9 @@ class SectorService:
         self._limit_day: date | None = None
         self._data_is_today = True
         self._generation = 0
+        self._closing_day: date | None = None
+        # True while on_round runs for the one extra after-close round (see due): the sector hooks skip it.
+        self.after_close_round = False
         self._alerts: deque[SectorAlert] = deque(maxlen=200)
         self.on_round: Callable[[datetime, tuple[SectorStat, ...]], tuple[SectorAlert, ...]] = lambda now, stats: ()
         self.on_alert: Callable[[SectorAlert], None] = lambda alert: None
@@ -81,12 +84,23 @@ class SectorService:
         concept = tuple(SectorGroup(group.id, group.name, 'CONCEPT', group.codes) for group in self.concepts())
         return (*industry_groups(self.stocks()), *concept)
 
+    def _closing_due(self, now: datetime) -> bool:
+        """One weekday round after the session ends, so the stock screener judges the final day totals."""
+        local = now.astimezone(_TAIPEI)
+        return local.weekday() < 5 and local.time() > SESSION_END and self._closing_day != local.date()
+
     def due(self) -> bool:
-        """One round when nothing is loaded yet or after a failure; rounds continue only in session."""
+        """One round when nothing is loaded yet or after a failure; rounds continue in session and once after close."""
         if not self.source.connected:
             return False
         with self.lock:
-            return not self._rows or self._failed or in_session(self.now())
+            now = self.now()
+            return not self._rows or self._failed or in_session(now) or self._closing_due(now)
+
+    def quotes(self) -> dict[str, QuoteRow]:
+        """The last accepted round, copied so callers can work outside the lock."""
+        with self.lock:
+            return dict(self._rows)
 
     def refresh(self) -> None:
         stocks = self.stocks()
@@ -94,6 +108,8 @@ class SectorService:
             return
         with self.lock:
             generation = self._generation
+            now = self.now()
+            extra_closing = bool(self._rows) and not self._failed and not in_session(now) and self._closing_due(now)
         try:
             rows = {row.code: row for row in self.source.snapshots(stocks)}
         except DomainError:
@@ -107,6 +123,9 @@ class SectorService:
                 return
             self._failed = False
             self._rows, self._fetched_at = rows, self.now()
+            if self._closing_due(self._fetched_at):
+                self._closing_day = self._fetched_at.astimezone(_TAIPEI).date()
+            self.after_close_round = extra_closing
             self._groups = {group.id: group for group in groups}
             self._stats = compute_stats(groups, rows)
             self._track_limit_up(rows)

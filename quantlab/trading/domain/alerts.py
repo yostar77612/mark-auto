@@ -28,12 +28,16 @@ class AlertKind(str, Enum):
     VOLUME_BURST = 'VOLUME_BURST'
     SECTOR_BURST = 'SECTOR_BURST'
     SECTOR_FLOW = 'SECTOR_FLOW'
+    SCREEN_DOWNLOAD = 'SCREEN_DOWNLOAD'
 
 
 # Written by the sector board straight into the alert log; they have no user-configurable rule.
 SECTOR_KINDS = frozenset((AlertKind.SECTOR_BURST, AlertKind.SECTOR_FLOW))
+# Written by the stock screener when it queues a K-line download (M6); also no rule, but the target is the stock.
+SCREEN_KINDS = frozenset((AlertKind.SCREEN_DOWNLOAD,))
+LOG_ONLY_KINDS = SECTOR_KINDS | SCREEN_KINDS
 # The twelve condition kinds a user can configure, in their historical order.
-RULE_KINDS = tuple(kind for kind in AlertKind if kind not in SECTOR_KINDS)
+RULE_KINDS = tuple(kind for kind in AlertKind if kind not in LOG_ONLY_KINDS)
 SCANNER_KINDS = frozenset((AlertKind.LIMIT_UP, AlertKind.LIMIT_DOWN, AlertKind.PRICE_JUMP, AlertKind.VOLUME_BURST))
 BAR_KINDS = frozenset((AlertKind.FAST_MOVE, AlertKind.VOLUME_SURGE, AlertKind.MA_CROSS, AlertKind.KD_CROSS))
 DEFAULT_PARAMS = {
@@ -113,7 +117,7 @@ class AlertRule:
 
     def __post_init__(self):
         identity(self.rule_id, 'rule_id')
-        if not isinstance(self.kind, AlertKind) or self.kind in SECTOR_KINDS:
+        if not isinstance(self.kind, AlertKind) or self.kind in LOG_ONLY_KINDS:
             raise DomainError('alert_invalid_params', 'kind')
         if self.scope not in ('INSTRUMENT', 'WATCHLIST', 'MARKET') or (self.scope == 'INSTRUMENT' and not self.instrument_id):
             raise DomainError('alert_invalid_params', 'scope/instrument')
