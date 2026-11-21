@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from desktop_app.features.trading import series_reader
-from desktop_app.features.trading.series_reader import SERIES_TAIL_BARS, read_series
+from desktop_app.features.trading.series_reader import SERIES_TAIL_BARS, read_latest, read_series
 from quantlab.trading.adapters.storage.kline_store import KlineStore
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery
 from quantlab.trading.application.history_sync import HistorySync
@@ -504,6 +504,146 @@ class ReaderFallbackTests(unittest.TestCase):
                 del engine.queries[:]
                 self.assertFalse(self.read(engine, cached, snapshots)[2])
                 self.assertEqual(len(engine.queries), 2 if snapshots else 1)
+
+
+def day_bar(index, day, close=100):
+    """A scripted bar: `index` minutes after NOW, in trade day number `day`."""
+    bar = scripted_bar(index, close)
+    return replace(bar, trade_date=NOW.date() + timedelta(days=day))
+
+
+class ReadLatestTests(unittest.TestCase):
+    """OPT-1 P11b: the page a chart that draws only the newest trade date reads, against the real engine and a scripted one."""
+
+    KEY = simulator.INDEX_ID
+
+    def old_last_page(self, engine):
+        """The read the terminal made before: the first page, then the last page of the snapshot it took."""
+        page = engine.market_series(MarketSeriesQuery(self.KEY, '1m'))
+        if page.next_offset is not None:
+            page = engine.market_series(MarketSeriesQuery(self.KEY, '1m', offset=max(0, page.total - len(page.bars)), market_revision=page.market_revision))
+        return page
+
+    def newest_day(self, page):
+        latest = page.bars[-1].trade_date if page.bars else None
+        return tuple(bar for bar in page.bars if bar.trade_date == latest)
+
+    def scripted(self, bars, *, snapshots=True):
+        engine = ScriptedEngine(bars, snapshots=snapshots)
+        engine.PAGE_LIMIT = 4000  # the real page limit
+        return engine
+
+    def test_the_newest_trade_date_is_the_same_as_in_the_last_page_of_the_whole_read(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+            feed = simulator.TerminalFeed(folder, index_days=16)
+            try:
+                self.assertIsNotNone(feed.service.series(MarketSeriesQuery(self.KEY, '1m')).next_offset)  # the case that needed a second page
+                events = ('tick', 'tick', 'tick', 'backfill', 'tick', 'new day', 'tick', 'tick', 'backfill', 'tick')
+                for number, event in enumerate(events * 4):
+                    if event == 'tick':
+                        feed.tick_index()
+                    elif event == 'backfill':
+                        feed.backfill_index_older()
+                    else:
+                        feed.tick_index(new_day=True)  # a later trade date begins
+                    del feed.facade.queries[:]
+                    page = read_latest(feed.facade, self.KEY, '1m')
+                    with self.subTest(round=number, event=event):
+                        self.assertEqual(repr(self.newest_day(page)), repr(self.newest_day(self.old_last_page(feed.facade))))
+                        self.assertLessEqual(len(page.bars), 400)
+                        head, tail = feed.facade.queries[:2]
+                        self.assertEqual((head.offset, head.limit, head.market_revision), (0, 1, None))
+                        self.assertEqual((tail.offset > 0, tail.market_revision is not None), (True, True))
+            finally:
+                feed.close()
+
+    def test_a_series_no_longer_than_the_window_is_read_whole_from_its_first_page(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+            feed = simulator.TerminalFeed(folder, index_days=1)
+            try:
+                page = read_latest(feed.facade, self.KEY, '1m')
+                self.assertEqual(len(page.bars), 270)
+                self.assertEqual(
+                    [(query.offset, query.limit == 1, query.market_revision) for query in feed.facade.queries], [(0, True, None), (0, False, None)]
+                )
+                self.assertEqual(repr(page.bars), repr(feed.whole(self.KEY, '1m').bars))
+            finally:
+                feed.close()
+
+    def test_a_newest_trade_date_that_may_start_before_the_window_reads_the_last_page_of_the_whole_read(self):
+        bars = [day_bar(index, 0) for index in range(1000)]  # one trade date of 1,000 bars: longer than the 400-bar window
+        for label, snapshots in (('terminal engine', True), ('live engine', False)):
+            with self.subTest(label):
+                engine = self.scripted(bars, snapshots=snapshots)
+                self.assertEqual(repr(read_latest(engine, self.KEY, '1m').bars), repr(self.old_last_page(engine).bars))
+                self.assertEqual(len(read_latest(engine, self.KEY, '1m').bars), 1000)
+
+    def test_a_window_that_starts_on_an_earlier_date_is_enough(self):
+        bars = [day_bar(index, index // 270) for index in range(1000)]  # 270 bars a day: the newest day starts well inside the window
+        engine = self.scripted(bars)
+        del engine.queries[:]
+        page = read_latest(engine, self.KEY, '1m')
+        self.assertEqual((len(page.bars), len(engine.queries)), (400, 2))
+        self.assertEqual(repr(self.newest_day(page)), repr(self.newest_day(self.old_last_page(engine))))
+
+    def test_an_error_other_than_state_conflict_at_the_tail_is_raised_without_another_read(self):
+        engine = self.scripted([day_bar(index, index // 270) for index in range(1000)])
+
+        class TailFails:
+            """The first-page read works; the tail read fails with an error that is not a lost snapshot."""
+
+            def __init__(self):
+                self.queries = []
+
+            def market_series(self, query):
+                self.queries.append(query)
+                if query.offset:
+                    raise DomainError('capability_missing')
+                return engine.market_series(query)
+
+        failing = TailFails()
+        with self.assertRaises(DomainError) as caught:
+            read_latest(failing, self.KEY, '1m')
+        self.assertEqual(caught.exception.code, 'capability_missing')
+        self.assertEqual([(query.offset > 0, query.limit == 1) for query in failing.queries], [(False, True), (True, False)])  # no fallback read
+
+    def test_a_window_that_runs_on_to_a_second_page_reads_the_last_page_of_the_whole_read(self):
+        bars = [day_bar(index, index // 270) for index in range(1000)]
+        engine = self.scripted(bars)
+        engine.PAGE_LIMIT = 300  # an engine whose pages are smaller than the 400-bar window
+        page = read_latest(engine, self.KEY, '1m')
+        self.assertEqual(repr(page.bars), repr(self.old_last_page(engine).bars))
+        self.assertEqual(page.bars[-1], bars[-1])  # still ends at the newest bar
+
+    def test_a_refused_tail_falls_back_to_the_last_page_and_other_errors_are_not_swallowed(self):
+        bars = [day_bar(index, index // 270) for index in range(1000)]
+        engine = self.scripted(bars)
+
+        class Racing:
+            """Another reader takes a newer snapshot of the series right after this one's first-page read."""
+
+            def __init__(self):
+                self.queries = []
+
+            def market_series(self, query):
+                self.queries.append(query)
+                page = engine.market_series(query)
+                if query.limit == 1:
+                    engine.put([*bars, day_bar(1000, 3)])
+                    engine.market_series(MarketSeriesQuery(ReadLatestTests.KEY, '1m', limit=1))
+                return page
+
+        racing = Racing()
+        page = read_latest(racing, self.KEY, '1m')
+        self.assertEqual(repr(page.bars), repr(self.old_last_page(engine).bars))
+
+        class Refusing:
+            def market_series(self, query):
+                raise DomainError('capability_missing')
+
+        with self.assertRaises(DomainError) as caught:
+            read_latest(Refusing(), self.KEY, '1m')
+        self.assertEqual(caught.exception.code, 'capability_missing')
 
 
 if __name__ == '__main__':

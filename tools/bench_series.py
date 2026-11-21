@@ -13,7 +13,8 @@ For each size and period the reads are:
          as the market terminal and the legacy watch use it; the live engine reads the tail directly, as the
          sector board does.
   pinned (live only) the same refresh with the pinned tail, which is how the legacy watch reads on that engine.
-  index  the market terminal's TAIEX mini-chart read (terminal only): the first page, then the last page
+  index  the market terminal's TAIEX mini-chart read before OPT-1 P11b (terminal only): the first page, then the last page
+  index-tail  the same chart's read since P11b: one bar for the length, then the newest 400 bars (terminal only)
 Columns, all per read: engine ms (series() calls), codec ms (codec dumps + loads of every returned page's bars,
 which the IPC adds on top of the engine), ui ms (series_bars of the whole result plus the prefix compare that
 render_chart does), their total, pages, bars read and the encoded bytes of those bars (the unit series() budgets
@@ -35,7 +36,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from desktop_app.features.trading.market_watch_rows import series_bars  # noqa: E402
-from desktop_app.features.trading.series_reader import read_series  # noqa: E402
+from desktop_app.features.trading.series_reader import read_latest, read_series  # noqa: E402
 from quantlab.trading.application.codec import dumps, loads  # noqa: E402
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery  # noqa: E402
 from quantlab.trading.application.live_market import LiveMarketService  # noqa: E402
@@ -205,6 +206,11 @@ def steady_read(facade, key, period, cached, pinned):
     return bars
 
 
+def index_tail_read(facade, key, period):
+    """The TAIEX mini-chart read since OPT-1 P11b: the newest bars only."""
+    return read_latest(facade, key, '1m').bars
+
+
 def prime(facade, key, period, pinned):
     """The (page, bars) a widget holds after its first, whole read."""
     return read_series(facade, key, period, None, pinned_tail=pinned)[:2]
@@ -290,6 +296,7 @@ def run_terminal(sizes, repeat, tail):
                 cached = prime(facade, TERMINAL_KEY, period, True)
                 report('terminal', count, period, 'steady', measure(facade, lambda: steady_read(facade, TERMINAL_KEY, period, cached, True), repeat, period))
             report('terminal', count, '1m', 'index', measure(facade, lambda: index_read(facade, INDEX_KEY, '1m'), repeat, '1m'))
+            report('terminal', count, '1m', 'index-tail', measure(facade, lambda: index_tail_read(facade, INDEX_KEY, '1m'), repeat, '1m'))
         finally:
             engine.close()
 
