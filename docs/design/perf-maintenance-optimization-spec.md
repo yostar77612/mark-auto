@@ -8,9 +8,9 @@ Audience: implementing agent. 觀察基準：`main` @ `d6c8d10f`，2026-11-20。
 ## Problem
 
 一次抽樣程式碼檢視（回測、指標、交易檢視層、專案結構）找到下列可優化處。排序依「風險由低到高、
-投入產出比由高到低」。每個階段（P0–P10）各一個 PR，可獨立交付與回退。
+投入產出比由高到低」。每個階段（P0–P11）各一個 PR，可獨立交付與回退。
 P8–P10 為第二輪檢視（2026-11-20，`main` @ `88c571fb`）新增，P7 同步擴充；其中標示「實測」者附有量測數字，
-其餘為讀程式碼推斷，**必須先量測再動手**。
+其餘為讀程式碼推斷，**必須先量測再動手**。P11 為第三輪檢視（2026-11-21，`main` @ `35cf1865`，M6 選股器與期貨看盤合併後）新增。
 
 | 階段 | 主題 | 風險 | 是否碰 G3 |
 |---|---|---|---|
@@ -25,6 +25,7 @@ P8–P10 為第二輪檢視（2026-11-20，`main` @ `88c571fb`）新增，P7 同
 | P8 | 板塊看盤詳情圖不再每 2 秒整段重抓 | 低 | 否 |
 | P9 | 即時行情 tick 遺失處理的平方級掃描 | 中 | 否（先量測） |
 | P10 | K 線資料庫開啟時的 `quick_check` 成本 | 中（動到 fail-closed 閘門） | 否（先量測，取捨需 owner 同意） |
+| P11 | 市場終端主圖（與舊版自選看盤圖）不再每次重繪都整段重抓序列 | 低 | 否 |
 
 ### 現況證據
 
@@ -71,6 +72,23 @@ P8–P10 為第二輪檢視（2026-11-20，`main` @ `88c571fb`）新增，P7 同
 - **P10**（讀碼推斷）：[kline_store.py:103](../../quantlab/trading/adapters/storage/kline_store.py) `_open` 每次開啟都執行
   `PRAGMA quick_check`，成本隨資料庫大小線性增加；批次回補工具（`tools/bulk_kline_backfill.py`）會讓資料庫持續變大。
   這是 fail-closed 的完整性閘門，且損毀時會把檔案連同 WAL 保留為 `.bad-*` 後重建。
+- **P11**（讀碼確認；單次成本**實測**，scratchpad 腳本，實作者須以 `tools/` 工具重現）：
+  [window.py:591](../../desktop_app/features/trading/window.py) 只要行情有變（盤中約每秒）就呼叫
+  `MarketTerminalWidget.render(state)`；[market_terminal.py:123](../../desktop_app/features/trading/market_terminal.py)
+  在不忙時即 `load_series()`，其 `fetch()`（約第 225 行）每次都從第一頁抓到最後一頁，`_series_loading` 只防重入，
+  所以一抓完下一輪就接著抓。舊版自選看盤 [market_watch.py:289](../../desktop_app/features/trading/market_watch.py)
+  同樣整段分頁讀取。P8 只修了板塊看盤詳情（`sector_board._detail_series`），這兩處沒有。
+  實測每次整段讀取（`tools/bench_series.py` 的合成 LiveMarketService；「編解碼」為引擎端 `dumps` 加 UI 端 `loads`
+  各頁 `bars`，跨行程傳輸本身未計）：
+
+  | 1 分 K 根數 | 情境 | 頁數 | 位元組 | 引擎 `series()` | 編解碼 | `series_bars` | 前綴比較 | 合計 |
+  |---|---|---|---|---|---|---|---|---|
+  | 8,100 | 個股 30 交易日 | 3 | 3.8 MB | 225 ms | 452 ms | 21 ms | 8 ms | 約 0.7 s |
+  | 34,000 | 期貨 30 交易日含夜盤 | 9 | 16.2 MB | 926 ms | 2,162 ms | 120 ms | 30 ms | 約 3.2 s |
+
+  兩個行程的 CPU 在盤中幾乎被這條路徑持續佔用，UI 行程的解碼雖在背景執行緒，仍與畫面共用 GIL。
+  `render_chart`（[market_terminal_widgets.py:229](../../desktop_app/features/trading/market_terminal_widgets.py)）
+  已有「末根替換／新增一根」的增量繪圖，瓶頸在讀取，不在繪圖。大盤小圖每次只讀最後一頁，量小，不在範圍內。
 
 ## Goals/Non-goals
 
@@ -193,6 +211,27 @@ Non-goals
    並定期（記錄時間於 `meta`）補跑完整檢查。任何失敗仍走既有的 `.bad-*` 保留與重建流程與同一錯誤碼 `kline_store_unavailable`；
    旗標寫入失敗時一律退回「跑 `quick_check`」（保守方向）。
 
+### P11 市場終端主圖增量讀取
+1. **先量測**：擴充 `tools/bench_series.py`（已登記 inventory）加入 34,000 根情境與「每頁 `bars` 的 `dumps`＋`loads`」計時，
+   先在現行整段策略下跑出基準數字寫進 PR。
+2. **抽出共用讀取器**：把 `sector_board._detail_series`／`_detail_tail` 與 `SERIES_TAIL_BARS`、`SERIES_RESYNC_SECONDS`
+   移到新的 UI 端模組（例如 `desktop_app/features/trading/series_reader.py`，須登記 inventory 與通過分層檢查），
+   演算法與退回條件**一字不改**：無快取、選股或週期改變、新增超過一頁、`total` 變小、`gaps` 改變、重讀視窗任一根不一致 → 整段重抓；
+   每 `SERIES_RESYNC_SECONDS` 至少整段校正一次。`sector_board` 改由此模組匯入（保留舊名稱的匯入或同步更新
+   `tests/test_m5_sector.py`），P8 的 `DetailSeriesEquivalenceTests` 必須原封不動通過。
+3. **市場終端**（`market_terminal.py` 的 `load_series.fetch`）：改用共用讀取器，快取依 (instrument, period) 保存
+   (page, bars, 上次整段讀取的 monotonic 時間)；可沿用或擴充既有 `_series_cache`（上限 6 筆的語意不變）。必須保持：
+   - `retry=True`（重試按鈕）一律整段讀取，且第一頁照舊帶 `retry_history=True`。
+   - 換股、換週期、`_generation` 改變、錯誤回應 → 丟棄該鍵快取，下次整段讀取。
+   - 大盤小圖讀取、`market_status()`、`history_error`／重試按鈕、`render_chart` 的增量繪圖邏輯不變。
+4. **舊版自選看盤**（`market_watch.py` 的 `load_series.fetch`）：同第 3 項改用共用讀取器；`_pending_request`、
+   `market_revision` 比較與 `replace_last_bar`／`append_bar` 判斷不變。
+5. **可選**（量測後決定，做不到就不做）：`render_chart` 的 `bars[: len(old) - 1] == old[:-1]` 為 O(N) 比較，在尾端拼接路徑下
+   可改為只比較重讀視窗；必須維持「任何不一致即 `set_series` 整段重畫」。
+6. **實機目視**：盤中（或用 smoke 重播）切換個股、期貨、週期與重試，主圖與現行版本逐根相同、無閃爍或殘留舊股 K 棒；
+   不得變更任何 UI 快照基準。
+7. 目標：穩態下每次刷新只讀尾端 `SERIES_TAIL_BARS` 根（1 頁）；PR 附前後實測（每次刷新耗時、位元組、頁數，個股與期貨兩種情境）。
+
 ## Safety constraints (live trading disabled, G3, OOS/budget)
 
 沿用 [TEMPLATE.md](TEMPLATE.md) 的安全章節全文，另加：
@@ -201,7 +240,7 @@ Non-goals
 - 所有 timeout（Paper 30 s、smoke 40 s、每個 job 15 分鐘）與 fail-closed 驗證保持原樣。
 - P0 不做不可逆刪除；`git gc` 不使用 `--prune=now`。
 - G3 檔案（見 [CONTRIBUTING.md](../CONTRIBUTING.md)）除 P7（含第 6 項）且經 owner 核准外一律不編輯。
-- P8–P10 不改交易、風控、下單語意；P10 不得削弱完整性檢查的保證，只能改變「何時」執行，且失敗時退回較保守的做法。
+- P8–P11 不改交易、風控、下單語意；P11 只改 UI 端讀取策略，不改引擎 `series()`、分頁位元組預算或 IPC 協定；P10 不得削弱完整性檢查的保證，只能改變「何時」執行，且失敗時退回較保守的做法。
 
 ## Test plan
 
@@ -223,12 +262,13 @@ Non-goals
 | P8 | sector board／market series 相關既有測試（用 `grep sector_board tests` 找出）、`test_trading_ui`、UI 快照測試不得變更基準 | 增量合併與整段重抓逐根相等的模擬器測試；`tools/bench_series.py` 前後數據 |
 | P9 | `tests/test_live_market*.py`、`test_m5_monitor`、行情相關測試 | 量測腳本；若實作，舊實作凍結副本為 oracle 的等價測試（含 `history_revision` 遞增時機） |
 | P10 | kline store 相關既有測試（`grep kline_store tests`） | 開啟耗時量測；若實作：旗標殘留／`-wal` 非空／旗標寫入失敗／損毀檔案四種情境的測試，損毀仍產生 `.bad-*` 並使用同一錯誤碼 |
+| P11 | `tests/test_m5_sector.py`（P8 等價測試不得修改斷言）、`test_market_terminal_ui.py`、`test_futures_watch_ui.py`、`test_trading_ui.py`、market watch 相關 UI 測試、UI 快照測試不得變更基準 | 市場終端與舊版自選看盤各一組模擬器等價測試：多輪 tick（新增 K、末根更新、位移型回補、遺失標記、日夜盤跨日、1m→5m→1d 切換、重試）每輪交給 chart 的 bars 與整段重抓逐根相等；拿掉視窗比對時測試須失敗（mutation）；`tools/bench_series.py` 前後數據 |
 
 UI 無新增畫面，故不要求新的 accessibility walk；若 P2/P6 動到 UI 呼叫端，需跑既有 UI 快照測試且不得變更基準。
 
 ## Rollout/Verification status
 
-順序：P0 → P1 → P3 → P2 → P4 → P5 → P6 → P8 → P9 → P10 →（P7，待核准）。P8 不碰 G3、收益最明確，排在 P6 之後即可開工；
+順序：P0 → P1 → P3 → P2 → P4 → P5 → P6 → P8 → P9 → P10 →（P7，待核准）→ P11。P8 不碰 G3、收益最明確，排在 P6 之後即可開工；
 P9、P10 為「先量測、可能結案為不動」的階段。P3 排在 P2 前，因為它不碰 G3 且等價性最容易證明；
 P2 需先有量測基準，故在 P1 之後。每階段一個 PR、可單獨回退（revert 該 PR）。每個 PR 經獨立 QA（aiworkflow-qa）
 驗收、CI 全綠後才合併；controller 不得自行驗收自己的實作。
@@ -247,6 +287,7 @@ Implementation／Verification（逐階段，只記錄實際跑過的指令與結
 | P8（#250 已合併） | 先新增 `tools/bench_series.py`（已登記 inventory）與 `DetailSeriesEquivalenceTests`（真實 LiveMarketService；先在原整段策略確認通過）。`sector_board.py` 改為快取 (股票, 週期) 的序列，每次刷新只讀最後 `SERIES_TAIL_BARS = 240` 根再接上；無快取／換股或週期／錯誤／新增超過一頁／total 變小／gaps 改變／重讀視窗任何不一致時改回整段重抓，並至少每 `SERIES_RESYNC_SECONDS = 120` 秒整段校正一次。五檔照舊每次取得。`sector_board` 未綁任何 golden 或原始碼雜湊；最終 fixture 與 main 無差異。 | 90 輪（新增 K、末根更新、位移型回補、遺失標記、1m→5m）每輪 `repr` 與整段重抓相同、超過 70 輪走尾端；拿掉視窗比對有 56 輪失敗；視窗外同筆數改寫於下一次整段校正（≤120 秒）顯示，已測。實測 `python tools/bench_series.py --repeat 5`（每次刷新、server 端）：43,200 根 1m 695.0 ms／20,476,800 B／11 頁 → 3.8 ms／113,760 B／1 頁；8,100 根 1m 128.8 → 3.8 ms；43,200 根 5m 451.1 → 96.5 ms；1d 持平。affected 99 模組 98 OK（`test_auto_connect` 一次於負載下失敗，重跑 3/3 通過、main 上通過）；QA PASS；CI 35 項全綠。 |
 | P9（#253 已合併） | 量測顯示影響明顯，故未結案為「不動」。`live_market.py`：`losses` deque 仍為唯一來源（maxlen 淘汰不變），另快取合併後有序不重疊分鐘區間，tick 以 `bisect` 判斷；一批遺失每個 instrument、每個 deque 只掃一趟，`history_revision` 仍依「遺失 × 有受影響 K 棒的 deque」計數，`issues` 順序與 `_view_cache` 失效不變。新增 `tools/bench_tick_loss.py`（已登記）。 | 舊 `poll` 機械凍結副本為 oracle，`TickLossEquivalenceTests` 240 步隨機 tick／遺失（含逆向、超長、淘汰、未配置標的）全部欄位相同；revision mutation 240 步全失敗。實測 `python tools/bench_tick_loss.py --repeat 3`（1,000 tick，每 deque 約 43,200 根）：保留 0／100／1,000／10,000 筆遺失時只處理 tick 40.6／80.2／418.5／3,783.4 ms → 42.6／43.5／42.2／47.3 ms；加一批 10 筆遺失 295.5／348.0／675.2／4,144.3 → 66.5／62.7／63.6／67.9 ms。affected 314 模組 310 OK，其餘為已確認之主機環境失敗；QA PASS；CI 35 項全綠。 |
 | P10 | 第一步僅量測（#256，`tools/bench_kline_open.py`）；佔比顯著，owner 於 2026-11-20 對話中明確同意依 §P10 第 3 點放寬，故實作：每個 `KlineStore` 開啟成功後在 `meta` 寫入自己的 `open:<uuid>` 列，正常 `close()` 刪除該列（每個 store 各一個旗標；第一版共用 `open_state` 旗標被 QA 找到「A 異常結束、B 最後正常關閉並刪除 WAL」會漏檢，已改）。`_open` 僅在 `-wal` 非空或無法讀取、存在任何 `open:*` 列、或 `last_full_check` 缺漏／無法解析／無時區／在未來／已滿 7 天時才跑 `PRAGMA quick_check`，其餘只跑既有 schema／`table_info` 檢查。殘留列只在跑過完整檢查、取得寫入鎖（`BEGIN IMMEDIATE`）且 WAL 仍為空時清除（此時不可能有其他存活的 store）。開啟列寫入失敗時回滾並退回跑 `quick_check`；`close()` 刪除失敗則該列保留，下次開啟必跑。失敗一律走既有 `.bad-*` 保留與重建、同一錯誤碼 `kline_store_unavailable`；`OperationalError` 仍為「暫時無法使用」且不產生 `.bad-*`。先以兩個損毀情境在舊程式確認通過（`beff3ceb`），再加旗標殘留／`-wal` 非空／旗標寫入失敗／損毀四種情境、雙 store 併發與邊界測試；七種刻意破壞皆被抓到。副作用：第二個 store 開關時，存活 store 的 `revision`／`verification_revision` 會前進（fail-safe）；`close()` 在寫入鎖競爭下最多等既有的 2 秒逾時。取捨：正常關閉且 WAL 為空期間發生的損毀，改由定期完整檢查（最多 7 天）發現。 | 放寬後 `python tools/bench_kline_open.py --repeat 5 --sizes 10,200,1024,2350`（同機、暖快取、中位數），正常關閉後開啟／異常結束後開啟／單獨 quick_check：16.4 MiB 18.8／78.4／63.6 ms；202.6 MiB 8.7／743.8／769.1 ms；1,027.7 MiB 9.3／4,418.2／3,853.2 ms；2,350.3 MiB 33.9／15,791.5／9,210.0 ms（2.3 GiB 已超出暖快取能保留的範圍，完整檢查路徑在多次執行間浮動 6.6–16.9 s；正常關閉後開啟穩定在 9–34 ms）。`python -m unittest tests.test_kline_store` 27 OK；`tools/affected_tests.py` 列出的 168 個模組逐一執行，僅 `test_trading_acceptance_combinations` 一個既知的本機環境失敗（P1–P4、P9 已在未修改樹上確認）。放寬前（#256）：`python tools/bench_kline_open.py --repeat 5 --sizes 10,200,1024,2350`（Python 3.13.11、SQLite 3.54.0、暖快取、中位數）：16.4 MiB 開啟 39.5 ms（quick_check 38.4 ms，97%）；202.6 MiB 477.8 ms（476.7，100%）；1,027.7 MiB 2,427.3 ms（2,401.3，99%）；2,350.3 MiB 7,966.5 ms（7,150.7，90%）。佔比顯著：owner 本機模擬環境 K 線庫已約 2.46 GB，每次開啟約 8 秒（冷快取只會更慢）。2026-11-21 owner 決定（M6 D3，[m6-stock-screener.md](m6-stock-screener.md)）：定期完整檢查由每 7 天改為每 30 天（`_FULL_CHECK_INTERVAL`）；異常關閉後、`-wal` 非空與旗標殘留的檢查不變，K 線庫不設總檔數上限。 |
+| P11 | 未開始。 | — |
 
-Real-App visual check: 不適用（無 UI 變更）。
+Real-App visual check: P0–P10 不適用（無 UI 變更）；P11 只改 UI 讀取策略、畫面不應改變，須依 §P11 第 6 項做實機目視確認。
 本階段不更動 [PROJECT_STATE](../agent/PROJECT_STATE.md) 與驗收分數；不建立 Release 或 tag。
