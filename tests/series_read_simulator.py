@@ -94,10 +94,10 @@ class TerminalFeed:
         self.now, self.depth, self.shift, self.count = NOW, depth, 0, 0
         self.store = KlineStore(Path(folder) / 'klines.sqlite3')
         self.session = _Session()
-        self.history = HistorySync(self.store, self.session, now=lambda: self.now, autostart=False)
+        self.sync = HistorySync(self.store, self.session, now=lambda: self.now, autostart=False)
         self.service = MarketTerminalService(
             self.store,
-            self.history,
+            self.sync,
             self.session,
             lambda: (*FIXED_INDICES, STOCK, OTHER),
             watchlist=(STOCK.instrument_id, OTHER.instrument_id),
@@ -109,7 +109,7 @@ class TerminalFeed:
         self.service.connected()
 
     def close(self):
-        self.history.close()
+        self.sync.close()
         self.store.close()
 
     def write_history(self):
