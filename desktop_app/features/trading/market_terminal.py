@@ -1,6 +1,7 @@
 """Read-only terminal; application ports own subscriptions, history, and prices."""
 
 from dataclasses import replace
+from time import monotonic
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QMenu, QDialog, QVBoxLayout, QLabel
@@ -9,6 +10,7 @@ from desktop_app.features.trading.market_watch import PendingRequests, _Result, 
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text, _change_direction
 from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
+from desktop_app.features.trading.series_reader import SERIES_RESYNC_SECONDS, read_series
 from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiCommand, UiAction
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchKind
 from quantlab.trading.domain.validation import DomainError
@@ -31,6 +33,9 @@ class MarketTerminalWidget(QWidget):
         self._sorts, self._last_series, self._occurred_at = {}, None, None
         # The last page per (instrument, period), so switching back paints at once while the refresh runs.
         self._series_cache = {}
+        # What the next refresh may build on: (instrument, period, generation, page, monotonic time of its last whole read).
+        # The page holds every bar read so far. It is dropped on any error and never matches another selection.
+        self._series_read = None
         self._last_warning = ''
         self.latest_alert = ''
         identify(self, 'market_terminal', ui_text('terminal.title'))
@@ -222,23 +227,25 @@ class MarketTerminalWidget(QWidget):
             item.setChecked(name == period)
         self.history_error.setText(ui_text('terminal.history_loading'))
 
+        # Reuse the previous read only for this very selection, within the resync bound, and never for the retry button.
+        previous = self._series_read
+        fresh = not retry and previous is not None and previous[:3] == (key, period, generation) and monotonic() - previous[4] < SERIES_RESYNC_SECONDS
+        reuse = (previous[3], previous[3].bars) if fresh else None
+
         def fetch():
-            page = self.facade.market_series(MarketSeriesQuery(key, period, retry_history=retry))
-            bars = page.bars
-            while page.next_offset is not None:
-                page = self.facade.market_series(MarketSeriesQuery(key, period, offset=page.next_offset, market_revision=page.market_revision))
-                bars += page.bars
+            page, bars, whole = read_series(self.facade, key, period, reuse, retry_history=retry, pinned_tail=True)
             index = self.facade.market_series(MarketSeriesQuery(FIXED_INDICES[0].instrument_id, '1m'))
             if index.next_offset is not None:
                 index = self.facade.market_series(
                     MarketSeriesQuery(index.instrument_id, '1m', offset=max(0, index.total - len(index.bars)), market_revision=index.market_revision)
                 )
-            return replace(page, bars=bars, offset=0), index, self.facade.market_status()
+            return replace(page, bars=bars, offset=0), index, self.facade.market_status(), whole
 
         def completed(value, error):
             self._series_loading = False
             if error is None and generation == self._generation:
-                page, index, self._terminal_status = value
+                page, index, self._terminal_status, whole = value
+                self._series_read = (key, period, generation, page, monotonic() if whole else previous[4])
                 render_chart(self, page)
                 self._focus_event()
                 latest = index.bars[-1].trade_date if index.bars else None
@@ -255,9 +262,11 @@ class MarketTerminalWidget(QWidget):
                 self.retry.setVisible(bool(error_code))
                 self._render_status()
             elif error is not None:
+                self._series_read = None
                 self.history_error.setText(ui_text('watch.request_error'))
                 self.retry.show()
             elif generation != self._generation:
+                self._series_read = None
                 self._pending = True
             if self._pending:
                 self._pending = False

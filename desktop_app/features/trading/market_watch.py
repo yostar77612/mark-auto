@@ -9,6 +9,7 @@ from dataclasses import replace
 from itertools import count
 from queue import Empty, SimpleQueue
 from threading import Thread
+from time import monotonic
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -26,8 +27,9 @@ from PySide6.QtWidgets import (
     QLayout,
 )
 from desktop_app.strings.catalog import ui_text
-from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiAction, UiCommand
+from quantlab.trading.application.contracts import MarketWatchView, UiAction, UiCommand
 from desktop_app.features.trading.market_watch_rows import freshness_text, header_text, quote_detail_text, watch_rows, series_bars, series_status
+from desktop_app.features.trading.series_reader import SERIES_RESYNC_SECONDS, read_series
 from desktop_app.features.trading.widgets import rows, selected_id
 
 
@@ -121,6 +123,9 @@ class MarketWatchWidget(QWidget):
         self.facade, self.chart, self.state = facade, chart, state
         self.period = '1m'
         self._bars, self._series_key, self._revision = (), None, -1
+        # What the next read may build on: (instrument, period, page, monotonic time of its last whole read).
+        # The page holds every bar read so far. It is dropped on any error and never matches another selection.
+        self._series_read = None
         self._generation, self._busy = 0, False
         self._series_loading, self._pending_request = False, None
         self._requests = PendingRequests()
@@ -266,7 +271,7 @@ class MarketWatchWidget(QWidget):
         else:
             self._generation += 1
             self.chart.set_series(())
-            self._bars, self._series_key = (), None
+            self._bars, self._series_key, self._series_read = (), None, None
 
     def select_period(self, period):
         self.period = period
@@ -285,16 +290,24 @@ class MarketWatchWidget(QWidget):
             return
         self._series_loading = True
 
-        def fetch():
-            page = self.facade.market_series(MarketSeriesQuery(key, period, retry_history=retry))
-            bars = page.bars
-            while page.next_offset is not None:
-                page = self.facade.market_series(MarketSeriesQuery(key, period, offset=page.next_offset, market_revision=page.market_revision))
-                bars += page.bars
-            return replace(page, bars=bars, offset=0)
+        # Reuse the previous read only for this very selection, within the resync bound, and never for the retry button.
+        previous = self._series_read
+        if previous is not None and previous[:2] != (key, period):
+            previous = self._series_read = None
+        fresh = not retry and previous is not None and monotonic() - previous[3] < SERIES_RESYNC_SECONDS
+        reuse = (previous[2], previous[2].bars) if fresh else None
 
-        def completed(page, error):
+        def fetch():
+            page, bars, whole = read_series(self.facade, key, period, reuse, retry_history=retry, pinned_tail=True)
+            return replace(page, bars=bars, offset=0), whole
+
+        def completed(value, error):
             self._series_loading = False
+            if error is not None:
+                self._series_read = None
+            else:
+                page, whole = value
+                self._series_read = (key, period, page, monotonic() if whole else previous[3])
             if self._pending_request is not None:
                 pending_key, pending_period, pending_retry = self._pending_request
                 self._pending_request = None

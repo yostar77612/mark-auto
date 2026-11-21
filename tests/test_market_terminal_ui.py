@@ -17,9 +17,11 @@ import shiboken6
 
 from desktop_app.components.charts import CandlestickChart
 from desktop_app.features.market.workspace import WorkspacePanel
+from desktop_app.features.trading import market_terminal, series_reader
 from desktop_app.features.trading.market_terminal import MarketTerminalWidget
 from desktop_app.features.trading.market_terminal_layout import PANEL_IDS, terminal_preset
 from desktop_app.features.trading.market_terminal_rows import diagnostic_text, market_summary, quote_values
+from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.window import TradingWindow
 from desktop_app.strings.catalog import ui_text
 from quantlab.research_core.adapters.market_layout import LayoutStore, FILE_NAME
@@ -28,7 +30,9 @@ from quantlab.trading.application.screener_contracts import DownloadedRowView, S
 from quantlab.trading.domain.screener import ScreenerParams
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment
+from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
+from tests import series_read_simulator as simulator
 
 NOW = datetime(2026, 10, 30, 1, 0, tzinfo=timezone.utc)
 STOCK = WatchInstrument('TWSE:2330', WatchKind.STOCK, 'TSE', '2330', '台積電')
@@ -760,6 +764,172 @@ class ScreenerTabTests(unittest.TestCase):
         self.assertEqual((saved.window_long, saved.breakout_volume_multiple, saved.average_days, saved.download_breakout), (300, Decimal(3), 30, False))
         self.assertEqual((saved.window_short, saved.window_mid, saved.breakout_intraday_ratio), (60, 120, Decimal(2)))
         self.assertEqual(saved.near_extreme_pct, ScreenerParams().near_extreme_pct)  # untouched fields keep their value
+
+
+class SeriesFacade(FakeFacade):
+    """The terminal's facade with every chart read served by a real engine (OPT-1 P11)."""
+
+    def __init__(self, feed):
+        super().__init__()
+        self.feed = feed
+
+    def market_series(self, query):
+        return self.feed.facade.market_series(query)
+
+
+class TerminalSeriesReadTests(unittest.TestCase):
+    """OPT-1 P11: what each refresh hands the chart equals a whole-series read, bar for bar, whatever changed in between."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.feed = simulator.TerminalFeed(self.temp.name)
+        self.facade = SeriesFacade(self.feed)
+        self.widget = MarketTerminalWidget(
+            self.facade,
+            CandlestickChart(),
+            self.facade.state,
+            layout_store=LayoutStore(panel_ids=PANEL_IDS, default_layout=terminal_preset()),
+            index_chart=CandlestickChart(show_volume=False),
+            panel_factory=WorkspacePanel,
+        )
+        deadline = time.monotonic() + 3
+        while not (self.widget._ready and not self.widget._requests) and time.monotonic() < deadline:
+            self.app.processEvents()
+            QTest.qWait(5)
+        self.assertTrue(self.widget._ready)
+        self.widget._submit = simulator.run_inline  # from here on every request completes at once: one deterministic step per call
+        self.clock = [1000.0]
+        patcher = patch.object(market_terminal, 'monotonic', lambda: self.clock[0])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.key = STOCK.instrument_id
+
+    def tearDown(self):
+        QThreadPool.globalInstance().waitForDone(3000)
+        self.app.processEvents()
+        if shiboken6.isValid(self.widget):
+            shiboken6.delete(self.widget)
+        self.app.processEvents()
+        self.feed.close()
+        self.temp.cleanup()
+
+    def chart_matches_whole_read(self):
+        expected = series_bars(self.feed.whole(self.widget.current_instrument, self.widget.period))
+        return repr(self.widget.chart.bars) == repr(expected)  # repr keeps Decimal exponents and every flag
+
+    def refresh(self, retry=False):
+        """One refresh: the queries it sent, and whether they read the selected instrument from its first page."""
+        del self.feed.facade.queries[:]
+        self.widget.load_series(retry=retry)
+        return self.feed.facade.queries, simulator.whole_round(self.feed.facade.queries, self.widget.current_instrument)
+
+    def play(self, rounds=90):
+        """The mismatching rounds and the rounds that read the whole series, over a script of every kind of change."""
+        mismatches, wholes = [], []
+        self.widget.select_instrument(self.key)
+        for number in range(rounds):
+            self.clock[0] += 1.0
+            self.feed.tick()
+            if number % 17 == 5:
+                self.feed.backfill_older()  # older history arrives: every index shifts
+            if number % 11 == 3:
+                self.feed.tick(lost=True)
+            if number == 30:
+                self.feed.tick(6 * 3600)  # the day session closes and the night session opens under the next trade date
+            if number == 40:
+                for _ in range(4):
+                    self.feed.tick(lost=True)
+            if number == 45:
+                self.feed.tick(14 * 3600)  # the next morning's day session
+            del self.feed.facade.queries[:]
+            if number in (20, 22):
+                self.widget.select_instrument(OTHER.instrument_id if number == 20 else self.key)
+            if number in (33, 48, 58):
+                self.widget.select_period({33: '5m', 48: '1d', 58: '1m'}[number])
+            self.widget.load_series(retry=number in (66, 80))
+            if not self.chart_matches_whole_read():
+                mismatches.append(number)
+            if simulator.whole_round(self.feed.facade.queries, self.widget.current_instrument):
+                wholes.append(number)
+            if number in (66, 80):
+                retries = [query for query in self.feed.facade.queries if query.retry_history]
+                self.assertEqual([(query.instrument_id, query.offset) for query in retries], [(self.key, 0)])  # the first page of the whole read, once
+        return mismatches, wholes
+
+    def test_chart_bars_equal_whole_reads_through_every_kind_of_change(self):
+        mismatches, wholes = self.play()
+        self.assertEqual(mismatches, [])
+        # Another instrument, another period, the retry button and every backfill of a long series read the whole series.
+        self.assertLessEqual({20, 22, 33, 48, 58, 66, 80, 5, 39, 56, 73}, set(wholes))
+        self.assertGreater(90 - len(wholes), 55)  # every other round only re-read the tail
+
+    def test_removing_the_window_comparison_is_caught(self):
+        with patch.object(series_reader, '_read_tail', simulator.without_window_check):
+            mismatches, _ = self.play()
+        self.assertTrue(mismatches)
+
+    def test_a_steady_refresh_reads_one_bar_then_the_tail_and_leaves_the_index_chart_read_alone(self):
+        self.widget.select_instrument(self.key)
+        self.feed.tick()
+        queries, whole = self.refresh()
+        self.assertFalse(whole)
+        main = [query for query in queries if query.instrument_id == self.key]
+        self.assertEqual([(query.offset > 0, query.limit == 1) for query in main], [(False, True), (True, False)])
+        index = [query for query in queries if query.instrument_id == FIXED_INDICES[0].instrument_id]
+        self.assertEqual([(query.offset, query.retry_history) for query in index], [(0, False)])  # the index mini chart reads its own page as before
+        self.assertTrue(self.chart_matches_whole_read())
+
+    def test_the_cache_resyncs_after_the_bound_and_is_dropped_on_an_error_and_for_another_selection(self):
+        self.widget.select_instrument(self.key)
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        self.clock[0] += series_reader.SERIES_RESYNC_SECONDS
+        self.assertTrue(self.refresh()[1])  # the periodic whole read
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        with patch.object(self.facade, 'market_series', side_effect=DomainError('state_conflict')):
+            self.widget.load_series()
+        self.assertIsNone(self.widget._series_read)
+        self.assertFalse(self.widget.retry.isHidden())
+        self.feed.tick()
+        self.assertTrue(self.refresh()[1])  # nothing is reused after an error
+        self.assertTrue(self.chart_matches_whole_read())
+        self.widget.select_instrument(OTHER.instrument_id)
+        self.assertEqual({bar.contract_id for bar in self.widget.chart.bars}, {OTHER.instrument_id})
+        self.widget.select_instrument(self.key)
+        self.assertEqual({bar.contract_id for bar in self.widget.chart.bars}, {self.key})  # no bar of the other stock is left behind
+        self.assertTrue(self.chart_matches_whole_read())
+
+    def test_a_rewrite_of_older_bars_is_shown_after_the_next_whole_read(self):
+        self.widget.select_instrument(self.key)
+        self.feed.tick()
+        self.feed.rewrite_old()  # same size and tail, other closes for bars older than the tail window
+        self.assertFalse(self.refresh()[1])
+        self.assertFalse(self.chart_matches_whole_read())  # the documented bound: shown by the periodic whole read
+        self.clock[0] += series_reader.SERIES_RESYNC_SECONDS
+        self.assertTrue(self.refresh()[1])
+        self.assertTrue(self.chart_matches_whole_read())
+
+    def test_selecting_the_same_instrument_and_period_again_reads_the_whole_series(self):
+        self.widget.select_instrument(self.key)
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        del self.feed.facade.queries[:]
+        self.widget.select_instrument(self.key)  # a new generation: nothing of the earlier read may be reused
+        self.assertTrue(simulator.whole_round(self.feed.facade.queries, self.key))
+
+    def test_a_tail_read_does_not_restart_the_resync_clock(self):
+        self.widget.select_instrument(self.key)  # the whole read the bound is counted from
+        self.clock[0] += 100
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        self.clock[0] += 21  # 121 s after the whole read, only 21 s after the tail read
+        self.feed.tick()
+        self.assertTrue(self.refresh()[1])
 
 
 if __name__ == '__main__':

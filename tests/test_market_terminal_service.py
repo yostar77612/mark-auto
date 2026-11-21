@@ -6,17 +6,21 @@ from decimal import Decimal
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
+from desktop_app.features.trading import series_reader
+from desktop_app.features.trading.series_reader import SERIES_TAIL_BARS, read_series
 from quantlab.trading.adapters.storage.kline_store import KlineStore
-from quantlab.trading.application.contracts import MarketSeriesQuery
+from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery
 from quantlab.trading.application.history_sync import HistorySync
 from quantlab.trading.application.market_terminal_service import MarketTerminalService
 from quantlab.trading.domain.freshness import LiveMarketSettings
-from quantlab.trading.domain.live_bars import LiveBar
+from quantlab.trading.domain.live_bars import DataGap, LiveBar
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
 from quantlab.trading.ports.history import HistoryUsage
+from tests import series_read_simulator as simulator
 
 NOW = datetime(2026, 10, 30, 2, tzinfo=timezone.utc)
 STOCK = WatchInstrument('TWSE:2330', WatchKind.STOCK, 'TSE', '2330', 'TSMC')
@@ -233,6 +237,273 @@ class TerminalServiceTests(unittest.TestCase):
         self.now += timedelta(minutes=1)
         self.service.poll()
         self.assertIsNone(self.store.last_bar(STOCK.instrument_id))
+
+
+class TerminalEngineReaderTests(unittest.TestCase):
+    """OPT-1 P11: the shared tail reader against this engine, round by round (the engine every chart read reaches while the market connection is on)."""
+
+    KEY = simulator.STOCK.instrument_id
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(self.temp.cleanup)
+        self.feed = simulator.TerminalFeed(self.temp.name)
+        self.addCleanup(self.feed.close)
+        self.facade = self.feed.facade
+
+    def assertSameSeries(self, result, period, key=None):
+        page, bars, whole = result
+        oracle = self.feed.whole(key or self.KEY, period)
+        self.assertEqual(repr(bars), repr(oracle.bars))  # repr keeps Decimal exponents and every flag
+        self.assertEqual((page.instrument_id, page.period, page.total, page.gaps), (oracle.instrument_id, oracle.period, oracle.total, oracle.gaps))
+
+    def play(self, rounds=90):
+        """The mismatching rounds and the rounds that read the whole series, over a script of every kind of change."""
+        cache, mismatches, wholes = {}, [], []
+        for number in range(rounds):
+            period = '1m' if number < 50 else '5m' if number < 65 else '1d' if number < 75 else '1m'
+            self.feed.tick()
+            if number % 17 == 5:
+                self.feed.backfill_older()
+            if number % 11 == 3:
+                self.feed.tick(lost=True)
+            if number == 30:
+                self.feed.tick(6 * 3600)  # the day session closes and the night session opens under the next trade date
+            if number == 40:
+                for _ in range(4):
+                    self.feed.tick(lost=True)
+            if number == 45:
+                self.feed.tick(14 * 3600)  # the next morning: the day session of that trade date
+            del self.facade.queries[:]
+            result = read_series(self.facade, self.KEY, period, cache.get(period), pinned_tail=True)
+            oracle = self.feed.whole(self.KEY, period)
+            if repr(result[1]) != repr(oracle.bars) or result[0].total != oracle.total:
+                mismatches.append(number)
+            cache[period] = result[:2]
+            if result[2]:
+                wholes.append(number)
+        return mismatches, wholes
+
+    def test_the_engine_serves_a_page_past_the_first_only_from_a_named_snapshot(self):
+        total = self.feed.whole(self.KEY, '1m').total
+        with self.assertRaises(DomainError) as caught:
+            self.facade.market_series(MarketSeriesQuery(self.KEY, '1m', offset=total - SERIES_TAIL_BARS))
+        self.assertEqual(caught.exception.code, 'state_conflict')
+
+    def test_cached_reads_equal_whole_reads_through_every_kind_of_change(self):
+        mismatches, wholes = self.play()
+        self.assertEqual(mismatches, [])
+        # The first read of each period and every backfill that shifted the indexes of a long series read the whole series.
+        self.assertLessEqual({0, 50, 65, 5, 22, 39, 56}, set(wholes))
+        self.assertGreater(90 - len(wholes), 55)  # every other round only re-read the tail
+
+    def test_removing_the_window_comparison_is_caught(self):
+        with patch.object(series_reader, '_read_tail', simulator.without_window_check):
+            mismatches, _ = self.play()
+        self.assertTrue(mismatches)
+
+    def test_a_steady_read_is_one_bar_then_the_tail_of_that_snapshot(self):
+        first = read_series(self.facade, self.KEY, '1m', None, pinned_tail=True)
+        self.assertTrue(first[2])
+        self.feed.tick()
+        del self.facade.queries[:]
+        result = read_series(self.facade, self.KEY, '1m', first[:2], pinned_tail=True)
+        self.assertFalse(result[2])
+        head, tail = self.facade.queries
+        self.assertEqual((head.offset, head.limit, head.market_revision), (0, 1, None))
+        self.assertEqual((tail.offset, tail.limit), (len(first[1]) - SERIES_TAIL_BARS, MarketSeriesQuery(self.KEY).limit))
+        self.assertIsNotNone(tail.market_revision)
+        self.assertSameSeries(result, '1m')
+
+    def test_the_retry_read_is_always_whole_and_its_first_page_asks_for_the_history_again(self):
+        first = read_series(self.facade, self.KEY, '1m', None, pinned_tail=True)
+        del self.facade.queries[:]
+        result = read_series(self.facade, self.KEY, '1m', first[:2], retry_history=True, pinned_tail=True)
+        self.assertTrue(result[2])
+        self.assertTrue(self.facade.queries[0].retry_history)
+        self.assertEqual(self.facade.queries[0].offset, 0)
+        self.assertTrue(all(query.offset == 0 or query.market_revision is not None for query in self.facade.queries))
+        self.assertFalse(any(query.retry_history for query in self.facade.queries[1:]))
+        self.assertSameSeries(result, '1m')
+
+    def test_a_snapshot_replaced_between_the_two_reads_falls_back_to_the_whole_series(self):
+        first = read_series(self.facade, self.KEY, '1m', None, pinned_tail=True)
+        feed, key = self.feed, self.KEY
+
+        class Racing:
+            """Another reader takes a newer snapshot of the same series right after this one's first-page read."""
+
+            def __init__(self):
+                self.queries = []
+
+            def market_series(self, query):
+                self.queries.append(query)
+                page = feed.service.series(query)
+                if query.limit == 1:
+                    feed.tick()
+                    feed.service.series(MarketSeriesQuery(key, '1m', limit=1))
+                return page
+
+        racing = Racing()
+        feed.tick()
+        result = read_series(racing, self.KEY, '1m', first[:2], pinned_tail=True)
+        self.assertTrue(result[2])
+        self.assertEqual([(query.offset > 0, query.limit == 1) for query in racing.queries[:2]], [(False, True), (True, False)])  # head, refused tail
+        self.assertSameSeries(result, '1m')
+
+    def test_other_errors_and_an_unpinned_refusal_are_not_swallowed(self):
+        first = read_series(self.facade, self.KEY, '1m', None, pinned_tail=True)
+
+        class Refusing:
+            def __init__(self, code):
+                self.code = code
+
+            def market_series(self, query):
+                raise DomainError(self.code)
+
+        with self.assertRaises(DomainError) as caught:
+            read_series(Refusing('capability_missing'), self.KEY, '1m', first[:2], pinned_tail=True)
+        self.assertEqual(caught.exception.code, 'capability_missing')
+        with self.assertRaises(DomainError) as caught:
+            read_series(Refusing('state_conflict'), self.KEY, '1m', first[:2])  # the sector board's own unpinned read
+        self.assertEqual(caught.exception.code, 'state_conflict')
+
+    def test_a_short_series_is_read_from_its_first_page_without_pinning(self):
+        other = simulator.OTHER.instrument_id
+        first = read_series(self.facade, other, '1d', None, pinned_tail=True)
+        self.assertLess(len(first[1]), SERIES_TAIL_BARS)
+        self.feed.tick(6 * 3600)
+        del self.facade.queries[:]
+        result = read_series(self.facade, other, '1d', first[:2], pinned_tail=True)
+        self.assertFalse(result[2])
+        self.assertEqual([(query.offset, query.market_revision) for query in self.facade.queries], [(0, None)])
+        self.assertSameSeries(result, '1d', other)
+
+    def test_a_rewrite_of_older_bars_is_shown_after_the_next_whole_read(self):
+        cached = read_series(self.facade, self.KEY, '1m', None, pinned_tail=True)[:2]
+        self.feed.tick()
+        self.feed.rewrite_old()  # same size, same tail, different closes for bars older than the tail window
+        page, bars, whole = read_series(self.facade, self.KEY, '1m', cached, pinned_tail=True)
+        full = self.feed.whole(self.KEY, '1m').bars
+        self.assertFalse(whole)
+        self.assertNotEqual(repr(bars[:-SERIES_TAIL_BARS]), repr(full[:-SERIES_TAIL_BARS]))  # the documented bound
+        self.assertEqual(repr(bars[-SERIES_TAIL_BARS:]), repr(full[-SERIES_TAIL_BARS:]))
+        self.assertSameSeries(read_series(self.facade, self.KEY, '1m', None, pinned_tail=True), '1m')  # the resync read
+
+    def test_whole_round_tells_whole_reads_from_tail_reads(self):
+        first = read_series(self.facade, self.KEY, '1m', None, pinned_tail=True)
+        self.assertTrue(simulator.whole_round(self.facade.queries, self.KEY))
+        self.assertFalse(simulator.whole_round(self.facade.queries, simulator.OTHER.instrument_id))
+        self.feed.tick()
+        del self.facade.queries[:]
+        read_series(self.facade, self.KEY, '1m', first[:2], pinned_tail=True)
+        self.assertFalse(simulator.whole_round(self.facade.queries, self.KEY))
+
+
+class ScriptedEngine:
+    """A series held in memory and served in pages the way the two chart engines do.
+
+    `snapshots` is the market terminal engine: a first-page read takes a snapshot and a page past the first is served only from
+    it and only when the read names its revision. Without it (the live engine) every page is read from the current series and
+    a read naming a revision other than the current one is refused.
+    """
+
+    PAGE_LIMIT = 300
+
+    def __init__(self, bars, gaps=(), *, snapshots):
+        self.bars, self.gaps, self.snapshots, self.revision, self.snapshot, self.queries = tuple(bars), tuple(gaps), snapshots, 1, None, []
+
+    def put(self, bars, gaps=()):
+        self.bars, self.gaps, self.revision = tuple(bars), tuple(gaps), self.revision + 1
+
+    def market_series(self, query):
+        self.queries.append(query)
+        if query.offset == 0 and query.market_revision is None:
+            self.snapshot = self.revision, self.bars, self.gaps
+        if self.snapshots and query.offset:
+            if self.snapshot is None or query.market_revision != self.snapshot[0]:
+                raise DomainError('state_conflict', 'chart page revision changed')
+            revision, bars, gaps = self.snapshot
+        else:
+            if query.market_revision is not None and query.market_revision != self.revision:
+                raise DomainError('state_conflict', 'market changed; restart series read')
+            revision, bars, gaps = self.revision, self.bars, self.gaps
+        stop = query.offset + min(query.limit, self.PAGE_LIMIT)
+        return MarketSeriesPage(
+            query.instrument_id, query.period, bars[query.offset : stop], gaps, query.offset, len(bars), stop if stop < len(bars) else None, revision
+        )
+
+
+def scripted_bar(index, close=100):
+    start = NOW + timedelta(minutes=index)
+    return LiveBar(
+        STOCK.instrument_id,
+        start,
+        start + timedelta(minutes=1),
+        start.date(),
+        'DAY',
+        Decimal(close),
+        Decimal(close + 3),
+        Decimal(close - 1),
+        Decimal(close),
+        1,
+        True,
+    )
+
+
+class ReaderFallbackTests(unittest.TestCase):
+    """OPT-1 P11: each condition under which the tail does not line up must send the reader back to the whole series, on its own."""
+
+    KEY = STOCK.instrument_id
+    MODES = (('live engine', False), ('terminal engine', True))  # (label, snapshots): the reader's pinned_tail follows the engine
+
+    def read(self, engine, cached, snapshots):
+        page, bars, whole = read_series(engine, self.KEY, '1m', cached, pinned_tail=snapshots)
+        self.assertEqual(repr(bars), repr(engine.bars))  # whatever path it took, the answer is the series the engine holds now
+        return page, bars, whole
+
+    def test_a_shift_inside_the_window_with_the_same_total_and_the_same_last_bar_reads_the_whole_series(self):
+        for label, snapshots in self.MODES:
+            with self.subTest(label):
+                bars = [scripted_bar(index) for index in range(1, 701)]
+                engine = ScriptedEngine(bars, snapshots=snapshots)
+                cached = self.read(engine, None, snapshots)[:2]
+                # One bar older than everything held arrives and one bar inside the re-read window is gone: the total and
+                # the newest bar are what they were, only the content of the window moved.
+                engine.put([scripted_bar(0, 177), *bars[:600], *bars[601:]])
+                self.assertEqual((len(engine.bars), engine.bars[-1]), (len(bars), bars[-1]))
+                self.assertTrue(self.read(engine, cached, snapshots)[2])
+
+    def test_a_changed_gap_list_reads_the_whole_series(self):
+        bars = [scripted_bar(index) for index in range(1, 701)]
+        gap = DataGap(bars[5].start, bars[9].end)
+        engine = ScriptedEngine(bars, (gap,), snapshots=False)  # the terminal engine reports no gaps
+        cached = self.read(engine, None, False)[:2]
+        recovered = list(bars)
+        for index in range(5, 9):  # the gap is filled: old bars, far outside the window, now carry real prices
+            recovered[index] = scripted_bar(index + 1, 150)
+        engine.put(recovered, ())
+        self.assertTrue(self.read(engine, cached, False)[2])
+
+    def test_more_than_one_page_of_new_bars_reads_the_whole_series(self):
+        for label, snapshots in self.MODES:
+            with self.subTest(label):
+                bars = [scripted_bar(index) for index in range(1, 701)]
+                engine = ScriptedEngine(bars, snapshots=snapshots)
+                cached = self.read(engine, None, snapshots)[:2]
+                engine.put([*bars, *(scripted_bar(index) for index in range(701, 1101))])  # 400 new bars, more than a 300-bar page
+                self.assertTrue(self.read(engine, cached, snapshots)[2])
+
+    def test_a_series_that_lines_up_is_read_as_a_tail_in_one_or_two_calls(self):
+        for label, snapshots in self.MODES:
+            with self.subTest(label):
+                bars = [scripted_bar(index) for index in range(1, 701)]
+                engine = ScriptedEngine(bars, snapshots=snapshots)
+                cached = self.read(engine, None, snapshots)[:2]
+                engine.put([*bars[:-1], scripted_bar(700, 120), scripted_bar(701)])  # the forming bar changed and a new one began
+                del engine.queries[:]
+                self.assertFalse(self.read(engine, cached, snapshots)[2])
+                self.assertEqual(len(engine.queries), 2 if snapshots else 1)
 
 
 if __name__ == '__main__':

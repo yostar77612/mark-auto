@@ -13,19 +13,12 @@ from desktop_app.features.trading.market_terminal_widgets import QuoteItem
 from desktop_app.features.trading.market_watch import PendingRequests, _Result, start_request
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.order_book_panel import OrderBookPanel
+from desktop_app.features.trading.series_reader import SERIES_RESYNC_SECONDS, SERIES_TAIL_BARS as SERIES_TAIL_BARS, read_series as _detail_series
 from desktop_app.strings.catalog import ui_text
-from quantlab.trading.application.contracts import MarketSeriesQuery
 from quantlab.trading.application.sector_contracts import SectorGroupsCommand, SectorQuery
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 REFRESH_MS = 2000
-# The 2 s detail refresh re-reads only this many trailing bars: the forming bar, the tail of an aggregated
-# period and recent tick-loss marks (a loss marks the minutes it covers, which are the newest ones).
-SERIES_TAIL_BARS = 240
-# A whole-series read still happens at least this often. It bounds how long a change confined to bars older
-# than the re-read window stays unshown when the window itself still lines up: a same-size history re-backfill,
-# a loss mark on old minutes, or a session trim and an older backfill landing in the same refresh.
-SERIES_RESYNC_SECONDS = 120.0
 FILTERS = (('all', 'sector.filter_all'), ('INDUSTRY', 'sector.filter_industry'), ('CONCEPT', 'sector.filter_concept'))
 PERIODS = (('1m', 'terminal.period_1m'), ('5m', 'terminal.period_5m'), ('15m', 'terminal.period_15m'), ('1d', 'terminal.period_1d'))
 RANK_COLUMNS = ('group', 'kind', 'pct', 'breadth', 'limit_up', 'amount', 'share', 'share_vs', 'count')
@@ -94,37 +87,6 @@ def _table(name, headers, stretch=0, name_width=112):
     header.setSortIndicatorShown(True)
     table.verticalHeader().hide()
     return table
-
-
-def _detail_series(facade, key, period, cached):
-    """The selected stock's chart series as (page, bars, whole).
-
-    With `cached` (page, bars) from the previous read of the same stock and period, only the last
-    SERIES_TAIL_BARS are re-read and spliced on. Any sign that the earlier part may differ falls back to
-    the whole read: more than one page of new bars, a shorter series, changed gaps, or a mismatch in the
-    re-read window (a history backfill or trim shifts every index, so the window no longer lines up).
-    """
-    if cached is not None and cached[1]:
-        spliced = _detail_tail(facade, key, period, *cached)
-        if spliced is not None:
-            return (*spliced, False)
-    page = facade.market_series(MarketSeriesQuery(key, period))
-    bars = page.bars
-    while page.next_offset is not None:
-        page = facade.market_series(MarketSeriesQuery(key, period, offset=page.next_offset, market_revision=page.market_revision))
-        bars += page.bars
-    return page, bars, True
-
-
-def _detail_tail(facade, key, period, cached_page, cached_bars):
-    offset = max(0, len(cached_bars) - SERIES_TAIL_BARS)
-    page = facade.market_series(MarketSeriesQuery(key, period, offset=offset))
-    stable = len(cached_bars) - offset - 1  # cached bars in the window except the last, which may still be forming
-    if page.next_offset is not None or page.total < len(cached_bars) or page.gaps != cached_page.gaps:
-        return None
-    if len(page.bars) <= stable or page.bars[stable].start != cached_bars[-1].start or page.bars[:stable] != cached_bars[offset:-1]:
-        return None
-    return page, cached_bars[:offset] + page.bars
 
 
 class SectorBoardWidget(QWidget):
