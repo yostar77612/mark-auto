@@ -54,7 +54,7 @@ class DailyStats:
 
     days: int
     highs: tuple[tuple[int, Decimal], ...] = ()  # (window, highest high of that many days), ascending windows
-    avg_volume: int | None = None
+    avg_volume: Decimal | None = None  # exact: the comparison with a multiple must not round the average down
     avg_amount: int | None = None
 
 
@@ -63,7 +63,10 @@ def daily_stats(rows: Sequence[DailyRow], windows: Iterable[int], average_days: 
     highs = tuple((window, max(row.high for row in rows[-window:])) for window in sorted(windows) if len(rows) >= window)
     tail = rows[-average_days:] if len(rows) >= average_days else ()
     return DailyStats(
-        len(rows), highs, sum(row.volume for row in tail) // average_days if tail else None, sum(row.amount for row in tail) // average_days if tail else None
+        len(rows),
+        highs,
+        Decimal(sum(row.volume for row in tail)) / average_days if tail else None,
+        sum(row.amount for row in tail) // average_days if tail else None,
     )
 
 
@@ -86,7 +89,7 @@ def volume_breakout(
     if final:
         if not stats.avg_volume or total_volume < stats.avg_volume * multiple:
             return None
-        return window, Decimal(total_volume) / Decimal(stats.avg_volume)
+        return window, Decimal(total_volume) / stats.avg_volume
     if volume_ratio is None or volume_ratio < intraday_ratio:
         return None
     return window, volume_ratio

@@ -458,6 +458,44 @@ class BreakoutTests(unittest.TestCase):
         self.screener.on_round(at(14, 10, 0), self.rows(quote(when=at(13, 13, 30))))  # a Saturday: Friday's data again
         self.assertEqual(self.daily.closed, [])
 
+    def test_the_daily_row_is_not_written_on_a_weekend_nor_for_a_stale_weekday_after_the_close(self):
+        saturday_close = at(14, 14, 0)  # past 13:35 on a Saturday: Friday's data, not today's
+        self.screener.on_round(saturday_close, self.rows(quote(when=at(13, 13, 30))))
+        self.assertEqual(self.daily.closed, [])
+        holiday_close = at(10, 14, 0)  # a weekday holiday: every row still carries Monday's stamp
+        self.screener.on_round(holiday_close, self.rows(quote(when=at(9, 13, 30))))
+        self.assertEqual(self.daily.closed, [])
+        self.screener.on_round(at(10, 14, 0), self.rows(quote(when=at(10, 13, 30))))  # a real Tuesday close is written
+        self.assertEqual([day for day, _ in self.daily.closed], [date(2026, 11, 10)])
+
+    def test_funds_penny_and_thin_stocks_never_break_out(self):
+        stats = history(avg_amount=10**9)
+        self.daily.by_code = {code: stats for code in ('0050', '1234', '2345', '3456')}
+        rows = self.rows(
+            quote('0050', when=MONDAY_1000),  # an ETF
+            quote('1234', price='9', open='8', high='9.2', low='7.9', pct='12', when=MONDAY_1000),  # below the minimum price
+            quote('2345', volume=400, when=MONDAY_1000),  # thin
+            quote('3456', when=MONDAY_1000),  # the control: a real breakout
+        )
+        self.screener.on_round(MONDAY_1000, rows)
+        self.assertEqual([entry.code for entry in self.screener.result().breakouts], ['3456'])
+
+    def test_a_failing_daily_file_costs_the_round_nothing_but_the_breakouts(self):
+        class Broken(FakeDaily):
+            def stats(self, day):
+                raise OSError('disk')
+
+            def record_close(self, day, rows):
+                raise OSError('disk')
+
+        self.screener.daily = Broken({})
+        self.screener.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))
+        result = self.screener.result()
+        self.assertEqual(([entry.code for entry in result.surges], result.breakouts, result.history_days), (['1234'], (), 0))
+        self.assertEqual([code for code, *_ in self.history.requests], ['1234'])  # the surge download still happened
+        self.screener.on_round(MONDAY_1340, self.rows(quote('2345', when=at(9, 13, 30))))  # the closing write fails
+        self.assertEqual([code for code, *_ in self.history.requests][-1], '2345')  # but the round's download is not lost
+
     def test_without_daily_quotes_nothing_is_judged_for_breakouts(self):
         plain = StockScreener(lambda: self.params, lambda: self.stocks, self.history, lambda *args: None)
         plain.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))

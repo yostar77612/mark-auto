@@ -142,6 +142,23 @@ class MarketRuntimeTests(unittest.TestCase):
         backfill.close()
         self.assertFalse(backfill._thread.is_alive())
 
+    def test_closing_the_bundle_stops_the_backfill_worker_and_closes_the_daily_store(self):
+        import time
+
+        import sqlite3
+
+        from quantlab.trading.domain.validation import DomainError
+        from quantlab.trading.runtime.market_daily import start_market_daily
+
+        start_market_daily(self.bundle, lambda url: (_ for _ in ()).throw(DomainError('official_stock_invalid', 'offline')))
+        backfill, store = self.bundle.market_daily_backfill, self.bundle.market_daily_store
+        time.sleep(0.05)
+        self.assertTrue(backfill._thread.is_alive())
+        self.bundle.close()
+        self.assertFalse(backfill._thread.is_alive())
+        with self.assertRaises(sqlite3.ProgrammingError):
+            store.upsert(())  # the store is closed with the bundle
+
     def test_a_failing_sector_hook_still_lets_the_screener_see_the_round(self):
         from quantlab.trading.domain.sector import QuoteRow
         from quantlab.trading.domain.watch import WatchInstrument, WatchKind

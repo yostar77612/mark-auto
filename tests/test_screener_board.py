@@ -151,6 +151,22 @@ class BoardTests(unittest.TestCase):
         view = self.board.view(ScreenerQuery('BREAKOUT'))
         self.assertEqual((view.state, view.progress_days, view.progress_needed, view.data_at), ('ACCUMULATING', 59, 60, MONDAY_1000))
 
+    def test_an_unusable_daily_file_is_named_while_the_list_accumulates(self):
+        board = ScreenerBoard(
+            lambda: 'LIVE',
+            lambda: self.now,
+            lambda: (*self.stocks, *FIXED_INDICES),
+            self.screener,
+            self.store,
+            self.history,
+            lambda: self.params,
+            clock=lambda: self.clock_value,
+            daily_code=lambda: 'market_daily_unavailable',
+        )
+        view = board.view(ScreenerQuery('BREAKOUT'))
+        self.assertEqual((view.state, view.code, view.progress_days), ('ACCUMULATING', 'market_daily_unavailable', 0))
+        self.assertEqual(self.board.view(ScreenerQuery('BREAKOUT')).code, '')  # a healthy file names nothing
+
     def test_the_breakout_list_names_the_window_the_strength_and_whether_it_is_provisional(self):
         stats = {
             '1234': DailyStats(240, ((60, Decimal(105)), (120, Decimal(108))), 1000, 80_000_000),

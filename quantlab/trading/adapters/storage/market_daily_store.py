@@ -45,6 +45,9 @@ class MarketDailyStore:
         self.revision = 0  # advances on every write, so readers can tell when a cached summary is stale
         try:
             self._open()
+        except sqlite3.OperationalError:
+            # Locked or unreadable right now is not damage: leave the file where it is.
+            raise DomainError('market_daily_unavailable', 'cannot open the market daily file') from None
         except (sqlite3.DatabaseError, DomainError):
             # Set the unreadable file aside (the official data can be fetched again) and start a fresh one.
             try:

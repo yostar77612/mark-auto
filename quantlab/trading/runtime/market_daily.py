@@ -20,14 +20,14 @@ from quantlab.trading.domain.validation import DomainError
 logger = logging.getLogger(__name__)
 _TAIPEI = ZoneInfo('Asia/Taipei')
 _ENDPOINTS = {
-    (TWSE_HOST, TWSE_PATH): {'response': 'json', 'date': r'\d{8}', 'type': 'ALLBUT0999'},
-    (TPEX_HOST, TPEX_PATH): {'date': r'\d{4}/\d{2}/\d{2}', 'type': 'EW', 'response': 'json'},
+    (TWSE_HOST, TWSE_PATH): {'response': 'json', 'date': r'[0-9]{8}', 'type': 'ALLBUT0999'},
+    (TPEX_HOST, TPEX_PATH): {'date': r'[0-9]{4}/[0-9]{2}/[0-9]{2}', 'type': 'EW', 'response': 'json'},
 }
 
 
 def validate_daily_url(url: str) -> str:
     """Only the two fixed official endpoints with exactly their own query keys and shapes."""
-    if not isinstance(url, str) or len(url) > 200:
+    if not isinstance(url, str) or len(url) > 200 or not url.isascii() or any(ord(char) <= 32 for char in url):
         raise DomainError('official_stock_invalid', 'bounded official URL required')
     parts = urlsplit(url)
     patterns = _ENDPOINTS.get((parts.netloc, parts.path))
@@ -44,7 +44,8 @@ def fetch_daily_official(url: str) -> bytes:
     """One bounded HTTPS GET without proxy, redirect or compression; the body, URL and upstream text are never logged."""
     validate_daily_url(url)
     deadline = time.monotonic() + 30
-    opener = build_opener(ProxyHandler({}), _NoRedirect(), _DeadlineHTTPSHandler(deadline))
+    handler = _DeadlineHTTPSHandler(deadline)
+    opener = build_opener(ProxyHandler({}), _NoRedirect(), handler)
     request = Request(url, headers={'Accept': 'application/json', 'Accept-Encoding': 'identity', 'User-Agent': 'MarkAuto-market-daily/1'})
     try:
         with opener.open(request, timeout=20) as response:
@@ -70,6 +71,8 @@ def fetch_daily_official(url: str) -> bytes:
     except Exception:
         # Only the external HTTP boundary is caught; the caller retries later and nothing is recorded.
         raise DomainError('official_stock_invalid', 'official fetch failed') from None
+    finally:
+        handler.cleanup()  # the deadline timers would otherwise live on for about 30 s after every request
 
 
 def attach_market_daily(bundle, params, now):

@@ -84,12 +84,57 @@ class ParserTests(unittest.TestCase):
     def test_a_duplicate_code_or_a_day_of_unparseable_rows_is_refused(self):
         twse = json.loads(fixture('twse_20261120.json'))
         table = twse['tables'][1]
-        twice = {**twse, 'tables': [twse['tables'][0], {**table, 'data': [table['data'][0], table['data'][0]]}]}
+        tsmc = next(row for row in table['data'] if row[0] == '2330')
+        twice = {**twse, 'tables': [twse['tables'][0], {**table, 'data': [tsmc, tsmc]}]}
         with self.assertRaises(DomainError):
             parse_twse(json.dumps(twice).encode(), FRIDAY)
         broken = [[row[0], *row[1:5], 'x', 'x', 'x', 'x', *row[9:]] for row in table['data'] if row[0] == '2330']
         with self.assertRaises(DomainError):
             parse_twse(json.dumps({**twse, 'tables': [twse['tables'][0], {**table, 'data': broken}]}).encode(), FRIDAY)
+
+    def test_an_empty_table_is_never_a_holiday_only_the_recognised_empty_answers_are(self):
+        twse, tpex = json.loads(fixture('twse_20261120.json')), json.loads(fixture('tpex_20261120.json'))
+        empty_twse = {**twse, 'tables': [twse['tables'][0], {**twse['tables'][1], 'data': []}]}
+        with self.assertRaises(DomainError):
+            parse_twse(json.dumps(empty_twse).encode(), FRIDAY)
+        for total in (5, None):  # TPEx says it has rows but sends none, or does not say how many
+            table = {**tpex['tables'][0], 'data': []}
+            table['totalCount'] = total
+            with self.subTest(total=total), self.assertRaises(DomainError):
+                parse_tpex(json.dumps({**tpex, 'tables': [table]}).encode(), FRIDAY)
+
+    def test_the_tpex_holiday_answer_must_carry_the_requested_day(self):
+        holiday = json.loads(fixture('tpex_holiday.json'))
+        self.assertIsNone(parse_tpex(json.dumps(holiday).encode(), date(2026, 11, 21)))
+        for document in ({**holiday, 'date': '20261119'}, {k: v for k, v in holiday.items() if k != 'date'}):
+            with self.subTest(document=document.get('date')), self.assertRaises(DomainError):
+                parse_tpex(json.dumps(document).encode(), date(2026, 11, 21))
+
+    def test_a_wrong_shape_is_a_typed_refusal_never_a_type_error(self):
+        twse, tpex = json.loads(fixture('twse_20261120.json')), json.loads(fixture('tpex_20261120.json'))
+        daily = twse['tables'][1]
+        for tables in (None, 5, 'x', {}):
+            with self.subTest(twse_tables=tables), self.assertRaises(DomainError):
+                parse_twse(json.dumps({**twse, 'tables': tables}).encode(), FRIDAY)
+        for fields in (None, 5, 'abc', {}):
+            with self.subTest(twse_fields=fields), self.assertRaises(DomainError):
+                parse_twse(json.dumps({**twse, 'tables': [twse['tables'][0], {**daily, 'fields': fields}]}).encode(), FRIDAY)
+            with self.subTest(tpex_fields=fields), self.assertRaises(DomainError):
+                parse_tpex(json.dumps({**tpex, 'tables': [{**tpex['tables'][0], 'fields': fields}]}).encode(), FRIDAY)
+
+    def test_an_absurd_exponent_is_skipped_at_once_instead_of_running_for_minutes(self):
+        import time
+
+        twse = json.loads(fixture('twse_20261120.json'))
+        table = twse['tables'][1]
+        rows = [list(row) for row in table['data']]
+        for row in rows:
+            if row[0] == '2330':
+                row[2] = '1e1000000'
+        started = time.perf_counter()
+        quotes = parse_twse(json.dumps({**twse, 'tables': [twse['tables'][0], {**table, 'data': rows}]}).encode(), FRIDAY)
+        self.assertLess(time.perf_counter() - started, 2)
+        self.assertEqual({item.code for item in quotes}, {'2317', '1101'})
 
     def test_the_port_picks_the_right_parser_and_url(self):
         source = OfficialDailySource()
@@ -110,6 +155,10 @@ class ParserTests(unittest.TestCase):
             twse_url(FRIDAY).replace('www.twse.com.tw', 'example.com'),
             twse_url(FRIDAY).replace('20261120', '2026-11-20'),
             tpex_url(FRIDAY).replace('EW', 'AL'),
+            twse_url(FRIDAY).replace('20261120', '２０２６１１２０'),  # non-ASCII digits
+            ' ' + twse_url(FRIDAY),
+            twse_url(FRIDAY) + '\n',
+            twse_url(FRIDAY).replace('response=json', 'response=json&response=json'),
             tpex_url(FRIDAY) + '#frag',
             'https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=20261101&stockNo=2330',
         ):
@@ -138,6 +187,16 @@ class DomainTests(unittest.TestCase):
         stats = daily_stats(rows, (60,), 20)
         self.assertEqual(stats.highs, ((60, Decimal(120)),))
         self.assertEqual((stats.avg_volume, stats.avg_amount), ((19 * 1000 + 2000) // 20, (19 * 100_000_000 + 300_000_000) // 20))
+
+    def test_the_average_volume_is_exact_so_a_multiple_is_not_met_by_rounding(self):
+        rows = self.rows(20, volume=1000)
+        rows[-1] = DailyRow(rows[-1].trade_date, rows[-1].high, 1019, rows[-1].amount)  # 20,019 lots over 20 days = 1,000.95
+        stats = daily_stats(rows, (20,), 20)
+        self.assertEqual(stats.avg_volume, Decimal('1000.95'))
+        final = dict(final=True, multiple=Decimal(2), intraday_ratio=Decimal(2))
+        stats = DailyStats(20, ((20, Decimal(100)),), stats.avg_volume, stats.avg_amount)
+        self.assertIsNone(volume_breakout(Decimal(101), 2001, None, stats, **final))  # twice 1,000.95 is 2,001.9
+        self.assertEqual(volume_breakout(Decimal(101), 2002, None, stats, **final)[0], 20)
 
     def test_the_largest_window_whose_high_the_price_exceeds_is_reported(self):
         stats = DailyStats(240, ((60, Decimal(100)), (120, Decimal(110)), (240, Decimal(130))))
@@ -252,6 +311,20 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(store.revision, 1)
         self.store = store
 
+    def test_a_locked_file_is_unavailable_and_is_never_moved_aside(self):
+        import sqlite3
+        from unittest import mock
+
+        self.store.close()
+        before = self.path.read_bytes()
+        with mock.patch('quantlab.trading.adapters.storage.market_daily_store.sqlite3.connect', side_effect=sqlite3.OperationalError('database is locked')):
+            with self.assertRaises(DomainError) as raised:
+                MarketDailyStore(self.path.resolve())
+        self.assertEqual(raised.exception.code, 'market_daily_unavailable')
+        self.assertEqual((self.path.read_bytes(), list(self.path.parent.glob('*.bad-*'))), (before, []))
+        reopened = MarketDailyStore(self.path.resolve())  # and it opens again once the lock is gone
+        self.addCleanup(reopened.close)
+
     def test_the_store_is_a_separate_file_from_the_kline_store(self):
         self.assertEqual(self.path.name, 'market_daily.sqlite3')
         self.assertTrue(self.path.exists())
@@ -332,8 +405,13 @@ class BackfillTests(unittest.TestCase):
         self.backfill = MarketDailyBackfill(self.store, source, fetch, lambda: self.today, lambda: NOW, target_days=3, max_age_days=30, pause=0, idle=0.01)
 
     def run_all(self):
-        while self.backfill.step():
-            pass
+        for _ in range(200):  # a runaway loop is a failure, not a hang
+            if not self.backfill.step():
+                return
+        self.fail_runaway()
+
+    def fail_runaway(self):
+        self.fail('the backfill never ran out of work')
 
     def test_it_goes_newest_first_skips_weekends_and_today_and_stops_at_the_target_number_of_trading_days(self):
         self.run_all()
@@ -372,6 +450,76 @@ class BackfillTests(unittest.TestCase):
         self.backfill.max_age_days, self.backfill.target_days = 5, 99
         self.run_all()
         self.assertEqual(min(url.rsplit('/', 1)[1] for url in self.fetched), '2026-11-16')
+
+    def test_it_never_asks_for_today_even_on_a_weekday_and_starts_the_day_before(self):
+        self.today = date(2026, 11, 20)  # a Friday
+        self.backfill.step()
+        self.assertEqual(self.fetched, ['https://example.test/TWSE/2026-11-19'])
+        self.run_all()
+        self.assertNotIn('2026-11-20', ''.join(self.fetched))
+
+    def test_a_response_that_cannot_be_parsed_records_nothing(self):
+        self.backfill.source = SimpleNamespace(url=lambda market, day: f'https://example.test/{market}/{day.isoformat()}', parse=self.refuse)
+        with self.assertRaises(DomainError):
+            self.backfill.step()
+        self.assertEqual(self.store.fetched(date(2026, 11, 20)), {})
+
+    def refuse(self, market, raw, day):
+        raise DomainError('official_stock_invalid', 'unsupported response')
+
+    def test_an_empty_answer_from_a_parser_is_refused_never_recorded_as_a_holiday(self):
+        self.backfill.source = SimpleNamespace(url=lambda market, day: f'https://example.test/{market}/{day.isoformat()}', parse=lambda market, raw, day: ())
+        with self.assertRaises(DomainError):
+            self.backfill.step()
+        self.assertEqual(self.store.fetched(date(2026, 11, 20)), {})
+
+    def test_a_day_that_keeps_being_refused_is_left_for_the_next_run_so_older_days_are_still_reached(self):
+        good = self.backfill.source
+        self.backfill.source = SimpleNamespace(
+            url=good.url,
+            parse=lambda market, raw, day: self.refuse(market, raw, day) if (day, market) == (date(2026, 11, 20), 'TWSE') else good.parse(market, raw, day),
+        )
+        for _ in range(3):
+            with self.assertRaises(DomainError):
+                self.backfill.step()
+        self.assertEqual(self.store.fetched(date(2026, 11, 20)), {})
+        self.assertTrue(self.backfill.step())  # the fourth step moves on instead of asking for the same day again
+        self.assertNotEqual(self.fetched[-1], 'https://example.test/TWSE/2026-11-20')
+
+    def waits_of(self, steps):
+        """Run the worker against scripted outcomes and return the waits it asked for."""
+        waits, outcomes = [], iter(steps)
+
+        class Stop:
+            def __init__(inner):
+                inner.count = 0
+
+            def is_set(inner):
+                return inner.count >= len(steps)
+
+            def wait(inner, seconds):
+                waits.append(seconds)
+                inner.count += 1
+
+        def step():
+            outcome = next(outcomes)
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+
+        backfill = MarketDailyBackfill(self.store, self.backfill.source, lambda url: b'', lambda: self.today, lambda: NOW)
+        backfill._stopped, backfill.step = Stop(), step
+        backfill._work()
+        return waits
+
+    def test_the_worker_waits_the_pause_between_requests_the_idle_time_when_done_and_backs_off_on_failure(self):
+        refused = DomainError('official_stock_invalid', 'down')
+        self.assertEqual(self.waits_of([True, True, False]), [4.0, 4.0, 3600.0])
+        self.assertEqual(self.waits_of([refused, refused, refused, True]), [120.0, 240.0, 480.0, 4.0])  # doubling, then reset
+        self.assertEqual(self.waits_of([refused] * 6), [120.0, 240.0, 480.0, 960.0, 1800.0, 1800.0])  # capped
+
+    def test_the_worker_survives_any_exception_not_only_a_domain_error(self):
+        self.assertEqual(self.waits_of([TypeError('odd shape'), ValueError('worse'), True]), [120.0, 240.0, 4.0])
 
     def test_the_worker_thread_fills_the_store_and_stops_on_close(self):
         import time

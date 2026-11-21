@@ -15,6 +15,7 @@ from quantlab.trading.domain.validation import DomainError
 
 MAX_BYTES = 8 * 1024 * 1024
 MAX_ROWS = 5000
+MAX_DIGITS = 15  # a day's shares or NT$ amount never has more than 15 digits (DailyQuote bounds them far lower)
 TWSE_HOST, TWSE_PATH = 'www.twse.com.tw', '/exchangeReport/MI_INDEX'
 TPEX_HOST, TPEX_PATH = 'www.tpex.org.tw', '/www/zh-tw/afterTrading/otc'
 TWSE_NO_DATA = '很抱歉，沒有符合條件的資料!'
@@ -48,6 +49,8 @@ def _document(raw: bytes) -> dict:
 
 
 def _columns(fields, wanted: dict[str, str]) -> dict[str, int]:
+    if not isinstance(fields, list):
+        raise _invalid()
     names = [str(field).strip() for field in fields]
     if any(label not in names for label in wanted.values()):
         raise _invalid()
@@ -72,6 +75,8 @@ def _quote(cells, columns: dict[str, int], day: date) -> DailyQuote | None:
     shares, amount = _number(cells[columns['shares']]), _number(cells[columns['amount']])
     if any(value is None or value <= 0 for value in prices) or shares is None or amount is None or shares < 0 or amount < 0:
         return None
+    if shares.adjusted() > MAX_DIGITS or amount.adjusted() > MAX_DIGITS:  # int() of a huge exponent would run for minutes
+        return None
     try:
         return DailyQuote(code, day, *prices, int(shares) // 1000, int(amount))
     except DomainError:
@@ -92,8 +97,8 @@ def _rows(table: dict, wanted: dict[str, str], day: date) -> tuple[DailyQuote, .
             quotes.append(quote)
     if len({quote.code for quote in quotes}) != len(quotes):
         raise _invalid()
-    if data and not quotes:
-        raise _invalid()
+    if not quotes:
+        raise _invalid()  # an empty table is never a holiday: only the recognised empty answers are
     return tuple(quotes)
 
 
@@ -104,7 +109,7 @@ def parse_twse(raw: bytes, day: date) -> tuple[DailyQuote, ...] | None:
         if document.get('stat') == TWSE_NO_DATA:
             return None
         raise _invalid()
-    if str(document.get('stat', '')).upper() != 'OK' or document.get('date') != day.strftime('%Y%m%d'):
+    if str(document.get('stat', '')).upper() != 'OK' or document.get('date') != day.strftime('%Y%m%d') or not isinstance(document['tables'], list):
         raise _invalid()
     tables = [table for table in document['tables'] if isinstance(table, dict) and TWSE_TABLE in str(table.get('title', ''))]
     if len(tables) != 1:
@@ -119,10 +124,10 @@ def parse_tpex(raw: bytes, day: date) -> tuple[DailyQuote, ...] | None:
     if str(document.get('stat', '')).upper() != 'OK' or not isinstance(tables, list) or len(tables) != 1 or not isinstance(tables[0], dict):
         raise _invalid()
     table = tables[0]
-    if not table.get('data') and table.get('totalCount') == 0:
-        return None
-    if document.get('date') != day.strftime('%Y%m%d'):
+    if document.get('date') != day.strftime('%Y%m%d'):  # also for the empty answer: a holiday is only today's own
         raise _invalid()
+    if table.get('data') == [] and table.get('totalCount') == 0:
+        return None
     return _rows(table, TPEX_FIELDS, day)
 
 

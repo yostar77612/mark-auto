@@ -5,6 +5,7 @@ calls the snapshot source itself. Amounts stay integer NT$, prices and ratios st
 """
 
 from dataclasses import dataclass
+import logging
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from threading import RLock
@@ -17,6 +18,7 @@ from quantlab.trading.domain.sector import QuoteRow, eligible_stock
 from quantlab.trading.domain.watch import WatchInstrument
 from .sector_service import SESSION_END, in_session
 
+logger = logging.getLogger(__name__)
 _TAIPEI = ZoneInfo('Asia/Taipei')
 # Below the main chart (0) and every watchlist entry (2 + position): the screener never delays what the user is watching.
 SCREENER_PRIORITY = 10_000
@@ -204,12 +206,11 @@ class StockScreener:
         day = _data_day(now, rows)
         # A stock that has not traded today still carries an earlier day's totals in the snapshot: it is not today's news.
         rows = {code: row for code, row in rows.items() if row.at.astimezone(_TAIPEI).date() == day}
-        history_days = self.daily.days(day) if self.daily is not None else 0
+        stats, history_days = self._daily_facts(day)
         if not ranking_open(now, params):
             with self._lock:
                 self._result = ScreenResult(day, False, now, history_days=history_days)
             return
-        stats = self.daily.stats(day) if self.daily is not None else {}
         entries = rank_surges(rows, params, lambda code, row: _typical(stats.get(code), row))
         breakouts = find_breakouts(rows, stats, params, final=not in_session(now))
         with self._lock:
@@ -219,11 +220,29 @@ class StockScreener:
             candidates = [(entry.code, entry.pattern) for entry in entries if entry.pattern]
             candidates += [(entry.code, BREAKOUT) for entry in breakouts]
             new = [key for key in candidates if self._wanted(key[1], params) and not self._done(day, fired, key)]
-        if local.weekday() < 5 and local.time() > SESSION_END and day == local.date():
+        closing = local.weekday() < 5 and local.time() > SESSION_END and day == local.date()
+        if closing:
             self._refill(day, now)  # before the new triggers: those already reach now
-            if self.daily is not None:
-                self.daily.record_close(day, rows)
         self._download(day, new, now)
+        if closing and self.daily is not None:
+            self._record_close(day, rows)
+
+    def _daily_facts(self, day: date) -> tuple[dict[str, DailyStats], int]:
+        """The market-wide daily statistics, or nothing when that file cannot be read: the surge list and the downloads
+        must not depend on it."""
+        if self.daily is None:
+            return {}, 0
+        try:
+            return self.daily.stats(day), self.daily.days(day)
+        except Exception as error:  # a disk boundary, like the K-line store
+            logger.error('market daily statistics unavailable (%s)', type(error).__name__)
+            return {}, 0
+
+    def _record_close(self, day: date, rows: dict[str, QuoteRow]) -> None:
+        try:
+            self.daily.record_close(day, rows)
+        except Exception as error:
+            logger.error('market daily closing write failed (%s)', type(error).__name__)
 
     def _done(self, day: date, fired: set[tuple[str, str]], key: tuple[str, str]) -> bool:
         return key in fired or self._logged.get(key, date.min) >= day

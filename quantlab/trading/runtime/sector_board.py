@@ -169,7 +169,15 @@ def attach_sector(bundle):
     daily = attach_market_daily(bundle, params, service.now)
     screener = StockScreener(params, service.stocks, bundle.market_history, bundle.alerts.record_screen, lookback_days=lookback, daily=daily)
     bundle.screener_board = ScreenerBoard(
-        service.status, service.now, lambda: connection.directory.items, screener, bundle.kline_store, bundle.market_history, params, lookback_days=lookback
+        service.status,
+        service.now,
+        lambda: connection.directory.items,
+        screener,
+        bundle.kline_store,
+        bundle.market_history,
+        params,
+        lookback_days=lookback,
+        daily_code=lambda: '' if daily is not None else 'market_daily_unavailable',
     )
     screener.seed(_logged_screen_triggers(bundle.alerts.service.events))
 

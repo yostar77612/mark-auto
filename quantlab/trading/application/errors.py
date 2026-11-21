@@ -109,6 +109,7 @@ V2_ERROR_TEXT = {
     'history_query_failed': ErrorText('歷史 K 線更新失敗。', '保留本機已有資料，恢復行情連線後按重試。'),
     'symbol_not_found': ErrorText('找不到這個商品。', '確認股號；未連線時只能搜尋本機已有資料。'),
     'kline_store_unavailable': ErrorText('本機 K 線庫無法使用。', '原檔已保留，已建立新檔；可重新更新歷史。'),
+    'market_daily_unavailable': ErrorText('全市場日 K 檔無法使用，帶量突破新高暫不判斷。', '族群與報價不受影響；請檢查磁碟空間與寫入權限後重新啟動程式。'),
     'alert_invalid_params': ErrorText('警示參數不正確。', '依欄位提示修正後再建立。'),
     'alert_store_unavailable': ErrorText('警示檔案無法使用。', '保留原檔，檢查工作區寫入權限後重試。'),
     'subscription_limit_reached': ErrorText('行情訂閱額度已滿。', '移除自選商品後再試；既有策略訂閱保留。'),

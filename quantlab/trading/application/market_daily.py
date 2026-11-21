@@ -18,6 +18,7 @@ from quantlab.trading.ports.market_daily import MarketDailySourcePort
 logger = logging.getLogger(__name__)
 OFFICIAL_MARKETS = ('TWSE', 'TPEX')
 STATS_TTL = 60.0
+REFUSALS_BEFORE_SKIP = 3
 
 
 class DailyStorePort(Protocol):
@@ -105,6 +106,7 @@ class MarketDailyBackfill:
         self.target_days, self.max_age_days, self.pause, self.idle = target_days, max_age_days, pause, idle
         self._stopped = Event()
         self._thread: Thread | None = None
+        self._refused: dict[tuple[date, str], int] = {}
 
     def next_pending(self) -> tuple[date, str] | None:
         today = self.today()
@@ -113,7 +115,7 @@ class MarketDailyBackfill:
             if day.weekday() < 5:
                 done = self.store.fetched(day)
                 for market in OFFICIAL_MARKETS:
-                    if market not in done:
+                    if market not in done and self._refused.get((day, market), 0) < REFUSALS_BEFORE_SKIP:
                         return day, market
                 counted += any(done[market] > 0 for market in OFFICIAL_MARKETS)
             day -= timedelta(days=1)
@@ -128,7 +130,15 @@ class MarketDailyBackfill:
             return False
         day, market = pending
         url = self.source.url(market, day)
-        quotes = self.source.parse(market, self.fetch(url), day) or ()
+        try:
+            parsed = self.source.parse(market, self.fetch(url), day)
+            if parsed is not None and not parsed:
+                raise DomainError('official_stock_invalid', 'an empty answer is not a holiday')
+        except Exception:
+            # One day that is always refused must not hold up every older day: after a few refusals it is left for the next run.
+            self._refused[(day, market)] = self._refused.get((day, market), 0) + 1
+            raise
+        quotes = parsed or ()
         self.store.upsert(quotes)
         self.store.mark(day, market, url, len(quotes), self.now())
         return True
@@ -149,9 +159,9 @@ class MarketDailyBackfill:
             try:
                 worked = self.step()
                 failures = 0
-            except DomainError as error:
+            except Exception as error:  # a background worker must never die silently, whatever the failure was
                 failures += 1
-                logger.warning('market daily backfill step failed (%s); retrying later', error.code)
+                logger.warning('market daily backfill step failed (%s); retrying later', getattr(error, 'code', type(error).__name__))
                 self._stopped.wait(min(1800.0, 60.0 * 2**failures))
                 continue
             self._stopped.wait(self.pause if worked else self.idle)

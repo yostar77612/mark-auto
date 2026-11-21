@@ -45,10 +45,11 @@ class ScreenerBoard:
         *,
         lookback_days: int = 365,
         clock: Callable[[], float] = monotonic,
+        daily_code: Callable[[], str] = lambda: '',
     ):
         self.status, self.now, self.directory, self.screener = status, now, directory, screener
         self.store, self.history, self.params = store, history, params
-        self.lookback_days, self.clock = lookback_days, clock
+        self.lookback_days, self.clock, self.daily_code = lookback_days, clock, daily_code
         self._downloaded: tuple[float, tuple[DownloadedRowView, ...]] | None = None
 
     def view(self, query: ScreenerQuery) -> ScreenerView:
@@ -103,6 +104,7 @@ class ScreenerBoard:
                 data_at=result.at,
                 progress_days=result.history_days,
                 progress_needed=params.window_short,
+                code=self.daily_code(),  # why the daily quotes are missing, when the file itself cannot be used
             )
         by_code = {item.code: item for item in self.directory() if item.kind is WatchKind.STOCK}
         rows, code = [], ''
