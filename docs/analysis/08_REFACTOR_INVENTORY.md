@@ -1015,6 +1015,8 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tools/bench_kline_open.py` | 99 | tooling | `tools/bench_kline_open.py` | bench_kline_open: offline KlineStore open / quick_check timing (OPT-1 P10, measure only) |
 | `quantlab/trading/domain/futures_hours.py` | 80 | domain | `quantlab/trading/domain/futures_hours.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `tools/bench_backtest_repeat.py` | 82 | tooling | `tools/bench_backtest_repeat.py` | bench_backtest_repeat: frozen vs live run_backtest timing on one Dataset (OPT-1 P7) |
+| `desktop_app/strings/m6_screener.py` | 8 | shared | `desktop_app/strings/m6_screener.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/stock_screener.py` | 230 | application | `quantlab/trading/application/stock_screener.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

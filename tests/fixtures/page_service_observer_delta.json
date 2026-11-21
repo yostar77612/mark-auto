@@ -486,6 +486,17 @@
             "symbol": "OrderBookServiceTests.setUp"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_m1_market_runtime.py",
+            "kind": "assignment",
+            "name": "history",
+            "occurrence": 1,
+            "receiver": "self.bundle.screener",
+            "symbol": "MarketRuntimeTests.test_each_sector_round_feeds_the_screener_after_the_sector_hooks_and_the_extra_close_round_only_the_screener"
+          },
+          "count": 1
         }
       ]
     },
