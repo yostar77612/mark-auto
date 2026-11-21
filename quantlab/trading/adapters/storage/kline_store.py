@@ -66,8 +66,9 @@ _DISTINCT_IDS = (
     'SELECT id FROM ids'
 )
 _CACHED_INSTRUMENTS = 4
-# OPT-1 P10: the full integrity check runs after an unclean exit, with a non-empty WAL, or when it is this old.
-_FULL_CHECK_INTERVAL = timedelta(days=7)
+# OPT-1 P10: the full integrity check runs after an unclean exit, with a non-empty WAL, or when it is this old
+# (30 days since 2026-11-21: the owner chose a longer period because a multi-GB store takes tens of seconds to check).
+_FULL_CHECK_INTERVAL = timedelta(days=30)
 # Each open store keeps one meta row under this prefix until close(); a row left behind marks an unclean exit.
 _OPEN_TOKEN = 'open:'
 
