@@ -9,6 +9,7 @@ from quantlab.trading.application.screener_board import DOWNLOADED_TTL, Screener
 from quantlab.trading.application.screener_contracts import ScreenerQuery, ScreenerRowView, ScreenerView
 from quantlab.trading.application.stock_screener import SCREENER_PRIORITY, StockScreener, download_window
 from quantlab.trading.domain.screener import ScreenerParams
+from quantlab.trading.domain.market_daily import DailyStats
 from quantlab.trading.domain.sector import QuoteRow
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
@@ -130,9 +131,34 @@ class BoardTests(unittest.TestCase):
         view = self.board.view(ScreenerQuery('SURGE'))
         self.assertEqual(([row.kline for row in view.rows], view.code), ([''], 'kline_store_unavailable'))
 
-    def test_the_breakout_list_only_accumulates_until_the_daily_klines_exist(self):
+    def test_the_breakout_list_only_accumulates_until_the_daily_quotes_cover_the_shortest_window(self):
         view = self.board.view(ScreenerQuery('BREAKOUT'))
         self.assertEqual((view.state, view.rows, view.progress_days, view.progress_needed), ('ACCUMULATING', (), 0, 60))
+        daily = SimpleNamespace(stats=lambda day: {'1234': DailyStats(59, (), 1000, 80_000_000)}, days=lambda day: 59, record_close=lambda day, rows: None)
+        self.screener.daily = daily
+        self.round(quote('1234'))
+        view = self.board.view(ScreenerQuery('BREAKOUT'))
+        self.assertEqual((view.state, view.progress_days, view.progress_needed, view.data_at), ('ACCUMULATING', 59, 60, MONDAY_1000))
+
+    def test_the_breakout_list_names_the_window_the_strength_and_whether_it_is_provisional(self):
+        stats = {
+            '1234': DailyStats(240, ((60, Decimal(105)), (120, Decimal(108))), 1000, 80_000_000),
+            '2345': DailyStats(240, ((60, Decimal(105)),), 1000, 80_000_000),
+        }
+        self.screener.daily = SimpleNamespace(stats=lambda day: stats, days=lambda day: 240, record_close=lambda day, rows: None)
+        self.round(quote('1234'), quote('2345', ratio='2.5'), quote('3456', ratio='9'))
+        view = self.board.view(ScreenerQuery('BREAKOUT'))
+        self.assertEqual(
+            [(row.code, row.name, row.label, row.ratio, row.provisional, row.kline) for row in view.rows],
+            [('1234', '甲', '120', Decimal(4), True, 'YEAR'), ('2345', '乙', '60', Decimal('2.5'), True, 'YEAR')],
+        )
+        self.assertEqual((view.state, view.min_volume_lots), ('LIVE', 500))
+        self.status = 'OFFLINE'
+        self.assertEqual(self.board.view(ScreenerQuery('BREAKOUT')).rows, ())
+        self.status = 'LIVE'
+        self.now = MONDAY_0905
+        self.round(quote('1234', when=MONDAY_0905), when=MONDAY_0905)
+        self.assertEqual(self.board.view(ScreenerQuery('BREAKOUT')).state, 'WARMUP')
 
     def test_the_downloaded_list_reads_extents_without_counting_and_sorts_by_code(self):
         early, late, updated = MONDAY_1000 - timedelta(days=364), MONDAY_1000, MONDAY_1000 + timedelta(hours=1)

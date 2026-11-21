@@ -75,8 +75,12 @@ def event_direction(event):
     return event.message_args[index] if len(event.message_args) > index else 'ANY'
 
 
-_SCREEN_DIRECTIONS = {'SURGE_RED': 'UP', 'SURGE_BLACK': 'DOWN'}
-_SCREEN_CONDITIONS = {'SURGE_RED': ui_text('screen.cond_surge_red'), 'SURGE_BLACK': ui_text('screen.cond_surge_black')}
+_SCREEN_DIRECTIONS = {'SURGE_RED': 'UP', 'SURGE_BLACK': 'DOWN', 'BREAKOUT': 'UP'}
+_SCREEN_CONDITIONS = {
+    'SURGE_RED': ui_text('screen.cond_surge_red'),
+    'SURGE_BLACK': ui_text('screen.cond_surge_black'),
+    'BREAKOUT': ui_text('screen.cond_breakout'),
+}
 
 
 def event_text(event):

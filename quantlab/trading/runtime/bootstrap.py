@@ -122,6 +122,8 @@ class RuntimeBundle:
     sector_minute_store: object | None = None
     screener: object | None = None
     screener_board: object | None = None
+    market_daily_store: object | None = None
+    market_daily_backfill: object | None = None
     market_preferences: object | None = None
     session_bridge: object | None = None
     sinopac_factory: object | None = None
@@ -769,6 +771,10 @@ class RuntimeBundle:
             self.sector_poller.stop()
         if self.sector_minute_store is not None:
             self.sector_minute_store.close()
+        if self.market_daily_backfill is not None:
+            self.market_daily_backfill.close()
+        if self.market_daily_store is not None:
+            self.market_daily_store.close()
         errors = []
         if self.engine is not None and self.launch.environment is not Environment.LOCAL:
             seen_gateways = set()

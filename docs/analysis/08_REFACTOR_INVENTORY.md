@@ -1022,6 +1022,12 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `quantlab/trading/application/screener_board.py` | 122 | application | `quantlab/trading/application/screener_board.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/screener_contracts.py` | 82 | application | `quantlab/trading/application/screener_contracts.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/domain/screener.py` | 64 | domain | `quantlab/trading/domain/screener.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/official/market_daily_data.py` | 136 | infrastructure | `quantlab/trading/adapters/official/market_daily_data.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/adapters/storage/market_daily_store.py` | 148 | infrastructure | `quantlab/trading/adapters/storage/market_daily_store.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/market_daily.py` | 157 | application | `quantlab/trading/application/market_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/market_daily.py` | 92 | domain | `quantlab/trading/domain/market_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/ports/market_daily.py` | 14 | application | `quantlab/trading/ports/market_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/runtime/market_daily.py` | 99 | composition | `quantlab/trading/runtime/market_daily.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

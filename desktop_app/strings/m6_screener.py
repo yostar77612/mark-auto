@@ -60,4 +60,12 @@ ENTRIES = (
     (78, 3452, 'screen.panel_name', '選股'),
     (78, 3453, 'screen.table_name', '選股清單'),
     (78, 3454, 'screen.filter_name', '爆量篩選'),
+    (78, 3455, 'screen.cond_breakout', '帶量突破新高'),
+    (78, 3456, 'screen.set_breakout_volume_multiple', '帶量突破：收盤量至少為均量的幾倍'),
+    (78, 3457, 'screen.set_breakout_intraday_ratio', '帶量突破（盤中暫定）：量比至少'),
+    (78, 3458, 'screen.set_average_days', '均量與均額的計算天數'),
+    (78, 3459, 'screen.set_window_short', '突破新高：短期（日）'),
+    (78, 3460, 'screen.set_window_mid', '突破新高：中期（日）'),
+    (78, 3461, 'screen.set_window_long', '突破新高：長期（日）'),
+    (78, 3462, 'screen.set_download_breakout', '帶量突破新高時自動下載近一年 K 線'),
 )

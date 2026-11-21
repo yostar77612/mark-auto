@@ -11,8 +11,6 @@ from .screener_contracts import DownloadedRowView, ScreenerQuery, ScreenerRowVie
 from .stock_screener import SCREENER_PRIORITY, StockScreener, download_window
 
 _PATTERNS = {'ALL': (SURGE_RED, SURGE_BLACK), 'RED': (SURGE_RED,), 'BLACK': (SURGE_BLACK,)}
-# Daily K-lines for the breakout list arrive with the market-wide daily store (M6-3); until then it only accumulates.
-BREAKOUT_WINDOWS = (60, 120, 240)
 DOWNLOADED_TTL = 30.0
 
 
@@ -55,7 +53,7 @@ class ScreenerBoard:
         if query.list_id == 'DOWNLOADED':
             return self._downloaded_view()
         if query.list_id == 'BREAKOUT':
-            return ScreenerView('BREAKOUT', 'ALL', 'ACCUMULATING', min_volume_lots=self.params().min_volume_lots, progress_needed=BREAKOUT_WINDOWS[0])
+            return self._breakout_view()
         return self._surge_view(query.pattern)
 
     def download(self, instrument_id: str) -> None:
@@ -84,6 +82,46 @@ class ScreenerBoard:
             )
         shown = 'WARMUP' if not result.ranking and state in ('LIVE', 'STALE') else state
         return ScreenerView('SURGE', pattern, shown, tuple(rows), min_volume_lots=params.min_volume_lots, data_at=result.at, code=code)
+
+    def _breakout_view(self) -> ScreenerView:
+        """Stocks above their earlier high on volume. Until the market-wide daily quotes cover the shortest window nothing
+        is judged and the view only reports how many days exist."""
+        params, state = self.params(), self.status()
+        if state in ('OFFLINE', 'EMPTY'):
+            return ScreenerView('BREAKOUT', 'ALL', state, min_volume_lots=params.min_volume_lots)
+        result = self.screener.result()
+        if result.history_days < params.window_short:
+            return ScreenerView(
+                'BREAKOUT',
+                'ALL',
+                'ACCUMULATING',
+                min_volume_lots=params.min_volume_lots,
+                data_at=result.at,
+                progress_days=result.history_days,
+                progress_needed=params.window_short,
+            )
+        by_code = {item.code: item for item in self.directory() if item.kind is WatchKind.STOCK}
+        rows, code = [], ''
+        for entry in result.breakouts:
+            instrument = by_code.get(entry.code)
+            if instrument is None:
+                continue
+            kline, code = self._kline_state(instrument, code)
+            rows.append(
+                ScreenerRowView(
+                    instrument.instrument_id,
+                    entry.code,
+                    instrument.name,
+                    entry.price,
+                    entry.change_pct,
+                    entry.strength,
+                    str(entry.window),
+                    kline,
+                    entry.provisional,
+                )
+            )
+        shown = 'WARMUP' if not result.ranking and state in ('LIVE', 'STALE') else state
+        return ScreenerView('BREAKOUT', 'ALL', shown, tuple(rows), min_volume_lots=params.min_volume_lots, data_at=result.at, code=code)
 
     def _kline_state(self, instrument: WatchInstrument, code: str) -> tuple[str, str]:
         """'' none, YEAR a full year stored, DOWNLOADING queued or running, FAILED the last attempt failed."""
