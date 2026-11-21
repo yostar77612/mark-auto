@@ -278,7 +278,8 @@ class SectorBoardWidget(QWidget):
         reuse = cache[2] if fresh else None
 
         def fetch():
-            page, bars, whole = _detail_series(self.facade, key, period, reuse)
+            # The market terminal's engine serves the tail only from a named snapshot, so the tail read is pinned to one.
+            page, bars, whole = _detail_series(self.facade, key, period, reuse, pinned_tail=True)
             return page, bars, whole, self.facade.order_book(key)
 
         def completed(value, error):
