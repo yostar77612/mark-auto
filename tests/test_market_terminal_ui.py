@@ -451,9 +451,13 @@ class ScreenerFacade(FakeFacade):
         super().__init__()
         self.screener_queries, self.screener_saved, self.params, self.fail = [], [], ScreenerParams(), False
         self.state_name, self.code, self.breakout_ready = 'LIVE', '', False
+        self.gates, self.settings_fail, self.save_gate = {}, False, None
 
     def screener(self, query):
         self.screener_queries.append(query)
+        gate = self.gates.get(query)
+        if gate is not None:
+            gate.wait(3)  # the reply is held until the test lets it go
         if self.fail:
             raise RuntimeError('screener down')
         if query.list_id == 'DOWNLOADED':
@@ -476,6 +480,10 @@ class ScreenerFacade(FakeFacade):
         return ScreenerView('SURGE', query.pattern, self.state_name, shown, min_volume_lots=500, data_at=NOW, code=self.code)
 
     def screener_settings(self, params=None):
+        if self.settings_fail:
+            raise RuntimeError('settings down')
+        if params is not None and self.save_gate is not None:
+            self.save_gate.wait(3)
         if params is not None:
             self.params = params
             self.screener_saved.append(params)
@@ -517,7 +525,7 @@ class ScreenerTabTests(unittest.TestCase):
         self.assertTrue(predicate())
 
     def loaded(self, query):
-        self.wait_for(lambda: query in self.facade.screener_queries and not self.panel._loading and not self.panel._requests)
+        self.wait_for(lambda: query in self.facade.screener_queries and not self.panel._inflight and not self.panel._requests)
 
     def open_tab(self):
         self.widget.tabs.setCurrentWidget(self.panel)
@@ -554,7 +562,7 @@ class ScreenerTabTests(unittest.TestCase):
         self.widget.tabs.setCurrentWidget(self.panel)
         self.loaded(ScreenerQuery('BREAKOUT'))
         self.assertEqual(self.panel.info.text(), '資料累積中（0／60 日）')
-        self.assertEqual(self.headers(), ['代碼', '名稱', '成交', '漲幅％', '突破', '量÷均量', 'K線'])
+        self.assertEqual(self.headers(), ['代碼', '名稱', '成交', '漲幅％', '突破(日)', '量÷均量', 'K線'])
 
     def test_the_surge_list_shows_the_columns_the_kline_marks_and_selects_the_stock(self):
         self.open_tab()
@@ -603,11 +611,77 @@ class ScreenerTabTests(unittest.TestCase):
         self.open_tab()
         self.panel.set_list('BREAKOUT')
         self.loaded(ScreenerQuery('BREAKOUT'))
-        self.assertEqual(self.headers(), ['代碼', '名稱', '成交', '漲幅％', '突破', '量÷均量', 'K線'])
+        self.assertEqual(self.headers(), ['代碼', '名稱', '成交', '漲幅％', '突破(日)', '量÷均量', 'K線'])
         self.assertEqual(self.cells(0), ['2330', '台積電', '2000', '+3.00%', '120 盤中', '2.40', '✓'])
         self.assertEqual(self.cells(1), ['2317', '鴻海', '210.0', '+1.50%', '60', '3.10', ''])
         self.assertFalse(self.panel.filter_row.isVisibleTo(self.panel))
         self.assertEqual(self.panel.info.text(), '資料時間 09:00:00')
+
+    def test_a_late_answer_for_an_earlier_filter_never_draws(self):
+        from threading import Event
+
+        self.open_tab()
+        drawn = []
+        original = self.panel.render_view
+        self.panel.render_view = lambda view: (drawn.append((view.list_id, view.pattern)), original(view))[1]
+        gate = Event()
+        self.facade.gates[ScreenerQuery('SURGE', 'RED', '')] = gate
+        self.panel.filters['RED'].click()  # its answer is held back
+        self.wait_for(lambda: ScreenerQuery('SURGE', 'RED', '') in self.facade.screener_queries)
+        self.panel.filters['BLACK'].click()  # asked for while RED is still outstanding
+        gate.set()
+        self.loaded(ScreenerQuery('SURGE', 'BLACK', ''))
+        self.wait_for(lambda: not self.panel._inflight)
+        self.assertNotIn(('SURGE', 'RED'), drawn)
+        self.assertEqual([self.cells(row)[5] for row in range(self.panel.table.rowCount())], ['爆量長黑'])
+
+    def test_the_download_message_waits_for_the_engine_and_an_older_poll_never_overwrites_the_newer_answer(self):
+        from threading import Event
+
+        self.open_tab()
+        drawn = []
+        original = self.panel.render_view
+        self.panel.render_view = lambda view: (drawn.append(view), original(view))[1]
+        gate = Event()
+        self.facade.gates[ScreenerQuery('SURGE', 'ALL', '')] = gate
+        self.panel.refresh()  # a poll is in flight and held back
+        self.wait_for(lambda: self.panel._inflight == 1)
+        self.panel.download(STOCK.instrument_id)
+        self.assertEqual(self.widget.message.text(), '')  # nothing is promised before the engine has answered
+        self.wait_for(lambda: self.widget.message.text() == '已加入下載：2330')
+        self.assertEqual(len(drawn), 1)  # the download's own answer drew
+        gate.set()
+        self.wait_for(lambda: not self.panel._inflight)
+        self.assertEqual(len(drawn), 1)  # the older poll arrived late and was dropped
+
+    def test_a_failed_settings_read_says_so_and_opens_no_dialog(self):
+        self.open_tab()
+        self.facade.settings_fail = True
+        self.panel.open_settings()
+        self.wait_for(lambda: self.widget.message.text() == '讀取失敗，稍後自動重試')
+        self.assertIsNone(getattr(self.panel, 'settings_dialog', None))
+
+    def test_closing_the_settings_dialog_while_the_save_is_in_flight_is_harmless(self):
+        from threading import Event
+        from unittest.mock import patch
+
+        from PySide6.QtCore import QCoreApplication, QEvent
+
+        self.open_tab()
+        self.panel.open_settings()
+        self.wait_for(lambda: getattr(self.panel, 'settings_dialog', None) is not None)
+        dialog = self.panel.settings_dialog
+        self.facade.save_gate = gate = Event()
+        errors = []
+        with patch('sys.excepthook', lambda *args: errors.append(args)):
+            dialog.save()
+            dialog.close()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)  # the dialog is deleted on close
+            gate.set()
+            self.wait_for(lambda: bool(self.facade.screener_saved) and not self.panel._requests)
+            self.app.processEvents()
+        self.assertEqual(errors, [])
+        self.assertEqual(len(self.facade.screener_saved), 1)  # the engine kept what was sent
 
     def test_the_row_menu_adds_to_the_watchlist_and_queues_a_download_through_the_engine(self):
         self.open_tab()

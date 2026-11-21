@@ -43,12 +43,23 @@ class KlineStoreTests(unittest.TestCase):
         self.store.mark_coverage('TWSE:2330', minute(0).start, minute(5).end)
         self.assertEqual(self.store.minute_extent('TWSE:2330')[2], minute(5).end)
         self.assertIsNone(self.store.minute_extent('TWSE:2317'))
-        plan = ' '.join(
-            row[-1]
-            for row in self.store._db.execute('EXPLAIN QUERY PLAN SELECT MIN(start_utc), MAX(start_utc) FROM bars_1m WHERE instrument_id=?', ('TWSE:2330',))
-        )
-        self.assertIn('USING', plan)  # a primary-key index seek, not a table scan
-        self.assertNotIn('SCAN', plan.replace('USING', ''))
+
+    def vm_steps(self, instrument_id):
+        steps = []
+        self.store._db.set_progress_handler(lambda: steps.append(1) and 0, 1)
+        try:
+            self.store.minute_extent(instrument_id)
+        finally:
+            self.store._db.set_progress_handler(None, 0)
+        return len(steps)
+
+    def test_minute_extent_does_constant_work_however_many_bars_an_instrument_has(self):
+        self.store.upsert(tuple(replace(minute(offset), instrument_id='TWSE:1101') for offset in range(2000)))
+        small = self.vm_steps('TWSE:1101')
+        self.store.upsert(tuple(replace(minute(offset), instrument_id='TWSE:1101') for offset in range(2000, 20000)))
+        large = self.vm_steps('TWSE:1101')
+        self.assertLess(small, 200)  # a pair of index seeks, not a walk over 2,000 rows
+        self.assertLessEqual(large, small + 20)  # ten times the rows, the same work
 
     def test_instrument_ids_match_the_full_union_scan_for_minute_and_daily_rows(self):
         self.assertEqual(self.store.instrument_ids(), ())

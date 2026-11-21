@@ -62,7 +62,8 @@ class ScreenerPanel(QWidget):
         super().__init__(parent)
         self.host, self.list_id, self.pattern = host, 'SURGE', 'ALL'
         self.on_list_changed = lambda: None  # the host retitles the tab
-        self._requests, self._loading, self._again = PendingRequests(), False, False
+        self._requests, self._inflight, self._again, self._serial = PendingRequests(), 0, False, 0
+        self._menu = None
         self.destroyed.connect(self._requests.cancel)
         self.setObjectName('terminal_screener_panel')
         self.setAccessibleName(ui_text('screen.panel_name'))
@@ -134,7 +135,10 @@ class ScreenerPanel(QWidget):
         action.setChecked(list_id == self.list_id)
 
     def show_menu(self, tab_bar, index):
+        if self._menu is not None:
+            self._menu.deleteLater()
         self._menu = self.build_menu()
+        self._menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self._menu.popup(tab_bar.mapToGlobal(tab_bar.tabRect(index).bottomLeft()))
 
     def set_list(self, list_id):
@@ -178,22 +182,26 @@ class ScreenerPanel(QWidget):
         self.timer.stop()
 
     def refresh(self):
-        if self._loading:
+        if self._inflight:
             self._again = True
             return
         self._load('')
 
     def _load(self, download_id):
-        self._loading = True
-        list_id, pattern = self.list_id, self.pattern
+        self._inflight += 1
+        self._serial += 1
+        serial, list_id, pattern = self._serial, self.list_id, self.pattern
 
         def completed(value, error):
-            self._loading = False
+            self._inflight -= 1
             if error is not None:
                 self.info.setText(ui_text('screen.load_failed'))
-            elif (list_id, pattern) == (self.list_id, self.pattern):
+            elif serial == self._serial and (list_id, pattern) == (self.list_id, self.pattern):
+                # Only the newest request for the list on screen may draw: an older answer arriving late is stale.
                 self.render_view(value)
-            if self._again:
+            if download_id and error is None:
+                self.host.show_message(ui_text('screen.download_queued').format(download_id.split(':')[-1]))
+            if self._again and not self._inflight:
                 self._again = False
                 self.refresh()
 
@@ -276,20 +284,23 @@ class ScreenerPanel(QWidget):
     def _context_menu(self, point):
         item = self.table.itemAt(point)
         if item is not None:
-            self.row_menu(self.table.item(item.row(), 0).data(Qt.ItemDataRole.UserRole)).exec(self.table.viewport().mapToGlobal(point))
+            menu = self.row_menu(self.table.item(item.row(), 0).data(Qt.ItemDataRole.UserRole))
+            menu.exec(self.table.viewport().mapToGlobal(point))
+            menu.deleteLater()
 
     def download(self, instrument_id):
-        self.host.show_message(ui_text('screen.download_queued').format(instrument_id.split(':')[-1]))
         self._load(instrument_id)  # not held back by a running poll: the click must reach the engine
 
     def open_settings(self):
         from desktop_app.features.trading.screener_settings_dialog import ScreenerSettingsDialog
 
         def opened(value, error):
-            if error is None:
-                dialog = ScreenerSettingsDialog(self.host.facade, value, self._submit, self, on_saved=self.refresh)
-                dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-                self.settings_dialog = dialog
-                dialog.show()
+            if error is not None:
+                self.host.show_message(ui_text('screen.load_failed'))
+                return
+            dialog = ScreenerSettingsDialog(self.host.facade, value, self._submit, self, on_saved=self.refresh)
+            dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+            self.settings_dialog = dialog
+            dialog.show()
 
         self._submit(lambda: self.host.facade.screener_settings(), opened)

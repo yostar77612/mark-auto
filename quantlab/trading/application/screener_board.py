@@ -26,6 +26,10 @@ class DownloadPort(Protocol):
     def state(self): ...
 
 
+def _reason(error: Exception) -> str:
+    return error.code if isinstance(error, DomainError) else 'kline_store_unavailable'
+
+
 class ScreenerBoard:
     """Builds ScreenerView for one query. Reads only: the one write is queueing a download through HistorySync."""
 
@@ -133,8 +137,8 @@ class ScreenerBoard:
         start, end = download_window(self.now(), self.lookback_days)
         try:
             return ('' if self.store.missing_ranges(instrument_id, start, end) else 'YEAR'), code
-        except DomainError as error:
-            return '', error.code
+        except Exception as error:  # the K-line store is a disk boundary; the list must survive any failure of it
+            return '', _reason(error)
 
     def _downloaded_view(self) -> ScreenerView:
         params = self.params()
@@ -142,8 +146,8 @@ class ScreenerBoard:
         if cached is None or self.clock() - cached[0] > DOWNLOADED_TTL:
             try:
                 rows = self._downloaded_rows()
-            except DomainError as error:
-                return ScreenerView('DOWNLOADED', 'ALL', self.status(), min_volume_lots=params.min_volume_lots, code=error.code)
+            except Exception as error:  # same boundary: show the reason code instead of failing the whole read
+                return ScreenerView('DOWNLOADED', 'ALL', self.status(), min_volume_lots=params.min_volume_lots, code=_reason(error))
             cached = self._downloaded = (self.clock(), rows)
         return ScreenerView('DOWNLOADED', 'ALL', self.status(), downloaded=cached[1], min_volume_lots=params.min_volume_lots)
 
