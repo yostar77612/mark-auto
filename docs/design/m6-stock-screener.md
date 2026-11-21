@@ -50,7 +50,7 @@ Goals：
 Non-goals：
 
 - 不下單、不產生交易訊號、不影響自動交易或風控（純行情與下載）。
-- 不改 K 線庫的完整性檢查（OPT-1 P10）與流量保護比例。
+- 不改 K 線庫的完整性檢查（OPT-1 P10）與流量保護比例（唯一例外：定期檢查週期 7 天改 30 天，需求 10）。
 - 不做三大法人、注意／處置股等需要新資料源的條件（永豐 API 未提供）。
 - 不在第一版做跳空大漲與下載佇列清單。
 
@@ -150,7 +150,7 @@ Non-goals：
 ## Safety constraints (live trading disabled, G3, OOS/budget)
 
 - 正式下單維持停用；本功能純行情與 K 線下載，不新增也不改動任何下單路徑，不產生交易訊號。
-- 不改 K 線庫完整性檢查（OPT-1 P10）、流量保護比例、每日 K 棒上限與任何既有 timeout
+- 不改 K 線庫完整性檢查（OPT-1 P10；唯一例外是需求 10 的定期檢查週期 7 天改 30 天）、流量保護比例、每日 K 棒上限與任何既有 timeout
   （Paper 30 s、smoke 40 s、每個 job 15 分鐘）。
 - G3 檔案與 saved-candidate profile 區塊不動（清單見 [CONTRIBUTING.md](../CONTRIBUTING.md)）。
 - OOS／final-holdout 資料不進任何清單、記錄或 AI 對話。金額運算維持 Decimal。

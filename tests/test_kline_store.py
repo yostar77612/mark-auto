@@ -342,10 +342,14 @@ class IntegrityCheckFlagTests(unittest.TestCase):
             db.commit()
         self.assertEqual(self.reopen(), 1)
 
+    def test_periodic_full_check_interval_is_the_owner_chosen_30_days(self):
+        self.assertEqual(kline_store_module._FULL_CHECK_INTERVAL, timedelta(days=30))  # owner decision 2026-11-21 (M6 D3)
+
     def test_overdue_future_or_unreadable_check_time_runs_the_full_check(self):
         now = datetime.now(timezone.utc)
+        interval = kline_store_module._FULL_CHECK_INTERVAL
         for value in (
-            (now - timedelta(days=8)).isoformat(),
+            (now - interval - timedelta(days=1)).isoformat(),
             (now + timedelta(days=1)).isoformat(),
             now.replace(tzinfo=None).isoformat(),
             'not a time',
@@ -356,7 +360,7 @@ class IntegrityCheckFlagTests(unittest.TestCase):
                 self.assertEqual(self.reopen(), 1)
                 self.assertNotEqual(self.meta('last_full_check'), value)  # the passed check is recorded
         self.store.close()
-        self.set_meta('last_full_check', (now - timedelta(days=6)).isoformat())
+        self.set_meta('last_full_check', (now - interval + timedelta(days=1)).isoformat())
         self.assertEqual(self.reopen(), 0)
 
     def test_a_store_that_dies_while_another_closes_last_is_still_seen(self):
@@ -418,7 +422,8 @@ class IntegrityCheckFlagTests(unittest.TestCase):
 
     def test_corruption_found_by_the_periodic_check_is_preserved_and_rebuilt(self):
         self.store.close()
-        self.set_meta('last_full_check', (datetime.now(timezone.utc) - timedelta(days=8)).isoformat())
+        overdue = datetime.now(timezone.utc) - kline_store_module._FULL_CHECK_INTERVAL - timedelta(days=1)
+        self.set_meta('last_full_check', overdue.isoformat())
         corrupted = _corrupt_middle(self.path)
         self.store = KlineStore(self.path)
         self.assertEqual(self.store.warning_code, 'kline_store_unavailable')
