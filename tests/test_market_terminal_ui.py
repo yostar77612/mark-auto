@@ -24,6 +24,8 @@ from desktop_app.features.trading.window import TradingWindow
 from desktop_app.strings.catalog import ui_text
 from quantlab.research_core.adapters.market_layout import LayoutStore, FILE_NAME
 from quantlab.trading.application.contracts import MarketHealthView, MarketSeriesPage, MarketWatchView, OverviewMarketSummary, UiReceipt, UiState
+from quantlab.trading.application.screener_contracts import DownloadedRowView, ScreenerQuery, ScreenerRowView, ScreenerView
+from quantlab.trading.domain.screener import ScreenerParams
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
@@ -442,6 +444,299 @@ class TerminalTests(unittest.TestCase):
             self.app.processEvents()
             self.widget.setParent(None)
             shiboken6.delete(window)
+
+
+class ScreenerFacade(FakeFacade):
+    def __init__(self):
+        super().__init__()
+        self.screener_queries, self.screener_saved, self.params, self.fail = [], [], ScreenerParams(), False
+        self.state_name, self.code = 'LIVE', ''
+        self.gates, self.settings_fail, self.save_gate, self.save_error = {}, False, None, False
+
+    def screener(self, query):
+        self.screener_queries.append(query)
+        gate = self.gates.get(query)
+        if gate is not None:
+            gate.wait(3)  # the reply is held until the test lets it go
+        if self.fail:
+            raise RuntimeError('screener down')
+        if query.list_id == 'DOWNLOADED':
+            rows = (DownloadedRowView(STOCK.instrument_id, '2330', '台積電', NOW - timedelta(days=364), NOW, NOW),)
+            return ScreenerView('DOWNLOADED', 'ALL', self.state_name, downloaded=rows, min_volume_lots=500, code=self.code)
+        if query.list_id == 'BREAKOUT':
+            return ScreenerView('BREAKOUT', 'ALL', 'ACCUMULATING', min_volume_lots=500, progress_days=0, progress_needed=60)
+        rows = (
+            ScreenerRowView(STOCK.instrument_id, '2330', '台積電', Decimal('110'), Decimal('10'), Decimal('4.5'), 'SURGE_RED', 'YEAR'),
+            ScreenerRowView(OTHER.instrument_id, '2317', '鴻海', Decimal('90'), Decimal('-8'), Decimal('3.2'), 'SURGE_BLACK', 'DOWNLOADING'),
+        )
+        wanted = {'ALL': ('SURGE_RED', 'SURGE_BLACK'), 'RED': ('SURGE_RED',), 'BLACK': ('SURGE_BLACK',)}[query.pattern]
+        shown = tuple(row for row in rows if row.label in wanted)
+        return ScreenerView('SURGE', query.pattern, self.state_name, shown, min_volume_lots=500, data_at=NOW, code=self.code)
+
+    def screener_settings(self, params=None):
+        if self.settings_fail:
+            raise RuntimeError('settings down')
+        if params is not None and self.save_gate is not None:
+            self.save_gate.wait(3)
+        if params is not None and self.save_error:
+            raise RuntimeError('save down')
+        if params is not None:
+            self.params = params
+            self.screener_saved.append(params)
+        return self.params
+
+
+class ScreenerTabTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.facade = ScreenerFacade()
+        self.widget = MarketTerminalWidget(
+            self.facade,
+            CandlestickChart(),
+            self.facade.state,
+            layout_store=LayoutStore(panel_ids=PANEL_IDS, default_layout=terminal_preset()),
+            index_chart=CandlestickChart(show_volume=False),
+            panel_factory=WorkspacePanel,
+        )
+        self.widget.resize(1366, 768)
+        self.widget.show()
+        self.wait_for(lambda: bool(self.widget.chart.bars) and not self.widget._requests)
+        self.panel = self.widget.screener
+
+    def tearDown(self):
+        QThreadPool.globalInstance().waitForDone(3000)
+        self.app.processEvents()
+        if shiboken6.isValid(self.widget):
+            shiboken6.delete(self.widget)
+        self.app.processEvents()
+
+    def wait_for(self, predicate):
+        deadline = time.monotonic() + 3
+        while not predicate() and time.monotonic() < deadline:
+            self.app.processEvents()
+            QTest.qWait(5)
+        self.assertTrue(predicate())
+
+    def loaded(self, query):
+        self.wait_for(lambda: query in self.facade.screener_queries and not self.panel._inflight and not self.panel._requests)
+
+    def open_tab(self):
+        self.widget.tabs.setCurrentWidget(self.panel)
+        self.loaded(ScreenerQuery('SURGE', 'ALL', ''))
+
+    def cells(self, row):
+        return [self.panel.table.item(row, column).text() for column in range(self.panel.table.columnCount())]
+
+    def headers(self):
+        return [self.panel.table.horizontalHeaderItem(index).text() for index in range(self.panel.table.columnCount())]
+
+    def test_the_fourth_quote_tab_is_the_screener_and_its_title_names_the_current_list(self):
+        tabs = self.widget.tabs
+        self.assertEqual(tabs.count(), 4)
+        self.assertEqual(tabs.tabText(3), '選股：爆量 ▼')
+        self.assertIs(tabs.widget(3), self.panel)
+        self.assertEqual(self.facade.screener_queries, [])  # nothing is fetched while another tab is showing
+
+    def test_the_menu_lists_the_choices_in_order_and_ends_with_the_settings(self):
+        menu = self.panel.build_menu()
+        self.assertEqual(
+            [action.text() for action in menu.actions()],
+            ['條件選股', '爆量', '帶量突破新高', '', 'K 線資料', '已下載 K 線', '', '條件設定…'],
+        )
+        self.assertEqual([action.isChecked() for action in menu.actions() if action.isCheckable()], [True, False, False])
+        self.assertEqual([action.isEnabled() for action in menu.actions() if action.text() in ('條件選股', 'K 線資料')], [False, False])
+
+    def test_clicking_the_tab_pops_the_menu_and_choosing_a_list_retitles_the_tab_and_loads_it(self):
+        self.widget.tabs.tabBar().tabBarClicked.emit(3)
+        self.assertTrue(self.panel._menu.isVisible())
+        next(action for action in self.panel._menu.actions() if action.text() == '帶量突破新高').trigger()
+        self.panel._menu.close()
+        self.assertEqual(self.widget.tabs.tabText(3), '選股：帶量突破新高 ▼')
+        self.widget.tabs.setCurrentWidget(self.panel)
+        self.loaded(ScreenerQuery('BREAKOUT'))
+        self.assertEqual(self.panel.info.text(), '資料累積中（0／60 日）')
+        self.assertEqual(self.headers(), ['代碼', '名稱', '成交', '漲幅％', '突破(日)', '量÷均量', 'K線'])
+
+    def test_the_surge_list_shows_the_columns_the_kline_marks_and_selects_the_stock(self):
+        self.open_tab()
+        self.assertEqual(self.headers(), ['代碼', '名稱', '成交', '漲幅％', '量比', '型態', 'K線'])
+        self.assertEqual(self.cells(0), ['2330', '台積電', '110.0', '+10.00%', '4.50', '爆量長紅', '✓'])
+        self.assertEqual(self.cells(1), ['2317', '鴻海', '90.0', '-8.00%', '3.20', '爆量長黑', '↓'])
+        self.assertTrue(self.panel.info.text().startswith('成交量門檻 500 張以上'))
+        self.assertTrue(self.panel.filter_row.isVisibleTo(self.panel))
+        self.assertEqual({key: item.isChecked() for key, item in self.panel.filters.items()}, {'ALL': True, 'RED': False, 'BLACK': False})
+        self.panel._choose(self.panel.table.item(1, 0))
+        self.wait_for(lambda: self.facade.selections and self.facade.selections[-1][0] == OTHER.instrument_id and not self.widget._requests)
+
+    def test_the_filter_buttons_ask_the_engine_for_red_or_black_only(self):
+        self.open_tab()
+        self.panel.filters['RED'].click()
+        self.loaded(ScreenerQuery('SURGE', 'RED', ''))
+        self.assertEqual(self.panel.table.rowCount(), 1)
+        self.assertEqual(self.cells(0)[5], '爆量長紅')
+        self.panel.filters['BLACK'].click()
+        self.loaded(ScreenerQuery('SURGE', 'BLACK', ''))
+        self.assertEqual([self.cells(row)[5] for row in range(self.panel.table.rowCount())], ['爆量長黑'])
+        self.assertEqual({key: item.isChecked() for key, item in self.panel.filters.items()}, {'ALL': False, 'RED': False, 'BLACK': True})
+
+    def test_after_the_close_the_list_says_it_is_the_last_close_and_a_reason_code_is_shown(self):
+        self.facade.state_name, self.facade.code = 'CLOSED', 'kline_store_unavailable'
+        self.open_tab()
+        self.assertIn(ui_text('sector.closed'), self.panel.info.text())
+        self.assertIn('原因代碼：kline_store_unavailable', self.panel.info.text())
+        self.assertEqual(self.panel.table.rowCount(), 2)  # the list still shows
+
+    def test_a_failed_read_shows_a_note(self):
+        self.facade.fail = True
+        self.open_tab()
+        self.assertEqual(self.panel.info.text(), '讀取失敗，稍後自動重試')
+
+    def test_the_downloaded_list_has_its_own_columns_and_no_filter(self):
+        self.open_tab()
+        self.panel.set_list('DOWNLOADED')
+        self.loaded(ScreenerQuery('DOWNLOADED'))
+        self.assertFalse(self.panel.filter_row.isVisibleTo(self.panel))
+        self.assertEqual(self.headers(), ['代碼', '名稱', '最早', '最新', '最後更新'])
+        self.assertEqual(self.cells(0), ['2330', '台積電', '2025-10-31', '2026-10-30', '2026-10-30'])
+
+    def test_a_late_answer_for_an_earlier_filter_never_draws(self):
+        from threading import Event
+
+        self.open_tab()
+        drawn = []
+        original = self.panel.render_view
+        self.panel.render_view = lambda view: (drawn.append((view.list_id, view.pattern)), original(view))[1]
+        gate = Event()
+        self.facade.gates[ScreenerQuery('SURGE', 'RED', '')] = gate
+        self.panel.filters['RED'].click()  # its answer is held back
+        self.wait_for(lambda: ScreenerQuery('SURGE', 'RED', '') in self.facade.screener_queries)
+        self.panel.filters['BLACK'].click()  # asked for while RED is still outstanding
+        gate.set()
+        self.loaded(ScreenerQuery('SURGE', 'BLACK', ''))
+        self.wait_for(lambda: not self.panel._inflight)
+        self.assertNotIn(('SURGE', 'RED'), drawn)
+        self.assertEqual([self.cells(row)[5] for row in range(self.panel.table.rowCount())], ['爆量長黑'])
+
+    def test_the_download_message_waits_for_the_engine_and_an_older_poll_never_overwrites_the_newer_answer(self):
+        from threading import Event
+
+        self.open_tab()
+        drawn = []
+        original = self.panel.render_view
+        self.panel.render_view = lambda view: (drawn.append(view), original(view))[1]
+        gate = Event()
+        self.facade.gates[ScreenerQuery('SURGE', 'ALL', '')] = gate
+        self.panel.refresh()  # a poll is in flight and held back
+        self.wait_for(lambda: self.panel._inflight == 1)
+        self.panel.download(STOCK.instrument_id)
+        self.assertEqual(self.widget.message.text(), '')  # nothing is promised before the engine has answered
+        self.wait_for(lambda: self.widget.message.text() == '已加入下載：2330')
+        self.assertEqual(len(drawn), 1)  # the download's own answer drew
+        gate.set()
+        self.wait_for(lambda: not self.panel._inflight)
+        self.assertEqual(len(drawn), 1)  # the older poll arrived late and was dropped
+
+    def test_the_tab_menu_pops_up_again_every_time_it_was_used_and_closed(self):
+        from unittest.mock import patch
+
+        errors = []
+        with patch('sys.excepthook', lambda *args: errors.append(args)):
+            for _ in range(3):
+                self.widget.tabs.tabBar().tabBarClicked.emit(3)
+                self.assertTrue(self.panel._menu.isVisible())
+                self.panel._menu.close()  # a used menu closes; the next click must still show a new one
+                QTest.qWait(30)
+        self.assertEqual(errors, [])
+
+    def test_a_failed_download_shows_no_promise(self):
+        self.open_tab()
+        self.facade.fail = True
+        self.panel.download(STOCK.instrument_id)
+        self.wait_for(lambda: not self.panel._inflight and not self.panel._requests)
+        self.assertEqual((self.widget.message.text(), self.panel.info.text()), ('', '讀取失敗，稍後自動重試'))
+
+    def test_a_save_that_fails_after_the_dialog_was_closed_is_harmless_too(self):
+        from threading import Event
+        from unittest.mock import patch
+
+        from PySide6.QtCore import QCoreApplication, QEvent
+
+        self.open_tab()
+        self.panel.open_settings()
+        self.wait_for(lambda: getattr(self.panel, 'settings_dialog', None) is not None)
+        dialog = self.panel.settings_dialog
+        self.facade.save_gate, self.facade.save_error = gate, _ = Event(), True
+        errors = []
+        with patch('sys.excepthook', lambda *args: errors.append(args)):
+            dialog.save()
+            dialog.close()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            gate.set()
+            self.wait_for(lambda: not self.panel._requests)
+            self.app.processEvents()
+        self.assertEqual((errors, self.facade.screener_saved), ([], []))
+
+    def test_a_failed_settings_read_says_so_and_opens_no_dialog(self):
+        self.open_tab()
+        self.facade.settings_fail = True
+        self.panel.open_settings()
+        self.wait_for(lambda: self.widget.message.text() == '讀取失敗，稍後自動重試')
+        self.assertIsNone(getattr(self.panel, 'settings_dialog', None))
+
+    def test_closing_the_settings_dialog_while_the_save_is_in_flight_is_harmless(self):
+        from threading import Event
+        from unittest.mock import patch
+
+        from PySide6.QtCore import QCoreApplication, QEvent
+
+        self.open_tab()
+        self.panel.open_settings()
+        self.wait_for(lambda: getattr(self.panel, 'settings_dialog', None) is not None)
+        dialog = self.panel.settings_dialog
+        self.facade.save_gate = gate = Event()
+        errors = []
+        with patch('sys.excepthook', lambda *args: errors.append(args)):
+            dialog.save()
+            dialog.close()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)  # the dialog is deleted on close
+            gate.set()
+            self.wait_for(lambda: bool(self.facade.screener_saved) and not self.panel._requests)
+            self.app.processEvents()
+        self.assertEqual(errors, [])
+        self.assertEqual(len(self.facade.screener_saved), 1)  # the engine kept what was sent
+
+    def test_the_row_menu_adds_to_the_watchlist_and_queues_a_download_through_the_engine(self):
+        self.open_tab()
+        menu = self.panel.row_menu(STOCK.instrument_id)
+        self.assertEqual([action.text() for action in menu.actions()], ['加入自選', '下載近一年 K 線'])
+        menu.actions()[1].trigger()
+        self.loaded(ScreenerQuery('SURGE', 'ALL', STOCK.instrument_id))
+        self.assertEqual(self.widget.message.text(), '已加入下載：2330')
+        menu.actions()[0].trigger()
+        self.wait_for(lambda: self.facade.state.watchlist == (STOCK.instrument_id,) and not self.widget._requests)
+
+    def test_the_settings_dialog_sends_every_threshold_and_the_download_switches(self):
+        self.open_tab()
+        self.panel.open_settings()
+        self.wait_for(lambda: getattr(self.panel, 'settings_dialog', None) is not None)
+        dialog = self.panel.settings_dialog
+        self.assertEqual(set(dialog.inputs) | set(dialog.flags), set(ScreenerParams.__dataclass_fields__))
+        dialog.inputs['surge_ratio'][0].setValue(4)
+        dialog.inputs['quiet_amount'][0].setValue(8000)  # in units of 10,000 NT$
+        dialog.inputs['min_volume_lots'][0].setValue(800)
+        dialog.flags['download_black'].setChecked(True)
+        dialog.flags['download_red'].setChecked(False)
+        dialog.save()
+        self.wait_for(lambda: bool(self.facade.screener_saved))
+        saved = self.facade.screener_saved[-1]
+        self.assertEqual(
+            (saved.surge_ratio, saved.quiet_amount, saved.min_volume_lots, saved.download_black, saved.download_red),
+            (Decimal(4), 80_000_000, 800, True, False),
+        )
+        self.assertEqual(saved.near_extreme_pct, ScreenerParams().near_extreme_pct)  # untouched fields keep their value
 
 
 if __name__ == '__main__':

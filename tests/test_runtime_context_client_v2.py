@@ -32,6 +32,7 @@ from quantlab.trading.runtime.ipc import read_session
 from test_trading_runtime_context import close_owned_test_context, close_owned_test_process, profile_fixture, serve_fixture
 from tools.owned_trading_engine import OwnedEngineProcesses
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from tempfile import TemporaryDirectory
 from quantlab.trading.adapters.storage.sector_store import SectorGroupStore
 from quantlab.trading.application.codec import dumps, loads
@@ -47,6 +48,13 @@ from quantlab.trading.application.sector_contracts import (
 from quantlab.trading.application.sector_minutes import sector_history
 from quantlab.trading.application.sector_group_editor import SectorGroupEditor
 from quantlab.trading.application.sector_service import SectorService
+from quantlab.trading.application.screener_board import ScreenerBoard
+from quantlab.trading.application.screener_contracts import ScreenerQuery, ScreenerView
+from quantlab.trading.application.stock_screener import StockScreener
+from quantlab.trading.domain.screener import ScreenerParams
+from quantlab.trading.domain.sector import QuoteRow
+from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+from quantlab.trading.runtime.market_terminal_settings import MarketTerminalSettings
 from quantlab.trading.domain.sector_alerts import MinuteStat, SectorAlertParams
 from quantlab.trading.runtime.protocol import Operation
 from quantlab.trading.runtime.sector_settings import SectorAlertSettings
@@ -503,6 +511,75 @@ class SectorTransportTests(unittest.TestCase):
         self.assertEqual((params, sent.operation, sent.sector_params), (SectorAlertParams(), Operation.SECTOR_SETTINGS, None))
         saved, sent = self.call('sector_settings', params)
         self.assertEqual((saved, sent.sector_params), (params, params))
+
+
+# The same lesson for the screener: the desktop only ever reaches the engine through ContextIpcFacade, so the query and the
+# thresholds must arrive intact at the dispatcher and come back as typed views.
+class ScreenerTransportTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        root = Path(self.temp.name)
+        self.launch = RuntimeLaunch(root, Environment.BROKER_SIMULATION, account_ref='sinopac-pending', sinopac=True)
+        taipei = timezone(timedelta(hours=8))
+        now = datetime(2026, 11, 9, 10, 0, tzinfo=taipei)
+        stocks = (WatchInstrument('TWSE:1234', WatchKind.STOCK, 'TSE', '1234', '甲', '24'),)
+        self.requests = []
+        history = SimpleNamespace(
+            request=lambda instrument, start, end, priority=0: self.requests.append((instrument.code, priority)),
+            is_backfilling=lambda instrument_id: False,
+            state=lambda: SimpleNamespace(history_error=()),
+        )
+        store = SimpleNamespace(instrument_ids=lambda: (), minute_extent=lambda instrument_id: None, missing_ranges=lambda instrument_id, start, end: ())
+        self.preferences = MarketTerminalSettings(root / 'settings.json')
+        screener = StockScreener(lambda: self.preferences.screener, lambda: stocks, history, lambda *args: None)
+        row = QuoteRow('1234', Decimal(110), Decimal(10), '', 2000, 40_000_000, Decimal(4), now, Decimal(100), Decimal('110.5'), Decimal(99))
+        screener.on_round(now, {'1234': row})
+        board = ScreenerBoard(lambda: 'LIVE', lambda: now, lambda: stocks, screener, store, history, lambda: self.preferences.screener)
+        self.bundle = SimpleNamespace(launch=self.launch, account_refs=('sinopac-pending',), screener_board=board, market_preferences=self.preferences)
+        self.client = ContextIpcFacade(self.launch)
+
+    def call(self, method, *args):
+        with patch('quantlab.trading.runtime.ipc.read_session') as session, patch('quantlab.trading.runtime.ipc.Client') as connection:
+            session.return_value.key = b'test'
+            wire = connection.return_value.__enter__.return_value
+            wire.poll.return_value = True
+
+            def reply(_):
+                request = loads(wire.send_bytes.call_args.args[0].decode('utf-8'))
+                return dumps(replace(_dispatch(self.bundle, request), request_id=request.request_id)).encode('utf-8')
+
+            wire.recv_bytes.side_effect = reply
+            result = getattr(self.client, method)(*args)
+            return result, loads(wire.send_bytes.call_args.args[0].decode('utf-8'))
+
+    def test_the_list_query_pattern_and_download_id_reach_the_dispatcher_and_the_view_comes_back_typed(self):
+        view, sent = self.call('screener', ScreenerQuery('SURGE', 'RED'))
+        self.assertIsInstance(view, ScreenerView)
+        self.assertEqual((sent.operation, sent.screener), (Operation.SCREENER, ScreenerQuery('SURGE', 'RED')))
+        self.assertEqual(([row.code for row in view.rows], view.rows[0].label, view.state, view.min_volume_lots), (['1234'], 'SURGE_RED', 'LIVE', 500))
+        black, _ = self.call('screener', ScreenerQuery('SURGE', 'BLACK'))
+        self.assertEqual(black.rows, ())
+
+    def test_a_download_id_queues_the_download_in_the_engine(self):
+        self.requests.clear()
+        _, sent = self.call('screener', ScreenerQuery('DOWNLOADED', download_id='TWSE:1234'))
+        self.assertEqual(sent.screener, ScreenerQuery('DOWNLOADED', 'ALL', 'TWSE:1234'))
+        self.assertEqual(self.requests, [('1234', 10_000)])
+
+    def test_the_other_lists_cross_the_wire_too(self):
+        for list_id, state in (('BREAKOUT', 'ACCUMULATING'), ('DOWNLOADED', 'LIVE')):
+            view, sent = self.call('screener', ScreenerQuery(list_id))
+            self.assertEqual((view.list_id, view.state, sent.screener.list_id), (list_id, state, list_id))
+
+    def test_settings_read_and_save_go_through_the_facade_and_persist_in_settings_json(self):
+        params, sent = self.call('screener_settings')
+        self.assertEqual((params, sent.operation, sent.screener_params), (ScreenerParams(), Operation.SCREENER_SETTINGS, None))
+        changed = replace(params, surge_ratio=Decimal(4), quiet_amount=80_000_000, download_black=True)
+        saved, sent = self.call('screener_settings', changed)
+        self.assertEqual((saved, sent.screener_params), (changed, changed))
+        self.assertEqual(MarketTerminalSettings(Path(self.temp.name) / 'settings.json').screener, changed)  # a restart keeps it
+        self.assertEqual(self.preferences.screener, changed)  # and the running screener reads it on its next round
 
 
 if __name__ == '__main__':

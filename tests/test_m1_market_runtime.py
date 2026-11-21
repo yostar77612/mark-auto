@@ -96,6 +96,20 @@ class MarketRuntimeTests(unittest.TestCase):
         self.assertEqual(len(requests), 2)  # the screener extended today's download to now
         self.assertEqual(requests[1][2], clock['now'])
 
+    def test_screener_requests_reach_the_real_bundle_and_saved_thresholds_reach_the_running_screener(self):
+        from dataclasses import replace as replace_values
+
+        from quantlab.trading.application.screener_contracts import ScreenerQuery
+
+        offline = self.request(Operation.SCREENER, screener=ScreenerQuery('SURGE')).screener
+        self.assertEqual((offline.list_id, offline.state, offline.rows), ('SURGE', 'OFFLINE', ()))
+        self.assertEqual(self.request(Operation.SCREENER, screener=ScreenerQuery('DOWNLOADED')).screener.downloaded, ())
+        params = self.request(Operation.SCREENER_SETTINGS).screener_params
+        changed = replace_values(params, surge_ratio=Decimal(4), download_black=True)
+        self.assertEqual(self.request(Operation.SCREENER_SETTINGS, screener_params=changed).screener_params, changed)
+        self.assertEqual(self.bundle.screener.params(), changed)  # the next round judges with the saved values
+        self.assertEqual(self.bundle.market_preferences.screener, changed)
+
     def test_a_failing_sector_hook_still_lets_the_screener_see_the_round(self):
         from quantlab.trading.domain.sector import QuoteRow
         from quantlab.trading.domain.watch import WatchInstrument, WatchKind

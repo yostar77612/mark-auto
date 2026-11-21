@@ -34,6 +34,33 @@ class KlineStoreTests(unittest.TestCase):
         self.store.close()
         self.temp.cleanup()
 
+    def test_minute_extent_gives_first_last_and_coverage_end_without_counting(self):
+        self.assertIsNone(self.store.minute_extent('TWSE:2330'))
+        self.store.upsert((minute(0), minute(5), minute(2)))
+        extent = self.store.minute_extent('TWSE:2330')
+        self.assertEqual(extent[:2], (minute(0).start, minute(5).start))
+        self.assertIsNone(extent[2])  # nothing marked as covered yet
+        self.store.mark_coverage('TWSE:2330', minute(0).start, minute(5).end)
+        self.assertEqual(self.store.minute_extent('TWSE:2330')[2], minute(5).end)
+        self.assertIsNone(self.store.minute_extent('TWSE:2317'))
+
+    def vm_steps(self, instrument_id):
+        steps = []
+        self.store._db.set_progress_handler(lambda: steps.append(1) and 0, 1)
+        try:
+            self.store.minute_extent(instrument_id)
+        finally:
+            self.store._db.set_progress_handler(None, 0)
+        return len(steps)
+
+    def test_minute_extent_does_constant_work_however_many_bars_an_instrument_has(self):
+        self.store.upsert(tuple(replace(minute(offset), instrument_id='TWSE:1101') for offset in range(2000)))
+        small = self.vm_steps('TWSE:1101')
+        self.store.upsert(tuple(replace(minute(offset), instrument_id='TWSE:1101') for offset in range(2000, 20000)))
+        large = self.vm_steps('TWSE:1101')
+        self.assertLess(small, 200)  # a pair of index seeks, not a walk over 2,000 rows
+        self.assertLessEqual(large, small + 20)  # ten times the rows, the same work
+
     def test_instrument_ids_match_the_full_union_scan_for_minute_and_daily_rows(self):
         self.assertEqual(self.store.instrument_ids(), ())
         for instrument, offsets in (('TWSE:2330', range(5)), ('TPEX:6488', range(3)), ('INDEX:IX0001', range(2)), ('TWSE:1101', range(1))):

@@ -82,6 +82,8 @@ def _allowed(layer: str, target: str) -> bool:
                     'application.market_settings',
                     'application.symbol_search',
                     'application.sector_contracts',
+                    'application.screener_contracts',
+                    'domain.screener',
                     'domain.sector_alerts',
                     'application.alert_contracts',
                     'domain.watch',

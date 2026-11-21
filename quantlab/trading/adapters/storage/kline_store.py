@@ -322,6 +322,24 @@ class KlineStore:
             ids = {row[0] for table in ('bars_1m', 'bars_1d') for row in self._db.execute(_DISTINCT_IDS.format(table=table)) if row[0] is not None}
         return tuple(sorted(ids))
 
+    def minute_extent(self, instrument_id: str) -> tuple[datetime, datetime, datetime | None] | None:
+        """First and last stored minute of one instrument, and where its coverage last reached; None without minute bars.
+
+        MIN and MAX of the (instrument_id, start_utc) primary key are one index seek each, so listing every stored
+        instrument costs no table scan and no COUNT (a year of one stock is about 65,000 rows)."""
+        identity(instrument_id)
+        with self._lock:
+            # Two scalar subqueries, not MIN and MAX in one SELECT: SQLite turns a lone min() or max() into one index seek,
+            # but a pair is a walk over every row of the instrument (13 ms for a year of minutes against 0.03 ms).
+            first, last = self._db.execute(
+                'SELECT (SELECT MIN(start_utc) FROM bars_1m WHERE instrument_id=?), (SELECT MAX(start_utc) FROM bars_1m WHERE instrument_id=?)',
+                (instrument_id, instrument_id),
+            ).fetchone()
+            covered = self._db.execute('SELECT MAX(end_utc) FROM coverage WHERE instrument_id=?', (instrument_id,)).fetchone()[0]
+        if first is None:
+            return None
+        return datetime.fromisoformat(first), datetime.fromisoformat(last), datetime.fromisoformat(covered) if covered else None
+
     def record_queried_bars(self, day: date, count: int) -> None:
         integer(count, 'queried bars')
         with self._lock, self._db:

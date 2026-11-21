@@ -13,7 +13,8 @@ from quantlab.trading.application.sector_group_editor import SectorGroupEditor
 from quantlab.trading.application.sector_minutes import MinuteAggregator, sector_history
 from quantlab.trading.application.sector_monitor import SectorMonitor
 from quantlab.trading.application.sector_service import SectorService
-from quantlab.trading.application.stock_screener import ScreenerParams, StockScreener
+from quantlab.trading.application.screener_board import ScreenerBoard
+from quantlab.trading.application.stock_screener import StockScreener
 from quantlab.trading.domain.alerts import AlertKind
 from quantlab.trading.domain.validation import DomainError
 from .sector_settings import SectorAlertSettings
@@ -159,12 +160,14 @@ def attach_sector(bundle):
     monitor = SectorMonitor(service.candidates, MonitorSubscriptions(connection), settings.get, service.group_name, minute_store)
 
     # The screener works from the same round (no extra snapshot call) and queues K-line downloads at a low priority.
-    screener = StockScreener(
-        ScreenerParams,
-        service.stocks,
-        bundle.market_history,
-        bundle.alerts.record_screen,
-        lookback_days=bundle.market_history.settings.daily_lookback_days,
+
+    def params():
+        return bundle.market_preferences.screener  # the user's saved thresholds, read each round
+
+    lookback = bundle.market_history.settings.daily_lookback_days
+    screener = StockScreener(params, service.stocks, bundle.market_history, bundle.alerts.record_screen, lookback_days=lookback)
+    bundle.screener_board = ScreenerBoard(
+        service.status, service.now, lambda: connection.directory.items, screener, bundle.kline_store, bundle.market_history, params, lookback_days=lookback
     )
     screener.seed(_logged_screen_triggers(bundle.alerts.service.events))
 

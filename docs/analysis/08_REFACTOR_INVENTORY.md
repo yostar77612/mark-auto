@@ -1017,6 +1017,11 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tools/bench_backtest_repeat.py` | 82 | tooling | `tools/bench_backtest_repeat.py` | bench_backtest_repeat: frozen vs live run_backtest timing on one Dataset (OPT-1 P7) |
 | `desktop_app/strings/m6_screener.py` | 8 | shared | `desktop_app/strings/m6_screener.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 | `quantlab/trading/application/stock_screener.py` | 230 | application | `quantlab/trading/application/stock_screener.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/screener_panel.py` | 295 | presentation | `desktop_app/features/trading/screener_panel.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `desktop_app/features/trading/screener_settings_dialog.py` | 100 | presentation | `desktop_app/features/trading/screener_settings_dialog.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/screener_board.py` | 122 | application | `quantlab/trading/application/screener_board.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/application/screener_contracts.py` | 82 | application | `quantlab/trading/application/screener_contracts.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
+| `quantlab/trading/domain/screener.py` | 64 | domain | `quantlab/trading/domain/screener.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
 
 ## 3 跨層匯入違規（GitNexus + AST）
 

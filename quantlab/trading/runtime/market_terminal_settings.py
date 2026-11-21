@@ -4,6 +4,7 @@ from pathlib import Path
 from threading import RLock
 
 from quantlab.research_core.adapters.settings_store import SettingsStore
+from quantlab.trading.domain.screener import ScreenerParams
 from quantlab.trading.domain.validation import DomainError, identity
 
 
@@ -21,11 +22,25 @@ class MarketTerminalSettings:
         for value in (*watches, selected):
             identity(value)
         self.watchlist, self.selected = tuple(watches), selected
+        self.screener, self._screener_saved = self._load_screener(saved.get('screener'))
+
+    @staticmethod
+    def _load_screener(saved) -> tuple[ScreenerParams, bool]:
+        if not isinstance(saved, dict):
+            return ScreenerParams(), False
+        try:
+            return ScreenerParams.from_dict(saved), True
+        except (DomainError, ValueError, TypeError, ArithmeticError):
+            # Out-of-range or damaged thresholds fall back to the defaults; the file itself is left untouched.
+            return ScreenerParams(), False
 
     def _save(self) -> None:
         with self.lock:
             body = self.store.load()
-            body['market_terminal_v1'] = {'watchlist': list(self.watchlist), 'selected': self.selected}
+            section = {'watchlist': list(self.watchlist), 'selected': self.selected}
+            if self._screener_saved:
+                section['screener'] = self.screener.as_dict()
+            body['market_terminal_v1'] = section
             self.store.save(body)
 
     def save_watchlist(self, value: tuple[str, ...]) -> None:
@@ -43,3 +58,12 @@ class MarketTerminalSettings:
         except OSError:
             self.selected = previous
             raise DomainError('operation_failed', 'terminal preferences write failed') from None
+
+    def save_screener(self, value: ScreenerParams) -> ScreenerParams:
+        previous, saved, self.screener, self._screener_saved = self.screener, self._screener_saved, value, True
+        try:
+            self._save()
+        except OSError:
+            self.screener, self._screener_saved = previous, saved
+            raise DomainError('operation_failed', 'terminal preferences write failed') from None
+        return value

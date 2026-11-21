@@ -444,6 +444,18 @@ class ServiceTests(unittest.TestCase):
         self.now = WEEKEND.replace(hour=15)
         self.assertFalse(self.service.due())
 
+    def test_status_names_the_same_state_the_board_shows(self):
+        self.assertEqual(self.service.status(), 'EMPTY')
+        self.service.refresh()
+        self.assertEqual(self.service.status(), self.service.board().state)
+        self.assertEqual(self.service.status(), 'LIVE')
+        self.now = OPEN + timedelta(seconds=STALE_SECONDS + 5)
+        self.assertEqual(self.service.status(), 'STALE')
+        self.now = CLOSED
+        self.assertEqual(self.service.status(), 'CLOSED')
+        self.source.connected = False
+        self.assertEqual(self.service.status(), 'OFFLINE')
+
     def test_quotes_returns_a_copy_of_the_last_round(self):
         self.assertEqual(self.service.quotes(), {})
         self.service.refresh()

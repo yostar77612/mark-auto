@@ -96,6 +96,7 @@ def attach_terminal(bundle):
     connection.on_connected = lambda session: service.connected()
     connection.on_disconnected = service.disconnected
     bundle.market_terminal, bundle.kline_store, bundle.market_history = service, store, history
+    bundle.market_preferences = preferences
     bundle.session_bridge = bridge
     from .market_alerts import attach_alerts
 

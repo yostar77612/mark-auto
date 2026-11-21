@@ -11,51 +11,14 @@ from threading import RLock
 from typing import Callable, Protocol
 from zoneinfo import ZoneInfo
 
+from quantlab.trading.domain.screener import SURGE_BLACK, SURGE_RED, ScreenerParams
 from quantlab.trading.domain.sector import QuoteRow, eligible_stock
-from quantlab.trading.domain.validation import DomainError, decimal_value, integer
 from quantlab.trading.domain.watch import WatchInstrument
 from .sector_service import SESSION_END, in_session
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
-SURGE_RED, SURGE_BLACK = 'SURGE_RED', 'SURGE_BLACK'
-CONDITIONS = (SURGE_RED, SURGE_BLACK)
 # Below the main chart (0) and every watchlist entry (2 + position): the screener never delays what the user is watching.
 SCREENER_PRIORITY = 10_000
-
-
-@dataclass(frozen=True)
-class ScreenerParams:
-    """Every threshold is user-adjustable (owner decision D2, 2026-11-21); defaults are the owner's."""
-
-    min_price: Decimal = Decimal(10)
-    min_volume_lots: int = 500
-    warmup_minutes: int = 10
-    list_rows: int = 50
-    surge_ratio: Decimal = Decimal(3)
-    red_change_pct: Decimal = Decimal(5)
-    black_change_pct: Decimal = Decimal(5)
-    near_extreme_pct: Decimal = Decimal('1.5')
-    quiet_amount: int = 50_000_000
-    download_red: bool = True
-    download_black: bool = False
-
-    def __post_init__(self) -> None:
-        for name, low, high in (('min_price', 1, 1000), ('surge_ratio', 1, 50), ('red_change_pct', 1, 10), ('black_change_pct', 1, 10)):
-            if not low <= decimal_value(getattr(self, name), name) <= high:
-                raise DomainError('validation_failed', name + ' out of range')
-        if not Decimal('0.1') <= decimal_value(self.near_extreme_pct, 'near_extreme_pct') <= 5:
-            raise DomainError('validation_failed', 'near_extreme_pct out of range')
-        for name, low, high in (
-            ('min_volume_lots', 0, 1_000_000),
-            ('warmup_minutes', 0, 60),
-            ('list_rows', 10, 200),
-            ('quiet_amount', 1_000_000, 10_000_000_000),
-        ):
-            if not low <= integer(getattr(self, name), name) <= high:
-                raise DomainError('validation_failed', name + ' out of range')
-        for name in ('download_red', 'download_black'):
-            if type(getattr(self, name)) is not bool:
-                raise DomainError('validation_failed', name)
 
 
 @dataclass(frozen=True)

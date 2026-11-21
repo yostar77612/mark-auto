@@ -12,6 +12,8 @@ from quantlab.trading.application.codec import MAX_BYTES, dumps, loads
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery, UiCommand, UiReceipt, UiState
 from quantlab.trading.application.order_book_contracts import OrderBookView
 from quantlab.trading.application.registry import initialize
+from quantlab.trading.application.screener_contracts import ScreenerQuery, ScreenerView
+from quantlab.trading.domain.screener import ScreenerParams
 from quantlab.trading.domain.sector_alerts import SectorAlertParams
 from quantlab.trading.application.sector_contracts import (
     SectorBoardView,
@@ -81,6 +83,8 @@ class IpcFacade:
         sector_groups: SectorGroupsCommand | None = None,
         sector_params: SectorAlertParams | None = None,
         sector_history: SectorHistoryQuery | None = None,
+        screener: ScreenerQuery | None = None,
+        screener_params: ScreenerParams | None = None,
     ) -> Response:
         session = read_session(self.root)
         envelope = Request(
@@ -96,6 +100,8 @@ class IpcFacade:
             sector_groups=sector_groups,
             sector_params=sector_params,
             sector_history=sector_history,
+            screener=screener,
+            screener_params=screener_params,
             alert=alert,
         )
         with Client(session.address, family=session.family, authkey=session.key) as connection:
@@ -159,6 +165,18 @@ class IpcFacade:
         if not isinstance(response.sector_params, SectorAlertParams):
             raise DomainError('validation_failed', 'missing sector settings')
         return response.sector_params
+
+    def screener(self, query: ScreenerQuery) -> ScreenerView:
+        response = self.request(Operation.SCREENER, screener=query)
+        if not isinstance(response.screener, ScreenerView):
+            raise DomainError('validation_failed', 'missing screener view')
+        return response.screener
+
+    def screener_settings(self, params=None) -> ScreenerParams:
+        response = self.request(Operation.SCREENER_SETTINGS, screener_params=params)
+        if not isinstance(response.screener_params, ScreenerParams):
+            raise DomainError('validation_failed', 'missing screener settings')
+        return response.screener_params
 
     def market_preferences(self) -> str:
         return self.request(Operation.MARKET_PREFERENCES).market_selected

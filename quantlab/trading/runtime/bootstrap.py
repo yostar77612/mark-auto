@@ -121,6 +121,8 @@ class RuntimeBundle:
     sector_settings: object | None = None
     sector_minute_store: object | None = None
     screener: object | None = None
+    screener_board: object | None = None
+    market_preferences: object | None = None
     session_bridge: object | None = None
     sinopac_factory: object | None = None
     secret_resolver: object | None = None
