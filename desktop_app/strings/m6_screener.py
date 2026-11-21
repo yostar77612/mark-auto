@@ -5,7 +5,7 @@ ENTRIES = (
     (78, 3397, 'alert.event.screen_download', '已加入 K 線下載：{1} {2}（{0}）'),
     (78, 3398, 'screen.cond_surge_red', '爆量長紅'),
     (78, 3399, 'screen.cond_surge_black', '爆量長黑'),
-    (78, 3400, 'screen.tab_label', '選股：{0} ▾'),
+    (78, 3400, 'screen.tab_label', '選股：{0} ▼'),
     (78, 3401, 'screen.menu_conditions', '條件選股'),
     (78, 3402, 'screen.menu_klines', 'K 線資料'),
     (78, 3403, 'screen.list_surge', '爆量'),
