@@ -11,6 +11,11 @@ The development venv has no broker SDK: put the pinned shioaji 1.7.9 on PYTHONPA
 
     $env:PYTHONPATH = "$env:LOCALAPPDATA\\MarkAuto-probe\\sdk"
     .venv\\Scripts\\python.exe tools\\bulk_kline_backfill.py --top 200
+
+With --existing the tool does not rank anything: it extends every stock that already holds 1-minute bars (the 已下載
+K 線 list, indices left alone) back to --days days, for example three years for all of them:
+
+    .venv\\Scripts\\python.exe tools\\bulk_kline_backfill.py --existing --days 1095 --max-bars-today 100000000
 """
 
 from __future__ import annotations
@@ -64,29 +69,50 @@ def stored_bars(store: KlineStore, instrument_id: str, start: datetime, end: dat
     return len(store.read(instrument_id, start, end))
 
 
+def downloaded_stocks(store: KlineStore, directory: SymbolDirectory):
+    """The stocks that already hold 1-minute bars (the 已下載 K 線 list without indices), in code order, and the held ids the directory does not know."""
+    known = {item.instrument_id: item for item in directory.items}
+    held = [instrument_id for instrument_id in store.instrument_ids() if store.minute_extent(instrument_id) is not None]
+    stocks = sorted((known[i] for i in held if i in known and known[i].kind is WatchKind.STOCK), key=lambda item: item.code)
+    return stocks, [i for i in held if i not in known]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--context', type=Path, default=DEFAULT_CONTEXT, help='MarkAuto context-engine folder')
     parser.add_argument('--top', type=int, default=200)
     parser.add_argument('--days', type=int, default=365)
     parser.add_argument('--max-bars-today', type=int, default=HistorySettings().daily_bar_limit)
-    parser.add_argument('--rank-only', action='store_true', help='print the ranking and stop')
+    parser.add_argument(
+        '--existing',
+        action='store_true',
+        help='extend the stocks that already have 1-minute bars instead of ranking by traded amount (use with --days 1095 for three years)',
+    )
+    parser.add_argument('--rank-only', action='store_true', help='print the ranking (or, with --existing, the stocks that would be extended) and stop')
     args = parser.parse_args(argv)
     if markauto_running():
         print('MarkAuto 正在執行：請先關閉 MarkAuto 再下載（兩邊同時寫入 K 線庫不安全）。')
         return 2
     settings = market_settings(args.context)
     directory = SymbolDirectory(args.context / 'market' / 'symbol_directory.json')
+    store_path = args.context / 'market' / 'klines.sqlite3'
+    if args.existing:
+        store = KlineStore(store_path)
+        top = [(item, None) for item in downloaded_stocks(store, directory)[0]]
+        print(f'已有 1 分 K 的股票 {len(top)} 檔，各補到近 {args.days} 天：' + ' '.join(item.code for item, _ in top))
+        if args.rank_only:
+            return 0
     session = create_market_session(settings, directory)
     session.connect()
     try:
-        top = ranked(session, directory, args.top)
-        print(f'成交金額前 {len(top)} 名（{settings.environment.value}）：')
-        for rank, (item, amount) in enumerate(top, 1):
-            print(f'  {rank:3d}. {item.code} {item.name}  成交金額 {amount / 1e8:,.1f} 億')
-        if args.rank_only:
-            return 0
-        store = KlineStore(args.context / 'market' / 'klines.sqlite3')
+        if not args.existing:
+            top = ranked(session, directory, args.top)
+            print(f'成交金額前 {len(top)} 名（{settings.environment.value}）：')
+            for rank, (item, amount) in enumerate(top, 1):
+                print(f'  {rank:3d}. {item.code} {item.name}  成交金額 {amount / 1e8:,.1f} 億')
+            if args.rank_only:
+                return 0
+            store = KlineStore(store_path)
         history = HistorySync(store, session, HistorySettings(daily_bar_limit=args.max_bars_today), autostart=False)
         end = datetime.now(timezone.utc).replace(second=0, microsecond=0)
         start = end - timedelta(days=args.days)
