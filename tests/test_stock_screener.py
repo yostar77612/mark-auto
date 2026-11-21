@@ -310,6 +310,16 @@ class ServiceTests(unittest.TestCase):
         restarted.on_round(monday, self.rows(quote(when=monday)))
         self.assertEqual(len(self.logged), 2)
 
+    def test_seeds_from_several_days_keep_the_latest_whatever_their_order(self):
+        thursday, saturday = date(2026, 11, 12), date(2026, 11, 14)
+        for order in ((thursday, saturday), (saturday, thursday)):
+            with self.subTest(order=order):
+                history, logged = Recorder(), []
+                restarted = StockScreener(lambda: self.params, lambda: self.stocks, history, lambda *args: logged.append(args))
+                restarted.seed(tuple((day, '1234', SURGE_RED) for day in order))
+                restarted.on_round(at(14, 11, 0), self.rows(quote(when=at(13, 13, 30))))  # Saturday, Friday's data
+                self.assertEqual((history.requests, logged), ([], []))
+
     def test_a_trigger_logged_yesterday_does_not_suppress_today(self):
         self.screener.seed(((date(2026, 11, 6), '1234', SURGE_RED),))
         self.screener.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))

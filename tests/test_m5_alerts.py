@@ -542,6 +542,24 @@ class LogIntegrationTests(unittest.TestCase):
                 (event.rule_id, event_text(event), event_direction(event)), ('screen.breakout', '已加入 K 線下載：1234 測試股（帶量突破新高）', 'UP')
             )
 
+    def test_an_unknown_screener_condition_still_reads_instead_of_breaking_the_log(self):
+        from datetime import timedelta as delta
+
+        from desktop_app.features.trading.alert_panel import event_direction, event_text
+        from quantlab.trading.domain.alerts import AlertEvent, AlertKind
+
+        event = AlertEvent(
+            'e1',
+            'screen.later',
+            AlertKind.SCREEN_DOWNLOAD,
+            'TWSE:1234',
+            DAY.replace(hour=10) + delta(minutes=1),
+            None,
+            'alert.event.screen_download',
+            ('LATER', '1234', '測試股'),
+        )
+        self.assertEqual((event_text(event), event_direction(event)), ('已加入 K 線下載：1234 測試股（LATER）', 'ANY'))
+
     def test_sector_kinds_cannot_be_added_as_rules(self):
         from PySide6.QtWidgets import QApplication
 
