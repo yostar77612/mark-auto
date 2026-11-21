@@ -25,6 +25,7 @@ from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
 from desktop_app.features.trading.sector_board import SERIES_TAIL_BARS, _detail_series
+from desktop_app.features.trading.series_reader import read_series
 
 TAIPEI = timezone(timedelta(hours=8))
 OPEN = datetime(2026, 11, 9, 10, 0, tzinfo=TAIPEI)  # a Monday, in session
@@ -1045,6 +1046,57 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
             widget._submit = lambda operation, completed: completed(None, RuntimeError('lost'))
             widget._refresh_detail()
             self.assertIsNone(widget._detail_cache)
+
+
+class PinnedTailOnLiveEngineTests(unittest.TestCase):
+    """OPT-1 P11: the legacy live path (LiveMarketService) has no snapshots; the pinned tail only needs the market not to move between its two reads."""
+
+    # The fixture of the detail-series tests above (a real LiveMarketService over the simulated tick feed), borrowed method by method.
+    KEY = DetailSeriesEquivalenceTests.KEY
+    setUp = DetailSeriesEquivalenceTests.setUp
+    backfill = DetailSeriesEquivalenceTests.backfill
+    step = DetailSeriesEquivalenceTests.step
+    lose_recent = DetailSeriesEquivalenceTests.lose_recent
+    assertSameSeries = DetailSeriesEquivalenceTests.assertSameSeries
+
+    def test_pinned_reads_equal_whole_reads_when_the_market_holds_still_between_the_two_reads(self):
+        cache = {}
+        for number in range(40):
+            period = '1m' if number < 30 else '5m'
+            self.step()
+            if number % 13 == 4:
+                self.depth += 45
+                self.backfill()
+            if number % 7 == 2:
+                self.lose_recent(2)
+            result = read_series(self.facade, self.KEY, period, cache.get(period), pinned_tail=True)
+            with self.subTest(round=number):
+                self.assertSameSeries(result, period)
+            cache[period] = result[:2]
+
+    def test_a_tick_between_the_two_reads_falls_back_to_the_whole_series(self):
+        from quantlab.trading.application.contracts import MarketSeriesQuery
+
+        cached = read_series(self.facade, self.KEY, '1m', None, pinned_tail=True)[:2]
+        test, facade = self, self.facade
+
+        class Racing:
+            def __init__(self):
+                self.reads = []
+
+            def market_series(self, query):
+                page = facade.market_series(query)
+                self.reads.append((query.offset, query.limit))
+                if query.limit == 1:
+                    test.step()  # the market moves between the first-page read and the tail read
+                return page
+
+        racing = Racing()
+        result = read_series(racing, self.KEY, '1m', cached, pinned_tail=True)
+        self.assertTrue(result[2])
+        # The first-page read, then the whole read; the refused tail read is not recorded (it raised).
+        self.assertEqual(racing.reads, [(0, 1), (0, MarketSeriesQuery(self.KEY).limit)])
+        self.assertSameSeries(result, '1m')
 
 
 if __name__ == '__main__':
