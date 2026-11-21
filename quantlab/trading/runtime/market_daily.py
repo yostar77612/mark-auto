@@ -27,7 +27,7 @@ _ENDPOINTS = {
 
 def validate_daily_url(url: str) -> str:
     """Only the two fixed official endpoints with exactly their own query keys and shapes."""
-    if not isinstance(url, str) or len(url) > 200 or not url.isascii() or any(ord(char) <= 32 for char in url):
+    if not isinstance(url, str) or len(url) > 200 or any(ord(char) <= 32 for char in url):
         raise DomainError('official_stock_invalid', 'bounded official URL required')
     parts = urlsplit(url)
     patterns = _ENDPOINTS.get((parts.netloc, parts.path))
