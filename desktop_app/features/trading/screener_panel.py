@@ -136,9 +136,8 @@ class ScreenerPanel(QWidget):
 
     def show_menu(self, tab_bar, index):
         if self._menu is not None:
-            self._menu.deleteLater()
+            self._menu.deleteLater()  # the previous popup; it is never deleted by Qt itself, so this is always a live object
         self._menu = self.build_menu()
-        self._menu.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self._menu.popup(tab_bar.mapToGlobal(tab_bar.tabRect(index).bottomLeft()))
 
     def set_list(self, list_id):
