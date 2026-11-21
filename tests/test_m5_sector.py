@@ -117,7 +117,7 @@ class DomainTests(unittest.TestCase):
             row('2330', '1', limit='SIDEWAYS')
 
 
-def raw_snapshot(code='2330', close=100, rate=1.5, change_type='Up', volume_ratio=1.2, ts=None, amount=123456789, volume=2000):
+def raw_snapshot(code='2330', close=100, rate=1.5, change_type='Up', volume_ratio=1.2, ts=None, amount=123456789, volume=2000, **extra):
     stamp = ts or int(datetime(2026, 11, 9, 2, 0, tzinfo=timezone.utc).timestamp() * 1e9)
     return SimpleNamespace(
         code=code,
@@ -128,6 +128,7 @@ def raw_snapshot(code='2330', close=100, rate=1.5, change_type='Up', volume_rati
         ts=stamp,
         total_amount=amount,
         total_volume=volume,
+        **extra,
     )
 
 
@@ -143,6 +144,33 @@ class SnapshotTests(unittest.TestCase):
         self.assertIsNone(normalise_snapshot(raw_snapshot(close=0)))
         self.assertIsNone(normalise_snapshot(raw_snapshot(volume_ratio=-1)).volume_ratio)
         self.assertIsNone(normalise_snapshot(raw_snapshot(volume_ratio=None)).volume_ratio)
+
+    def test_extreme_optional_values_are_unknown_too_with_the_same_bounds_as_the_row(self):
+        for bad in (1e30, 1e-70, 1e19, 10**400, -1e30):
+            with self.subTest(price=bad):
+                row = normalise_snapshot(raw_snapshot(open=bad, high=bad, low=bad))
+                self.assertEqual((row.price, row.open, row.high, row.low), (Decimal('100'), None, None, None))
+        for bad in (2e12, 1e300, 10**400, -1):
+            with self.subTest(lots=bad):
+                row = normalise_snapshot(raw_snapshot(yesterday_volume=bad))
+                self.assertEqual((row.price, row.yesterday_volume), (Decimal('100'), None))
+
+    def test_screener_fields_are_read_and_unusable_ones_are_unknown_without_dropping_the_row(self):
+        full = normalise_snapshot(raw_snapshot(open=98.5, high=101, low=97.5, yesterday_volume=1234))
+        self.assertEqual((full.open, full.high, full.low, full.yesterday_volume), (Decimal('98.5'), Decimal('101'), Decimal('97.5'), 1234))
+        bare = normalise_snapshot(raw_snapshot())  # an older SDK or fixture without the fields
+        self.assertEqual((bare.open, bare.high, bare.low, bare.yesterday_volume), (None, None, None, None))
+        for bad in (0, -1, None, 'x', True, float('nan'), float('inf')):
+            with self.subTest(bad=bad):
+                row = normalise_snapshot(raw_snapshot(open=bad, high=bad, low=bad, yesterday_volume=bad))
+                self.assertEqual((row.price, row.open, row.high, row.low), (Decimal('100'), None, None, None))
+                self.assertEqual(row.yesterday_volume, 0 if bad == 0 else None)  # no trade yesterday is a real 0
+
+    def test_the_screener_fields_do_not_change_the_sector_statistics(self):
+        plain = {'2330': row('2330', '2.00', 300, 'UP'), '2454': row('2454', '-1.00', 100)}
+        rich = {code: replace(item, open=Decimal(90), high=Decimal(120), low=Decimal(80), yesterday_volume=999) for code, item in plain.items()}
+        group = SectorGroup('g', 'G', 'CONCEPT', ('2330', '2454'))
+        self.assertEqual(compute_stats((group,), plain), compute_stats((group,), rich))
 
     def test_one_malformed_row_does_not_discard_the_round(self):
         class Facade:
@@ -352,17 +380,77 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.service.board().state, 'STALE')
         self.assertTrue(self.service.due())
 
-    def test_polling_is_due_only_connected_and_in_session_after_the_first_round(self):
+    def test_polling_is_due_only_connected_in_session_and_once_after_the_close_after_the_first_round(self):
         self.assertTrue(self.service.due())
         self.service.refresh()
         self.assertTrue(self.service.due())
         self.now = CLOSED
+        self.assertTrue(self.service.due())  # the one extra round after the close (M6 screener)
+        self.service.refresh()
         self.assertFalse(self.service.due())
         self.now = WEEKEND
         self.assertFalse(self.service.due())
         self.source.connected = False
         self.now = OPEN
         self.assertFalse(self.service.due())
+
+    def test_one_extra_round_after_each_weekday_close_marks_itself_for_the_hooks(self):
+        flags = []
+        self.service.on_round = lambda now, stats: flags.append(self.service.after_close_round) or ()
+        self.service.refresh()  # in session
+        self.now = OPEN.replace(hour=13, minute=36)
+        self.assertTrue(self.service.due())
+        self.service.refresh()  # the closing round
+        self.assertFalse(self.service.due())
+        self.now = OPEN + timedelta(days=1, hours=5)  # the next day, after the close
+        self.assertTrue(self.service.due())
+        self.service.refresh()
+        self.assertEqual(flags, [False, True, True])
+        self.assertFalse(self.service.due())
+
+    def test_a_failed_extra_close_round_is_retried_as_the_extra_close_round(self):
+        flags = []
+        self.service.on_round = lambda now, stats: flags.append(self.service.after_close_round) or ()
+        self.service.refresh()  # in session
+        self.now = OPEN.replace(hour=13, minute=40)
+        self.source.fail = True
+        self.service.refresh()  # the extra close round fails
+        self.assertTrue(self.service.due())
+        self.source.fail = False
+        self.now = OPEN.replace(hour=13, minute=40, second=10)
+        self.service.refresh()
+        self.assertEqual(flags, [False, True])  # the retry skips the sector hooks too
+        self.assertFalse(self.service.due())
+
+    def test_an_in_session_failure_retried_after_the_close_still_runs_the_sector_hooks_as_before(self):
+        flags = []
+        self.service.on_round = lambda now, stats: flags.append(self.service.after_close_round) or ()
+        self.service.refresh()
+        self.now = OPEN.replace(hour=13, minute=30)
+        self.source.fail = True
+        self.service.refresh()  # fails in session
+        self.source.fail = False
+        self.now = OPEN.replace(hour=13, minute=40)
+        self.service.refresh()  # the retry lands after the close: the pre-existing behaviour, hooks included
+        self.assertEqual(flags, [False, False])
+
+    def test_the_extra_close_round_is_not_due_before_the_close_or_on_a_weekend_and_a_first_load_is_not_extra(self):
+        flags = []
+        self.service.on_round = lambda now, stats: flags.append(self.service.after_close_round) or ()
+        self.now = CLOSED
+        self.service.refresh()  # nothing loaded yet: an ordinary first-load round that also counts as the closing round
+        self.assertEqual(flags, [False])
+        self.assertFalse(self.service.due())
+        self.now = WEEKEND.replace(hour=15)
+        self.assertFalse(self.service.due())
+
+    def test_quotes_returns_a_copy_of_the_last_round(self):
+        self.assertEqual(self.service.quotes(), {})
+        self.service.refresh()
+        quotes = self.service.quotes()
+        self.assertEqual(set(quotes), {'2330', '2454', '3034', '1101', '2317'})
+        quotes.clear()
+        self.assertEqual(len(self.service.quotes()), 5)
 
     def test_after_hours_with_nothing_loaded_still_takes_one_round(self):
         self.now = CLOSED

@@ -89,6 +89,25 @@ class RuntimeAlerts:
         with self.lock:
             self.service.record_event(event)
 
+    def record_screen(self, instrument, condition, at):
+        """A condition-triggered K-line download enters the same log; its click-through target is the stock."""
+        from uuid import uuid4
+
+        from quantlab.trading.domain.alerts import AlertEvent, AlertKind
+
+        event = AlertEvent(
+            str(uuid4()),
+            'screen.' + condition.lower(),
+            AlertKind.SCREEN_DOWNLOAD,
+            instrument.instrument_id,
+            at,
+            None,
+            'alert.event.screen_download',
+            (condition, instrument.code, instrument.name),
+        )
+        with self.lock:
+            self.service.record_event(event)
+
     def poll_scanner(self):
         with self.lock:
             return self.service.poll_scanner()

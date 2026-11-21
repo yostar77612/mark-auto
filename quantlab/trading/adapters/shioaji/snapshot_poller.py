@@ -4,13 +4,31 @@ import logging
 from decimal import Decimal
 
 from quantlab.trading.domain.sector import QuoteRow
-from quantlab.trading.domain.validation import DomainError
+from quantlab.trading.domain.validation import DomainError, decimal_value, integer
 from quantlab.trading.domain.watch import WatchInstrument
 from .sdk import sdk_decimal, sdk_text, sdk_time, sdk_value
 
 logger = logging.getLogger(__name__)
 BATCH = 500
 _LIMITS = {'LimitUp': 'UP', 'LimitDown': 'DOWN'}
+
+
+def _optional_price(raw: object, name: str) -> Decimal | None:
+    """open/high/low feed only the screener: a missing, zero or malformed value is unknown, never a dropped row."""
+    try:
+        return decimal_value(sdk_decimal(getattr(raw, name, None), 'snapshot ' + name), name, positive=True)
+    except (DomainError, ArithmeticError):
+        return None
+
+
+def _optional_lots(raw: object, name: str) -> int | None:
+    value = getattr(raw, name, None)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        return integer(int(value), name)  # NaN and infinity raise here; the bounds are QuoteRow's own
+    except (DomainError, ValueError, OverflowError):
+        return None
 
 
 def normalise_snapshot(raw: object) -> QuoteRow | None:
@@ -28,6 +46,10 @@ def normalise_snapshot(raw: object) -> QuoteRow | None:
         int(sdk_value(raw, 'total_amount')),
         sdk_decimal(ratio, 'snapshot volume ratio') if ratio is not None and Decimal(str(ratio)) >= 0 else None,
         sdk_time(sdk_value(raw, 'ts')),
+        _optional_price(raw, 'open'),
+        _optional_price(raw, 'high'),
+        _optional_price(raw, 'low'),
+        _optional_lots(raw, 'yesterday_volume'),
     )
 
 

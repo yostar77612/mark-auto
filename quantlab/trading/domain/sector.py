@@ -39,6 +39,11 @@ class QuoteRow:
     total_amount: int
     volume_ratio: Decimal | None
     at: datetime
+    # Added for the stock screener (M6); None when the snapshot did not carry a usable value. Volumes are in lots.
+    open: Decimal | None = None
+    high: Decimal | None = None
+    low: Decimal | None = None
+    yesterday_volume: int | None = None
 
     def __post_init__(self) -> None:
         identity(self.code)
@@ -51,6 +56,11 @@ class QuoteRow:
             raise DomainError('validation_failed', 'snapshot limit state')
         if self.volume_ratio is not None:
             decimal_value(self.volume_ratio, 'snapshot volume ratio', nonnegative=True)
+        for name in ('open', 'high', 'low'):
+            if getattr(self, name) is not None:
+                decimal_value(getattr(self, name), 'snapshot ' + name, positive=True)
+        if self.yesterday_volume is not None:
+            integer(self.yesterday_volume, 'snapshot yesterday volume')
 
 
 @dataclass(frozen=True)

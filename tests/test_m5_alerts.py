@@ -495,9 +495,39 @@ class LogIntegrationTests(unittest.TestCase):
     def test_a_rule_for_a_sector_kind_is_a_validation_error(self):
         from quantlab.trading.domain.alerts import AlertKind, AlertRule
 
-        for kind in (AlertKind.SECTOR_BURST, AlertKind.SECTOR_FLOW):
+        for kind in (AlertKind.SECTOR_BURST, AlertKind.SECTOR_FLOW, AlertKind.SCREEN_DOWNLOAD):
             with self.assertRaises(DomainError):
                 AlertRule('r', kind, 'MARKET')
+
+    def test_a_screener_download_enters_the_log_names_the_pattern_and_click_selects_the_stock(self):
+        from PySide6.QtWidgets import QApplication
+
+        from desktop_app.features.trading.alert_panel import AlertPanel, event_direction, event_text
+        from quantlab.trading.adapters.storage.alert_store import JsonAlertStore
+        from quantlab.trading.domain.alerts import AlertKind
+        from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+
+        QApplication.instance() or QApplication([])
+        instrument = WatchInstrument('TWSE:1234', WatchKind.STOCK, 'TSE', '1234', '測試股', '24')
+        with TemporaryDirectory(dir=Path.cwd()) as folder:
+            runtime = self.make(folder)
+            runtime.record_screen(instrument, 'SURGE_RED', DAY.replace(hour=10))
+            runtime.record_screen(instrument, 'SURGE_BLACK', DAY.replace(hour=10, minute=1))
+            red, dark = runtime.service.events
+            self.assertEqual(
+                (red.kind, red.instrument_id, red.rule_id, red.message_args),
+                (AlertKind.SCREEN_DOWNLOAD, 'TWSE:1234', 'screen.surge_red', ('SURGE_RED', '1234', '測試股')),
+            )
+            self.assertEqual(event_text(red), '已加入 K 線下載：1234 測試股（爆量長紅）')
+            self.assertEqual(event_text(dark), '已加入 K 線下載：1234 測試股（爆量長黑）')
+            self.assertEqual((event_direction(red), event_direction(dark)), ('UP', 'DOWN'))
+            self.assertEqual(JsonAlertStore(Path(folder)).load_events(DAY.replace(hour=10, minute=5)), (red, dark))
+            chosen, groups = [], []
+            panel = release(self, AlertPanel(runtime.service, lambda: 'TWSE:2330', lambda key, at: chosen.append(key)))
+            panel.select_sector = groups.append
+            self.assertEqual([panel.table.item(0, column).text() for column in (1, 3)], ['1234', '選股下載'])
+            panel.select_event(panel.table.item(0, 0))
+            self.assertEqual((chosen, groups), (['TWSE:1234'], []))
 
     def test_sector_kinds_cannot_be_added_as_rules(self):
         from PySide6.QtWidgets import QApplication
@@ -509,6 +539,7 @@ class LogIntegrationTests(unittest.TestCase):
         kinds = {getattr(dialog.kind.itemData(index), 'value', dialog.kind.itemData(index)) for index in range(dialog.kind.count())}
         self.assertNotIn('SECTOR_BURST', kinds)
         self.assertNotIn('SECTOR_FLOW', kinds)
+        self.assertNotIn('SCREEN_DOWNLOAD', kinds)
         self.assertIn('PRICE_CROSS', kinds)
 
 

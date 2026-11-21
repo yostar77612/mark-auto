@@ -3396,7 +3396,11 @@
       "terminal.tab_future": "期貨",
       "terminal.volume_future": "{0}口",
       "orderbook.no_future": "期貨暫無五檔",
-      "alert.future_stock_only": "漲停、跌停、急漲跌與爆量大單警示只適用個股，期貨不提供。"
+      "alert.future_stock_only": "漲停、跌停、急漲跌與爆量大單警示只適用個股，期貨不提供。",
+      "alert.kind_screen_download": "選股下載",
+      "alert.event.screen_download": "已加入 K 線下載：{1} {2}（{0}）",
+      "screen.cond_surge_red": "爆量長紅",
+      "screen.cond_surge_black": "爆量長黑"
     }
   },
   "aliases": {
@@ -8121,6 +8125,10 @@
       "terminal.volume_future": "{0}口",
       "orderbook.no_future": "期貨暫無五檔",
       "alert.future_stock_only": "漲停、跌停、急漲跌與爆量大單警示只適用個股，期貨不提供。",
+      "alert.kind_screen_download": "選股下載",
+      "alert.event.screen_download": "已加入 K 線下載：{1} {2}（{0}）",
+      "screen.cond_surge_red": "爆量長紅",
+      "screen.cond_surge_black": "爆量長黑",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -12841,7 +12849,11 @@
     "terminal.tab_future",
     "terminal.volume_future",
     "orderbook.no_future",
-    "alert.future_stock_only"
+    "alert.future_stock_only",
+    "alert.kind_screen_download",
+    "alert.event.screen_download",
+    "screen.cond_surge_red",
+    "screen.cond_surge_black"
   ],
   "alias_order": [
     "ui.research_controls.text_1",
