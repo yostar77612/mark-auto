@@ -451,7 +451,7 @@ class ScreenerFacade(FakeFacade):
         super().__init__()
         self.screener_queries, self.screener_saved, self.params, self.fail = [], [], ScreenerParams(), False
         self.state_name, self.code, self.breakout_ready = 'LIVE', '', False
-        self.gates, self.settings_fail, self.save_gate = {}, False, None
+        self.gates, self.settings_fail, self.save_gate, self.save_error = {}, False, None, False
 
     def screener(self, query):
         self.screener_queries.append(query)
@@ -484,6 +484,8 @@ class ScreenerFacade(FakeFacade):
             raise RuntimeError('settings down')
         if params is not None and self.save_gate is not None:
             self.save_gate.wait(3)
+        if params is not None and self.save_error:
+            raise RuntimeError('save down')
         if params is not None:
             self.params = params
             self.screener_saved.append(params)
@@ -653,6 +655,46 @@ class ScreenerTabTests(unittest.TestCase):
         gate.set()
         self.wait_for(lambda: not self.panel._inflight)
         self.assertEqual(len(drawn), 1)  # the older poll arrived late and was dropped
+
+    def test_the_tab_menu_pops_up_again_every_time_it_was_used_and_closed(self):
+        from unittest.mock import patch
+
+        errors = []
+        with patch('sys.excepthook', lambda *args: errors.append(args)):
+            for _ in range(3):
+                self.widget.tabs.tabBar().tabBarClicked.emit(3)
+                self.assertTrue(self.panel._menu.isVisible())
+                self.panel._menu.close()  # a used menu closes; the next click must still show a new one
+                QTest.qWait(30)
+        self.assertEqual(errors, [])
+
+    def test_a_failed_download_shows_no_promise(self):
+        self.open_tab()
+        self.facade.fail = True
+        self.panel.download(STOCK.instrument_id)
+        self.wait_for(lambda: not self.panel._inflight and not self.panel._requests)
+        self.assertEqual((self.widget.message.text(), self.panel.info.text()), ('', '讀取失敗，稍後自動重試'))
+
+    def test_a_save_that_fails_after_the_dialog_was_closed_is_harmless_too(self):
+        from threading import Event
+        from unittest.mock import patch
+
+        from PySide6.QtCore import QCoreApplication, QEvent
+
+        self.open_tab()
+        self.panel.open_settings()
+        self.wait_for(lambda: getattr(self.panel, 'settings_dialog', None) is not None)
+        dialog = self.panel.settings_dialog
+        self.facade.save_gate, self.facade.save_error = gate, _ = Event(), True
+        errors = []
+        with patch('sys.excepthook', lambda *args: errors.append(args)):
+            dialog.save()
+            dialog.close()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            gate.set()
+            self.wait_for(lambda: not self.panel._requests)
+            self.app.processEvents()
+        self.assertEqual((errors, self.facade.screener_saved), ([], []))
 
     def test_a_failed_settings_read_says_so_and_opens_no_dialog(self):
         self.open_tab()
