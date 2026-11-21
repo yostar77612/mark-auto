@@ -563,6 +563,14 @@ class WatchSeriesReadTests(unittest.TestCase):
         self.assertFalse(simulator.whole_round(self.feed.facade.queries, self.key))  # it read only the tail of what the first one read
         self.assertTrue(self.chart_matches_whole_read())
 
+    def test_a_tail_read_does_not_restart_the_resync_clock(self):
+        self.clock[0] += 100  # the whole read of setUp is 100 s old
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        self.clock[0] += 21  # 121 s after the whole read, only 21 s after the tail read
+        self.feed.tick()
+        self.assertTrue(self.refresh()[1])
+
 
 class ServerDispatchSeriesTests(unittest.TestCase):
     """OPT-1 P11: the tail reader through the real server dispatch of a real runtime bundle, as the desktop's IPC facade reaches it."""

@@ -914,6 +914,23 @@ class TerminalSeriesReadTests(unittest.TestCase):
         self.assertTrue(self.refresh()[1])
         self.assertTrue(self.chart_matches_whole_read())
 
+    def test_selecting_the_same_instrument_and_period_again_reads_the_whole_series(self):
+        self.widget.select_instrument(self.key)
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        del self.feed.facade.queries[:]
+        self.widget.select_instrument(self.key)  # a new generation: nothing of the earlier read may be reused
+        self.assertTrue(simulator.whole_round(self.feed.facade.queries, self.key))
+
+    def test_a_tail_read_does_not_restart_the_resync_clock(self):
+        self.widget.select_instrument(self.key)  # the whole read the bound is counted from
+        self.clock[0] += 100
+        self.feed.tick()
+        self.assertFalse(self.refresh()[1])
+        self.clock[0] += 21  # 121 s after the whole read, only 21 s after the tail read
+        self.feed.tick()
+        self.assertTrue(self.refresh()[1])
+
 
 if __name__ == '__main__':
     unittest.main()

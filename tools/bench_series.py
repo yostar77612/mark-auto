@@ -10,7 +10,9 @@ For each size and period the reads are:
   tail   one read of the last TAIL bars of the live engine (the sector board's OPT-1 P8 read; live only)
   steady the shared reader's refresh once it holds the previous read: only the tail is read and spliced on.
          The terminal engine needs the pinned tail (a one-bar first-page read, then the tail of that snapshot),
-         as the market terminal and the legacy watch use it; the live engine reads the tail directly.
+         as the market terminal and the legacy watch use it; the live engine reads the tail directly, as the
+         sector board does.
+  pinned (live only) the same refresh with the pinned tail, which is how the legacy watch reads on that engine.
   index  the market terminal's TAIEX mini-chart read (terminal only): the first page, then the last page
 Columns, all per read: engine ms (series() calls), codec ms (codec dumps + loads of every returned page's bars,
 which the IPC adds on top of the engine), ui ms (series_bars of the whole result plus the prefix compare that
@@ -270,6 +272,8 @@ def run_live(sizes, repeat, tail):
             report('live', count, period, 'tail', measure(facade, lambda: tail_read(facade, KEY, period, tail, total), repeat, period))
             cached = prime(facade, KEY, period, False)
             report('live', count, period, 'steady', measure(facade, lambda: steady_read(facade, KEY, period, cached, False), repeat, period))
+            cached = prime(facade, KEY, period, True)
+            report('live', count, period, 'pinned', measure(facade, lambda: steady_read(facade, KEY, period, cached, True), repeat, period))
 
 
 def run_terminal(sizes, repeat, tail):

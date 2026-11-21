@@ -11,11 +11,11 @@ from unittest.mock import patch
 from desktop_app.features.trading import series_reader
 from desktop_app.features.trading.series_reader import SERIES_TAIL_BARS, read_series
 from quantlab.trading.adapters.storage.kline_store import KlineStore
-from quantlab.trading.application.contracts import MarketSeriesQuery
+from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery
 from quantlab.trading.application.history_sync import HistorySync
 from quantlab.trading.application.market_terminal_service import MarketTerminalService
 from quantlab.trading.domain.freshness import LiveMarketSettings
-from quantlab.trading.domain.live_bars import LiveBar
+from quantlab.trading.domain.live_bars import DataGap, LiveBar
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
@@ -398,6 +398,112 @@ class TerminalEngineReaderTests(unittest.TestCase):
         del self.facade.queries[:]
         read_series(self.facade, self.KEY, '1m', first[:2], pinned_tail=True)
         self.assertFalse(simulator.whole_round(self.facade.queries, self.KEY))
+
+
+class ScriptedEngine:
+    """A series held in memory and served in pages the way the two chart engines do.
+
+    `snapshots` is the market terminal engine: a first-page read takes a snapshot and a page past the first is served only from
+    it and only when the read names its revision. Without it (the live engine) every page is read from the current series and
+    a read naming a revision other than the current one is refused.
+    """
+
+    PAGE_LIMIT = 300
+
+    def __init__(self, bars, gaps=(), *, snapshots):
+        self.bars, self.gaps, self.snapshots, self.revision, self.snapshot, self.queries = tuple(bars), tuple(gaps), snapshots, 1, None, []
+
+    def put(self, bars, gaps=()):
+        self.bars, self.gaps, self.revision = tuple(bars), tuple(gaps), self.revision + 1
+
+    def market_series(self, query):
+        self.queries.append(query)
+        if query.offset == 0 and query.market_revision is None:
+            self.snapshot = self.revision, self.bars, self.gaps
+        if self.snapshots and query.offset:
+            if self.snapshot is None or query.market_revision != self.snapshot[0]:
+                raise DomainError('state_conflict', 'chart page revision changed')
+            revision, bars, gaps = self.snapshot
+        else:
+            if query.market_revision is not None and query.market_revision != self.revision:
+                raise DomainError('state_conflict', 'market changed; restart series read')
+            revision, bars, gaps = self.revision, self.bars, self.gaps
+        stop = query.offset + min(query.limit, self.PAGE_LIMIT)
+        return MarketSeriesPage(
+            query.instrument_id, query.period, bars[query.offset : stop], gaps, query.offset, len(bars), stop if stop < len(bars) else None, revision
+        )
+
+
+def scripted_bar(index, close=100):
+    start = NOW + timedelta(minutes=index)
+    return LiveBar(
+        STOCK.instrument_id,
+        start,
+        start + timedelta(minutes=1),
+        start.date(),
+        'DAY',
+        Decimal(close),
+        Decimal(close + 3),
+        Decimal(close - 1),
+        Decimal(close),
+        1,
+        True,
+    )
+
+
+class ReaderFallbackTests(unittest.TestCase):
+    """OPT-1 P11: each condition under which the tail does not line up must send the reader back to the whole series, on its own."""
+
+    KEY = STOCK.instrument_id
+    MODES = (('live engine', False), ('terminal engine', True))  # (label, snapshots): the reader's pinned_tail follows the engine
+
+    def read(self, engine, cached, snapshots):
+        page, bars, whole = read_series(engine, self.KEY, '1m', cached, pinned_tail=snapshots)
+        self.assertEqual(repr(bars), repr(engine.bars))  # whatever path it took, the answer is the series the engine holds now
+        return page, bars, whole
+
+    def test_a_shift_inside_the_window_with_the_same_total_and_the_same_last_bar_reads_the_whole_series(self):
+        for label, snapshots in self.MODES:
+            with self.subTest(label):
+                bars = [scripted_bar(index) for index in range(1, 701)]
+                engine = ScriptedEngine(bars, snapshots=snapshots)
+                cached = self.read(engine, None, snapshots)[:2]
+                # One bar older than everything held arrives and one bar inside the re-read window is gone: the total and
+                # the newest bar are what they were, only the content of the window moved.
+                engine.put([scripted_bar(0, 177), *bars[:600], *bars[601:]])
+                self.assertEqual((len(engine.bars), engine.bars[-1]), (len(bars), bars[-1]))
+                self.assertTrue(self.read(engine, cached, snapshots)[2])
+
+    def test_a_changed_gap_list_reads_the_whole_series(self):
+        bars = [scripted_bar(index) for index in range(1, 701)]
+        gap = DataGap(bars[5].start, bars[9].end)
+        engine = ScriptedEngine(bars, (gap,), snapshots=False)  # the terminal engine reports no gaps
+        cached = self.read(engine, None, False)[:2]
+        recovered = list(bars)
+        for index in range(5, 9):  # the gap is filled: old bars, far outside the window, now carry real prices
+            recovered[index] = scripted_bar(index + 1, 150)
+        engine.put(recovered, ())
+        self.assertTrue(self.read(engine, cached, False)[2])
+
+    def test_more_than_one_page_of_new_bars_reads_the_whole_series(self):
+        for label, snapshots in self.MODES:
+            with self.subTest(label):
+                bars = [scripted_bar(index) for index in range(1, 701)]
+                engine = ScriptedEngine(bars, snapshots=snapshots)
+                cached = self.read(engine, None, snapshots)[:2]
+                engine.put([*bars, *(scripted_bar(index) for index in range(701, 1101))])  # 400 new bars, more than a 300-bar page
+                self.assertTrue(self.read(engine, cached, snapshots)[2])
+
+    def test_a_series_that_lines_up_is_read_as_a_tail_in_one_or_two_calls(self):
+        for label, snapshots in self.MODES:
+            with self.subTest(label):
+                bars = [scripted_bar(index) for index in range(1, 701)]
+                engine = ScriptedEngine(bars, snapshots=snapshots)
+                cached = self.read(engine, None, snapshots)[:2]
+                engine.put([*bars[:-1], scripted_bar(700, 120), scripted_bar(701)])  # the forming bar changed and a new one began
+                del engine.queries[:]
+                self.assertFalse(self.read(engine, cached, snapshots)[2])
+                self.assertEqual(len(engine.queries), 2 if snapshots else 1)
 
 
 if __name__ == '__main__':

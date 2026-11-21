@@ -1010,7 +1010,7 @@ historical baseline is relaxed or repinned by this independent path baseline.
 | `tools/bulk_kline_backfill.py` | 117 | tooling | `tools/bulk_kline_backfill.py` | bulk_kline_backfill: top-N 1-year K-line download tool |
 | `tools/bench_snapshot.py` | 153 | tooling | `tools/bench_snapshot.py` | bench_snapshot: offline views.snapshot timing on a scaled LOCAL engine (OPT-1 P2) |
 | `quantlab/shared/sqlite_open.py` | 14 | shared | `quantlab/shared/sqlite_open.py` | sqlite_open: the single sqlite_uri + mode SQLite open (OPT-1 P4; five call sites) |
-| `tools/bench_series.py` | 126 | tooling | `tools/bench_series.py` | bench_series: offline LiveMarketService.series() timing and payload (OPT-1 P8) |
+| `tools/bench_series.py` | 315 | tooling | `tools/bench_series.py` | bench_series: offline series() timing, codec and UI cost, payload and shared-reader steady reads on both chart engines (OPT-1 P8, P11) |
 | `tools/bench_tick_loss.py` | 121 | tooling | `tools/bench_tick_loss.py` | bench_tick_loss: offline LiveMarketService.poll() timing under retained tick losses (OPT-1 P9) |
 | `tools/bench_kline_open.py` | 99 | tooling | `tools/bench_kline_open.py` | bench_kline_open: offline KlineStore open / quick_check timing (OPT-1 P10, measure only) |
 | `quantlab/trading/domain/futures_hours.py` | 80 | domain | `quantlab/trading/domain/futures_hours.py` | Registered by tools/repin_baselines.py: new module; existing rows and layer rules retained. |
