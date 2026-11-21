@@ -3455,7 +3455,15 @@
       "screen.set_failed": "無法儲存條件，請確認數值範圍",
       "screen.panel_name": "選股",
       "screen.table_name": "選股清單",
-      "screen.filter_name": "爆量篩選"
+      "screen.filter_name": "爆量篩選",
+      "screen.cond_breakout": "帶量突破新高",
+      "screen.set_breakout_volume_multiple": "帶量突破：收盤量至少為均量的幾倍",
+      "screen.set_breakout_intraday_ratio": "帶量突破（盤中暫定）：量比至少",
+      "screen.set_average_days": "均量與均額的計算天數",
+      "screen.set_window_short": "突破新高：短期（日）",
+      "screen.set_window_mid": "突破新高：中期（日）",
+      "screen.set_window_long": "突破新高：長期（日）",
+      "screen.set_download_breakout": "帶量突破新高時自動下載近一年 K 線"
     }
   },
   "aliases": {
@@ -8239,6 +8247,14 @@
       "screen.panel_name": "選股",
       "screen.table_name": "選股清單",
       "screen.filter_name": "爆量篩選",
+      "screen.cond_breakout": "帶量突破新高",
+      "screen.set_breakout_volume_multiple": "帶量突破：收盤量至少為均量的幾倍",
+      "screen.set_breakout_intraday_ratio": "帶量突破（盤中暫定）：量比至少",
+      "screen.set_average_days": "均量與均額的計算天數",
+      "screen.set_window_short": "突破新高：短期（日）",
+      "screen.set_window_mid": "突破新高：中期（日）",
+      "screen.set_window_long": "突破新高：長期（日）",
+      "screen.set_download_breakout": "帶量突破新高時自動下載近一年 K 線",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -13018,7 +13034,15 @@
     "screen.set_failed",
     "screen.panel_name",
     "screen.table_name",
-    "screen.filter_name"
+    "screen.filter_name",
+    "screen.cond_breakout",
+    "screen.set_breakout_volume_multiple",
+    "screen.set_breakout_intraday_ratio",
+    "screen.set_average_days",
+    "screen.set_window_short",
+    "screen.set_window_mid",
+    "screen.set_window_long",
+    "screen.set_download_breakout"
   ],
   "alias_order": [
     "ui.research_controls.text_1",

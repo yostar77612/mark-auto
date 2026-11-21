@@ -20,6 +20,7 @@ from quantlab.trading.domain.validation import DomainError
 from .bootstrap import EngineFactory, RuntimeBundle, build_runtime
 from .config import RuntimeLaunch
 from .control_secret import protect
+from .market_daily import start_market_daily
 from .protocol import Metrics, Operation, Request, Response
 from .unix_socket import UnixEndpoint, unix_endpoint
 
@@ -233,15 +234,16 @@ def serve(
     secret_resolver=None,
     resource_factory=None,
     sinopac_clock=None,
+    market_daily_fetch=None,
 ) -> int:
     # Acquire before even the Unix endpoint or engine/workspace is opened.
     # The shared helper is a no-op outside Windows and preserves the v1 name.
     with closing(WindowsAppMutex()):
         ports = {'sinopac_factory': sinopac_factory, 'secret_resolver': secret_resolver, 'resource_factory': resource_factory, 'sinopac_clock': sinopac_clock}
         if os.name == 'nt':
-            return _serve(root, launch=launch, engine_factory=engine_factory, **ports)
+            return _serve(root, launch=launch, engine_factory=engine_factory, market_daily_fetch=market_daily_fetch, **ports)
         with unix_endpoint(root) as endpoint:
-            return _serve(root, launch=launch, engine_factory=engine_factory, endpoint=endpoint, **ports)
+            return _serve(root, launch=launch, engine_factory=engine_factory, endpoint=endpoint, market_daily_fetch=market_daily_fetch, **ports)
 
 
 def _serve(
@@ -254,6 +256,7 @@ def _serve(
     secret_resolver=None,
     resource_factory=None,
     sinopac_clock=None,
+    market_daily_fetch=None,
 ) -> int:
     root = root.resolve()
     launch = launch or RuntimeLaunch(root)
@@ -267,6 +270,8 @@ def _serve(
         resource_factory=resource_factory,
         sinopac_clock=sinopac_clock,
     )
+    if market_daily_fetch is not None:
+        start_market_daily(bundle, market_daily_fetch)  # the real engine only: tests never touch the network
     family = 'AF_PIPE' if os.name == 'nt' else 'AF_UNIX'
     address = '\\\\.\\pipe\\markauto-v2-' + uuid4().hex if os.name == 'nt' else endpoint.address
     key = os.urandom(32)

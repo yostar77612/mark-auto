@@ -508,6 +508,17 @@
             "symbol": "MarketRuntimeTests.test_a_failing_sector_hook_still_lets_the_screener_see_the_round"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_market_daily.py",
+            "kind": "assignment",
+            "name": "days",
+            "occurrence": 1,
+            "receiver": "self",
+            "symbol": "MarketDailyServiceTests.setUp"
+          },
+          "count": 1
         }
       ]
     },

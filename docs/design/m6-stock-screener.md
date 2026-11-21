@@ -1,6 +1,6 @@
 # M6：選股清單與條件觸發 K 線下載
 
-Status: PROPOSED / NOT IMPLEMENTED. Verification: NOT RUN.
+Status: IMPLEMENTED in M6-1 (#262), M6-2 (#263) and M6-3. Verification: automated tests and independent QA passed for each PR (see Rollout/Verification status).
 Scope owner decisions: 2026-11-21 chat (see 「使用者已確認的需求」).
 Related: [m5-sector-board.md](m5-sector-board.md), [m1-stock-index-market-terminal.md](m1-stock-index-market-terminal.md).
 
@@ -179,7 +179,8 @@ Non-goals：
 
 回退：各階段獨立，可單獨 revert；自動下載可在條件設定關閉。
 
-Implementation: NOT IMPLEMENTED. Automated verification: NOT RUN.
+Implementation: M6-1 (#262), M6-2 (#263) merged; M6-3 in its own PR. Automated verification: unit, wiring and real-facade tests, repo gates and an independent QA round per PR; the 240-day backfill was also run end to end against the live public endpoints for two days.
+Not verifiable offline: the intraday trigger, the 09:10 gate and the 13:35 refill need market hours, and the first full backfill and breakout list need the installed App.
 Real-App visual check: PENDING USER FINAL CONFIRMATION.
 Keep [PROJECT_STATE](../agent/PROJECT_STATE.md) and acceptance scores unchanged; formal acceptance remains 230/300.
-No Release or tag is part of this design proposal.
+Releases are made by dispatching `windows-desktop.yml` on `main`; no tag is created.

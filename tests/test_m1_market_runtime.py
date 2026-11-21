@@ -110,6 +110,82 @@ class MarketRuntimeTests(unittest.TestCase):
         self.assertEqual(self.bundle.screener.params(), changed)  # the next round judges with the saved values
         self.assertEqual(self.bundle.market_preferences.screener, changed)
 
+    def test_the_daily_store_is_its_own_file_and_nothing_is_fetched_until_the_engine_asks(self):
+        store = self.bundle.market_daily_store
+        self.assertEqual(store.path, (Path(self.temp.name) / 'market' / 'market_daily.sqlite3').resolve())
+        self.assertIsNone(self.bundle.market_daily_backfill)  # building a runtime never starts a network worker
+        self.assertIs(self.bundle.screener.daily.store, store)
+        self.assertFalse((Path(self.temp.name) / 'market' / 'market_daily.sqlite3-journal').exists())
+
+    def test_start_market_daily_runs_the_backfill_through_the_given_fetcher_and_it_can_be_closed(self):
+        import time
+
+        from quantlab.trading.runtime.market_daily import start_market_daily
+
+        fixtures = Path(__file__).parent / 'fixtures' / 'market_daily'
+        urls = []
+
+        def fetch(url):
+            urls.append(url)
+            return (fixtures / ('twse_holiday.json' if 'twse' in url else 'tpex_holiday.json')).read_bytes()
+
+        start_market_daily(self.bundle, fetch)
+        start_market_daily(self.bundle, fetch)  # asking twice does not start a second worker
+        deadline = time.monotonic() + 5
+        while not urls and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.assertTrue(urls)
+        self.assertTrue(
+            all(url.startswith(('https://www.twse.com.tw/exchangeReport/MI_INDEX?', 'https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?')) for url in urls)
+        )
+        backfill = self.bundle.market_daily_backfill
+        backfill.close()
+        self.assertFalse(backfill._thread.is_alive())
+
+    def test_an_unopenable_daily_file_is_named_on_the_breakout_list_and_the_rest_keeps_working(self):
+        from unittest import mock
+
+        from quantlab.trading.domain.validation import DomainError
+        from quantlab.trading.runtime import market_daily as runtime_daily
+        from quantlab.trading.application.screener_contracts import ScreenerQuery
+
+        self.assertEqual(self.bundle.screener_board.daily_code(), '')  # a healthy file names nothing
+        with (
+            tempfile.TemporaryDirectory() as folder,
+            mock.patch.object(runtime_daily, 'MarketDailyStore', side_effect=DomainError('market_daily_unavailable', 'locked')),
+        ):
+            bundle = build_runtime(RuntimeLaunch(Path(folder)))
+            try:
+                self.assertIsNone(bundle.market_daily_store)
+                self.assertEqual(bundle.screener_board.daily_code(), 'market_daily_unavailable')
+                view = bundle.screener_board.view(ScreenerQuery('BREAKOUT'))
+                self.assertEqual((view.state, view.code), ('OFFLINE', ''))  # nothing connected: the offline state wins
+                bundle.sector.source = SimpleNamespace(connected=True, snapshots=lambda instruments: ())
+                bundle.sector.now = lambda: datetime(2026, 11, 9, 10, 0, tzinfo=timezone(timedelta(hours=8)))
+                bundle.sector._fetched_at = bundle.sector.now()
+                view = bundle.screener_board.view(ScreenerQuery('BREAKOUT'))
+                self.assertEqual((view.state, view.code), ('ACCUMULATING', 'market_daily_unavailable'))
+            finally:
+                bundle.close()
+                bundle.market_connection.close()
+
+    def test_closing_the_bundle_stops_the_backfill_worker_and_closes_the_daily_store(self):
+        import time
+
+        import sqlite3
+
+        from quantlab.trading.domain.validation import DomainError
+        from quantlab.trading.runtime.market_daily import start_market_daily
+
+        start_market_daily(self.bundle, lambda url: (_ for _ in ()).throw(DomainError('official_stock_invalid', 'offline')))
+        backfill, store = self.bundle.market_daily_backfill, self.bundle.market_daily_store
+        time.sleep(0.05)
+        self.assertTrue(backfill._thread.is_alive())
+        self.bundle.close()
+        self.assertFalse(backfill._thread.is_alive())
+        with self.assertRaises(sqlite3.ProgrammingError):
+            store.upsert(())  # the store is closed with the bundle
+
     def test_a_failing_sector_hook_still_lets_the_screener_see_the_round(self):
         from quantlab.trading.domain.sector import QuoteRow
         from quantlab.trading.domain.watch import WatchInstrument, WatchKind

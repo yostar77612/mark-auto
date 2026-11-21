@@ -450,7 +450,7 @@ class ScreenerFacade(FakeFacade):
     def __init__(self):
         super().__init__()
         self.screener_queries, self.screener_saved, self.params, self.fail = [], [], ScreenerParams(), False
-        self.state_name, self.code = 'LIVE', ''
+        self.state_name, self.code, self.breakout_ready = 'LIVE', '', False
         self.gates, self.settings_fail, self.save_gate, self.save_error = {}, False, None, False
 
     def screener(self, query):
@@ -463,6 +463,12 @@ class ScreenerFacade(FakeFacade):
         if query.list_id == 'DOWNLOADED':
             rows = (DownloadedRowView(STOCK.instrument_id, '2330', '台積電', NOW - timedelta(days=364), NOW, NOW),)
             return ScreenerView('DOWNLOADED', 'ALL', self.state_name, downloaded=rows, min_volume_lots=500, code=self.code)
+        if query.list_id == 'BREAKOUT' and self.breakout_ready:
+            rows = (
+                ScreenerRowView(STOCK.instrument_id, '2330', '台積電', Decimal('2000'), Decimal('3'), Decimal('2.4'), '120', 'YEAR', True),
+                ScreenerRowView(OTHER.instrument_id, '2317', '鴻海', Decimal('210'), Decimal('1.5'), Decimal('3.1'), '60', '', False),
+            )
+            return ScreenerView('BREAKOUT', 'ALL', self.state_name, rows, min_volume_lots=500, data_at=NOW)
         if query.list_id == 'BREAKOUT':
             return ScreenerView('BREAKOUT', 'ALL', 'ACCUMULATING', min_volume_lots=500, progress_days=0, progress_needed=60)
         rows = (
@@ -602,6 +608,17 @@ class ScreenerTabTests(unittest.TestCase):
         self.assertEqual(self.headers(), ['代碼', '名稱', '最早', '最新', '最後更新'])
         self.assertEqual(self.cells(0), ['2330', '台積電', '2025-10-31', '2026-10-30', '2026-10-30'])
 
+    def test_the_breakout_list_shows_the_window_the_strength_and_marks_provisional_rows(self):
+        self.facade.breakout_ready = True
+        self.open_tab()
+        self.panel.set_list('BREAKOUT')
+        self.loaded(ScreenerQuery('BREAKOUT'))
+        self.assertEqual(self.headers(), ['代碼', '名稱', '成交', '漲幅％', '突破(日)', '量÷均量', 'K線'])
+        self.assertEqual(self.cells(0), ['2330', '台積電', '2000', '+3.00%', '120 盤中', '2.40', '✓'])
+        self.assertEqual(self.cells(1), ['2317', '鴻海', '210.0', '+1.50%', '60', '3.10', ''])
+        self.assertFalse(self.panel.filter_row.isVisibleTo(self.panel))
+        self.assertEqual(self.panel.info.text(), '資料時間 09:00:00')
+
     def test_a_late_answer_for_an_earlier_filter_never_draws(self):
         from threading import Event
 
@@ -729,6 +746,10 @@ class ScreenerTabTests(unittest.TestCase):
         dialog.inputs['min_volume_lots'][0].setValue(800)
         dialog.flags['download_black'].setChecked(True)
         dialog.flags['download_red'].setChecked(False)
+        dialog.flags['download_breakout'].setChecked(False)
+        dialog.inputs['window_long'][0].setValue(300)
+        dialog.inputs['breakout_volume_multiple'][0].setValue(3)
+        dialog.inputs['average_days'][0].setValue(30)
         dialog.save()
         self.wait_for(lambda: bool(self.facade.screener_saved))
         saved = self.facade.screener_saved[-1]
@@ -736,6 +757,8 @@ class ScreenerTabTests(unittest.TestCase):
             (saved.surge_ratio, saved.quiet_amount, saved.min_volume_lots, saved.download_black, saved.download_red),
             (Decimal(4), 80_000_000, 800, True, False),
         )
+        self.assertEqual((saved.window_long, saved.breakout_volume_multiple, saved.average_days, saved.download_breakout), (300, Decimal(3), 30, False))
+        self.assertEqual((saved.window_short, saved.window_mid, saved.breakout_intraday_ratio), (60, 120, Decimal(2)))
         self.assertEqual(saved.near_extreme_pct, ScreenerParams().near_extreme_pct)  # untouched fields keep their value
 
 

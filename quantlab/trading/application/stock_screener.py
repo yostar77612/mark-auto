@@ -5,17 +5,20 @@ calls the snapshot source itself. Amounts stay integer NT$, prices and ratios st
 """
 
 from dataclasses import dataclass
+import logging
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from threading import RLock
 from typing import Callable, Protocol
 from zoneinfo import ZoneInfo
 
-from quantlab.trading.domain.screener import SURGE_BLACK, SURGE_RED, ScreenerParams
+from quantlab.trading.domain.market_daily import DailyStats, volume_breakout
+from quantlab.trading.domain.screener import BREAKOUT, SURGE_BLACK, SURGE_RED, ScreenerParams
 from quantlab.trading.domain.sector import QuoteRow, eligible_stock
 from quantlab.trading.domain.watch import WatchInstrument
 from .sector_service import SESSION_END, in_session
 
+logger = logging.getLogger(__name__)
 _TAIPEI = ZoneInfo('Asia/Taipei')
 # Below the main chart (0) and every watchlist entry (2 + position): the screener never delays what the user is watching.
 SCREENER_PRIORITY = 10_000
@@ -33,13 +36,37 @@ class SurgeEntry:
 
 
 @dataclass(frozen=True)
+class BreakoutEntry:
+    """A stock above its earlier high of `window` trading days on volume. strength is volume over its average (final)
+    or the snapshot volume ratio (provisional, in session)."""
+
+    code: str
+    price: Decimal
+    change_pct: Decimal
+    window: int
+    strength: Decimal
+    provisional: bool
+    total_volume: int
+    total_amount: int
+
+
+@dataclass(frozen=True)
 class ScreenResult:
-    """The latest judged round. ranking is False while the open is still settling (no list, no triggers)."""
+    """The latest judged round. ranking is False while the open is still settling (no list, no triggers).
+    history_days is how many earlier trading days the market-wide daily quotes cover."""
 
     trade_date: date | None = None
     ranking: bool = False
     at: datetime | None = None
     surges: tuple[SurgeEntry, ...] = ()
+    breakouts: tuple[BreakoutEntry, ...] = ()
+    history_days: int = 0
+
+
+class DailyPort(Protocol):
+    def stats(self, day: date) -> dict[str, DailyStats]: ...
+    def days(self, day: date) -> int: ...
+    def record_close(self, day: date, rows: dict[str, QuoteRow]) -> None: ...
 
 
 class HistoryRequestPort(Protocol):
@@ -85,6 +112,28 @@ def rank_surges(rows: dict[str, QuoteRow], params: ScreenerParams, typical_of: C
     return tuple(entries)
 
 
+def find_breakouts(rows: dict[str, QuoteRow], stats: dict[str, DailyStats], params: ScreenerParams, *, final: bool) -> tuple[BreakoutEntry, ...]:
+    """Eligible stocks breaking an earlier high on volume, longest window first, then strongest volume."""
+    found = []
+    for code, row in rows.items():
+        stat = stats.get(code)
+        if stat is None or not eligible_row(code, row, params):
+            continue
+        hit = volume_breakout(
+            row.price,
+            row.total_volume,
+            row.volume_ratio,
+            stat,
+            final=final,
+            multiple=params.breakout_volume_multiple,
+            intraday_ratio=params.breakout_intraday_ratio,
+        )
+        if hit is not None:
+            found.append(BreakoutEntry(code, row.price, row.change_pct, hit[0], hit[1], not final, row.total_volume, row.total_amount))
+    found.sort(key=lambda entry: (-entry.window, -entry.strength, entry.code))
+    return tuple(found)
+
+
 def download_window(now: datetime, lookback_days: int) -> tuple[datetime, datetime]:
     """One year back, ending at the previous weekday's close while the day is not over.
 
@@ -126,10 +175,10 @@ class StockScreener:
         record: Callable[[WatchInstrument, str, datetime], None],
         *,
         lookback_days: int = 365,
-        typical_amount_of: Callable[[str, QuoteRow], int | None] = lambda code, row: typical_amount(row),
+        daily: DailyPort | None = None,
     ):
         self.params, self.stocks, self.history, self.record = params, stocks, history, record
-        self.lookback_days, self.typical_amount_of = lookback_days, typical_amount_of
+        self.lookback_days, self.daily = lookback_days, daily
         self._lock = RLock()
         self._result = ScreenResult()
         self._fired: dict[date, set[tuple[str, str]]] = {}
@@ -157,39 +206,62 @@ class StockScreener:
         day = _data_day(now, rows)
         # A stock that has not traded today still carries an earlier day's totals in the snapshot: it is not today's news.
         rows = {code: row for code, row in rows.items() if row.at.astimezone(_TAIPEI).date() == day}
+        stats, history_days = self._daily_facts(day)
         if not ranking_open(now, params):
             with self._lock:
-                self._result = ScreenResult(day, False, now)
+                self._result = ScreenResult(day, False, now, history_days=history_days)
             return
-        entries = rank_surges(rows, params, self.typical_amount_of)
+        entries = rank_surges(rows, params, lambda code, row: _typical(stats.get(code), row))
+        breakouts = find_breakouts(rows, stats, params, final=not in_session(now))
         with self._lock:
-            self._result = ScreenResult(day, True, now, entries[: params.list_rows])
+            self._result = ScreenResult(day, True, now, entries[: params.list_rows], breakouts, history_days)
             fired = self._fired.setdefault(day, set())
             self._fired = {day: fired}  # only the newest day is kept
-            new = [entry for entry in entries if entry.pattern and self._wanted(entry.pattern, params) and not self._done(day, fired, entry)]
-        if local.weekday() < 5 and local.time() > SESSION_END and day == local.date():
+            candidates = [(entry.code, entry.pattern) for entry in entries if entry.pattern]
+            candidates += [(entry.code, BREAKOUT) for entry in breakouts]
+            new = [key for key in candidates if self._wanted(key[1], params) and not self._done(day, fired, key)]
+        closing = local.weekday() < 5 and local.time() > SESSION_END and day == local.date()
+        if closing:
             self._refill(day, now)  # before the new triggers: those already reach now
         self._download(day, new, now)
+        if closing and self.daily is not None:
+            self._record_close(day, rows)
 
-    def _done(self, day: date, fired: set[tuple[str, str]], entry: SurgeEntry) -> bool:
-        key = (entry.code, entry.pattern)
+    def _daily_facts(self, day: date) -> tuple[dict[str, DailyStats], int]:
+        """The market-wide daily statistics, or nothing when that file cannot be read: the surge list and the downloads
+        must not depend on it."""
+        if self.daily is None:
+            return {}, 0
+        try:
+            return self.daily.stats(day), self.daily.days(day)
+        except Exception as error:  # a disk boundary, like the K-line store
+            logger.error('market daily statistics unavailable (%s)', type(error).__name__)
+            return {}, 0
+
+    def _record_close(self, day: date, rows: dict[str, QuoteRow]) -> None:
+        try:
+            self.daily.record_close(day, rows)
+        except Exception as error:
+            logger.error('market daily closing write failed (%s)', type(error).__name__)
+
+    def _done(self, day: date, fired: set[tuple[str, str]], key: tuple[str, str]) -> bool:
         return key in fired or self._logged.get(key, date.min) >= day
 
     @staticmethod
-    def _wanted(pattern: str, params: ScreenerParams) -> bool:
-        return params.download_red if pattern == SURGE_RED else params.download_black
+    def _wanted(condition: str, params: ScreenerParams) -> bool:
+        return {SURGE_RED: params.download_red, SURGE_BLACK: params.download_black, BREAKOUT: params.download_breakout}[condition]
 
-    def _download(self, day: date, entries: list[SurgeEntry], now: datetime) -> None:
+    def _download(self, day: date, keys: list[tuple[str, str]], now: datetime) -> None:
         by_code = {item.code: item for item in self.stocks()}
         start, end = download_window(now, self.lookback_days)
-        for entry in entries:
-            instrument = by_code.get(entry.code)
+        for code, condition in keys:
+            instrument = by_code.get(code)
             if instrument is None:
                 continue
             self.history.request(instrument, start, end, SCREENER_PRIORITY)
             with self._lock:
-                self._fired[day].add((entry.code, entry.pattern))
-            self.record(instrument, entry.pattern, now)
+                self._fired[day].add((code, condition))
+            self.record(instrument, condition, now)
 
     def _refill(self, day: date, now: datetime) -> None:
         """After the close, extend today's triggered downloads from yesterday's close up to now (once per day)."""
@@ -202,3 +274,8 @@ class StockScreener:
         start, end = download_window(now, self.lookback_days)
         for code in sorted(codes & by_code.keys()):
             self.history.request(by_code[code], start, end, SCREENER_PRIORITY)
+
+
+def _typical(stat: DailyStats | None, row: QuoteRow) -> int | None:
+    """The usual traded amount: the stock's own average once its daily history covers it, else the estimate."""
+    return stat.avg_amount if stat is not None and stat.avg_amount is not None else typical_amount(row)

@@ -19,8 +19,14 @@ FIELDS = (
     ('black_change_pct', 'decimal', 1),
     ('near_extreme_pct', 'decimal', 1),
     ('quiet_amount', 'int', 10_000),
+    ('breakout_volume_multiple', 'decimal', 1),
+    ('breakout_intraday_ratio', 'decimal', 1),
+    ('average_days', 'int', 1),
+    ('window_short', 'int', 1),
+    ('window_mid', 'int', 1),
+    ('window_long', 'int', 1),
 )
-FLAGS = ('download_red', 'download_black')
+FLAGS = ('download_red', 'download_black', 'download_breakout')
 
 
 class ScreenerSettingsDialog(QDialog):

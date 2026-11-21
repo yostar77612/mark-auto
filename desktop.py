@@ -404,7 +404,10 @@ def main(argv=None):
             args.trading_account or 'local-stock',
             sinopac=args.trading_sinopac,
         )
-        return serve(args.trading_engine, launch=launch)
+        # Only the real engine fetches the public daily quotes of the whole market for the stock screener.
+        from quantlab.trading.runtime.market_daily import fetch_daily_official
+
+        return serve(args.trading_engine, launch=launch, market_daily_fetch=fetch_daily_official)
     if args.platform_v2:
         # The optional v2 desktop composition owns context selection and Qt.
         from trading_runtime import run_window

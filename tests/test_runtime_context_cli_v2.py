@@ -56,7 +56,12 @@ class RuntimeContextCliTests(unittest.TestCase):
                 ),
                 0,
             )
-        serve.assert_called_once_with(self.root, launch=RuntimeLaunch(self.root, Environment.LIVE, self.profile, 'explicit-live'))
+        from quantlab.trading.runtime.market_daily import fetch_daily_official
+
+        # Only the real engine entry carries the public daily-quote fetcher; every test-built runtime stays offline.
+        serve.assert_called_once_with(
+            self.root, launch=RuntimeLaunch(self.root, Environment.LIVE, self.profile, 'explicit-live'), market_daily_fetch=fetch_daily_official
+        )
         with patch('trading_runtime.run_window', return_value=0) as launch:
             self.assertEqual(desktop.main(['--platform-v2', '--trading-root', str(self.root)]), 0)
         launch.assert_called_once_with(self.root, environment=None, account_ref=None, profile_path=None, contexts_path=None)
