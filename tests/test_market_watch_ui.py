@@ -34,6 +34,7 @@ from quantlab.research_core.adapters.settings_store import SettingsStore
 from quantlab.trading.application.contracts import (
     MarketHealthView,
     MarketSeriesPage,
+    MarketSeriesQuery,
     MarketWatchView,
     OverviewMarketSummary,
     UiAction,
@@ -41,6 +42,7 @@ from quantlab.trading.application.contracts import (
     UiReceipt,
     UiState,
 )
+from quantlab.trading.application.codec import dumps, loads
 from quantlab.trading.application.errors import ERROR_TABLE
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.models import Environment
@@ -560,3 +562,73 @@ class WatchSeriesReadTests(unittest.TestCase):
         completed(operation(), None)
         self.assertFalse(simulator.whole_round(self.feed.facade.queries, self.key))  # it read only the tail of what the first one read
         self.assertTrue(self.chart_matches_whole_read())
+
+
+class ServerDispatchSeriesTests(unittest.TestCase):
+    """OPT-1 P11: the tail reader through the real server dispatch of a real runtime bundle, as the desktop's IPC facade reaches it."""
+
+    KEY = 'TWSE:2330'
+
+    def call(self, bundle, operation, query):
+        request = Request('series-probe', Environment.LOCAL, 'local-stock', datetime.now(timezone.utc) + timedelta(seconds=10), operation, series=query)
+        return loads(dumps(_dispatch(bundle, request)))  # the encode and decode the IPC puts every answer through
+
+    def minute_bars(self, now, first, last, close):
+        """Finished one-minute bars from `first` down to `last` minutes before `now`."""
+        bars = []
+        for minutes in range(first, last - 1, -1):
+            start = now - timedelta(minutes=minutes)
+            price = Decimal(100 + (minutes + close) % 3)
+            bars.append(LiveBar(self.KEY, start, start + timedelta(minutes=1), start.date(), 'DAY', price, price + 3, price - 1, price, 5, True))
+        return tuple(bars)
+
+    def test_steady_reads_equal_whole_reads_and_an_unpinned_tail_is_refused(self):
+        with tempfile.TemporaryDirectory(dir=Path.cwd(), ignore_cleanup_errors=True) as directory:
+            bundle = build_runtime(RuntimeLaunch(Path(directory)))
+            try:
+                store, now, test = bundle.market_terminal.store, datetime.now(timezone.utc).replace(second=0, microsecond=0), self
+                store.upsert(self.minute_bars(now, 600, 1, 0))
+                receipt = self.call(bundle, Operation.MARKET_SELECT, MarketSeriesQuery(self.KEY)).receipt
+                self.assertEqual(receipt.reference, 'HISTORY')  # the terminal engine now answers every series read
+
+                class Facade:
+                    queries = []
+
+                    def market_series(self, query):
+                        self.queries.append(query)
+                        return test.call(bundle, Operation.MARKET_SERIES, query).series
+
+                facade = Facade()
+
+                def whole():
+                    page = self.call(bundle, Operation.MARKET_SERIES, MarketSeriesQuery(self.KEY)).series
+                    bars = page.bars
+                    while page.next_offset is not None:
+                        page = self.call(
+                            bundle, Operation.MARKET_SERIES, MarketSeriesQuery(self.KEY, offset=page.next_offset, market_revision=page.market_revision)
+                        ).series
+                        bars += page.bars
+                    return bars
+
+                total = len(whole())
+                with self.assertRaises(DomainError) as refused:
+                    facade.market_series(MarketSeriesQuery(self.KEY, offset=total - series_reader.SERIES_TAIL_BARS))
+                self.assertEqual(refused.exception.code, 'state_conflict')
+                cached = series_reader.read_series(facade, self.KEY, '1m', None, pinned_tail=True)[:2]
+                wholes = []
+                for number in range(8):
+                    if number == 3:
+                        store.upsert(self.minute_bars(now, 645, 601, 0))  # older history arrives: every index shifts
+                    elif number == 6:
+                        store.upsert(self.minute_bars(now, 1, 1, number))  # the newest bar is rewritten
+                    del facade.queries[:]
+                    page, bars, was_whole = series_reader.read_series(facade, self.KEY, '1m', cached, pinned_tail=True)
+                    self.assertEqual(repr(bars), repr(whole()), number)
+                    cached = page, bars
+                    if was_whole:
+                        wholes.append(number)
+                    else:
+                        self.assertEqual([(query.offset > 0, query.limit == 1) for query in facade.queries], [(False, True), (True, False)])
+                self.assertEqual(wholes, [3])  # only the backfill read the whole series
+            finally:
+                bundle.close()
