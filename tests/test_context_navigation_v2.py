@@ -6,6 +6,8 @@ from threading import Event, Thread
 import unittest
 
 from quantlab.trading.application.contextnavigation import CompositeFacade
+from quantlab.trading.application.screener_contracts import ScreenerQuery
+from quantlab.trading.domain.screener import ScreenerParams
 from quantlab.trading.application.contracts import AccountView, ContextNavigationRequest, ContextOption, UiAction, UiCommand, UiReceipt, UiState
 from quantlab.trading.domain.models import Environment, Market
 
@@ -86,6 +88,17 @@ class ContextNavigationTests(unittest.TestCase):
         return self.client.execute(
             UiCommand(UiAction.SWITCH_CONTEXT, 90, environment=Environment.BROKER_SIMULATION, account_ref='test-stock', context_id='broker', context_epoch=0)
         )
+
+    def test_screener_reads_and_settings_reach_the_current_context_facade_with_their_arguments(self):
+        seen = []
+        current = self.port.facades['local']
+        current.screener = lambda query: seen.append(('screener', query)) or 'view'
+        current.screener_settings = lambda params=None: seen.append(('settings', params)) or 'params'
+        query, params = ScreenerQuery('SURGE', 'RED', 'TWSE:1234'), ScreenerParams(surge_ratio=Decimal(4))
+        self.assertEqual(self.client.screener(query), 'view')
+        self.assertEqual(self.client.screener_settings(), 'params')
+        self.assertEqual(self.client.screener_settings(params), 'params')
+        self.assertEqual(seen, [('screener', query), ('settings', None), ('settings', params)])
 
     def test_lower_target_version_is_a_new_epoch_without_book_data_union(self):
         result = self.switch()

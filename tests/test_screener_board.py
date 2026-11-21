@@ -130,6 +130,17 @@ class BoardTests(unittest.TestCase):
         view = self.board.view(ScreenerQuery('SURGE'))
         self.assertEqual(([row.kline for row in view.rows], view.code), ([''], 'kline_store_unavailable'))
 
+    def test_any_failure_of_the_kline_store_becomes_the_reason_code_not_a_failed_read(self):
+        import sqlite3
+
+        self.round(quote('1234'))
+        self.store.missing_ranges = lambda *args: (_ for _ in ()).throw(sqlite3.OperationalError('database is locked'))
+        view = self.board.view(ScreenerQuery('SURGE'))
+        self.assertEqual(([row.code for row in view.rows], [row.kline for row in view.rows], view.code), (['1234'], [''], 'kline_store_unavailable'))
+        self.store.instrument_ids = lambda: (_ for _ in ()).throw(sqlite3.OperationalError('database is locked'))
+        view = self.board.view(ScreenerQuery('DOWNLOADED'))
+        self.assertEqual((view.downloaded, view.code), ((), 'kline_store_unavailable'))
+
     def test_the_breakout_list_only_accumulates_until_the_daily_klines_exist(self):
         view = self.board.view(ScreenerQuery('BREAKOUT'))
         self.assertEqual((view.state, view.rows, view.progress_days, view.progress_needed), ('ACCUMULATING', (), 0, 60))

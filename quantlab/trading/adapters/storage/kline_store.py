@@ -329,7 +329,12 @@ class KlineStore:
         instrument costs no table scan and no COUNT (a year of one stock is about 65,000 rows)."""
         identity(instrument_id)
         with self._lock:
-            first, last = self._db.execute('SELECT MIN(start_utc), MAX(start_utc) FROM bars_1m WHERE instrument_id=?', (instrument_id,)).fetchone()
+            # Two scalar subqueries, not MIN and MAX in one SELECT: SQLite turns a lone min() or max() into one index seek,
+            # but a pair is a walk over every row of the instrument (13 ms for a year of minutes against 0.03 ms).
+            first, last = self._db.execute(
+                'SELECT (SELECT MIN(start_utc) FROM bars_1m WHERE instrument_id=?), (SELECT MAX(start_utc) FROM bars_1m WHERE instrument_id=?)',
+                (instrument_id, instrument_id),
+            ).fetchone()
             covered = self._db.execute('SELECT MAX(end_utc) FROM coverage WHERE instrument_id=?', (instrument_id,)).fetchone()[0]
         if first is None:
             return None

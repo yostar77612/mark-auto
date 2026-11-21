@@ -18,7 +18,7 @@ ENTRIES = (
     (78, 3410, 'screen.col_ratio', '量比'),
     (78, 3411, 'screen.col_pattern', '型態'),
     (78, 3412, 'screen.col_kline', 'K線'),
-    (78, 3413, 'screen.col_breakout', '突破'),
+    (78, 3413, 'screen.col_breakout', '突破(日)'),
     (78, 3414, 'screen.col_vol_ratio', '量÷均量'),
     (78, 3415, 'screen.col_first', '最早'),
     (78, 3416, 'screen.col_last', '最新'),

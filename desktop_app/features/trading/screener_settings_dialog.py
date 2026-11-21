@@ -27,6 +27,8 @@ class ScreenerSettingsDialog(QDialog):
     def __init__(self, facade, params, submit, parent=None, on_saved=lambda: None):
         super().__init__(parent)
         self.facade, self.params, self.defer, self.on_saved = facade, params, submit, on_saved
+        self._closed = False
+        self.finished.connect(lambda *_: setattr(self, '_closed', True))
         self.setObjectName('screener_settings')
         self.setWindowTitle(ui_text('screen.settings_title'))
         self.setAccessibleName(ui_text('screen.settings_title'))
@@ -91,10 +93,12 @@ class ScreenerSettingsDialog(QDialog):
 
         def completed(value, error):
             if error is not None:
-                self.message.setText(ui_text('screen.set_failed'))
+                if not self._closed:
+                    self.message.setText(ui_text('screen.set_failed'))
                 return
             self.params = value
             self.on_saved()
-            self.accept()
+            if not self._closed:  # closed while the save was in flight: the settings are saved, only the dialog is gone
+                self.accept()
 
         self.defer(lambda: self.facade.screener_settings(params), completed)
