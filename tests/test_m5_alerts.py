@@ -515,10 +515,11 @@ class LogIntegrationTests(unittest.TestCase):
             runtime.record_screen(instrument, 'SURGE_BLACK', DAY.replace(hour=10, minute=1))
             red, dark = runtime.service.events
             self.assertEqual(
-                (red.kind, red.instrument_id, red.rule_id, red.message_args), (AlertKind.SCREEN_DOWNLOAD, 'TWSE:1234', 'screen.surge_red', ('SURGE_RED',))
+                (red.kind, red.instrument_id, red.rule_id, red.message_args),
+                (AlertKind.SCREEN_DOWNLOAD, 'TWSE:1234', 'screen.surge_red', ('SURGE_RED', '1234', '測試股')),
             )
-            self.assertEqual(event_text(red), '已加入 K 線下載：爆量長紅')
-            self.assertEqual(event_text(dark), '已加入 K 線下載：爆量長黑')
+            self.assertEqual(event_text(red), '已加入 K 線下載：1234 測試股（爆量長紅）')
+            self.assertEqual(event_text(dark), '已加入 K 線下載：1234 測試股（爆量長黑）')
             self.assertEqual((event_direction(red), event_direction(dark)), ('UP', 'DOWN'))
             self.assertEqual(JsonAlertStore(Path(folder)).load_events(DAY.replace(hour=10, minute=5)), (red, dark))
             chosen, groups = [], []

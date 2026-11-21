@@ -145,6 +145,16 @@ class SnapshotTests(unittest.TestCase):
         self.assertIsNone(normalise_snapshot(raw_snapshot(volume_ratio=-1)).volume_ratio)
         self.assertIsNone(normalise_snapshot(raw_snapshot(volume_ratio=None)).volume_ratio)
 
+    def test_extreme_optional_values_are_unknown_too_with_the_same_bounds_as_the_row(self):
+        for bad in (1e30, 1e-70, 1e19, 10**400, -1e30):
+            with self.subTest(price=bad):
+                row = normalise_snapshot(raw_snapshot(open=bad, high=bad, low=bad))
+                self.assertEqual((row.price, row.open, row.high, row.low), (Decimal('100'), None, None, None))
+        for bad in (2e12, 1e300, 10**400, -1):
+            with self.subTest(lots=bad):
+                row = normalise_snapshot(raw_snapshot(yesterday_volume=bad))
+                self.assertEqual((row.price, row.yesterday_volume), (Decimal('100'), None))
+
     def test_screener_fields_are_read_and_unusable_ones_are_unknown_without_dropping_the_row(self):
         full = normalise_snapshot(raw_snapshot(open=98.5, high=101, low=97.5, yesterday_volume=1234))
         self.assertEqual((full.open, full.high, full.low, full.yesterday_volume), (Decimal('98.5'), Decimal('101'), Decimal('97.5'), 1234))
@@ -370,7 +380,7 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.service.board().state, 'STALE')
         self.assertTrue(self.service.due())
 
-    def test_polling_is_due_only_connected_and_in_session_after_the_first_round(self):
+    def test_polling_is_due_only_connected_in_session_and_once_after_the_close_after_the_first_round(self):
         self.assertTrue(self.service.due())
         self.service.refresh()
         self.assertTrue(self.service.due())
@@ -397,6 +407,32 @@ class ServiceTests(unittest.TestCase):
         self.service.refresh()
         self.assertEqual(flags, [False, True, True])
         self.assertFalse(self.service.due())
+
+    def test_a_failed_extra_close_round_is_retried_as_the_extra_close_round(self):
+        flags = []
+        self.service.on_round = lambda now, stats: flags.append(self.service.after_close_round) or ()
+        self.service.refresh()  # in session
+        self.now = OPEN.replace(hour=13, minute=40)
+        self.source.fail = True
+        self.service.refresh()  # the extra close round fails
+        self.assertTrue(self.service.due())
+        self.source.fail = False
+        self.now = OPEN.replace(hour=13, minute=40, second=10)
+        self.service.refresh()
+        self.assertEqual(flags, [False, True])  # the retry skips the sector hooks too
+        self.assertFalse(self.service.due())
+
+    def test_an_in_session_failure_retried_after_the_close_still_runs_the_sector_hooks_as_before(self):
+        flags = []
+        self.service.on_round = lambda now, stats: flags.append(self.service.after_close_round) or ()
+        self.service.refresh()
+        self.now = OPEN.replace(hour=13, minute=30)
+        self.source.fail = True
+        self.service.refresh()  # fails in session
+        self.source.fail = False
+        self.now = OPEN.replace(hour=13, minute=40)
+        self.service.refresh()  # the retry lands after the close: the pre-existing behaviour, hooks included
+        self.assertEqual(flags, [False, False])
 
     def test_the_extra_close_round_is_not_due_before_the_close_or_on_a_weekend_and_a_first_load_is_not_extra(self):
         flags = []

@@ -173,16 +173,19 @@ def attach_sector(bundle):
 
     def on_round(now, stats):
         alerts = ()
-        if not service.after_close_round:  # the one extra after-close round exists for the screener only
-            alerts = minutes.on_round(now, stats)
-            try:
-                alerts = (*alerts, *monitor.on_round(now, stats))
-            except Exception:
-                logger.error('sector monitor round failed')
         try:
-            screener.on_round(now, service.quotes())
-        except Exception as error:
-            logger.error('stock screener round failed (%s)', type(error).__name__)
+            if not service.after_close_round:  # the one extra after-close round exists for the screener only
+                alerts = minutes.on_round(now, stats)
+                try:
+                    alerts = (*alerts, *monitor.on_round(now, stats))
+                except Exception:
+                    logger.error('sector monitor round failed')
+        finally:
+            # An exception of the minute aggregator still reaches the poller as before, but never hides the round from the screener.
+            try:
+                screener.on_round(now, service.quotes())
+            except Exception as error:
+                logger.error('stock screener round failed (%s)', type(error).__name__)
         return alerts
 
     service.on_round = on_round

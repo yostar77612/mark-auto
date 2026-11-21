@@ -133,13 +133,18 @@ class StockScreener:
         self._lock = RLock()
         self._result = ScreenResult()
         self._fired: dict[date, set[tuple[str, str]]] = {}
+        self._logged: dict[tuple[str, str], date] = {}
         self._refilled: date | None = None
 
     def seed(self, fired: tuple[tuple[date, str, str], ...]) -> None:
-        """Triggers already written to the alert log (day, code, condition), so a restart does not repeat them."""
+        """Triggers already written to the alert log (day, code, condition), so a restart does not repeat them.
+
+        The log's day is the calendar day of the entry, which on a weekend or before the open is later than the trading
+        day the rows belong to; a logged trigger therefore also covers any data day up to and including its own."""
         with self._lock:
             for day, code, condition in fired:
                 self._fired.setdefault(day, set()).add((code, condition))
+                self._logged[(code, condition)] = max(day, self._logged.get((code, condition), day))
 
     def result(self) -> ScreenResult:
         with self._lock:
@@ -150,6 +155,8 @@ class StockScreener:
             return
         params, local = self.params(), now.astimezone(_TAIPEI)
         day = _data_day(now, rows)
+        # A stock that has not traded today still carries an earlier day's totals in the snapshot: it is not today's news.
+        rows = {code: row for code, row in rows.items() if row.at.astimezone(_TAIPEI).date() == day}
         if not ranking_open(now, params):
             with self._lock:
                 self._result = ScreenResult(day, False, now)
@@ -159,10 +166,14 @@ class StockScreener:
             self._result = ScreenResult(day, True, now, entries[: params.list_rows])
             fired = self._fired.setdefault(day, set())
             self._fired = {day: fired}  # only the newest day is kept
-            new = [entry for entry in entries if entry.pattern and self._wanted(entry.pattern, params) and (entry.code, entry.pattern) not in fired]
+            new = [entry for entry in entries if entry.pattern and self._wanted(entry.pattern, params) and not self._done(day, fired, entry)]
         if local.weekday() < 5 and local.time() > SESSION_END and day == local.date():
             self._refill(day, now)  # before the new triggers: those already reach now
         self._download(day, new, now)
+
+    def _done(self, day: date, fired: set[tuple[str, str]], entry: SurgeEntry) -> bool:
+        key = (entry.code, entry.pattern)
+        return key in fired or self._logged.get(key, date.min) >= day
 
     @staticmethod
     def _wanted(pattern: str, params: ScreenerParams) -> bool:
