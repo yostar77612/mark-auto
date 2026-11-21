@@ -64,6 +64,7 @@ class ToolRunTests(unittest.TestCase):
         self.session = mock.Mock()
         self.requests = []
         self.history_settings = []
+        self.history_stores = []
         self.steps = 0  # how many run_next calls report finished work before the queue is empty
 
     def recorder(self):
@@ -72,6 +73,7 @@ class ToolRunTests(unittest.TestCase):
         class Recorder:
             def __init__(self, store, session, settings, autostart):
                 history_settings.append((settings, autostart))
+                test.history_stores.append(store)
                 self.calls = 0
 
             def request(self, instrument, start, end, priority=0):
@@ -121,6 +123,11 @@ class ToolRunTests(unittest.TestCase):
     def assert_every_store_closed_once(self):
         self.assertTrue(all(store.closed == 1 for store in FakeStore.opened), [store.closed for store in FakeStore.opened])
 
+    def assert_one_store_opened_and_used_by_the_download(self):
+        self.assertEqual(len(FakeStore.opened), 1)  # a download without a store would otherwise pass unnoticed: "no store opened" is also "every store closed"
+        self.assertEqual(len(self.history_stores), 1)
+        self.assertIs(self.history_stores[0], FakeStore.opened[0])
+
     def test_existing_mode_requests_every_selected_stock_back_to_the_given_days(self):
         code, output = self.run_main('--existing', '--days', '1095', '--max-bars-today', '100000000')
         self.assertEqual(code, 0)
@@ -135,6 +142,7 @@ class ToolRunTests(unittest.TestCase):
         self.session.disconnect.assert_called_once_with()
         self.assertIn('已有 1 分 K 的股票 3 檔，各補到近 1095 天：1101 2330 6111', output)
         self.assertIn('符號目錄查不到而略過的代號 1 個：TWSE:9999', output)
+        self.assert_one_store_opened_and_used_by_the_download()
         self.assert_every_store_closed_once()
 
     def test_listing_with_rank_only_never_logs_in_and_requests_nothing(self):
@@ -171,6 +179,7 @@ class ToolRunTests(unittest.TestCase):
         self.assertEqual([request[0] for request in self.requests], ['6111', '1101'])  # amount order, not code order
         self.assertIn('成交金額前 2 名', output)
         self.assertIn('[  1/2] 6111 name6111: 123 根', output)  # the ranking path still reports bar counts
+        self.assert_one_store_opened_and_used_by_the_download()
         self.assert_every_store_closed_once()
 
     def test_ranking_with_rank_only_prints_and_stops_without_downloading_or_opening_the_store(self):
