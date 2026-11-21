@@ -526,7 +526,7 @@ class ScreenerTabTests(unittest.TestCase):
     def test_the_fourth_quote_tab_is_the_screener_and_its_title_names_the_current_list(self):
         tabs = self.widget.tabs
         self.assertEqual(tabs.count(), 4)
-        self.assertEqual(tabs.tabText(3), '選股：爆量 ▾')
+        self.assertEqual(tabs.tabText(3), '選股：爆量 ▼')
         self.assertIs(tabs.widget(3), self.panel)
         self.assertEqual(self.facade.screener_queries, [])  # nothing is fetched while another tab is showing
 
@@ -544,7 +544,7 @@ class ScreenerTabTests(unittest.TestCase):
         self.assertTrue(self.panel._menu.isVisible())
         next(action for action in self.panel._menu.actions() if action.text() == '帶量突破新高').trigger()
         self.panel._menu.close()
-        self.assertEqual(self.widget.tabs.tabText(3), '選股：帶量突破新高 ▾')
+        self.assertEqual(self.widget.tabs.tabText(3), '選股：帶量突破新高 ▼')
         self.widget.tabs.setCurrentWidget(self.panel)
         self.loaded(ScreenerQuery('BREAKOUT'))
         self.assertEqual(self.panel.info.text(), '資料累積中（0／60 日）')
