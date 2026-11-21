@@ -82,7 +82,7 @@ _SCREEN_CONDITIONS = {'SURGE_RED': ui_text('screen.cond_surge_red'), 'SURGE_BLAC
 def event_text(event):
     args = list(event.message_args)
     if event.kind in SCREEN_KINDS:
-        args[0] = _SCREEN_CONDITIONS[args[0]]
+        args[0] = _SCREEN_CONDITIONS.get(args[0], args[0])
     if event.kind in SECTOR_KINDS:
         words = {'UP': ui_text('alert.sector_dir_up'), 'DOWN': ui_text('alert.sector_dir_down'), 'NEUTRAL': ''}
         args[2] = words.get(args[2], '')

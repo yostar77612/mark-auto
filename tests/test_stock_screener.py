@@ -295,6 +295,41 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.screener.result().trade_date, date(2026, 11, 13))
         self.assertEqual((self.history.requests, self.logged), ([], []))
 
+    def test_a_restart_on_a_weekend_does_not_repeat_the_trigger_logged_on_that_weekend(self):
+        saturday = at(14, 10, 0)
+        friday_row = quote(when=at(13, 13, 30))
+        self.screener.on_round(saturday, self.rows(friday_row))
+        self.assertEqual(len(self.logged), 1)
+        self.assertEqual(self.logged[0][2], saturday)  # the log entry carries the calendar day, not Friday
+        restarted = StockScreener(lambda: self.params, lambda: self.stocks, self.history, lambda *args: self.logged.append(args))
+        restarted.seed(((date(2026, 11, 14), '1234', SURGE_RED),))
+        restarted.on_round(saturday + timedelta(hours=1), self.rows(friday_row))
+        self.assertEqual((len(self.logged), len(self.history.requests)), (1, 1))
+        monday = at(16, 10, 0)  # the next trading day is a new day for the same stock
+        restarted.on_round(monday, self.rows(quote(when=monday)))
+        self.assertEqual(len(self.logged), 2)
+
+    def test_a_trigger_logged_yesterday_does_not_suppress_today(self):
+        self.screener.seed(((date(2026, 11, 6), '1234', SURGE_RED),))
+        self.screener.on_round(MONDAY_1000, self.rows(quote(when=MONDAY_1000)))
+        self.assertEqual(len(self.logged), 1)
+
+    def test_a_stock_that_has_not_traded_today_is_not_todays_news(self):
+        tuesday = at(10, 9, 15)
+        stale = quote('1234', when=MONDAY_1000)  # yesterday's totals still sit in the snapshot
+        fresh = quote('2345', when=tuesday)
+        self.screener.on_round(tuesday, self.rows(stale, fresh))
+        self.assertEqual([entry.code for entry in self.screener.result().surges], ['2345'])
+        self.assertEqual([code for code, *_ in self.history.requests], ['2345'])
+        self.assertEqual([code for code, *_ in self.logged], ['2345'])
+
+    def test_a_stray_future_stamp_is_neither_the_trading_day_nor_ranked(self):
+        future = quote('3456', when=at(10, 10, 0))
+        self.screener.on_round(MONDAY_1000, self.rows(quote('1234', when=MONDAY_1000), future))
+        self.assertEqual(self.screener.result().trade_date, date(2026, 11, 9))
+        self.assertEqual([entry.code for entry in self.screener.result().surges], ['1234'])
+        self.assertEqual([code for code, *_ in self.history.requests], ['1234'])
+
     def test_an_empty_round_changes_nothing(self):
         self.screener.on_round(MONDAY_1000, {})
         self.assertEqual(self.screener.result().ranking, False)
