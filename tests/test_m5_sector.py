@@ -25,7 +25,9 @@ from quantlab.trading.domain.watch import WatchInstrument, WatchKind
 
 import quantlab.trading.runtime.protocol  # noqa: F401  (registers wire types)
 from desktop_app.features.trading.sector_board import SERIES_TAIL_BARS, _detail_series
+from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.series_reader import read_series
+from tests import series_read_simulator as simulator
 
 TAIPEI = timezone(timedelta(hours=8))
 OPEN = datetime(2026, 11, 9, 10, 0, tzinfo=TAIPEI)  # a Monday, in session
@@ -1036,8 +1038,11 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
             self.step()
             del self.facade.reads[:]
             widget._refresh_detail()
-            self.assertEqual(len(self.facade.reads), 1)  # one tail page
-            self.assertGreater(self.facade.reads[0][0], 0)
+            # A one-bar first-page read takes a snapshot, then one tail page is read from it (the terminal engine only serves that way).
+            self.assertEqual(len(self.facade.reads), 2)
+            self.assertEqual(self.facade.reads[0], (0, None))
+            self.assertGreater(self.facade.reads[1][0], 0)
+            self.assertIsNotNone(self.facade.reads[1][1])
             self.assertEqual(repr(widget._detail_cache[2][1]), repr(_detail_series(self.facade, self.KEY, '1m', None)[1]))
             clock[0] += sector_board.SERIES_RESYNC_SECONDS
             del self.facade.reads[:]
@@ -1097,6 +1102,76 @@ class PinnedTailOnLiveEngineTests(unittest.TestCase):
         # The first-page read, then the whole read; the refused tail read is not recorded (it raised).
         self.assertEqual(racing.reads, [(0, 1), (0, MarketSeriesQuery(self.KEY).limit)])
         self.assertSameSeries(result, '1m')
+
+
+class SectorDetailOnTerminalEngineTests(unittest.TestCase):
+    """The detail chart refreshed against the market terminal's engine, which serves a tail only from a named snapshot.
+
+    That engine answers every chart read once the terminal has selected anything, so the detail refresh must work with it.
+    """
+
+    def setUp(self):
+        self.temp = TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(self.temp.cleanup)
+        self.feed = simulator.TerminalFeed(self.temp.name)
+        self.addCleanup(self.feed.close)
+        self.key = simulator.STOCK.instrument_id
+
+    def make_widget(self):
+        from PySide6.QtWidgets import QApplication
+
+        from desktop_app.components.charts import CandlestickChart
+        from desktop_app.features.trading import sector_board
+
+        QApplication.instance() or QApplication([])
+        facade = SimpleNamespace(market_series=self.feed.facade.market_series, order_book=lambda key: None, sector_board=lambda query: None)
+        widget = release(self, sector_board.SectorBoardWidget(facade, CandlestickChart()))
+        self.errors = []
+
+        def submit(operation, completed):
+            def done(value, error):
+                if error is not None:
+                    self.errors.append(error)
+                completed(value, error)
+
+            simulator.run_inline(operation, done)
+
+        widget._submit = submit
+        widget.order_book.render_view = lambda *args: None
+        widget.stock_id = self.key
+        return widget
+
+    def shows_whole_read(self, widget):
+        return repr(widget.chart.bars) == repr(series_bars(self.feed.whole(widget.stock_id, widget.period)))
+
+    def play(self, rounds=60):
+        from unittest.mock import patch
+
+        from desktop_app.features.trading import sector_board
+
+        widget = self.make_widget()
+        clock, mismatches, tails = [1000.0], [], 0
+        with patch.object(sector_board, 'monotonic', lambda: clock[0]):
+            widget._refresh_detail()
+            for number in range(rounds):
+                clock[0] += 1.0
+                self.feed.tick()
+                if number % 17 == 5:
+                    self.feed.backfill_older()  # older history arrives: every index shifts
+                if number == 30:
+                    widget.period = '5m'
+                del self.feed.facade.queries[:]
+                widget._refresh_detail()
+                if not self.shows_whole_read(widget):
+                    mismatches.append(number)
+                tails += not simulator.whole_round(self.feed.facade.queries, self.key)
+        return mismatches, tails
+
+    def test_every_refresh_shows_the_whole_series_without_a_read_error(self):
+        mismatches, tails = self.play()
+        self.assertEqual(self.errors, [])
+        self.assertEqual(mismatches, [])
+        self.assertGreater(tails, 40)  # the other rounds only re-read the tail
 
 
 if __name__ == '__main__':
