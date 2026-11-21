@@ -142,6 +142,33 @@ class MarketRuntimeTests(unittest.TestCase):
         backfill.close()
         self.assertFalse(backfill._thread.is_alive())
 
+    def test_an_unopenable_daily_file_is_named_on_the_breakout_list_and_the_rest_keeps_working(self):
+        from unittest import mock
+
+        from quantlab.trading.domain.validation import DomainError
+        from quantlab.trading.runtime import market_daily as runtime_daily
+        from quantlab.trading.application.screener_contracts import ScreenerQuery
+
+        self.assertEqual(self.bundle.screener_board.daily_code(), '')  # a healthy file names nothing
+        with (
+            tempfile.TemporaryDirectory() as folder,
+            mock.patch.object(runtime_daily, 'MarketDailyStore', side_effect=DomainError('market_daily_unavailable', 'locked')),
+        ):
+            bundle = build_runtime(RuntimeLaunch(Path(folder)))
+            try:
+                self.assertIsNone(bundle.market_daily_store)
+                self.assertEqual(bundle.screener_board.daily_code(), 'market_daily_unavailable')
+                view = bundle.screener_board.view(ScreenerQuery('BREAKOUT'))
+                self.assertEqual((view.state, view.code), ('OFFLINE', ''))  # nothing connected: the offline state wins
+                bundle.sector.source = SimpleNamespace(connected=True, snapshots=lambda instruments: ())
+                bundle.sector.now = lambda: datetime(2026, 11, 9, 10, 0, tzinfo=timezone(timedelta(hours=8)))
+                bundle.sector._fetched_at = bundle.sector.now()
+                view = bundle.screener_board.view(ScreenerQuery('BREAKOUT'))
+                self.assertEqual((view.state, view.code), ('ACCUMULATING', 'market_daily_unavailable'))
+            finally:
+                bundle.close()
+                bundle.market_connection.close()
+
     def test_closing_the_bundle_stops_the_backfill_worker_and_closes_the_daily_store(self):
         import time
 

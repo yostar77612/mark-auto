@@ -117,7 +117,7 @@ class MarketDailyBackfill:
                 for market in OFFICIAL_MARKETS:
                     if market not in done and self._refused.get((day, market), 0) < REFUSALS_BEFORE_SKIP:
                         return day, market
-                counted += any(done[market] > 0 for market in OFFICIAL_MARKETS)
+                counted += any(done.get(market, 0) > 0 for market in OFFICIAL_MARKETS)  # a skipped market has no entry
             day -= timedelta(days=1)
         return None
 
@@ -130,12 +130,13 @@ class MarketDailyBackfill:
             return False
         day, market = pending
         url = self.source.url(market, day)
+        raw = self.fetch(url)  # a transport failure is retried later and never counts towards skipping the day
         try:
-            parsed = self.source.parse(market, self.fetch(url), day)
+            parsed = self.source.parse(market, raw, day)
             if parsed is not None and not parsed:
                 raise DomainError('official_stock_invalid', 'an empty answer is not a holiday')
         except Exception:
-            # One day that is always refused must not hold up every older day: after a few refusals it is left for the next run.
+            # One day whose answer is always refused must not hold up every older day: after a few refusals it is left for the next run.
             self._refused[(day, market)] = self._refused.get((day, market), 0) + 1
             raise
         quotes = parsed or ()

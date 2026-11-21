@@ -480,6 +480,13 @@ class BreakoutTests(unittest.TestCase):
         self.screener.on_round(MONDAY_1000, rows)
         self.assertEqual([entry.code for entry in self.screener.result().breakouts], ['3456'])
 
+    def test_the_closing_write_comes_after_the_downloads_of_the_same_round(self):
+        events = []
+        self.history.request = lambda instrument, start, end, priority=0: events.append('download')
+        self.daily.record_close = lambda day, rows: events.append('record_close')
+        self.screener.on_round(MONDAY_1340, self.rows(quote(when=at(9, 13, 30))))
+        self.assertEqual(events, ['download', 'record_close'])
+
     def test_a_failing_daily_file_costs_the_round_nothing_but_the_breakouts(self):
         class Broken(FakeDaily):
             def stats(self, day):

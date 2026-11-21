@@ -486,6 +486,49 @@ class BackfillTests(unittest.TestCase):
         self.assertTrue(self.backfill.step())  # the fourth step moves on instead of asking for the same day again
         self.assertNotEqual(self.fetched[-1], 'https://example.test/TWSE/2026-11-20')
 
+    def refuse_when(self, refused):
+        good = self.backfill.source
+        self.backfill.source = SimpleNamespace(
+            url=good.url,
+            parse=lambda market, raw, day: self.refuse(market, raw, day) if (day, market) in refused else good.parse(market, raw, day),
+        )
+
+    def drain_refusing(self, refused):
+        """Step until the backfill has nothing left, swallowing the refusals; it must finish without any other error."""
+        self.refuse_when(refused)
+        for _ in range(200):
+            try:
+                if not self.backfill.step():
+                    return
+            except DomainError:
+                continue
+        self.fail_runaway()
+
+    def test_skipping_a_refused_market_never_stops_the_backfill_from_finishing(self):
+        thursday, wednesday = date(2026, 11, 19), date(2026, 11, 18)
+        cases = {
+            'TWSE refused': {(date(2026, 11, 20), 'TWSE')},
+            'TWSE refused and TPEx a holiday day': {(date(2026, 11, 20), 'TWSE'), (thursday, 'TWSE')},
+            'both markets refused': {(date(2026, 11, 20), 'TWSE'), (date(2026, 11, 20), 'TPEX')},
+            'a holiday TWSE and a refused TPEx': {(wednesday, 'TPEX')},
+        }
+        for name, refused in cases.items():
+            with self.subTest(name):
+                self.setUp()
+                self.drain_refusing(refused)  # no KeyError, no endless loop
+                self.assertFalse(self.backfill.step())
+                self.assertIn(date(2026, 11, 17), {date.fromisoformat(url.rsplit('/', 1)[1]) for url in self.fetched})  # older days were reached
+                self.assertEqual(self.store.fetched(date(2026, 11, 20)).get('TWSE'), None if (date(2026, 11, 20), 'TWSE') in refused else 1)
+
+    def test_only_a_refused_answer_counts_towards_skipping_never_a_transport_failure(self):
+        self.fail = True
+        for _ in range(5):  # the network is down: five failures of the same request
+            with self.assertRaises(DomainError):
+                self.backfill.step()
+        self.fail = False
+        self.assertTrue(self.backfill.step())
+        self.assertEqual(self.fetched, ['https://example.test/TWSE/2026-11-20'])  # still the same day first: nothing was skipped
+
     def waits_of(self, steps):
         """Run the worker against scripted outcomes and return the waits it asked for."""
         waits, outcomes = [], iter(steps)
@@ -517,6 +560,50 @@ class BackfillTests(unittest.TestCase):
         self.assertEqual(self.waits_of([True, True, False]), [4.0, 4.0, 3600.0])
         self.assertEqual(self.waits_of([refused, refused, refused, True]), [120.0, 240.0, 480.0, 4.0])  # doubling, then reset
         self.assertEqual(self.waits_of([refused] * 6), [120.0, 240.0, 480.0, 960.0, 1800.0, 1800.0])  # capped
+
+    def test_the_deadline_timers_are_cleaned_up_after_every_request(self):
+        from unittest import mock
+
+        from quantlab.trading.runtime import market_daily as runtime_daily
+
+        cleaned, url = [], twse_url(FRIDAY)
+
+        class Handler:
+            def __init__(self, deadline):
+                pass
+
+            def cleanup(self):
+                cleaned.append(True)
+
+        class Response:
+            status, headers = 200, SimpleNamespace(get=lambda name, default=None: default)
+
+            def __init__(self):
+                self.chunks = [b'{"ok": 1}', b'']
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def geturl(self):
+                return url
+
+            def read(self, size):
+                return self.chunks.pop(0)
+
+        with mock.patch.object(runtime_daily, '_DeadlineHTTPSHandler', Handler):
+            with mock.patch.object(runtime_daily, 'build_opener', return_value=SimpleNamespace(open=lambda *args, **kwargs: Response())):
+                self.assertEqual(runtime_daily.fetch_daily_official(url), b'{"ok": 1}')
+            self.assertEqual(len(cleaned), 1)
+            with mock.patch.object(runtime_daily, 'build_opener', return_value=SimpleNamespace(open=mock.Mock(side_effect=OSError('down')))):
+                with self.assertRaises(DomainError):
+                    runtime_daily.fetch_daily_official(url)
+            self.assertEqual(len(cleaned), 2)
+            with self.assertRaises(DomainError):
+                runtime_daily.fetch_daily_official('https://example.com/x')  # refused before any handler exists
+            self.assertEqual(len(cleaned), 2)
 
     def test_the_worker_survives_any_exception_not_only_a_domain_error(self):
         self.assertEqual(self.waits_of([TypeError('odd shape'), ValueError('worse'), True]), [120.0, 240.0, 4.0])
