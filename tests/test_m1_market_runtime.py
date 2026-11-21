@@ -96,6 +96,20 @@ class MarketRuntimeTests(unittest.TestCase):
         self.assertEqual(len(requests), 2)  # the screener extended today's download to now
         self.assertEqual(requests[1][2], clock['now'])
 
+    def test_screener_requests_reach_the_real_bundle_and_saved_thresholds_reach_the_running_screener(self):
+        from dataclasses import replace as replace_values
+
+        from quantlab.trading.application.screener_contracts import ScreenerQuery
+
+        offline = self.request(Operation.SCREENER, screener=ScreenerQuery('SURGE')).screener
+        self.assertEqual((offline.list_id, offline.state, offline.rows), ('SURGE', 'OFFLINE', ()))
+        self.assertEqual(self.request(Operation.SCREENER, screener=ScreenerQuery('DOWNLOADED')).screener.downloaded, ())
+        params = self.request(Operation.SCREENER_SETTINGS).screener_params
+        changed = replace_values(params, surge_ratio=Decimal(4), download_black=True)
+        self.assertEqual(self.request(Operation.SCREENER_SETTINGS, screener_params=changed).screener_params, changed)
+        self.assertEqual(self.bundle.screener.params(), changed)  # the next round judges with the saved values
+        self.assertEqual(self.bundle.market_preferences.screener, changed)
+
     def test_independent_connection_without_trading_fields_and_real_wire_roundtrips(self):
         self.assertTrue(self.command(UiAction.SAVE_MARKET_DATA_SETTINGS, market_data_settings=MarketDataSettings(enabled=True)).accepted)
         self.assertEqual(self.bundle.snapshot().watchlist, ())

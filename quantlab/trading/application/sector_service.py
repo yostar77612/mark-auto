@@ -97,6 +97,11 @@ class SectorService:
             now = self.now()
             return not self._rows or self._failed or in_session(now) or self._closing_due(now)
 
+    def status(self) -> str:
+        """OFFLINE, EMPTY, CLOSED, STALE or LIVE, the same state the board shows."""
+        with self.lock:
+            return self._state(self.now())
+
     def quotes(self) -> dict[str, QuoteRow]:
         """The last accepted round, copied so callers can work outside the lock."""
         with self.lock:

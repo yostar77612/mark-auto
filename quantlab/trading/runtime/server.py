@@ -86,6 +86,12 @@ def _dispatch(bundle: RuntimeBundle, request: Request) -> Response:
         return Response(request.request_id, sector_groups=bundle.sector_groups.execute(request.sector_groups))
     if request.operation is Operation.SECTOR_HISTORY:
         return Response(request.request_id, sector_history=bundle.sector_history(request.sector_history))
+    if request.operation is Operation.SCREENER:
+        return Response(request.request_id, screener=bundle.screener_board.view(request.screener))
+    if request.operation is Operation.SCREENER_SETTINGS:
+        preferences = bundle.market_preferences
+        params = preferences.screener if request.screener_params is None else preferences.save_screener(request.screener_params)
+        return Response(request.request_id, screener_params=params)
     if request.operation is Operation.SECTOR_SETTINGS:
         settings = bundle.sector_settings
         params = settings.get() if request.sector_params is None else settings.save(request.sector_params)

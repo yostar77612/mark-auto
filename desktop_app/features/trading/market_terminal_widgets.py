@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QL
 from desktop_app.strings.catalog import ui_text
 from desktop_app.features.trading.market_terminal_layout import TerminalWorkspace
 from desktop_app.features.trading.order_book_panel import OrderBookPanel
+from desktop_app.features.trading.screener_panel import ScreenerPanel
 from desktop_app.features.trading.market_terminal_search import SymbolSearch
 from quantlab.trading.domain.watch import FIXED_INDICES
 from desktop_app.features.trading.market_terminal_rows import quote_values, quota_text, market_summary
@@ -107,6 +108,11 @@ def build_terminal(host, layout_store, alerts_panel, panel_factory):
     host.tabs.addTab(host.table, ui_text('terminal.tab_watchlist'))
     host.tabs.addTab(host.index_table, ui_text('terminal.tab_index'))
     host.tabs.addTab(host.future_table, ui_text('terminal.tab_future'))
+    host.screener = ScreenerPanel(host)
+    screener_tab = host.tabs.addTab(host.screener, host.screener.tab_title())
+    host.screener.on_list_changed = lambda: host.tabs.setTabText(screener_tab, host.screener.tab_title())
+    # Clicking the tab opens its drop-down (the lists and the settings); the tab itself switches as usual.
+    host.tabs.tabBar().tabBarClicked.connect(lambda index: host.screener.show_menu(host.tabs.tabBar(), index) if index == screener_tab else None)
     host.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
     host.table.customContextMenuRequested.connect(host._context_menu)
     host.alerts_content = alerts_panel or QWidget()

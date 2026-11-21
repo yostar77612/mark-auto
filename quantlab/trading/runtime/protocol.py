@@ -24,6 +24,8 @@ from quantlab.trading.application.sector_contracts import (
     SectorGroupsView,
     SectorQuery,
 )
+from quantlab.trading.application.screener_contracts import DownloadedRowView, ScreenerQuery, ScreenerRowView, ScreenerView
+from quantlab.trading.domain.screener import ScreenerParams
 from quantlab.trading.domain.sector import SectorStat
 from quantlab.trading.domain.sector_alerts import SectorAlert, SectorAlertParams
 from quantlab.trading.domain.bidask import BidAskSnapshot
@@ -53,6 +55,8 @@ class Operation(str, Enum):
     SECTOR_GROUPS = 'SECTOR_GROUPS'
     SECTOR_SETTINGS = 'SECTOR_SETTINGS'
     SECTOR_HISTORY = 'SECTOR_HISTORY'
+    SCREENER = 'SCREENER'
+    SCREENER_SETTINGS = 'SCREENER_SETTINGS'
 
 
 @dataclass(frozen=True)
@@ -71,6 +75,8 @@ class Request:
     sector_groups: SectorGroupsCommand | None = None
     sector_params: SectorAlertParams | None = None
     sector_history: SectorHistoryQuery | None = None
+    screener: ScreenerQuery | None = None
+    screener_params: ScreenerParams | None = None
 
     def __post_init__(self) -> None:
         identity(self.request_id)
@@ -92,6 +98,8 @@ class Request:
             raise DomainError('validation_failed', 'missing sector group command')
         if self.operation is Operation.SECTOR_HISTORY and not isinstance(self.sector_history, SectorHistoryQuery):
             raise DomainError('validation_failed', 'missing sector history query')
+        if self.operation is Operation.SCREENER and not isinstance(self.screener, ScreenerQuery):
+            raise DomainError('validation_failed', 'missing screener query')
 
 
 @dataclass(frozen=True)
@@ -123,6 +131,8 @@ class Response:
     sector_params: SectorAlertParams | None = None
     candidates: tuple[CandidateSummaryView, ...] = ()
     sector_history: SectorHistoryView | None = None
+    screener: ScreenerView | None = None
+    screener_params: ScreenerParams | None = None
 
 
 register(Operation, Request, Response, Metrics, QuoteBatch)
@@ -131,3 +141,4 @@ register(OrderBookView, TapeEntry, BidAskSnapshot)
 register(SectorQuery, SectorBoardView, MemberView, SectorStat)
 register(SectorGroupsCommand, SectorGroupsView, GroupEditView, SectorAlert, SectorAlertParams, MonitorCount, ShareBaseline)
 register(SectorHistoryQuery, SectorHistoryView, HistoryRow)
+register(ScreenerQuery, ScreenerView, ScreenerRowView, DownloadedRowView, ScreenerParams)

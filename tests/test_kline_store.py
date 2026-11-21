@@ -34,6 +34,22 @@ class KlineStoreTests(unittest.TestCase):
         self.store.close()
         self.temp.cleanup()
 
+    def test_minute_extent_gives_first_last_and_coverage_end_without_counting(self):
+        self.assertIsNone(self.store.minute_extent('TWSE:2330'))
+        self.store.upsert((minute(0), minute(5), minute(2)))
+        extent = self.store.minute_extent('TWSE:2330')
+        self.assertEqual(extent[:2], (minute(0).start, minute(5).start))
+        self.assertIsNone(extent[2])  # nothing marked as covered yet
+        self.store.mark_coverage('TWSE:2330', minute(0).start, minute(5).end)
+        self.assertEqual(self.store.minute_extent('TWSE:2330')[2], minute(5).end)
+        self.assertIsNone(self.store.minute_extent('TWSE:2317'))
+        plan = ' '.join(
+            row[-1]
+            for row in self.store._db.execute('EXPLAIN QUERY PLAN SELECT MIN(start_utc), MAX(start_utc) FROM bars_1m WHERE instrument_id=?', ('TWSE:2330',))
+        )
+        self.assertIn('USING', plan)  # a primary-key index seek, not a table scan
+        self.assertNotIn('SCAN', plan.replace('USING', ''))
+
     def test_instrument_ids_match_the_full_union_scan_for_minute_and_daily_rows(self):
         self.assertEqual(self.store.instrument_ids(), ())
         for instrument, offsets in (('TWSE:2330', range(5)), ('TPEX:6488', range(3)), ('INDEX:IX0001', range(2)), ('TWSE:1101', range(1))):
