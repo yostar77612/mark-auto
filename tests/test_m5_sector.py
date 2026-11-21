@@ -1048,6 +1048,7 @@ class DetailSeriesEquivalenceTests(unittest.TestCase):
             del self.facade.reads[:]
             widget._refresh_detail()
             self.assertEqual(self.facade.reads[0], (0, None))  # the periodic whole read
+            self.assertEqual(len(self.facade.reads), 1)  # the whole series is one page here; a pinned tail would be two reads
             widget._submit = lambda operation, completed: completed(None, RuntimeError('lost'))
             widget._refresh_detail()
             self.assertIsNone(widget._detail_cache)
