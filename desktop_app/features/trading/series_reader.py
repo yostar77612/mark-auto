@@ -1,4 +1,4 @@
-"""Chart series reads that re-read only the tail of what the caller already holds (OPT-1 P8 sector board, P11 market terminal and watch)."""
+"""Chart series reads that re-read only the tail (OPT-1 P8 sector board, P11 market terminal and watch, P11b index mini chart)."""
 
 from quantlab.trading.application.contracts import MarketSeriesQuery
 from quantlab.trading.domain.validation import DomainError
@@ -10,6 +10,8 @@ SERIES_TAIL_BARS = 240
 # than the re-read window stays unshown when the window itself still lines up: a same-size history re-backfill,
 # a loss mark on old minutes, or a session trim and an older backfill landing in the same refresh.
 SERIES_RESYNC_SECONDS = 120.0
+# A chart that shows only the newest trade date reads this many trailing bars: a day session is 270 one-minute bars.
+LATEST_WINDOW_BARS = 400
 
 
 def read_series(facade, key, period, cached, *, retry_history=False, pinned_tail=False):
@@ -55,3 +57,34 @@ def _read_tail(facade, key, period, cached_page, cached_bars, *, pinned):
     if len(page.bars) <= stable or page.bars[stable].start != cached_bars[-1].start or page.bars[:stable] != cached_bars[offset:-1]:
         return None
     return page, cached_bars[:offset] + page.bars
+
+
+def read_latest(facade, key, period, count=LATEST_WINDOW_BARS):
+    """The page of the newest bars of a series for a chart that shows only the newest trade date.
+
+    A one-bar first-page read gives the length and takes a snapshot, then the last `count` bars are read from that
+    snapshot (the market terminal's engine serves a page past the first only that way). The page holds the whole series
+    when it is no longer than `count`. When the window is refused, runs on to a second page, or starts inside the newest
+    trade date (so that date may begin before it), the answer is the last page of the whole read instead: the first page,
+    then the last page of the snapshot it took.
+    """
+    head = facade.market_series(MarketSeriesQuery(key, period, limit=1))
+    offset = max(0, head.total - count)
+    try:
+        page = facade.market_series(MarketSeriesQuery(key, period, offset=offset, market_revision=head.market_revision if offset else None))
+    except DomainError as error:
+        if not offset or error.code != 'state_conflict':
+            raise
+        return _last_page(facade, key, period)
+    if page.next_offset is not None or offset and page.bars and page.bars[0].trade_date == page.bars[-1].trade_date:
+        return _last_page(facade, key, period)
+    return page
+
+
+def _last_page(facade, key, period):
+    page = facade.market_series(MarketSeriesQuery(key, period))
+    if page.next_offset is not None:
+        page = facade.market_series(
+            MarketSeriesQuery(page.instrument_id, period, offset=max(0, page.total - len(page.bars)), market_revision=page.market_revision)
+        )
+    return page

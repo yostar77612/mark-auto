@@ -797,9 +797,13 @@ class TerminalSeriesReadTests(unittest.TestCase):
             panel_factory=WorkspacePanel,
         )
         deadline = time.monotonic() + 3
-        while not (self.widget._ready and not self.widget._requests) and time.monotonic() < deadline:
+        # Wait with sleep, not QTest.qWait: qWait keeps the GIL from the request thread, so a 4,000-bar first read takes seconds.
+        while (
+            not (self.widget._ready and not self.widget._requests and not self.widget._series_loading and not self.widget._selecting)
+            and time.monotonic() < deadline
+        ):
             self.app.processEvents()
-            QTest.qWait(5)
+            time.sleep(0.005)
         self.assertTrue(self.widget._ready)
         self.widget._submit = simulator.run_inline  # from here on every request completes at once: one deterministic step per call
         self.clock = [1000.0]
@@ -872,7 +876,7 @@ class TerminalSeriesReadTests(unittest.TestCase):
             mismatches, _ = self.play()
         self.assertTrue(mismatches)
 
-    def test_a_steady_refresh_reads_one_bar_then_the_tail_and_leaves_the_index_chart_read_alone(self):
+    def test_a_steady_refresh_reads_one_bar_then_the_tail(self):
         self.widget.select_instrument(self.key)
         self.feed.tick()
         queries, whole = self.refresh()
@@ -880,7 +884,9 @@ class TerminalSeriesReadTests(unittest.TestCase):
         main = [query for query in queries if query.instrument_id == self.key]
         self.assertEqual([(query.offset > 0, query.limit == 1) for query in main], [(False, True), (True, False)])
         index = [query for query in queries if query.instrument_id == FIXED_INDICES[0].instrument_id]
-        self.assertEqual([(query.offset, query.retry_history) for query in index], [(0, False)])  # the index mini chart reads its own page as before
+        # The index mini chart (no index bars here) asks for its length with one bar, then reads its first page; with bars it reads
+        # only the newest ones (TerminalIndexReadTests).
+        self.assertEqual([(query.offset, query.limit == 1, query.retry_history) for query in index], [(0, True, False), (0, False, False)])
         self.assertTrue(self.chart_matches_whole_read())
 
     def test_the_cache_resyncs_after_the_bound_and_is_dropped_on_an_error_and_for_another_selection(self):
@@ -930,6 +936,83 @@ class TerminalSeriesReadTests(unittest.TestCase):
         self.clock[0] += 21  # 121 s after the whole read, only 21 s after the tail read
         self.feed.tick()
         self.assertTrue(self.refresh()[1])
+
+
+class TerminalIndexReadTests(unittest.TestCase):
+    """OPT-1 P11b: the TAIEX mini chart draws the same bars from the tail read as from the whole read it replaced."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.feed = simulator.TerminalFeed(self.temp.name, index_days=16)  # 4,320 bars: more than the page limit of 4,000
+        self.facade = SeriesFacade(self.feed)
+        self.widget = MarketTerminalWidget(
+            self.facade,
+            CandlestickChart(),
+            self.facade.state,
+            layout_store=LayoutStore(panel_ids=PANEL_IDS, default_layout=terminal_preset()),
+            index_chart=CandlestickChart(show_volume=False),
+            panel_factory=WorkspacePanel,
+        )
+        deadline = time.monotonic() + 3
+        # Wait with sleep, not QTest.qWait: qWait keeps the GIL from the request thread, so a 4,000-bar first read takes seconds.
+        while (
+            not (self.widget._ready and not self.widget._requests and not self.widget._series_loading and not self.widget._selecting)
+            and time.monotonic() < deadline
+        ):
+            self.app.processEvents()
+            time.sleep(0.005)
+        self.assertTrue(self.widget._ready)
+        self.widget._submit = simulator.run_inline  # from here on every request completes at once: one deterministic step per call
+        self.key = STOCK.instrument_id
+
+    def tearDown(self):
+        QThreadPool.globalInstance().waitForDone(3000)
+        self.app.processEvents()
+        if shiboken6.isValid(self.widget):
+            shiboken6.delete(self.widget)
+        self.app.processEvents()
+        self.feed.close()
+        self.temp.cleanup()
+
+    def index_queries(self):
+        return [query for query in self.feed.facade.queries if query.instrument_id == simulator.INDEX_ID]
+
+    def test_the_index_chart_draws_what_the_whole_read_drew_through_ticks_new_days_and_backfills(self):
+        self.widget.select_instrument(self.key)
+        mismatches, shapes = [], []
+        for number in range(60):
+            self.feed.tick()
+            if number % 3 == 0:
+                self.feed.tick_index()
+            if number % 17 == 5:
+                self.feed.backfill_index_older()  # an older trade day arrives: every index of the series shifts
+            if number in (20, 40):
+                self.feed.tick_index(new_day=True)  # the next trade date begins
+            del self.feed.facade.queries[:]
+            self.widget.load_series()
+            if repr(self.widget.index_chart.bars) != repr(series_bars(self.feed.index_page_before_p11b())):
+                mismatches.append(number)
+            shapes.append([(query.offset > 0, query.limit == 1) for query in self.index_queries()])
+        self.assertEqual(mismatches, [])
+        self.assertGreater(len(self.widget.index_chart.bars), 0)
+        # One bar to learn the length and take a snapshot, then only the newest bars: never the 4,000-bar pages.
+        self.assertEqual(shapes, [[(False, True), (True, False)]] * 60)
+
+    def test_the_index_read_is_two_small_pages_whatever_the_main_chart_does(self):
+        self.widget.select_instrument(self.key)
+        for step in (
+            lambda: self.widget.select_period('5m'),
+            lambda: self.widget.load_series(retry=True),
+            lambda: self.widget.select_instrument(OTHER.instrument_id),
+        ):
+            del self.feed.facade.queries[:]
+            step()
+            queries = self.index_queries()
+            self.assertEqual([(query.offset > 0, query.limit == 1) for query in queries], [(False, True), (True, False)])
 
 
 if __name__ == '__main__':

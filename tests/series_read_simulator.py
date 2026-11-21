@@ -27,6 +27,7 @@ from quantlab.trading.ports.tick_stream import TickLoss
 NOW = datetime(2026, 11, 20, 1, 0, tzinfo=timezone.utc)  # 09:00 in Taipei: the day session has just opened
 STOCK = WatchInstrument('TWSE:2330', WatchKind.STOCK, 'TSE', '2330', 'TSMC')
 OTHER = WatchInstrument('TWSE:2317', WatchKind.STOCK, 'TSE', '2317', 'HonHai')
+INDEX_ID = FIXED_INDICES[0].instrument_id
 _TAIPEI = ZoneInfo('Asia/Taipei')
 # History older than this many minutes lies outside the tail window the reader re-reads (240 bars).
 OLD_MINUTES = 400
@@ -90,8 +91,9 @@ class RecordingFacade:
 
 
 class TerminalFeed:
-    def __init__(self, folder, *, depth=1500):
-        self.now, self.depth, self.shift, self.count = NOW, depth, 0, 0
+    def __init__(self, folder, *, depth=1500, index_days=0):
+        self.now, self.depth, self.shift, self.count, self.index_days = NOW, depth, 0, 0, index_days
+        self.index_date = NOW.astimezone(_TAIPEI).date()  # the trade date the TAIEX ticks belong to
         self.store = KlineStore(Path(folder) / 'klines.sqlite3')
         self.session = _Session()
         self.sync = HistorySync(self.store, self.session, now=lambda: self.now, autostart=False)
@@ -106,6 +108,8 @@ class TerminalFeed:
         )
         self.facade = RecordingFacade(self.service)
         self.write_history()
+        if index_days:
+            self.write_index_history()
         self.service.connected()
 
     def close(self):
@@ -136,6 +140,43 @@ class TerminalFeed:
         """The same bars with other values, all older than the tail window: the series keeps its size and its tail."""
         self.shift += 1
         self.write_history()
+
+    def write_index_history(self):
+        """`index_days` finished trade days of the TAIEX before NOW's date: 270 one-minute bars each, 09:00 to 13:29 in Taipei."""
+        bars, date, done = [], NOW.astimezone(_TAIPEI).date(), 0
+        while done < self.index_days:
+            date -= timedelta(days=1)
+            if date.weekday() >= 5:
+                continue
+            done += 1
+            opening = datetime(date.year, date.month, date.day, 9, tzinfo=_TAIPEI)
+            for minute in range(270):
+                start = (opening + timedelta(minutes=minute)).astimezone(timezone.utc)
+                close = Decimal(17000 + (minute * 7 + date.day) % 40)
+                bars.append(LiveBar(INDEX_ID, start, start + timedelta(minutes=1), date, 'DAY', close, close + 5, close - 5, close, 1 + minute % 3, final=True))
+        self.store.upsert(tuple(bars))
+
+    def backfill_index_older(self, days=1):
+        """Older TAIEX days arrive: the index series grows at its start and every index after it shifts."""
+        self.index_days += days
+        self.write_index_history()
+
+    def tick_index(self, seconds=20, *, new_day=False):
+        """Move the clock and deliver one TAIEX tick; with `new_day` it opens the next trade date, in a minute of its own."""
+        self.now += timedelta(seconds=max(seconds, 120) if new_day else seconds)
+        self.count += 1
+        if new_day:
+            self.index_date += timedelta(days=1)
+        self.session.pending.append(Tick(INDEX_ID, Decimal(17000 + self.count % 30), 1, self.now, self.now, self.index_date, 'DAY'))
+        self.service.poll()
+
+    def index_page_before_p11b(self):
+        """The TAIEX page as the terminal read it before the tail read: the last page of the whole read, then its newest trade date only."""
+        page = self.service.series(MarketSeriesQuery(INDEX_ID, '1m'))
+        if page.next_offset is not None:
+            page = self.service.series(MarketSeriesQuery(INDEX_ID, '1m', offset=max(0, page.total - len(page.bars)), market_revision=page.market_revision))
+        latest = page.bars[-1].trade_date if page.bars else None
+        return replace(page, bars=tuple(bar for bar in page.bars if bar.trade_date == latest))
 
     def tick(self, seconds=20, *, lost=False):
         """Move the clock, deliver one STOCK tick (flagged lost when `lost`) and let the engine poll."""

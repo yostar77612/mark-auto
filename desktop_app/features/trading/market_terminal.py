@@ -10,8 +10,8 @@ from desktop_app.features.trading.market_watch import PendingRequests, _Result, 
 from desktop_app.features.trading.market_watch_rows import series_bars
 from desktop_app.features.trading.market_terminal_rows import number, price_number, state_label, diagnostic_text, source_text, _change_direction
 from desktop_app.features.trading.market_terminal_widgets import identify, build_terminal, render_quote_table, render_status, render_chart
-from desktop_app.features.trading.series_reader import SERIES_RESYNC_SECONDS, read_series
-from quantlab.trading.application.contracts import MarketSeriesQuery, MarketWatchView, UiCommand, UiAction
+from desktop_app.features.trading.series_reader import SERIES_RESYNC_SECONDS, read_latest, read_series
+from quantlab.trading.application.contracts import MarketWatchView, UiCommand, UiAction
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchKind
 from quantlab.trading.domain.validation import DomainError
 
@@ -234,11 +234,7 @@ class MarketTerminalWidget(QWidget):
 
         def fetch():
             page, bars, whole = read_series(self.facade, key, period, reuse, retry_history=retry, pinned_tail=True)
-            index = self.facade.market_series(MarketSeriesQuery(FIXED_INDICES[0].instrument_id, '1m'))
-            if index.next_offset is not None:
-                index = self.facade.market_series(
-                    MarketSeriesQuery(index.instrument_id, '1m', offset=max(0, index.total - len(index.bars)), market_revision=index.market_revision)
-                )
+            index = read_latest(self.facade, FIXED_INDICES[0].instrument_id, '1m')  # only the newest trade date is drawn
             return replace(page, bars=bars, offset=0), index, self.facade.market_status(), whole
 
         def completed(value, error):
