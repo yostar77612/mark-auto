@@ -68,6 +68,7 @@ class SectorService:
         self._data_is_today = True
         self._generation = 0
         self._closing_day: date | None = None
+        self._failed_closing = False  # the failed round was the extra after-close one, so its retry is too
         # True while on_round runs for the one extra after-close round (see due): the sector hooks skip it.
         self.after_close_round = False
         self._alerts: deque[SectorAlert] = deque(maxlen=200)
@@ -109,19 +110,19 @@ class SectorService:
         with self.lock:
             generation = self._generation
             now = self.now()
-            extra_closing = bool(self._rows) and not self._failed and not in_session(now) and self._closing_due(now)
+            extra_closing = bool(self._rows) and not in_session(now) and self._closing_due(now) and (not self._failed or self._failed_closing)
         try:
             rows = {row.code: row for row in self.source.snapshots(stocks)}
         except DomainError:
             with self.lock:
                 if generation == self._generation:
-                    self._failed = True
+                    self._failed, self._failed_closing = True, extra_closing
             return
         groups = self.groups()
         with self.lock:
             if generation != self._generation:
                 return
-            self._failed = False
+            self._failed = self._failed_closing = False
             self._rows, self._fetched_at = rows, self.now()
             if self._closing_due(self._fetched_at):
                 self._closing_day = self._fetched_at.astimezone(_TAIPEI).date()
@@ -189,7 +190,7 @@ class SectorService:
         with self.lock:
             self._generation += 1
             self._rows, self._stats, self._groups, self._fetched_at = {}, (), {}, None
-            self._first_limit_up, self._limit_day, self._failed = {}, None, False
+            self._first_limit_up, self._limit_day, self._failed, self._failed_closing = {}, None, False, False
             self._data_is_today = True
 
     def _state(self, now: datetime) -> str:

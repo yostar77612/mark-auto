@@ -3398,7 +3398,7 @@
       "orderbook.no_future": "期貨暫無五檔",
       "alert.future_stock_only": "漲停、跌停、急漲跌與爆量大單警示只適用個股，期貨不提供。",
       "alert.kind_screen_download": "選股下載",
-      "alert.event.screen_download": "已加入 K 線下載：{0}",
+      "alert.event.screen_download": "已加入 K 線下載：{1} {2}（{0}）",
       "screen.cond_surge_red": "爆量長紅",
       "screen.cond_surge_black": "爆量長黑"
     }
@@ -8126,7 +8126,7 @@
       "orderbook.no_future": "期貨暫無五檔",
       "alert.future_stock_only": "漲停、跌停、急漲跌與爆量大單警示只適用個股，期貨不提供。",
       "alert.kind_screen_download": "選股下載",
-      "alert.event.screen_download": "已加入 K 線下載：{0}",
+      "alert.event.screen_download": "已加入 K 線下載：{1} {2}（{0}）",
       "screen.cond_surge_red": "爆量長紅",
       "screen.cond_surge_black": "爆量長黑",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",

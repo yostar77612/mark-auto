@@ -103,7 +103,7 @@ class RuntimeAlerts:
             at,
             None,
             'alert.event.screen_download',
-            (condition,),
+            (condition, instrument.code, instrument.name),
         )
         with self.lock:
             self.service.record_event(event)
