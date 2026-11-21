@@ -67,6 +67,7 @@ def read_latest(facade, key, period, count=LATEST_WINDOW_BARS):
     when it is no longer than `count`. When the window is refused, runs on to a second page, or starts inside the newest
     trade date (so that date may begin before it), the answer is the last page of the whole read instead: the first page,
     then the last page of the snapshot it took.
+    The trade dates of the series are assumed not to decrease along it, as an index's do (bars are sorted by start).
     """
     head = facade.market_series(MarketSeriesQuery(key, period, limit=1))
     offset = max(0, head.total - count)

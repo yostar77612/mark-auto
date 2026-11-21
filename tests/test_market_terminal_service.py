@@ -586,6 +586,27 @@ class ReadLatestTests(unittest.TestCase):
         self.assertEqual((len(page.bars), len(engine.queries)), (400, 2))
         self.assertEqual(repr(self.newest_day(page)), repr(self.newest_day(self.old_last_page(engine))))
 
+    def test_an_error_other_than_state_conflict_at_the_tail_is_raised_without_another_read(self):
+        engine = self.scripted([day_bar(index, index // 270) for index in range(1000)])
+
+        class TailFails:
+            """The first-page read works; the tail read fails with an error that is not a lost snapshot."""
+
+            def __init__(self):
+                self.queries = []
+
+            def market_series(self, query):
+                self.queries.append(query)
+                if query.offset:
+                    raise DomainError('capability_missing')
+                return engine.market_series(query)
+
+        failing = TailFails()
+        with self.assertRaises(DomainError) as caught:
+            read_latest(failing, self.KEY, '1m')
+        self.assertEqual(caught.exception.code, 'capability_missing')
+        self.assertEqual([(query.offset > 0, query.limit == 1) for query in failing.queries], [(False, True), (True, False)])  # no fallback read
+
     def test_a_window_that_runs_on_to_a_second_page_reads_the_last_page_of_the_whole_read(self):
         bars = [day_bar(index, index // 270) for index in range(1000)]
         engine = self.scripted(bars)
