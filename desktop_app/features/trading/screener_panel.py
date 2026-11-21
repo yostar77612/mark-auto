@@ -129,7 +129,7 @@ class ScreenerPanel(QWidget):
         return menu
 
     def _list_action(self, menu, list_id):
-        action = menu.addAction(list_name(list_id), lambda selected=list_id: self.set_list(selected))
+        action = menu.addAction(list_name(list_id), lambda checked=False, selected=list_id: self.set_list(selected))
         action.setCheckable(True)
         action.setChecked(list_id == self.list_id)
 
