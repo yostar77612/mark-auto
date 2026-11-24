@@ -19,8 +19,11 @@ K 線 list, indices left alone) back to --days days, for example three years for
 
 With --stock-futures N the tool ranks the single-stock futures (ETF futures left out) by the volume of their near-month
 contract and downloads one year (--days) of 1-minute bars of the N most traded continuous front-month contracts
-(for example CDFR1), stored as TAIFEX:<code>. Stock futures trade the day session only. Run it before 08:45 or after
-13:50: the snapshot then holds one complete trading day, and a K-line query that reaches today times out while the market is open.
+(for example CDFR1), stored as TAIFEX:<code>. A trading date of a stock future starts with the night session of the evening
+before (15:00-05:00) and ends with the day session (08:45-13:45), and the snapshot total counts from the night open: it covers
+one complete trading date only between 13:50 and 15:00 on a weekday. The ranking is therefore refused outside that window
+(--any-time overrides it, and then the totals are partial: before 08:45 they are the night session alone). A K-line query
+that reaches today also times out while the day session is open, so download in the same window.
 
     .venv\\Scripts\\python.exe tools\\bulk_kline_backfill.py --stock-futures 100 --max-bars-today 100000000
 """
@@ -33,8 +36,9 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time as clock_time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -51,7 +55,20 @@ from quantlab.trading.domain.validation import DomainError  # noqa: E402
 from quantlab.trading.domain.watch import WatchKind, is_future, is_stock_future_code, stock_future  # noqa: E402
 from quantlab.trading.runtime.market_connection import create_market_session  # noqa: E402
 
+TAIPEI = ZoneInfo('Asia/Taipei')
+# A stock future's trading date runs from the night session (15:00) of the evening before to the day close (13:45): the snapshot total is
+# complete only after the close and before the next night open.
+RANKING_WINDOW = (clock_time(13, 50), clock_time(15, 0))
 DEFAULT_CONTEXT = Path(os.environ.get('LOCALAPPDATA', '')) / 'MarkAuto-v2' / 'local' / 'context-engines' / 'sinopac-simulation'
+
+
+def now() -> datetime:
+    return datetime.now(TAIPEI)
+
+
+def ranking_window_open(moment: datetime) -> bool:
+    local = moment.astimezone(TAIPEI)
+    return local.weekday() < 5 and RANKING_WINDOW[0] <= local.time() < RANKING_WINDOW[1]
 
 
 def markauto_running() -> bool:
@@ -77,9 +94,9 @@ def ranked(session, directory: SymbolDirectory, top: int):
 def ranked_stock_futures(session, top: int):
     """The N most traded single-stock futures as (watch instrument, volume in contracts), ETF futures left out.
 
-    The volume is the snapshot total of the near-month contract (the continuous contract itself cannot be snapshotted):
-    before the day session opens or after it closes that is one complete trading day. Contracts the broker does not list
-    in full, without volume, or whose name is unusable are left out."""
+    The volume is the snapshot total of the near-month contract (the continuous contract itself cannot be snapshotted). It counts
+    from the night open, so it is one complete trading date only between the day close and the next night open (see RANKING_WINDOW).
+    Contracts the broker does not list in full, without volume, or whose name is unusable are left out."""
     facade = session.facade
     near_month = {}
     for base in facade.market_contracts('FUT'):
@@ -149,12 +166,20 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help='download the N most traded single-stock futures (continuous front-month contracts, ETF futures left out) instead of ranking stocks',
     )
+    parser.add_argument(
+        '--any-time',
+        action='store_true',
+        help='with --stock-futures: rank outside 13:50-15:00 on a weekday anyway (the totals then do not cover a complete trading date)',
+    )
     parser.add_argument('--rank-only', action='store_true', help='print the ranking (or, with --existing, the stocks that would be extended) and stop')
     args = parser.parse_args(argv)
     if args.stock_futures is not None and args.stock_futures < 1:
         parser.error('--stock-futures needs a positive number')
     if markauto_running():
         print('MarkAuto 正在執行：請先關閉 MarkAuto 再下載（兩邊同時寫入 K 線庫不安全）。')
+        return 2
+    if args.stock_futures and not args.any_time and not ranking_window_open(now()):
+        print('個股期貨的成交量要在平日 13:50 到 15:00 之間排名（收盤後、夜盤開始前才是完整的一個交易日）；要硬排請加 --any-time。')
         return 2
     settings = market_settings(args.context)
     directory = SymbolDirectory(args.context / 'market' / 'symbol_directory.json')
@@ -178,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.stock_futures:
                 top = ranked_stock_futures(session, args.stock_futures)
-                print(f'個股期貨成交量前 {len(top)} 名（近月合約的快照成交量，ETF 期貨不計；{settings.environment.value}）：')
+                print(f'個股期貨成交量前 {len(top)} 名（近月合約當日快照成交量，ETF 期貨不計；{settings.environment.value}）：')
                 for rank, (item, volume) in enumerate(top, 1):
                     print(f'  {rank:3d}. {item.code} {item.name}  {volume:,} 口')
                 if args.rank_only:

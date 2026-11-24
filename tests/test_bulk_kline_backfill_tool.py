@@ -7,10 +7,15 @@ from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import STOCK_FUTURE_CATEGORY, WatchKind, stock_future
 from tools import bulk_kline_backfill as tool
+
+
+TAIPEI = ZoneInfo('Asia/Taipei')
+WEDNESDAY_1400 = datetime(2026, 11, 25, 14, 0, tzinfo=TAIPEI)  # between the day close and the next night open
 
 
 def item(market, code, kind=WatchKind.STOCK):
@@ -108,6 +113,7 @@ class ToolRunTests(unittest.TestCase):
     def patches(self, **override):
         replace = dict(
             markauto_running=mock.Mock(return_value=False),
+            now=mock.Mock(return_value=WEDNESDAY_1400),
             market_settings=mock.Mock(return_value=SimpleNamespace(environment=SimpleNamespace(value='BROKER_SIMULATION'))),
             SymbolDirectory=mock.Mock(return_value=DIRECTORY),
             KlineStore=FakeStore,
@@ -234,6 +240,40 @@ class ToolRunTests(unittest.TestCase):
             code, output = self.run_main(*mode, **guard)
             self.assertEqual(code, 2)
             self.assertIn('MarkAuto 正在執行', output)
+
+    def test_the_stock_futures_ranking_is_only_taken_between_the_day_close_and_the_next_night_open(self):
+        rows = [(stock_future('QFFR1', '小型台積電期貨 近月'), 500)]
+        outside = (
+            datetime(2026, 11, 25, 7, 0, tzinfo=TAIPEI),  # before the day open: the total is the night session alone
+            datetime(2026, 11, 25, 10, 0, tzinfo=TAIPEI),  # during the day session
+            datetime(2026, 11, 25, 13, 49, 59, tzinfo=TAIPEI),
+            datetime(2026, 11, 25, 15, 0, tzinfo=TAIPEI),  # the next night session has started
+            datetime(2026, 11, 28, 14, 0, tzinfo=TAIPEI),  # a Saturday
+        )
+        for moment in outside:
+            for argv in (('--stock-futures', '1'), ('--stock-futures', '1', '--rank-only')):
+                with self.subTest(moment=moment, argv=argv), mock.patch.object(tool, 'ranked_stock_futures', return_value=rows) as ranked:
+                    code, output = self.run_main(*argv, now=mock.Mock(return_value=moment))
+                    self.assertEqual(code, 2)
+                    self.assertIn('13:50 到 15:00', output)
+                    ranked.assert_not_called()
+                    self.session.connect.assert_not_called()
+                    self.assertEqual(FakeStore.opened, [])
+        for moment in (datetime(2026, 11, 25, 13, 50, tzinfo=TAIPEI), datetime(2026, 11, 25, 14, 59, 59, tzinfo=TAIPEI)):
+            with self.subTest(moment=moment), mock.patch.object(tool, 'ranked_stock_futures', return_value=rows):
+                self.assertEqual(self.run_main('--stock-futures', '1', '--rank-only', now=mock.Mock(return_value=moment))[0], 0)
+        with mock.patch.object(tool, 'ranked_stock_futures', return_value=rows):  # the override is explicit
+            code, _ = self.run_main('--stock-futures', '1', '--rank-only', '--any-time', now=mock.Mock(return_value=outside[0]))
+        self.assertEqual(code, 0)
+
+    def test_the_time_rule_belongs_to_the_stock_futures_ranking_only_and_the_open_app_is_refused_first(self):
+        early = mock.Mock(return_value=datetime(2026, 11, 25, 7, 0, tzinfo=TAIPEI))
+        self.assertEqual(self.run_main('--existing', '--rank-only', now=early)[0], 0)
+        with mock.patch.object(tool, 'ranked', return_value=[]):
+            self.assertEqual(self.run_main('--top', '3', '--rank-only', now=early)[0], 0)
+        code, output = self.run_main('--stock-futures', '1', now=early, markauto_running=mock.Mock(return_value=True))
+        self.assertEqual(code, 2)
+        self.assertIn('MarkAuto 正在執行', output)
 
     def test_stock_futures_mode_downloads_the_ranked_contracts_for_one_year_into_one_store(self):
         rows = [(stock_future('QFFR1', '小型台積電期貨 近月'), 500), (stock_future('FZFR1', '華邦電期貨 近月'), 300)]
