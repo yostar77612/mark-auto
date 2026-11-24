@@ -264,7 +264,7 @@ class ToolRunTests(unittest.TestCase):
         self.assertIn('500 口', output)
 
     def test_the_two_download_modes_exclude_each_other_and_the_count_must_not_be_negative(self):
-        for argv in (('--existing', '--stock-futures', '5'), ('--stock-futures', '-1')):
+        for argv in (('--existing', '--stock-futures', '5'), ('--stock-futures', '-1'), ('--stock-futures', '0')):
             with self.subTest(argv=argv), redirect_stderr(StringIO()), self.assertRaises(SystemExit) as caught:
                 self.run_main(*argv)
             self.assertEqual(caught.exception.code, 2)
@@ -294,6 +294,8 @@ class FakeFutures:
         ('ZZFR1', 'ZZFL6', '無量期貨 近月', 'S', '1101', 0),  # no volume
         ('XXFR1', 'XXFL6', '無合約期貨 近月', 'S', '1101', 700),  # near-month contract the broker cannot give
         ('ERFR1', 'ERFL6', '壞資料期貨 近月', 'S', '1101', 700),  # unreadable info
+        ('NTFR1', '', '無近月期貨 近月', 'S', '1101', 700),  # no near-month contract named
+        ('SEFR1', 'SEFR1', '自指期貨 近月', 'S', '1101', 700),  # the continuous contract names itself
     )
 
     def __init__(self):

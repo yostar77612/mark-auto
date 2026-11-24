@@ -6,7 +6,7 @@ from typing import Callable, Protocol
 
 from quantlab.trading.domain.screener import SURGE_BLACK, SURGE_RED, ScreenerParams
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.domain.watch import WatchInstrument, WatchKind
+from quantlab.trading.domain.watch import WatchInstrument, WatchKind, is_future
 from .screener_contracts import DownloadedRowView, ScreenerQuery, ScreenerRowView, ScreenerView
 from .stock_screener import SCREENER_PRIORITY, StockScreener, download_window
 
@@ -161,6 +161,8 @@ class ScreenerBoard:
             if extent is None:
                 continue
             item = names.get(instrument_id)
+            if item is None and is_future(instrument_id):
+                continue  # downloaded stock futures are data only: the terminal cannot open them, so the list would offer dead rows
             code = item.code if item is not None else instrument_id.split(':')[-1]
             rows.append(DownloadedRowView(instrument_id, code, item.name if item is not None else code, extent[0], extent[1], extent[2]))
         return tuple(sorted(rows, key=lambda row: row.code))

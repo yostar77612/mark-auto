@@ -195,6 +195,10 @@ class BoardTests(unittest.TestCase):
         self.assertEqual((view.downloaded[0].first, view.downloaded[0].last, view.downloaded[0].updated), (early, late, None))
         self.assertEqual(view.downloaded[1].updated, updated)
 
+    def test_downloaded_stock_futures_are_not_listed_because_the_terminal_cannot_open_them(self):
+        self.store.extents = {'TWSE:1234': (MONDAY_1000, MONDAY_1000, None), 'TAIFEX:CDFR1': (MONDAY_1000, MONDAY_1000, None)}
+        self.assertEqual([row.code for row in self.board.view(ScreenerQuery('DOWNLOADED')).downloaded], ['1234'])
+
     def test_the_downloaded_list_is_cached_briefly_and_a_download_refreshes_it(self):
         self.store.extents = {'TWSE:1234': (MONDAY_1000, MONDAY_1000, None)}
         self.board.view(ScreenerQuery('DOWNLOADED'))

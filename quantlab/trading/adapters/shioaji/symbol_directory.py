@@ -10,7 +10,7 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.domain.watch import FIXED_INDICES, FUTURE_NAMES, WatchInstrument, WatchKind, watch_future
+from quantlab.trading.domain.watch import FIXED_INDICES, FUTURE_NAMES, STOCK_FUTURE_CATEGORY, WatchInstrument, WatchKind, watch_future
 from .sdk import sdk_text, sdk_value
 from .sdk_facade import ShioajiSDKFacade
 
@@ -39,6 +39,8 @@ class SymbolDirectory:
             if fetched.tzinfo is None:
                 raise ValueError('directory timestamp')
             items = tuple(WatchInstrument(row[0], WatchKind(row[1]), *row[2:]) for row in body['items'])
+            if any(item.category == STOCK_FUTURE_CATEGORY for item in items):
+                raise ValueError('directory row with a history-only identity')  # such ids are K-line data, never directory entries
         except (OSError, ValueError, KeyError, TypeError, IndexError, DomainError):
             return self.items
         self.fetched_at = fetched if body['version'] == VERSION else None

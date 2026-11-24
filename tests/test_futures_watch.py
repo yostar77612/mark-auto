@@ -89,6 +89,9 @@ class WatchInstrumentTests(unittest.TestCase):
             ('CDFL6', STOCK_FUTURE_CATEGORY),  # a delivery month
             ('CDR1', STOCK_FUTURE_CATEGORY),
             ('CDFXR1', STOCK_FUTURE_CATEGORY),
+            ('CDFL1', STOCK_FUTURE_CATEGORY),  # a delivery month of year 1 ends in 1 as well
+            ('CD-R1', STOCK_FUTURE_CATEGORY),
+            ('CD R1', STOCK_FUTURE_CATEGORY),
             ('cdfr1', STOCK_FUTURE_CATEGORY),
             ('cdfR1', STOCK_FUTURE_CATEGORY),  # product characters are upper case or digits
             ('CDfR1', STOCK_FUTURE_CATEGORY),
@@ -236,6 +239,13 @@ class DirectoryTests(unittest.TestCase):
         items = directory.refresh(self.facade, self.now + timedelta(hours=1))  # same day, yet rebuilt
         self.assertEqual(3, sum(item.kind is WatchKind.FUTURE for item in items))
         self.assertEqual(3, json.loads(self.path.read_text(encoding='utf-8'))['version'])
+
+    def test_a_cache_with_a_history_only_stock_future_row_is_ignored_like_any_unwatchable_future(self):
+        self.path.parent.mkdir(parents=True)
+        for row in (['TAIFEX:CDFR1', 'FUTURE', 'TAIFEX', 'CDFR1', '台積電期貨 近月', 'STKFUT'],):
+            body = {'version': 3, 'fetched_at': self.now.isoformat(), 'items': [['TWSE:2330', 'STOCK', 'TSE', '2330', 'TSMC', ''], row]}
+            self.path.write_text(json.dumps(body), encoding='utf-8')
+            self.assertEqual(FIXED_INDICES, SymbolDirectory(self.path).items)  # the stock row is dropped with the file: it is rebuilt at the next refresh
 
     def test_a_cache_with_an_unwatchable_future_is_ignored_not_fatal(self):
         self.path.parent.mkdir(parents=True)

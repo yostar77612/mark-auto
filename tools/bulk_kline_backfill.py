@@ -146,12 +146,12 @@ def main(argv: list[str] | None = None) -> int:
         '--stock-futures',
         type=int,
         metavar='N',
-        default=0,
+        default=None,
         help='download the N most traded single-stock futures (continuous front-month contracts, ETF futures left out) instead of ranking stocks',
     )
     parser.add_argument('--rank-only', action='store_true', help='print the ranking (or, with --existing, the stocks that would be extended) and stop')
     args = parser.parse_args(argv)
-    if args.stock_futures < 0:
+    if args.stock_futures is not None and args.stock_futures < 1:
         parser.error('--stock-futures needs a positive number')
     if markauto_running():
         print('MarkAuto 正在執行：請先關閉 MarkAuto 再下載（兩邊同時寫入 K 線庫不安全）。')
