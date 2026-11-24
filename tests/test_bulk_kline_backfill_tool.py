@@ -266,6 +266,21 @@ class ToolRunTests(unittest.TestCase):
             code, _ = self.run_main('--stock-futures', '1', '--rank-only', '--any-time', now=mock.Mock(return_value=outside[0]))
         self.assertEqual(code, 0)
 
+    def test_the_window_is_decided_in_taipei_time_whatever_zone_the_clock_value_comes_in(self):
+        utc = timezone.utc
+        self.assertTrue(tool.ranking_window_open(datetime(2026, 11, 25, 6, 0, tzinfo=utc)))  # 14:00 in Taipei
+        self.assertFalse(tool.ranking_window_open(datetime(2026, 11, 25, 5, 49, 59, tzinfo=utc)))  # 13:49:59
+        self.assertTrue(tool.ranking_window_open(datetime(2026, 11, 25, 5, 50, tzinfo=utc)))
+        self.assertFalse(tool.ranking_window_open(datetime(2026, 11, 25, 7, 0, tzinfo=utc)))  # 15:00
+        self.assertFalse(tool.ranking_window_open(datetime(2026, 11, 25, 14, 0, tzinfo=utc)))  # 22:00 in Taipei: it is the UTC clock that reads 14:00
+        self.assertEqual(tool.now().utcoffset(), timedelta(hours=8))
+
+    def test_any_time_only_belongs_to_the_stock_futures_ranking(self):
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit) as caught:
+            self.run_main('--existing', '--any-time')
+        self.assertEqual(caught.exception.code, 2)
+        self.assertEqual(FakeStore.opened, [])
+
     def test_the_time_rule_belongs_to_the_stock_futures_ranking_only_and_the_open_app_is_refused_first(self):
         early = mock.Mock(return_value=datetime(2026, 11, 25, 7, 0, tzinfo=TAIPEI))
         self.assertEqual(self.run_main('--existing', '--rank-only', now=early)[0], 0)

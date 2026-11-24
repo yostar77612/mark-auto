@@ -175,6 +175,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.stock_futures is not None and args.stock_futures < 1:
         parser.error('--stock-futures needs a positive number')
+    if args.any_time and args.stock_futures is None:
+        parser.error('--any-time only applies to --stock-futures')
     if markauto_running():
         print('MarkAuto 正在執行：請先關閉 MarkAuto 再下載（兩邊同時寫入 K 線庫不安全）。')
         return 2
