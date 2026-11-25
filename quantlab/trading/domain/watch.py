@@ -14,6 +14,14 @@ class WatchKind(str, Enum):
 
 # Watch-only continuous front-month futures; the id is TAIFEX:<code>. This never reaches an executable catalogue.
 FUTURE_NAMES = {'TXFR1': '臺股期貨近月', 'MXFR1': '小型臺指期貨近月', 'TMFR1': '微型臺指期貨近月'}
+# Continuous front-month single-stock futures (for example CDFR1) are history-only identities for the bulk K-line tool: the category
+# marks them, the code must be a three-character product code plus R1, and they are never watched, subscribed or traded.
+STOCK_FUTURE_CATEGORY = 'STKFUT'
+_PRODUCT_CHARACTERS = frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+
+
+def is_stock_future_code(code: str) -> bool:
+    return isinstance(code, str) and len(code) == 5 and code.endswith('R1') and all(character in _PRODUCT_CHARACTERS for character in code[:3])
 
 
 @dataclass(frozen=True)
@@ -36,7 +44,7 @@ class WatchInstrument:
             or (self.kind is WatchKind.INDEX) != (self.exchange == 'INDEX')
             or (self.kind is WatchKind.FUTURE) != (self.exchange == 'TAIFEX')
             or self.kind is WatchKind.FUTURE
-            and self.code not in FUTURE_NAMES
+            and not (self.code in FUTURE_NAMES or self.category == STOCK_FUTURE_CATEGORY and is_stock_future_code(self.code))
             or not isinstance(self.name, str)
             or not self.name.strip()
             or len(self.name) > 200
@@ -58,3 +66,8 @@ def is_future(instrument_id: str) -> bool:
 
 def watch_future(code: str) -> WatchInstrument:
     return WatchInstrument(f'TAIFEX:{code}', WatchKind.FUTURE, 'TAIFEX', code, FUTURE_NAMES[code])
+
+
+def stock_future(code: str, name: str) -> WatchInstrument:
+    """A continuous front-month single-stock futures contract, identified for K-line history only."""
+    return WatchInstrument(f'TAIFEX:{code}', WatchKind.FUTURE, 'TAIFEX', code, name, STOCK_FUTURE_CATEGORY)

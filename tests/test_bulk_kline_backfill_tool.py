@@ -1,15 +1,21 @@
-"""The bulk K-line tool: its --existing mode (which stocks, how far back, no login when only listing) and that it never leaves the store open."""
+"""The bulk K-line tool: --existing (which stocks, how far back, no login when only listing), --stock-futures (which contracts, how ranked) and that it never leaves the store open."""
 
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timedelta, timezone
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest import mock
+from zoneinfo import ZoneInfo
 
-from quantlab.trading.domain.watch import WatchKind
+from quantlab.trading.domain.validation import DomainError
+from quantlab.trading.domain.watch import STOCK_FUTURE_CATEGORY, WatchKind, stock_future
 from tools import bulk_kline_backfill as tool
+
+
+TAIPEI = ZoneInfo('Asia/Taipei')
+WEDNESDAY_1400 = datetime(2026, 11, 25, 14, 0, tzinfo=TAIPEI)  # between the day close and the next night open
 
 
 def item(market, code, kind=WatchKind.STOCK):
@@ -26,7 +32,16 @@ DIRECTORY = SimpleNamespace(
     )
 )
 EXTENT = (datetime(2025, 11, 21, 1, 0, tzinfo=timezone.utc), datetime(2026, 11, 20, 5, 30, tzinfo=timezone.utc), None)
-HELD = {'TPEX:6111': EXTENT, 'TWSE:1101': EXTENT, 'INDEX:IX0001': EXTENT, 'TWSE:9999': EXTENT, 'TWSE:2330': EXTENT}
+HELD = {
+    'TPEX:6111': EXTENT,
+    'TWSE:1101': EXTENT,
+    'INDEX:IX0001': EXTENT,
+    'TWSE:9999': EXTENT,
+    'TWSE:2330': EXTENT,
+    'TAIFEX:CDFR1': EXTENT,
+    'TAIFEX:QFFR1': EXTENT,
+    'TAIFEX:FZFR1': EXTENT,
+}
 
 
 class FakeStore:
@@ -52,6 +67,7 @@ class ExistingSelectionTests(unittest.TestCase):
         stocks, unknown = tool.downloaded_stocks(FakeStore(None), DIRECTORY)
         self.assertEqual([stock.code for stock in stocks], ['1101', '2330', '6111'])  # no index, no stock without bars
         self.assertEqual(unknown, ['TWSE:9999'])  # held by the store but unknown to the symbol directory: never requested
+        # TAIFEX:CDFR1 (a downloaded stock future) is held too: it is neither a stock to extend nor an unknown id to report
 
     def test_a_store_without_any_minute_bars_selects_nothing(self):
         empty = SimpleNamespace(instrument_ids=lambda: ('TWSE:1101',), minute_extent=lambda instrument_id: None)
@@ -97,6 +113,7 @@ class ToolRunTests(unittest.TestCase):
     def patches(self, **override):
         replace = dict(
             markauto_running=mock.Mock(return_value=False),
+            now=mock.Mock(return_value=WEDNESDAY_1400),
             market_settings=mock.Mock(return_value=SimpleNamespace(environment=SimpleNamespace(value='BROKER_SIMULATION'))),
             SymbolDirectory=mock.Mock(return_value=DIRECTORY),
             KlineStore=FakeStore,
@@ -219,9 +236,175 @@ class ToolRunTests(unittest.TestCase):
             KlineStore=untouched('KlineStore'),
             create_market_session=untouched('create_market_session'),
         )  # the owner's real context is the tool's default: a refusal that stops refusing must fail here, not open it
-        code, output = self.run_main('--existing', **guard)
+        for mode in (('--existing',), ('--top', '10'), ('--stock-futures', '100')):
+            code, output = self.run_main(*mode, **guard)
+            self.assertEqual(code, 2)
+            self.assertIn('MarkAuto 正在執行', output)
+
+    def test_the_stock_futures_ranking_is_only_taken_between_the_day_close_and_the_next_night_open(self):
+        rows = [(stock_future('QFFR1', '小型台積電期貨 近月'), 500)]
+        outside = (
+            datetime(2026, 11, 25, 7, 0, tzinfo=TAIPEI),  # before the day open: the total is the night session alone
+            datetime(2026, 11, 25, 10, 0, tzinfo=TAIPEI),  # during the day session
+            datetime(2026, 11, 25, 13, 49, 59, tzinfo=TAIPEI),
+            datetime(2026, 11, 25, 15, 0, tzinfo=TAIPEI),  # the next night session has started
+            datetime(2026, 11, 28, 14, 0, tzinfo=TAIPEI),  # a Saturday
+        )
+        for moment in outside:
+            for argv in (('--stock-futures', '1'), ('--stock-futures', '1', '--rank-only')):
+                with self.subTest(moment=moment, argv=argv), mock.patch.object(tool, 'ranked_stock_futures', return_value=rows) as ranked:
+                    code, output = self.run_main(*argv, now=mock.Mock(return_value=moment))
+                    self.assertEqual(code, 2)
+                    self.assertIn('13:50 到 15:00', output)
+                    ranked.assert_not_called()
+                    self.session.connect.assert_not_called()
+                    self.assertEqual(FakeStore.opened, [])
+        for moment in (datetime(2026, 11, 25, 13, 50, tzinfo=TAIPEI), datetime(2026, 11, 25, 14, 59, 59, tzinfo=TAIPEI)):
+            with self.subTest(moment=moment), mock.patch.object(tool, 'ranked_stock_futures', return_value=rows):
+                self.assertEqual(self.run_main('--stock-futures', '1', '--rank-only', now=mock.Mock(return_value=moment))[0], 0)
+        with mock.patch.object(tool, 'ranked_stock_futures', return_value=rows):  # the override is explicit
+            code, _ = self.run_main('--stock-futures', '1', '--rank-only', '--any-time', now=mock.Mock(return_value=outside[0]))
+        self.assertEqual(code, 0)
+
+    def test_the_window_is_decided_in_taipei_time_whatever_zone_the_clock_value_comes_in(self):
+        utc = timezone.utc
+        self.assertTrue(tool.ranking_window_open(datetime(2026, 11, 25, 6, 0, tzinfo=utc)))  # 14:00 in Taipei
+        self.assertFalse(tool.ranking_window_open(datetime(2026, 11, 25, 5, 49, 59, tzinfo=utc)))  # 13:49:59
+        self.assertTrue(tool.ranking_window_open(datetime(2026, 11, 25, 5, 50, tzinfo=utc)))
+        self.assertFalse(tool.ranking_window_open(datetime(2026, 11, 25, 7, 0, tzinfo=utc)))  # 15:00
+        self.assertFalse(tool.ranking_window_open(datetime(2026, 11, 25, 14, 0, tzinfo=utc)))  # 22:00 in Taipei: it is the UTC clock that reads 14:00
+        self.assertEqual(tool.now().utcoffset(), timedelta(hours=8))
+
+    def test_any_time_only_belongs_to_the_stock_futures_ranking(self):
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit) as caught:
+            self.run_main('--existing', '--any-time')
+        self.assertEqual(caught.exception.code, 2)
+        self.assertEqual(FakeStore.opened, [])
+
+    def test_the_time_rule_belongs_to_the_stock_futures_ranking_only_and_the_open_app_is_refused_first(self):
+        early = mock.Mock(return_value=datetime(2026, 11, 25, 7, 0, tzinfo=TAIPEI))
+        self.assertEqual(self.run_main('--existing', '--rank-only', now=early)[0], 0)
+        with mock.patch.object(tool, 'ranked', return_value=[]):
+            self.assertEqual(self.run_main('--top', '3', '--rank-only', now=early)[0], 0)
+        code, output = self.run_main('--stock-futures', '1', now=early, markauto_running=mock.Mock(return_value=True))
         self.assertEqual(code, 2)
         self.assertIn('MarkAuto 正在執行', output)
+
+    def test_stock_futures_mode_downloads_the_ranked_contracts_for_one_year_into_one_store(self):
+        rows = [(stock_future('QFFR1', '小型台積電期貨 近月'), 500), (stock_future('FZFR1', '華邦電期貨 近月'), 300)]
+        self.steps = 1
+        with mock.patch.object(tool, 'ranked_stock_futures', return_value=rows) as ranked:
+            code, output = self.run_main('--stock-futures', '2', '--max-bars-today', '100000000')
+        self.assertEqual(code, 0)
+        ranked.assert_called_once_with(self.session, 2)
+        self.assertEqual([request[0] for request in self.requests], ['QFFR1', 'FZFR1'])  # the volume order is the queue order
+        self.assertEqual([request[3] for request in self.requests], [1, 2])
+        for _, start, end, _ in self.requests:
+            self.assertEqual(end - start, timedelta(days=365))
+        self.assertEqual(self.history_settings[0][0].daily_bar_limit, 100_000_000)
+        self.assert_one_store_opened_and_used_by_the_download()
+        self.assert_every_store_closed_once()
+        self.assertIn('個股期貨成交量前 2 名', output)
+        self.assertIn('  1. QFFR1 小型台積電期貨 近月  500 口', output)
+        self.assertIn('[  1/2] QFFR1 小型台積電期貨 近月: 最早 2025-11-21', output)  # futures report the earliest stored day like --existing
+
+    def test_stock_futures_with_rank_only_prints_the_ranking_and_downloads_nothing(self):
+        rows = [(stock_future('QFFR1', '小型台積電期貨 近月'), 500)]
+        with mock.patch.object(tool, 'ranked_stock_futures', return_value=rows):
+            code, output = self.run_main('--stock-futures', '1', '--rank-only')
+        self.assertEqual(code, 0)
+        self.assertEqual(self.requests, [])
+        self.assertEqual(FakeStore.opened, [])
+        self.session.disconnect.assert_called_once_with()
+        self.assertIn('500 口', output)
+
+    def test_the_two_download_modes_exclude_each_other_and_the_count_must_not_be_negative(self):
+        for argv in (('--existing', '--stock-futures', '5'), ('--stock-futures', '-1'), ('--stock-futures', '0')):
+            with self.subTest(argv=argv), redirect_stderr(StringIO()), self.assertRaises(SystemExit) as caught:
+                self.run_main(*argv)
+            self.assertEqual(caught.exception.code, 2)
+        self.assertEqual(FakeStore.opened, [])
+        self.session.connect.assert_not_called()
+
+
+def base(code, target):
+    return SimpleNamespace(code=code, target_code=target)
+
+
+class FakeFutures:
+    """Just enough of the SDK facade: contract list, contract info, contract lookup and snapshots."""
+
+    # code, near-month code, name, underlying kind, underlying code, total volume
+    ROWS = (
+        ('CDFR1', 'CDFL6', '台積電期貨 近月', 'S', '2330', 100),
+        ('QFFR1', 'QFFL6', '小型台積電期貨 近月', 'S', '2330', 500),
+        ('FZFR1', 'FZFL6', '華邦電期貨 近月', 'S', '2344', 300),
+        ('AAFR1', 'AAFL6', '', 'S', '1101', 50),  # no name: the code names it
+        ('NYFR1', 'NYFL6', '元大台灣50ETF期貨 近月', 'S', '0050', 9999),  # ETF future
+        ('SRFR1', 'SRFL6', '小型元大台灣50ETF期貨 近月', 'S', '0050', 9998),
+        ('TXFR1', 'TXFL6', '臺股期貨 近月', 'I', 'TSE001', 9999),  # index future
+        ('BRFR1', 'BRFL6', '布蘭特原油期貨 近月', 'C', '', 9999),  # commodity future
+        ('CDFR2', 'CDFM6', '台積電期貨 次月', 'S', '2330', 9999),  # second month
+        ('CDFM6', 'CDFM6', '台積電期貨 1月', 'S', '2330', 9999),  # a delivery month
+        ('ZZFR1', 'ZZFL6', '無量期貨 近月', 'S', '1101', 0),  # no volume
+        ('XXFR1', 'XXFL6', '無合約期貨 近月', 'S', '1101', 700),  # near-month contract the broker cannot give
+        ('ERFR1', 'ERFL6', '壞資料期貨 近月', 'S', '1101', 700),  # unreadable info
+        ('NTFR1', '', '無近月期貨 近月', 'S', '1101', 700),  # no near-month contract named
+        ('SEFR1', 'SEFR1', '自指期貨 近月', 'S', '1101', 700),  # the continuous contract names itself
+    )
+
+    def __init__(self):
+        self.snapshot_calls = []
+        self.asked = []
+
+    def market_contracts(self, security):
+        self.asked.append(security)
+        return [base(code, target) for code, target, *_ in self.ROWS]
+
+    def market_contract_info(self, contract):
+        row = next(row for row in self.ROWS if row[0] == contract.code)
+        if contract.code == 'ERFR1':
+            raise DomainError('validation_failed', 'SDK enum/string')
+        return SimpleNamespace(name=row[2], underlying_kind=row[3], underlying_code=row[4])
+
+    def market_contract(self, code):
+        return None if code == 'XXFL6' else SimpleNamespace(code=code)
+
+    def snapshots(self, contracts):
+        self.snapshot_calls.append([contract.code for contract in contracts])
+        volume = {row[1]: row[5] for row in self.ROWS}
+        return [SimpleNamespace(code=contract.code, total_volume=volume[contract.code]) for contract in reversed(contracts)]  # not in request order
+
+
+class StockFuturesRankingTests(unittest.TestCase):
+    def rank(self, top, facade=None):
+        facade = facade or FakeFutures()
+        return facade, tool.ranked_stock_futures(SimpleNamespace(facade=facade), top)
+
+    def test_single_stock_futures_are_ranked_by_near_month_volume_and_everything_else_is_left_out(self):
+        facade, ranking = self.rank(10)
+        self.assertEqual([(item.code, volume) for item, volume in ranking], [('QFFR1', 500), ('FZFR1', 300), ('CDFR1', 100), ('AAFR1', 50)])
+        self.assertEqual(facade.asked, ['FUT'])
+        item = ranking[0][0]
+        self.assertEqual((item.instrument_id, item.category, item.name), ('TAIFEX:QFFR1', STOCK_FUTURE_CATEGORY, '小型台積電期貨 近月'))
+        self.assertEqual(ranking[3][0].name, 'AAFR1')
+
+    def test_only_the_top_n_are_returned(self):
+        self.assertEqual([item.code for item, _ in self.rank(2)[1]], ['QFFR1', 'FZFR1'])
+
+    def test_snapshots_are_asked_for_near_month_contracts_in_batches_and_matched_by_code(self):
+        with mock.patch.object(tool, 'BATCH', 3):
+            facade, ranking = self.rank(10)
+        self.assertTrue(facade.snapshot_calls)
+        self.assertTrue(all(len(call) <= 3 for call in facade.snapshot_calls))
+        asked = {code for call in facade.snapshot_calls for code in call}
+        self.assertEqual(asked, {'CDFL6', 'QFFL6', 'FZFL6', 'AAFL6', 'ZZFL6'})  # never a continuous contract, never an ETF, index or second-month one
+        self.assertEqual([item.code for item, _ in ranking], ['QFFR1', 'FZFR1', 'CDFR1', 'AAFR1'])  # rows came back reversed: matched by code, not by position
+
+    def test_equal_volumes_are_ordered_by_code(self):
+        facade = FakeFutures()
+        facade.ROWS = (('BBFR1', 'BBFL6', 'b', 'S', '1101', 10), ('AAFR1', 'AAFL6', 'a', 'S', '1101', 10))
+        self.assertEqual([item.code for item, _ in self.rank(5, facade)[1]], ['AAFR1', 'BBFR1'])
 
 
 if __name__ == '__main__':

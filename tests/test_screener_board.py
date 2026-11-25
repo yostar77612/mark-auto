@@ -12,7 +12,7 @@ from quantlab.trading.domain.screener import ScreenerParams
 from quantlab.trading.domain.market_daily import DailyStats
 from quantlab.trading.domain.sector import QuoteRow
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
+from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind, watch_future
 
 TAIPEI = timezone(timedelta(hours=8))
 MONDAY_1000 = datetime(2026, 11, 9, 10, 0, tzinfo=TAIPEI)
@@ -194,6 +194,21 @@ class BoardTests(unittest.TestCase):
         self.assertEqual([(row.code, row.name) for row in view.downloaded], [('1234', '甲'), ('3456', '丙'), ('7777', '7777')])
         self.assertEqual((view.downloaded[0].first, view.downloaded[0].last, view.downloaded[0].updated), (early, late, None))
         self.assertEqual(view.downloaded[1].updated, updated)
+
+    def test_downloaded_stock_futures_are_not_listed_because_the_terminal_cannot_open_them(self):
+        self.store.extents = {'TWSE:1234': (MONDAY_1000, MONDAY_1000, None), 'TAIFEX:CDFR1': (MONDAY_1000, MONDAY_1000, None)}
+        self.assertEqual([row.code for row in self.board.view(ScreenerQuery('DOWNLOADED')).downloaded], ['1234'])
+
+    def test_watchable_futures_in_the_store_still_list_whether_or_not_the_directory_knows_them(self):
+        self.store.extents = {
+            'TAIFEX:TXFR1': (MONDAY_1000, MONDAY_1000, None),  # whitelisted and in the directory below: its name
+            'TAIFEX:MXFR1': (MONDAY_1000, MONDAY_1000, None),  # whitelisted but the directory (broker futures list unavailable) lacks it: the code
+            'TAIFEX:CDFR1': (MONDAY_1000, MONDAY_1000, None),  # a downloaded stock future: data only
+        }
+        self.board.directory = lambda: (*self.stocks, *FIXED_INDICES, watch_future('TXFR1'))
+        self.assertEqual(
+            [(row.code, row.name) for row in self.board.view(ScreenerQuery('DOWNLOADED')).downloaded], [('MXFR1', 'MXFR1'), ('TXFR1', '臺股期貨近月')]
+        )
 
     def test_the_downloaded_list_is_cached_briefly_and_a_download_refreshes_it(self):
         self.store.extents = {'TWSE:1234': (MONDAY_1000, MONDAY_1000, None)}

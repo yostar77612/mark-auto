@@ -25,7 +25,17 @@ from quantlab.trading.domain.futures_hours import in_session, minutes_since_open
 from quantlab.trading.domain.live_bars import LiveBar
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
-from quantlab.trading.domain.watch import FIXED_INDICES, FUTURE_NAMES, WatchInstrument, WatchKind, watch_future
+from quantlab.trading.domain.watch import (
+    FIXED_INDICES,
+    FUTURE_NAMES,
+    STOCK_FUTURE_CATEGORY,
+    WatchInstrument,
+    WatchKind,
+    is_future,
+    is_stock_future_code,
+    stock_future,
+    watch_future,
+)
 from quantlab.trading.runtime.sinopac_calendar import built_in_calendar
 from tests.test_market_session import FakeApi, FakeSecrets
 
@@ -60,6 +70,46 @@ class WatchInstrumentTests(unittest.TestCase):
     def test_existing_stock_and_index_identities_are_unchanged(self):
         self.assertEqual('TWSE:2330', STOCK.instrument_id)
         self.assertEqual(WatchKind.INDEX, FIXED_INDICES[0].kind)
+
+    def test_a_continuous_stock_future_is_a_history_only_identity_carrying_its_category(self):
+        item = stock_future('CDFR1', '台積電期貨 近月')
+        self.assertEqual(
+            ('TAIFEX:CDFR1', WatchKind.FUTURE, 'TAIFEX', 'CDFR1', STOCK_FUTURE_CATEGORY),
+            (item.instrument_id, item.kind, item.exchange, item.code, item.category),
+        )
+        self.assertTrue(is_future(item.instrument_id))
+        self.assertEqual(('TXFR1', 'MXFR1', 'TMFR1'), tuple(FUTURE_NAMES))  # the watch whitelist itself is untouched
+        self.assertTrue(is_stock_future_code('CM1R1'))  # some products have a digit in their code
+
+    def test_a_stock_future_needs_its_category_and_the_front_month_code_shape(self):
+        refused = (
+            ('CDFR1', ''),  # the category is what marks it: a bare future code outside the whitelist stays refused
+            ('CDFR1', 'FUT'),
+            ('CDFR2', STOCK_FUTURE_CATEGORY),  # second month
+            ('CDFL6', STOCK_FUTURE_CATEGORY),  # a delivery month
+            ('CDR1', STOCK_FUTURE_CATEGORY),
+            ('CDFXR1', STOCK_FUTURE_CATEGORY),
+            ('CDFL1', STOCK_FUTURE_CATEGORY),  # a delivery month of year 1 ends in 1 as well
+            ('CD-R1', STOCK_FUTURE_CATEGORY),
+            ('CD R1', STOCK_FUTURE_CATEGORY),
+            ('cdfr1', STOCK_FUTURE_CATEGORY),
+            ('cdfR1', STOCK_FUTURE_CATEGORY),  # product characters are upper case or digits
+            ('CDfR1', STOCK_FUTURE_CATEGORY),
+            ('CDF:R1', STOCK_FUTURE_CATEGORY),
+            ('TMF:202612', STOCK_FUTURE_CATEGORY),  # never the executable TMF identity
+        )
+        for code, category in refused:
+            with self.subTest(code=code, category=category), self.assertRaises(DomainError) as caught:
+                WatchInstrument(f'TAIFEX:{code}', WatchKind.FUTURE, 'TAIFEX', code, 'name', category)
+            self.assertEqual('validation_failed', caught.exception.code)
+        for identity in (
+            ('TAIFEX:CDFR1', WatchKind.STOCK, 'TAIFEX', 'CDFR1'),  # the category opens nothing else: kind must still match the exchange
+            ('TWSE:CDFR1', WatchKind.FUTURE, 'TSE', 'CDFR1'),
+        ):
+            with self.subTest(identity=identity), self.assertRaises(DomainError):
+                WatchInstrument(*identity, 'name', STOCK_FUTURE_CATEGORY)
+        self.assertFalse(is_stock_future_code('CDFR1\n'))
+        self.assertFalse(is_stock_future_code(None))
 
 
 class FuturesHoursTests(unittest.TestCase):
@@ -189,6 +239,13 @@ class DirectoryTests(unittest.TestCase):
         items = directory.refresh(self.facade, self.now + timedelta(hours=1))  # same day, yet rebuilt
         self.assertEqual(3, sum(item.kind is WatchKind.FUTURE for item in items))
         self.assertEqual(3, json.loads(self.path.read_text(encoding='utf-8'))['version'])
+
+    def test_a_cache_with_a_history_only_stock_future_row_is_ignored_like_any_unwatchable_future(self):
+        self.path.parent.mkdir(parents=True)
+        for row in (['TAIFEX:CDFR1', 'FUTURE', 'TAIFEX', 'CDFR1', '台積電期貨 近月', 'STKFUT'],):
+            body = {'version': 3, 'fetched_at': self.now.isoformat(), 'items': [['TWSE:2330', 'STOCK', 'TSE', '2330', 'TSMC', ''], row]}
+            self.path.write_text(json.dumps(body), encoding='utf-8')
+            self.assertEqual(FIXED_INDICES, SymbolDirectory(self.path).items)  # the stock row is dropped with the file: it is rebuilt at the next refresh
 
     def test_a_cache_with_an_unwatchable_future_is_ignored_not_fatal(self):
         self.path.parent.mkdir(parents=True)
@@ -332,6 +389,26 @@ class FuturesSessionTests(SessionHarness):
         self.assertEqual(datetime(2026, 10, 30, 2, 0, tzinfo=timezone.utc), bars[0].start)
         self.assertIn(('kbars', 'TXFR1', '2026-10-30', '2026-11-01'), self.api.calls)
 
+    def test_stock_future_history_asks_for_the_continuous_contract_and_labels_the_day_session(self):
+        values = self.api.contracts.values
+        values['CDFR1'] = SimpleNamespace(code='CDFR1', security_type='FUT', exchange='TAIFEX', target_code='CDFL6')
+        item = stock_future('CDFR1', '台積電期貨 近月')
+        rows = (
+            self.wall(2026, 10, 30, 10, 1),  # day bar 10:00
+            self.wall(2026, 10, 30, 14, 31),  # 14:30: after the 13:45 close, dropped
+            self.wall(2026, 10, 31, 11, 1),  # Saturday: not a session
+        )
+        count = len(rows)
+        self.api.raw = SimpleNamespace(ts=list(rows), Open=[100] * count, High=[102] * count, Low=[99] * count, Close=[101] * count, Volume=[4] * count)
+        start = datetime(2026, 10, 30, tzinfo=TAIPEI).astimezone(timezone.utc)
+        bars = self.session.history(item, start, start + timedelta(days=2))
+        self.assertEqual([('TAIFEX:CDFR1', date(2026, 10, 30), 'DAY')], [(bar.instrument_id, bar.trade_date, bar.session) for bar in bars])
+        self.assertIn(('kbars', 'CDFR1', '2026-10-30', '2026-11-01'), self.api.calls)
+        values['CDFR1'] = SimpleNamespace(code='CDFR1', security_type='STK', exchange='TSE')  # the adapter still checks what the broker returns for the code
+        with self.assertRaises(DomainError) as caught:
+            self.session.history(item, start, start + timedelta(days=2))
+        self.assertEqual('history_query_failed', caught.exception.code)
+
     def test_stock_ticks_and_history_keep_the_local_day_session(self):
         resolver = WatchSessionResolver()
         self.assertEqual((date(2026, 11, 20), 'DAY'), resolver.session_at(STOCK.instrument_id, taipei(2026, 11, 20, 20, 0)))
@@ -398,6 +475,16 @@ class ServiceTests(unittest.TestCase):
             self.service.resolve('TAIFEX:TMF:202612')
         self.assertEqual('symbol_not_found', caught.exception.code)
         self.assertNotIn('TAIFEX:TMF:202612', {item.instrument_id for item in self.service.instruments()})
+
+    def test_downloaded_stock_future_bars_in_the_store_are_data_only_and_never_watch_items(self):
+        self.service.directory = lambda: FIXED_INDICES
+        item = stock_future('CDFR1', '台積電期貨 近月')
+        self.store.upsert((self.bar(item, self.now - timedelta(days=1), date(2026, 11, 19), 'DAY', close='1000'),))
+        self.assertIn(item.instrument_id, self.store.instrument_ids())
+        with self.assertRaises(DomainError) as caught:
+            self.service.resolve(item.instrument_id)
+        self.assertEqual('symbol_not_found', caught.exception.code)
+        self.assertNotIn(item.instrument_id, {watch.instrument_id for watch in self.service.instruments()})
 
     def test_future_shares_the_subscription_quota_and_never_asks_for_five_levels(self):
         self.service.connected()
