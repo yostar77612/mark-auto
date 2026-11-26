@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 import json
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 from .provenance import ProducerProfile
@@ -24,6 +25,14 @@ from quantlab.trading.ports.signals import SignalSource
 if TYPE_CHECKING:
     from .promotion_service import AutoStrategyRecord, PromotionService
     from .signal_research import ExecutionEvidence
+
+
+# Evidence interval -> the execution intervals that evidence qualifies. E1 judges a
+# spec on daily bars, but execution re-evaluates it on one session's 1m/5m bars,
+# where every lookback counts minutes instead of days: a different strategy that
+# no E1 receipt has tested. Daily evidence therefore qualifies no execution
+# interval until E1 can judge the interval that will trade.
+QUALIFIED_EXECUTION_INTERVALS = MappingProxyType({'1d': ()})
 
 
 @dataclass(frozen=True)
@@ -62,6 +71,8 @@ def _qualify(candidate: CandidateEvidence, request: AutoBuildRequest) -> None:
     if candidate.sample_count == 0:  # guard:candidate_samples
         raise DomainError('candidate_not_passed')
     if candidate.dataset_family != 'TMF' or candidate.dataset_interval != '1d':  # guard:candidate_dataset
+        raise DomainError('candidate_data_mismatch')
+    if request.bar_interval not in QUALIFIED_EXECUTION_INTERVALS.get(candidate.dataset_interval, ()):  # guard:candidate_interval
         raise DomainError('candidate_data_mismatch')
     try:
         body = json.loads(candidate.signal_spec_json)

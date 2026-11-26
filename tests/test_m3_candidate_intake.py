@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from quantlab.trading.application import candidate_intake
 from quantlab.trading.application.candidate_intake import AutoBuildRequest, build_auto_strategy
 from quantlab.trading.application.promotion_service import PromotionService
 from quantlab.trading.application.signal_research import ExecutionEvidence
@@ -23,6 +24,20 @@ from tests.test_minute_research import fixture
 D = Decimal
 NOW = datetime(2026, 10, 30, tzinfo=timezone.utc)
 SPEC = json.dumps({'family': 'trend', 'parameters': {'fast': 1, 'slow': 2, 'quantity': 1}, 'rules': {}, 'schema_version': 1})
+# Captured before any test patches it: the shipped rule is what test_candidate_interval checks.
+SHIPPED_QUALIFIED_MAPPING = candidate_intake.QUALIFIED_EXECUTION_INTERVALS
+SHIPPED_QUALIFIED_INTERVALS = dict(SHIPPED_QUALIFIED_MAPPING)
+
+
+def qualified(intervals):
+    return patch.object(candidate_intake, 'QUALIFIED_EXECUTION_INTERVALS', {'1d': intervals})
+
+
+def qualify_minute_execution(test, intervals=('1m', '5m')):
+    """Pretend E1 could qualify minute bars, so tests reach the guards and E2 behind that gate."""
+    patcher = qualified(intervals)
+    patcher.start()
+    test.addCleanup(patcher.stop)
 
 
 class MemoryJournal:
@@ -75,6 +90,7 @@ class IntakeTests(unittest.TestCase):
         )
         self.research = patch('quantlab.trading.application.candidate_intake.research_auto_strategy', side_effect=self.synthetic_evidence).start()
         self.addCleanup(patch.stopall)
+        qualify_minute_execution(self)
 
     def synthetic_evidence(self, auto, *args, **kwargs):
         count = self.evidence.completed_trades
@@ -152,6 +168,19 @@ class IntakeTests(unittest.TestCase):
         self.denied('candidate_data_mismatch', evidence=candidate(dataset_family='STOCK'))
         self.denied('candidate_data_mismatch', evidence=candidate(dataset_interval='5m'))
 
+    def test_candidate_interval(self):
+        # Daily evidence must not qualify a spec that would trade on minute bars.
+        self.assertEqual(SHIPPED_QUALIFIED_INTERVALS, {'1d': ()})
+        with patch.object(candidate_intake, 'QUALIFIED_EXECUTION_INTERVALS', SHIPPED_QUALIFIED_MAPPING):
+            for interval in ('1m', '5m'):
+                self.denied('candidate_data_mismatch', req=request(bar_interval=interval))
+            self.research.assert_not_called()
+        with qualified(('5m',)):
+            self.denied('candidate_data_mismatch', req=request(bar_interval='1m'))
+            self.build(req=request(bar_interval='5m'))
+        with self.assertRaises(TypeError):
+            SHIPPED_QUALIFIED_MAPPING['1d'] = ('1m',)
+
     def test_candidate_shape(self):
         self.denied('candidate_spec_unsupported', evidence=candidate(signal_spec_json='{}'))
 
@@ -193,6 +222,8 @@ class IntakeTests(unittest.TestCase):
         self.denied('auto_instrument_not_allowed', req=request(instrument_rule='TX_NEAR'))
 
     def test_build_interval(self):
+        # Let the evidence gate pass '1d' so the execution-interval guard itself refuses it.
+        qualify_minute_execution(self, ('1m', '5m', '1d'))
         self.denied('candidate_data_mismatch', req=request(bar_interval='1d'))
 
     def test_build_sizing(self):
@@ -233,6 +264,9 @@ class IntakeTests(unittest.TestCase):
 
 
 class BuildIntegrationTests(unittest.TestCase):
+    def setUp(self):
+        qualify_minute_execution(self)
+
     def test_unmocked_e2_build_then_replay(self):
         from tests.test_m3_signal_research import Source, fixture as research_fixture
 

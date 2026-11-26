@@ -30,6 +30,11 @@ def statistics(n=60, mean='0.01', p='0.001'):
         ci_lower=Decimal('.001'),
         ci_upper=Decimal('.02'),
         n_bootstrap_actual=100,
+        t_hac=Decimal(4),
+        p_value_t_hac=Decimal(p),
+        hac_lag=3,
+        p_value_block_bootstrap=Decimal(p),
+        block_length=4,
     )
 
 
@@ -59,10 +64,31 @@ class VerdictTests(unittest.TestCase):
             stats = statistics(mean='-.002')
             stats[key] = None
             self.assertEqual(judge(stats)['level'], verdict.INSUFFICIENT, key)
-        for key in ('p_value_t', 'p_value_bootstrap'):
+        self.assertEqual(verdict.P_VALUES, ('p_value_t', 'p_value_bootstrap', 'p_value_t_hac', 'p_value_block_bootstrap'))
+        for key in verdict.P_VALUES:
             stats = statistics()
             stats[key] = Decimal('.05')
-            self.assertEqual(judge(stats, flags=high)['level'], verdict.LUCK_SUSPECTED)
+            self.assertEqual(judge(stats, flags=high)['level'], verdict.LUCK_SUSPECTED, key)
+            stats[key] = Decimal('1.000000000001')
+            self.assertEqual(judge(stats)['level'], verdict.INSUFFICIENT, key)
+
+    def test_closed_trades_below_minimum_or_unknown_are_insufficient(self):
+        self.assertEqual(verdict.MIN_CLOSED_TRADES, 30)
+        required = {'required_observations': 30}
+        returns = ['.01', '.02'] * 30
+        self.assertEqual(verdict.judge(statistics(), required, returns, ())['level'], verdict.STATISTICAL_EDGE)
+        self.assertEqual(verdict.judge(statistics(), required, returns, (), closed_trades=30)['level'], verdict.STATISTICAL_EDGE)
+        for count in (29, 1, 0, -1, None, True, '30', 30.0):
+            with self.subTest(count=count):
+                result = verdict.judge(statistics(), required, returns, (), closed_trades=count)
+                self.assertEqual(result['level'], verdict.INSUFFICIENT)
+                self.assertEqual(len(result['reasons']), 1)
+                self.assertTrue(result['reasons'][0].startswith('insufficient_closed_trades: '))
+        # A short sample and too few trades report both reasons, statistics first.
+        result = verdict.judge(statistics(20), required, returns, (), closed_trades=2)
+        self.assertEqual(result['reasons'], ['insufficient_statistics', 'recommended_observations: 30', 'insufficient_closed_trades: 2 < 30'])
+        # Trade count outranks a negative mean, exactly like a short sample does.
+        self.assertEqual(verdict.judge(statistics(mean='-.002'), required, returns, (), closed_trades=5)['level'], verdict.INSUFFICIENT)
 
     def test_real_b2_twenty_negative_and_noisy_samples(self):
         cases = (
@@ -126,6 +152,24 @@ class VerdictTests(unittest.TestCase):
         for returns in ([None] * 60, ['NaN'] * 60, ['-1.1'] * 60):
             self.assertEqual(judge(returns=returns)['level'], verdict.INSUFFICIENT)
         self.assertIsNone(judge(returns=[])['level'])
+
+    def test_walk_forward_verdict_counts_evaluated_oos_closed_trades(self):
+        from quantlab.research_core.application.walk_forward_projection import oos_statistics_data
+
+        returns = ['.001', '.002'] * 15
+
+        def level(*folds):
+            return oos_statistics_data(state(list(folds)))['verdict']['level']
+
+        self.assertEqual(level(fold(0, 0, returns, trades=15), fold(1, 30, returns, trades=15)), verdict.STATISTICAL_EDGE)
+        self.assertEqual(level(fold(0, 0, returns, trades=15), fold(1, 30, returns, trades=14)), verdict.INSUFFICIENT)
+        # An unknown count anywhere in the merged folds fails closed.
+        for bad in (None, -1, '15', True):
+            self.assertEqual(level(fold(0, 0, returns, trades=15), fold(1, 30, returns, trades=bad)), verdict.INSUFFICIENT, bad)
+        # A skipped fold contributes neither returns nor trades.
+        skipped = fold(1, 30, returns, status='failed', trades=1000)
+        self.assertEqual(level(fold(0, 0, returns * 2, trades=29), skipped), verdict.INSUFFICIENT)
+        self.assertEqual(level(fold(0, 0, returns * 2, trades=30), skipped), verdict.STATISTICAL_EDGE)
 
     def test_display_top_unavailable_and_no_state_or_hash_writes(self):
         source = state([fold(0, 0, ['.001', '.002'] * 30)])

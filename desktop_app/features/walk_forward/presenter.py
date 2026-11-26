@@ -133,7 +133,9 @@ def oos_statistics_text(state):
             ui_text('walk_forward.statistics.source'),
             ui_text('walk_forward.statistics.days').format(value('n')),
             ui_text('walk_forward.statistics.mean').format(value('mean')),
-            ui_text('walk_forward.statistics.p_values').format(value('p_value_t'), value('p_value_bootstrap')),
+            ui_text('walk_forward.statistics.p_values').format(
+                value('p_value_t'), value('p_value_bootstrap'), value('p_value_t_hac'), value('p_value_block_bootstrap')
+            ),
             ui_text('walk_forward.statistics.interval').format(value('ci_lower'), value('ci_upper')),
             ui_text('walk_forward.statistics.required').format(
                 value('n'), required['required_observations'] or reasons[required['required_observations_reason']]

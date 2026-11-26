@@ -36,9 +36,10 @@ def journal_workspace():
         shutil.rmtree(root)
 
 
-def fold(index, start, values, status='evaluated'):
+def fold(index, start, values, status='evaluated', trades=30):
     rows = [{'trade_date': (date(2020, 1, 1) + timedelta(days=start + i)).isoformat(), 'return': value, 'reason': None} for i, value in enumerate(values)]
-    return {'index': index, 'status': status, 'selection': None, 'candidates': [], 'oos': {'status': status, 'result': {'metrics': {'daily_returns': rows}}}}
+    metrics = {'daily_returns': rows} if trades is None else {'daily_returns': rows, 'trade_count': trades}
+    return {'index': index, 'status': status, 'selection': None, 'candidates': [], 'oos': {'status': status, 'result': {'metrics': metrics}}}
 
 
 def state(folds):
@@ -101,6 +102,66 @@ class SignificanceTests(unittest.TestCase):
             expected = observed + null_means[index] + (position - index) * (null_means[index + 1] - null_means[index])
             self.assertAlmostEqual(float(result[key]), expected, delta=1e-12)
 
+    def test_hac_lag_and_block_length_rules(self):
+        for n, lag in ((2, 1), (3, 1), (30, 3), (100, 4), (250, 4), (1000, 6), (100000, 18)):
+            self.assertEqual(sig.newey_west_lag(n), lag, n)
+        for n, length in ((1, 1), (2, 2), (8, 2), (9, 3), (27, 3), (28, 4), (60, 4), (160, 6), (100000, 47)):
+            self.assertEqual(sig.block_length(n), length, n)
+
+    def test_newey_west_matches_independent_reference(self):
+        values = [0.012, 0.008, 0.011, -0.004, -0.006, 0.003, 0.009, -0.002, 0.007, 0.001, -0.005, 0.006]
+        n, mean = len(values), statistics.mean(values)
+        lag = sig.newey_west_lag(n)
+        gamma = [sum((values[t] - mean) * (values[t - j] - mean) for t in range(j, n)) / n for j in range(lag + 1)]
+        long_run = (gamma[0] + 2 * sum((1 - j / (lag + 1)) * gamma[j] for j in range(1, lag + 1))) * n / (n - 1)
+        expected = mean / math.sqrt(long_run / n)
+        result = sig.mean_positive_test(values, n_bootstrap=100)
+        self.assertEqual(result['hac_lag'], lag)
+        self.assertAlmostEqual(float(result['t_hac']), expected, delta=1e-9)
+        self.assertEqual(result['p_value_t_hac'], sig._decimal(sig._t_tail(expected, n - 1)))
+        # Lag 0 is exactly the sample variance, so the HAC t reduces to Student t.
+        self.assertAlmostEqual(sig._long_run_variance(values, mean, 0), statistics.variance(values), delta=1e-15)
+
+    def test_block_bootstrap_matches_independent_reference(self):
+        values = [-0.03, 0.01, 0.04, 0.02, -0.01, 0.015, -0.02, 0.03, 0.005, -0.012]
+        n, observed = len(values), statistics.mean(values)
+        length = sig.block_length(n)
+        full, rest = divmod(n, length)
+        centered = [value - observed for value in values]
+        rng = random.Random(92)  # mean_positive_test(seed=91) draws blocks from seed + 1
+        means = []
+        for _ in range(127):
+            total = 0.0
+            for start in rng.choices(range(n), k=full):
+                total += sum(centered[(start + i) % n] for i in range(length))
+            if rest:
+                start = rng.choice(range(n))
+                total += sum(centered[(start + i) % n] for i in range(rest))
+            means.append(total / n)
+        expected = sum(value >= observed for value in means) / 127
+        result = sig.mean_positive_test(values, n_bootstrap=127, seed=91)
+        self.assertEqual((length, full, rest), (3, 3, 1))
+        self.assertEqual(result['block_length'], length)
+        self.assertAlmostEqual(float(result['p_value_block_bootstrap']), expected, delta=1e-12)
+
+    def test_held_positions_are_less_significant_under_robust_tests(self):
+        # Ten-day holds: i.i.d. tests call this significant; serial correlation says otherwise.
+        values = (['.012'] * 10 + ['-.008'] * 10) * 8
+        result = sig.mean_positive_test(values)
+        self.assertLess(result['p_value_t'], Decimal('.01'))
+        self.assertLess(result['p_value_bootstrap'], Decimal('.01'))
+        self.assertGreater(result['p_value_t_hac'], Decimal('.05'))
+        self.assertGreater(result['p_value_block_bootstrap'], Decimal('.05'))
+        self.assertEqual((result['hac_lag'], result['block_length']), (4, 6))
+        from quantlab import verdict
+
+        self.assertEqual(verdict.judge(result, sig.required_observations(values), values, ())['level'], verdict.LUCK_SUSPECTED)
+        # The same days shuffled into alternation keep their edge under every test.
+        alternating = ['.012', '-.008'] * 80
+        robust = sig.mean_positive_test(alternating)
+        for key in sig.P_VALUES:
+            self.assertLess(robust[key], Decimal('.05'), key)
+
     def test_missing_nonfinite_and_short_samples_are_atomic(self):
         for values in ([], ['.1'], ['.1', None, '.2'], ['.1', 'NaN'], ['Infinity', '0'], ['-Infinity', '0']):
             with self.subTest(values=values):
@@ -115,7 +176,7 @@ class SignificanceTests(unittest.TestCase):
     def test_zero_variance(self):
         for value in ('0.001', '0'):
             result = sig.mean_positive_test([value] * 60)
-            for key in ('p_value_t', 'p_value_bootstrap'):
+            for key in sig.P_VALUES:
                 self.assertIsNone(result[key])
                 self.assertEqual(result[key + '_reason'], sig.ZERO_VARIANCE)
             self.assertIsNone(sig.required_observations([value] * 60)['required_observations'])

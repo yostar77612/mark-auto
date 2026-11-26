@@ -22,7 +22,7 @@ from quantlab.value_bounds import _bounded_value
 PROTOCOL = 'm3-prospective-e1-v1'
 SOURCE_URL = 'https://openapi.taifex.com.tw/v1/DailyMarketReportFut'
 POLICY = {
-    'version': 'm3-e1-policy-v1',
+    'version': 'm3-e1-policy-v2',
     'candidate_count': 1,
     'selection': 'frozen_before_first_observation',
     'returns': 'net_daily_returns_including_flat_days',
@@ -31,8 +31,10 @@ POLICY = {
     'bootstrap_draws': 5000,
     'bootstrap_seed': 20261021,
     'alpha': '0.05',
+    'inference': 'all_of_student_t_iid_bootstrap_newey_west_t_circular_block_bootstrap',
     'required_verdict': 'statistical_edge',
     'minimum_observations': 30,
+    'minimum_closed_trades': 30,
     'max_bars': 10000,
     'max_runtime_seconds': 900,
     'worker_memory_mb': 512,
