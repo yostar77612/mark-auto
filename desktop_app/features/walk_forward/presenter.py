@@ -147,6 +147,16 @@ def oos_statistics_text(state):
     )
 
 
+def _closed_trades_text(reasons):
+    """The closed-trade shortfall from judge's reason text, or None when that rule did not fire."""
+    for reason in reasons:
+        if reason.startswith(_verdict.CLOSED_TRADES_REASON):
+            count, minimum = reason[len(_verdict.CLOSED_TRADES_REASON) :].split(' < ')
+            shown = ui_text('walk_forward.verdict.trades_unknown') if count == 'unknown' else count
+            return ui_text('walk_forward.verdict.insufficient.trades_explanation').format(shown, minimum)
+    return None
+
+
 def _verdict_text(conclusion):
     names = {
         _verdict.INSUFFICIENT: (ui_text('walk_forward.verdict.insufficient.name'), ui_text('walk_forward.verdict.insufficient.explanation')),
@@ -159,11 +169,17 @@ def _verdict_text(conclusion):
         _verdict.STATISTICAL_EDGE: (ui_text('walk_forward.verdict.statistical_edge.name'), ui_text('walk_forward.verdict.statistical_edge.explanation')),
     }
     name, explanation = names[conclusion['level']]
+    trades = _closed_trades_text(conclusion['reasons'])
+    if trades is not None and 'insufficient_statistics' not in conclusion['reasons']:
+        # Enough days but too few round trips: the day-count explanation and advice would contradict the data.
+        return '\n'.join((ui_text('walk_forward.verdict.line').format(name, trades), ui_text('walk_forward.verdict.scope')))
     lines = [ui_text('walk_forward.verdict.line').format(name, explanation), ui_text('walk_forward.verdict.scope')]
     if conclusion['recommended_observations'] is not None:
         lines.append(ui_text('walk_forward.verdict.recommended').format(conclusion['recommended_observations']))
     elif conclusion['level'] == _verdict.INSUFFICIENT:
         lines.append(ui_text('walk_forward.verdict.required_unavailable'))
+    if trades is not None:
+        lines.append(trades)
     if 'severe_drawdown' in conclusion['reasons']:
         lines.append(ui_text('walk_forward.verdict.severe_drawdown'))
     return '\n'.join(lines)
