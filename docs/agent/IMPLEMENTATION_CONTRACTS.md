@@ -4800,6 +4800,19 @@ global random state. All non-count statistics, including t and CI bounds, are
 Decimal with exponent -12, ROUND_HALF_EVEN under an isolated precision context;
 float is confined to internal statistical computation. Counts are integers.
 
+Autocorrelation-robust pair (backtest review 2026-11-26): the Student t and the
+i.i.d. bootstrap assume independent days, but a held position makes daily
+returns serially correlated and both overstate significance. `t_hac` /
+`p_value_t_hac` use the Newey-West long-run variance (Bartlett weights,
+autocovariances over n, times n/(n-1) so lag 0 equals the sample variance) with
+lag `floor(4 * (n / 100) ** (2 / 9))`, capped at n - 1 (`hac_lag`), and the same
+t tail with n - 1 degrees of freedom. `p_value_block_bootstrap` is a circular
+block bootstrap of the centered sample with block length the smallest b where
+b ** 3 >= n (`block_length`); the last block is cut so each draw has n days. It
+uses the same draw count as the i.i.d. bootstrap and its own
+`random.Random(seed + 1)`, so the i.i.d. draws and their goldens are unchanged.
+Invalid bootstrap settings and zero variance give both new fields their reasons.
+
 | Rule | Fixed value |
 | --- | --- |
 | Default seed | 20261021 |
@@ -4880,7 +4893,7 @@ The user's final visual check remains pending.
 
 R-B3 is a single item commit. `quantlab/verdict.py` was independently implemented;
 no formula, code or flow was adapted from the reference project. `judge(oos_test,
-oos_required, oos_returns, flags)` reads B2's statistics and planning dictionaries,
+oos_required, oos_returns, flags, *, closed_trades)` reads B2's statistics and planning dictionaries,
 the validated merged OOS daily-return list and B1-shaped code/severity flags. Its
 only output fields are `level`, `display_name`, ordered deterministic `reasons`
 and integer-or-None `recommended_observations`. Empty samples return no level or
@@ -4889,11 +4902,18 @@ insufficient. Undefined planning includes its reason instead of an invented coun
 
 | Priority | Condition | Level |
 | --- | --- | --- |
-| 1 | n < 30, undefined/invalid B2 statistics or invalid return sample | insufficient |
+| 1 | n < 30, undefined/invalid B2 statistics or invalid return sample; or a supplied `closed_trades` below 30 or not a non-negative integer | insufficient |
 | 2 | mean < 0 | negative_expectancy |
-| 3 | either p >= 0.05 | luck_suspected |
+| 3 | any of the four p values (Student t, i.i.d. bootstrap, Newey-West t, block bootstrap) >= 0.05 | luck_suspected |
 | 4 | any high flag, including OOS severe_drawdown | fragile_edge |
 | 5 | otherwise | statistical_edge |
+
+`closed_trades` is omitted by callers that have no trade count; it then applies
+no rule. E1 passes the backtest's closed-lot count. The walk-forward projection
+passes the sum over the evaluated OOS folds, or None when any of those folds has
+no valid count. Daily returns of one long holding are not independent
+evidence, so `n` counts days but the trade rule counts round trips; a short
+sample and too few trades are both reported, statistics first.
 
 `compounded_drawdown` starts equity and its peak at Decimal(1), compounds each
 merged evaluated OOS return and takes the maximum `(peak - equity) / peak`,

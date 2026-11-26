@@ -23,7 +23,7 @@ def _evaluate(dataset, spec_json, config):
     result = run_backtest(dataset, validated_spec(spec_json), config)
     returns = [row['return'] for row in result.metrics['daily_returns']]
     stats = mean_positive_test(returns, n_bootstrap=protocol.POLICY['bootstrap_draws'], seed=protocol.POLICY['bootstrap_seed'])
-    verdict = judge(stats, required_observations(returns), returns, ())['level']
+    verdict = judge(stats, required_observations(returns), returns, (), closed_trades=result.metrics['trade_count'])['level']
     return {'verdict': verdict, 'sample_count': len(returns), 'result_hash': content_hash(result)}
 
 

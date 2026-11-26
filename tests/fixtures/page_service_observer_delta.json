@@ -519,6 +519,17 @@
             "symbol": "MarketDailyServiceTests.setUp"
           },
           "count": 1
+        },
+        {
+          "row": {
+            "file": "tests/test_e1_qualification.py",
+            "kind": "patch.object",
+            "name": "run_backtest",
+            "occurrence": 1,
+            "receiver": "qualification",
+            "symbol": "E1VerdictInputsTests.test_evaluate_judges_closed_trades_and_robust_p_values.outcome"
+          },
+          "count": 1
         }
       ]
     },

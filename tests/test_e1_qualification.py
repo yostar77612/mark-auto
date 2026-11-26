@@ -514,5 +514,29 @@ class E1QualificationTests(unittest.TestCase):
         self.unavailable(self.summaries)
 
 
+class E1VerdictInputsTests(unittest.TestCase):
+    def test_evaluate_judges_closed_trades_and_robust_p_values(self):
+        def outcome(returns, trades):
+            result = type('Result', (), {'metrics': {'daily_returns': [{'return': value} for value in returns], 'trade_count': trades}})()
+            with (
+                patch.object(qualification, 'run_backtest', return_value=result),
+                patch.object(qualification, 'validated_spec', side_effect=lambda text: text),
+                patch.object(qualification, 'content_hash', return_value='0' * 64),
+            ):
+                return qualification._evaluate(None, SPEC, None)
+
+        edge = ['.012', '-.008'] * 40
+        # The version names the rule set; old frozen plans carry the old one and refuse.
+        self.assertEqual(protocol.POLICY['version'], 'm3-e1-policy-v2')
+        self.assertEqual(protocol.POLICY['minimum_closed_trades'], 30)
+        self.assertEqual(outcome(edge, 30)['verdict'], 'statistical_edge')
+        # One long holding cannot qualify, however many daily returns it spans.
+        self.assertEqual(outcome(edge, 29)['verdict'], 'insufficient')
+        self.assertEqual(outcome(edge, 1)['verdict'], 'insufficient')
+        # Ten-day runs look significant only to the i.i.d. tests.
+        held = (['.012'] * 10 + ['-.008'] * 10) * 8
+        self.assertEqual(outcome(held, 80)['verdict'], 'luck_suspected')
+
+
 if __name__ == '__main__':
     unittest.main()

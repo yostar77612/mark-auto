@@ -13,6 +13,7 @@ from desktop_app.features.walk_forward.presenter import compact_walk_forward, oo
 from quantlab import significance as sig, verdict
 from quantlab.core import canonical_json, content_hash
 from quantlab.research import _eligible
+from quantlab.research_core.application.walk_forward_projection import oos_statistics_data
 from quantlab import walk_forward as wf
 from tests.test_significance_b2 import fold, state
 
@@ -30,6 +31,11 @@ def statistics(n=60, mean='0.01', p='0.001'):
         ci_lower=Decimal('.001'),
         ci_upper=Decimal('.02'),
         n_bootstrap_actual=100,
+        t_hac=Decimal(4),
+        p_value_t_hac=Decimal(p),
+        hac_lag=3,
+        p_value_block_bootstrap=Decimal(p),
+        block_length=4,
     )
 
 
@@ -59,10 +65,31 @@ class VerdictTests(unittest.TestCase):
             stats = statistics(mean='-.002')
             stats[key] = None
             self.assertEqual(judge(stats)['level'], verdict.INSUFFICIENT, key)
-        for key in ('p_value_t', 'p_value_bootstrap'):
+        self.assertEqual(verdict.P_VALUES, ('p_value_t', 'p_value_bootstrap', 'p_value_t_hac', 'p_value_block_bootstrap'))
+        for key in verdict.P_VALUES:
             stats = statistics()
             stats[key] = Decimal('.05')
-            self.assertEqual(judge(stats, flags=high)['level'], verdict.LUCK_SUSPECTED)
+            self.assertEqual(judge(stats, flags=high)['level'], verdict.LUCK_SUSPECTED, key)
+            stats[key] = Decimal('1.000000000001')
+            self.assertEqual(judge(stats)['level'], verdict.INSUFFICIENT, key)
+
+    def test_closed_trades_below_minimum_or_unknown_are_insufficient(self):
+        self.assertEqual(verdict.MIN_CLOSED_TRADES, 30)
+        required = {'required_observations': 30}
+        returns = ['.01', '.02'] * 30
+        self.assertEqual(verdict.judge(statistics(), required, returns, ())['level'], verdict.STATISTICAL_EDGE)
+        self.assertEqual(verdict.judge(statistics(), required, returns, (), closed_trades=30)['level'], verdict.STATISTICAL_EDGE)
+        for count in (29, 1, 0, -1, None, True, '30', 30.0):
+            with self.subTest(count=count):
+                result = verdict.judge(statistics(), required, returns, (), closed_trades=count)
+                self.assertEqual(result['level'], verdict.INSUFFICIENT)
+                self.assertEqual(len(result['reasons']), 1)
+                self.assertTrue(result['reasons'][0].startswith('insufficient_closed_trades: '))
+        # A short sample and too few trades report both reasons, statistics first.
+        result = verdict.judge(statistics(20), required, returns, (), closed_trades=2)
+        self.assertEqual(result['reasons'], ['insufficient_statistics', 'recommended_observations: 30', 'insufficient_closed_trades: 2 < 30'])
+        # Trade count outranks a negative mean, exactly like a short sample does.
+        self.assertEqual(verdict.judge(statistics(mean='-.002'), required, returns, (), closed_trades=5)['level'], verdict.INSUFFICIENT)
 
     def test_real_b2_twenty_negative_and_noisy_samples(self):
         cases = (
@@ -126,6 +153,56 @@ class VerdictTests(unittest.TestCase):
         for returns in ([None] * 60, ['NaN'] * 60, ['-1.1'] * 60):
             self.assertEqual(judge(returns=returns)['level'], verdict.INSUFFICIENT)
         self.assertIsNone(judge(returns=[])['level'])
+
+    def test_walk_forward_verdict_counts_evaluated_oos_closed_trades(self):
+        returns = ['.001', '.002'] * 15
+
+        def level(*folds):
+            return oos_statistics_data(state(list(folds)))['verdict']['level']
+
+        self.assertEqual(level(fold(0, 0, returns, trades=15), fold(1, 30, returns, trades=15)), verdict.STATISTICAL_EDGE)
+        self.assertEqual(level(fold(0, 0, returns, trades=15), fold(1, 30, returns, trades=14)), verdict.INSUFFICIENT)
+        # An unknown count anywhere in the merged folds fails closed, even when the known folds alone
+        # already reach the minimum (so skipping or zeroing the unknown fold would wrongly pass).
+        for bad in (None, -1, '15', True):
+            self.assertEqual(level(fold(0, 0, returns, trades=30), fold(1, 30, returns, trades=bad)), verdict.INSUFFICIENT, bad)
+        self.assertEqual(level(fold(0, 0, returns, trades=30), fold(1, 30, returns, trades=0)), verdict.STATISTICAL_EDGE)
+        # A skipped fold contributes neither returns nor trades.
+        skipped = fold(1, 30, returns, status='failed', trades=1000)
+        self.assertEqual(level(fold(0, 0, returns * 2, trades=29), skipped), verdict.INSUFFICIENT)
+        self.assertEqual(level(fold(0, 0, returns * 2, trades=30), skipped), verdict.STATISTICAL_EDGE)
+
+    def test_display_names_the_closed_trade_shortfall_instead_of_days(self):
+        many_days = ['.001', '.002'] * 50
+        text = oos_statistics_text(state([fold(0, 0, many_days, trades=10), fold(1, 100, many_days, trades=10)]))
+        verdict_line = text.splitlines()[1]
+        trades = ui_text('walk_forward.verdict.insufficient.trades_explanation').format(20, 30)
+        self.assertEqual(verdict_line, ui_text('walk_forward.verdict.line').format(ui_text('walk_forward.verdict.insufficient.name'), trades))
+        self.assertNotIn(ui_text('walk_forward.verdict.insufficient.explanation'), text)
+        self.assertNotIn(ui_text('walk_forward.verdict.recommended').format(30), text)
+        unknown = oos_statistics_text(state([fold(0, 0, many_days, trades=None)]))
+        self.assertIn(ui_text('walk_forward.verdict.insufficient.trades_explanation').format(ui_text('walk_forward.verdict.trades_unknown'), 30), unknown)
+        # Too few days AND too few trades: the day-count explanation stays and the trade line follows it.
+        both = oos_statistics_text(state([fold(0, 0, ['.001', '.002'] * 5, trades=2)]))
+        self.assertIn(ui_text('walk_forward.verdict.insufficient.explanation'), both)
+        self.assertIn(ui_text('walk_forward.verdict.insufficient.trades_explanation').format(2, 30), both)
+
+    def test_display_shows_all_four_p_values_in_order(self):
+        source = state([fold(0, 0, (['.012'] * 10 + ['-.008'] * 10) * 8, trades=80)])
+        stats = oos_statistics_data(source)['stats']
+        expected = ui_text('walk_forward.statistics.p_values').format(
+            stats['p_value_t'], stats['p_value_bootstrap'], stats['p_value_t_hac'], stats['p_value_block_bootstrap']
+        )
+        self.assertIn(expected, oos_statistics_text(source).splitlines())
+        self.assertEqual(len({stats[key] for key in verdict.P_VALUES}), 4)
+
+    def test_robust_fields_missing_from_old_statistics_are_insufficient(self):
+        for key in ('t_hac', 'p_value_t_hac', 'hac_lag', 'p_value_block_bootstrap', 'block_length'):
+            stats = statistics()
+            del stats[key]
+            self.assertEqual(judge(stats)['level'], verdict.INSUFFICIENT, key)
+        self.assertEqual(sig.P_VALUES, verdict.P_VALUES)
+        self.assertEqual(sig.STATISTICS, ('n',) + verdict.STATISTICS)
 
     def test_display_top_unavailable_and_no_state_or_hash_writes(self):
         source = state([fold(0, 0, ['.001', '.002'] * 30)])
