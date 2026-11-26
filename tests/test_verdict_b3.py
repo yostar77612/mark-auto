@@ -154,6 +154,21 @@ class VerdictTests(unittest.TestCase):
             self.assertEqual(judge(returns=returns)['level'], verdict.INSUFFICIENT)
         self.assertIsNone(judge(returns=[])['level'])
 
+    def test_half_sample_flags_need_both_chronological_halves_to_compound_up(self):
+        high = [{'severity': 'high', 'code': 'half_sample_not_positive'}]
+        self.assertEqual(verdict.half_sample_flags(['.01', '.01', '.01', '.01']), [])
+        self.assertEqual(verdict.half_sample_flags(['-.01', '.005', '.03', '.01']), high)
+        self.assertEqual(verdict.half_sample_flags(['.03', '.01', '-.01', '.005']), high)
+        # Break-even (1.25 * 0.8 compounds to exactly 1) is not positive.
+        self.assertEqual(verdict.half_sample_flags(['.25', '-.2', '.05', '.05']), high)
+        # An odd day joins the second half: [.1] then [-.1, .05] = 0.945.
+        self.assertEqual(verdict.half_sample_flags(['.1', '-.1', '.05']), high)
+        self.assertEqual(verdict.half_sample_flags(['.01', '-.005', '.02']), [])
+        for invalid in ([], ['.01'], ['bad', '.01'], ['-1.5', '.01'], 'not-a-list', None):
+            self.assertEqual(verdict.half_sample_flags(invalid), [], invalid)
+        returns = ['.01', '.02'] * 30
+        self.assertEqual(judge(returns=returns, flags=verdict.half_sample_flags(['-.01'] * 30 + ['.03'] * 30))['level'], verdict.FRAGILE_EDGE)
+
     def test_walk_forward_verdict_counts_evaluated_oos_closed_trades(self):
         returns = ['.001', '.002'] * 15
 

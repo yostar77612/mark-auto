@@ -51,18 +51,21 @@ def validate_schema(db):
 
 
 @contextmanager
-def connection(registry, *, write=False, create=False):
+def connection(registry, *, write=False, create=False, busy_ms=0):
+    """Fail fast on a held lock unless the caller names a bounded wait (``busy_ms``)."""
     if not create and not registry.is_file():
         refuse()
     if create:
         registry.parent.mkdir(parents=True, exist_ok=True)
+    if type(busy_ms) is not int or not 0 <= busy_ms <= 2000:
+        refuse()
     mode = 'rwc' if create else 'rw' if write else 'ro'
     with closing(sqlite3.connect(sqlite_uri(registry) + '?mode=' + mode, uri=True, timeout=0)) as db:
         db.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, 2_000_000)
         deadline = time.monotonic() + 5
         db.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
         db.execute('PRAGMA trusted_schema=OFF')
-        db.execute('PRAGMA busy_timeout=0')
+        db.execute('PRAGMA busy_timeout=' + str(busy_ms))
         if not write:
             db.execute('PRAGMA query_only=ON')
         db.execute('BEGIN IMMEDIATE' if write else 'BEGIN')
@@ -79,12 +82,33 @@ def connection(registry, *, write=False, create=False):
                 db.rollback()
 
 
+def coverage_product(contract_id):
+    """The market a coverage row consumes: every delivery month of one futures product is one market.
+
+    A TAIFEX:TMF:YYYYMM month and its neighbour trade the same index over the same
+    dates, so dates seen on one month are seen for all of them. Other identifiers
+    are their own product.
+    """
+    parts = contract_id.split(':')
+    if len(parts) == 3 and parts[0] == 'TAIFEX' and len(parts[2]) == 6 and parts[2].isdigit():
+        return parts[0] + ':' + parts[1]
+    return contract_id
+
+
+# Rows stay keyed by their exact contract (verify_reservation compares them exactly);
+# an E1 plan conflicts with any earlier E1 or campaign row of the same product.
+# Campaign holdouts (quantlab.research) keep their per-contract check: every E1
+# window is frozen before its first session, so they cannot inform an E1 receipt.
+_PRODUCT_OVERLAP_SQL = 'SELECT 1 FROM coverage WHERE (contract_id=? OR substr(contract_id,1,?)=?) AND start < ? AND end > ? LIMIT 1'
+
+
 def reserve(registry, workspace, plan):
     reference = content_hash(plan)
     values, coverage = reservation_values(reference, plan)
     contract, start, end = coverage
     with connection(registry, write=True, create=True) as db:
-        if db.execute('SELECT 1 FROM coverage WHERE contract_id=? AND start < ? AND end > ? LIMIT 1', (contract, end, start)).fetchone():
+        product = coverage_product(contract)
+        if db.execute(_PRODUCT_OVERLAP_SQL, (product, len(product) + 1, product + ':', end, start)).fetchone():
             refuse()
         db.execute('INSERT INTO reservations VALUES (?,?,?,?,?)', values)
         db.execute('INSERT INTO coverage VALUES (?,?,?,?)', (values[0], *coverage))
@@ -94,7 +118,9 @@ def reserve(registry, workspace, plan):
     # Observe the clock AFTER durable reservation. A crash here is an unknown,
     # consumed attempt, never resumable. Late commits can never become eligible.
     confirmed = protocol.utc_now()
-    with connection(registry, write=True) as db:
+    # A competing freeze may hold the lock right now only to find this reservation and
+    # refuse; waiting briefly keeps the durable winner from failing its own confirmation.
+    with connection(registry, write=True, busy_ms=2000) as db:
         if confirmed >= min(row['open'] for row in calendar_for(plan).sessions):
             db.execute("UPDATE e1_plans SET status='failed' WHERE reference=?", (reference,))
         else:
