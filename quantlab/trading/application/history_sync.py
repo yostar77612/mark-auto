@@ -141,7 +141,7 @@ class HistorySync:
         self._lookback(instrument, self.settings.daily_lookback_days, 1)
 
     def browse(self, instrument: WatchInstrument, period: str = '1m', is_watchlisted: bool = False) -> None:
-        annual = is_watchlisted or period == '1d' or instrument.code in ('IX0001', 'IX0043')
+        annual = is_watchlisted or period in ('1d', '1w') or instrument.code in ('IX0001', 'IX0043')
         self._lookback(instrument, self.settings.daily_lookback_days if annual else self.settings.minute_lookback_days, 0)
 
     def refresh(self, instrument: WatchInstrument, period: str = '1m', is_watchlisted: bool = False) -> None:

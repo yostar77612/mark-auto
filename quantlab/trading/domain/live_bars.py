@@ -113,9 +113,13 @@ def aggregate_bars(bars: tuple[LiveBar, ...], period: str, *, now: datetime, tra
 
     Intraday buckets never cross session/trade-date boundaries. Daily buckets
     combine all sessions of the resolver's trade date; only the caller can
-    declare that trade date closed. Session breaks are not inferred as loss.
+    declare that trade date closed. Weekly buckets combine the trade dates of
+    one Monday-to-Sunday week (the ISO week of the trade date), carry the first
+    trade date of the week, and are final only when the caller declares the
+    week closed. Bars already aggregated to days aggregate to the same weeks.
+    Session breaks are not inferred as loss.
     """
-    periods = {'3m': 3, '5m': 5, '15m': 15, '30m': 30, '60m': 60, '1d': 1440}
+    periods = {'3m': 3, '5m': 5, '15m': 15, '30m': 30, '60m': 60, '1d': 1440, '1w': 10080}
     if period not in periods:
         raise DomainError('validation_failed', 'unsupported live bar period')
     minutes = periods[period]
@@ -123,6 +127,8 @@ def aggregate_bars(bars: tuple[LiveBar, ...], period: str, *, now: datetime, tra
     def bucket(bar: LiveBar) -> tuple[str, date, str, datetime | None]:
         if period == '1d':
             return bar.instrument_id, bar.trade_date, '', None
+        if period == '1w':
+            return bar.instrument_id, bar.trade_date - timedelta(days=bar.trade_date.weekday()), '', None
         start = bar.start.replace(minute=0) + timedelta(minutes=bar.start.minute // minutes * minutes)
         return bar.instrument_id, bar.trade_date, bar.session, start
 
@@ -130,16 +136,16 @@ def aggregate_bars(bars: tuple[LiveBar, ...], period: str, *, now: datetime, tra
     for bar in sorted(bars, key=lambda bar: bar.start):
         groups.setdefault(bucket(bar), []).append(bar)
     result = []
-    for (_, day, session, start), members in groups.items():
+    for (_, _, session, start), members in groups.items():
         first, last = members[0], members[-1]
-        end = last.end if period == '1d' else start + timedelta(minutes=minutes)
-        final = all(bar.final for bar in members) and (trade_date_closed if period == '1d' else now >= end)
+        end = last.end if start is None else start + timedelta(minutes=minutes)
+        final = all(bar.final for bar in members) and (trade_date_closed if start is None else now >= end)
         result.append(
             LiveBar(
                 first.instrument_id,
                 first.start if start is None else start,
                 end,
-                day,
+                first.trade_date,
                 session or 'ALL',
                 first.open,
                 max(bar.high for bar in members),

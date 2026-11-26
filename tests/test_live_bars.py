@@ -151,6 +151,25 @@ class LiveBarsTests(unittest.TestCase):
         next_day = replace(day, trade_date=date(2026, 10, 29))
         self.assertEqual(len(aggregate_bars((night, next_day), '1d', now=next_day.end)), 2)
 
+    def test_weekly_buckets_are_the_iso_weeks_of_the_trade_dates_and_close_only_when_declared(self):
+        night = minute_bars((tick(),))[0]  # trade date Wednesday 2026-10-28
+        minutes = []
+        for offset, day, price in ((0, date(2026, 10, 28), '100'), (1, date(2026, 10, 29), '120'), (2, date(2026, 10, 30), '90'), (3, date(2026, 11, 2), '95')):
+            start = night.start + timedelta(days=offset)
+            minutes.append(
+                replace(night, start=start, end=start + timedelta(minutes=1), trade_date=day, open=D(price), high=D(price), low=D(price), close=D(price))
+            )
+        weeks = aggregate_bars(tuple(reversed(minutes)), '1w', now=minutes[-1].end, trade_date_closed=True)
+        self.assertEqual([week.trade_date for week in weeks], [date(2026, 10, 28), date(2026, 11, 2)])  # the first trade date of each week
+        first = weeks[0]
+        self.assertEqual((first.start, first.end, first.session), (minutes[0].start, minutes[2].end, 'ALL'))
+        self.assertEqual((first.open, first.high, first.low, first.close, first.volume), (D('100'), D('120'), D('90'), D('90'), 3))
+        self.assertTrue(first.final)
+        self.assertFalse(aggregate_bars(tuple(minutes), '1w', now=minutes[-1].end)[0].final)  # the caller has not closed the week
+        # Days already aggregated give the same weeks as their minutes.
+        days = aggregate_bars(tuple(minutes), '1d', now=minutes[-1].end, trade_date_closed=True)
+        self.assertEqual(aggregate_bars(days, '1w', now=minutes[-1].end, trade_date_closed=True), weeks)
+
     def test_history_merge_suffix_ownership_and_explicit_gap(self):
         base = minute_bars((tick(),))[0]
         live = replace(base, start=START + timedelta(minutes=3), end=START + timedelta(minutes=4))

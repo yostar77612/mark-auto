@@ -540,6 +540,21 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(date(2026, 11, 23), daily[0].trade_date)
         self.assertFalse(daily[0].final)
 
+    def test_a_friday_night_bar_opens_the_next_weekly_bar(self):
+        self.now = datetime(2026, 11, 21, 2, 0, tzinfo=timezone.utc)  # Saturday 10:00 Taipei: the week of the 16th has closed
+        friday = datetime(2026, 11, 20, 1, 0, tzinfo=timezone.utc)
+        self.store.upsert(
+            (
+                self.bar(BIG, friday, date(2026, 11, 20), 'DAY', '20000'),
+                self.bar(BIG, friday + timedelta(hours=11), date(2026, 11, 23), 'NIGHT', '20100'),  # Friday 20:00, trade date Monday
+            )
+        )
+        weekly = self.service.series(MarketSeriesQuery(BIG.instrument_id, '1w')).bars
+        self.assertEqual(
+            [(date(2026, 11, 20), Decimal('20000'), True), (date(2026, 11, 23), Decimal('20100'), False)],
+            [(item.trade_date, item.close, item.final) for item in weekly],
+        )
+
     def test_intraday_future_periods_keep_day_and_night_apart(self):
         night = datetime(2026, 11, 19, 12, 0, tzinfo=timezone.utc)
         morning = datetime(2026, 11, 20, 1, 0, tzinfo=timezone.utc)

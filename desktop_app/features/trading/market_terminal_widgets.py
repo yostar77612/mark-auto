@@ -72,6 +72,7 @@ def chart_panel(host):
         ('5m', ui_text('terminal.period_5m')),
         ('15m', ui_text('terminal.period_15m')),
         ('1d', ui_text('terminal.period_1d')),
+        ('1w', ui_text('terminal.period_1w')),
     ):
         item = button('watch_period_' + period, text)
         item.setCheckable(True)

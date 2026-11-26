@@ -1,21 +1,22 @@
 """Offline integration of independent subscriptions, durable history and chart pages."""
 
 from dataclasses import replace
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from desktop_app.features.trading import series_reader
 from desktop_app.features.trading.series_reader import SERIES_TAIL_BARS, read_latest, read_series
 from quantlab.trading.adapters.storage.kline_store import KlineStore
 from quantlab.trading.application.contracts import MarketSeriesPage, MarketSeriesQuery
 from quantlab.trading.application.history_sync import HistorySync
-from quantlab.trading.application.market_terminal_service import MarketTerminalService
+from quantlab.trading.application.market_terminal_service import DAY_CHART_LOOKBACK_DAYS, MarketTerminalService
 from quantlab.trading.domain.freshness import LiveMarketSettings
-from quantlab.trading.domain.live_bars import DataGap, LiveBar
+from quantlab.trading.domain.live_bars import DataGap, LiveBar, aggregate_bars
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
@@ -23,6 +24,7 @@ from quantlab.trading.ports.history import HistoryUsage
 from tests import series_read_simulator as simulator
 
 NOW = datetime(2026, 10, 30, 2, tzinfo=timezone.utc)
+TAIPEI = ZoneInfo('Asia/Taipei')
 STOCK = WatchInstrument('TWSE:2330', WatchKind.STOCK, 'TSE', '2330', 'TSMC')
 OTHER = WatchInstrument('TPEX:6104', WatchKind.STOCK, 'OTC', '6104', 'Other')
 
@@ -203,6 +205,115 @@ class TerminalServiceTests(unittest.TestCase):
         self.assertEqual(daily[0].volume, 30)
         self.assertEqual(daily[0].open, Decimal('10'))
         self.assertEqual(daily[0].close, Decimal('24'))
+
+    def oracle_days(self, start, end, instrument_id=STOCK.instrument_id):
+        """The trade dates of the stored minutes aggregated one by one from a plain read, finality as the engine decides it."""
+        groups = {}
+        for item in self.store.read(instrument_id, start, end):
+            groups.setdefault(item.trade_date, []).append(item)
+        local = self.now.astimezone(TAIPEI)
+        return tuple(
+            aggregate_bars(
+                tuple(members),
+                '1d',
+                now=self.now,
+                trade_date_closed=day < local.date() or day == local.date() and local.hour * 60 + local.minute >= 13 * 60 + 30,
+            )[0]
+            for day, members in groups.items()
+        )
+
+    def oracle_weeks(self, days):
+        """ISO weeks of the oracle days; a week is closed after it, or on its own Saturday and Sunday."""
+        local = self.now.astimezone(TAIPEI).date()
+        groups = {}
+        for item in days:
+            groups.setdefault(item.trade_date.isocalendar()[:2], []).append(item)
+        closed = lambda key: key < local.isocalendar()[:2] or key == local.isocalendar()[:2] and local.isoweekday() >= 6
+        return tuple(aggregate_bars(tuple(members), '1w', now=self.now, trade_date_closed=closed(key))[0] for key, members in groups.items())
+
+    def test_daily_and_weekly_caches_past_their_cap_follow_interleaved_writes_and_clock_moves(self):
+        import random
+
+        rng = random.Random(20261126)
+        keys = [STOCK.instrument_id, OTHER.instrument_id, 'TWSE:1101', 'TWSE:1102', 'TWSE:1103', 'TWSE:1104']  # past the four kept
+        self.store.upsert(tuple(replace(bar(NOW - timedelta(days=1)), instrument_id=key) for key in keys))
+        for number in range(400):
+            action, key = rng.random(), rng.choice(keys)
+            if action < 0.45:
+                start = NOW - timedelta(days=rng.randrange(0, 900), minutes=rng.randrange(0, 300))
+                self.store.upsert((replace(bar(start, str(rng.randrange(5, 50))), instrument_id=key, volume=rng.randrange(1, 9)),))
+            elif action < 0.55:
+                self.now += timedelta(hours=rng.randrange(1, 30))
+            else:
+                start = self.now - timedelta(days=DAY_CHART_LOOKBACK_DAYS)
+                daily = self.service.series(MarketSeriesQuery(key, '1d')).bars
+                with self.subTest(round=number, key=key):
+                    self.assertEqual(daily, self.oracle_days(start, self.now, key))
+                    self.assertEqual(self.service.series(MarketSeriesQuery(key, '1w')).bars, self.oracle_weeks(daily))
+
+    def test_daily_and_weekly_charts_show_every_stored_trade_date_past_the_minute_lookback(self):
+        three_years = NOW - timedelta(days=3 * 365)
+        self.store.upsert((bar(three_years, '50'), bar(three_years + timedelta(minutes=1), '52'), bar(NOW - timedelta(days=1), '60')))
+        self.assertEqual(len(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1m')).bars), 1)  # the minute chart keeps its year
+        daily = self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars
+        self.assertEqual(
+            [(item.trade_date, item.open, item.close, item.volume) for item in daily],
+            [(three_years.date(), Decimal('50'), Decimal('52'), 4), ((NOW - timedelta(days=1)).date(), Decimal('60'), Decimal('60'), 2)],
+        )
+        weekly = self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1w')).bars
+        self.assertEqual([item.trade_date for item in weekly], [item.trade_date for item in daily])  # two different weeks
+        self.assertEqual([item.final for item in weekly], [True, False])  # NOW is a Friday morning: this week still trades
+
+    def test_daily_bars_equal_a_plain_aggregation_after_every_store_change(self):
+        self.store.upsert(
+            tuple(bar(NOW - timedelta(days=day, minutes=minute), str(10 + (day * 7 + minute) % 9)) for day in range(1, 6) for minute in range(1, 40, 3))
+        )
+        start = NOW - timedelta(days=DAY_CHART_LOOKBACK_DAYS)
+        steps = (
+            lambda: None,
+            lambda: self.store.upsert((bar(NOW - timedelta(days=40), '7'),)),  # older history arrives
+            lambda: self.store.upsert((bar(NOW - timedelta(days=3, minutes=1), '99'),)),  # an old minute is rewritten in place
+            lambda: setattr(self, 'now', self.now + timedelta(hours=6)),  # only the clock moves: today closes
+        )
+        for number, step in enumerate(steps):
+            step()
+            with self.subTest(step=number):
+                self.assertEqual(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars, self.oracle_days(start, self.now))
+
+    def test_a_minute_stored_after_the_previous_read_end_is_shown_once_the_clock_reaches_it(self):
+        self.store.upsert((bar(NOW - timedelta(days=1)), bar(NOW + timedelta(minutes=5), '30')))
+        self.assertEqual(len(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars), 1)
+        self.now = NOW + timedelta(minutes=10)
+        daily = self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars
+        self.assertEqual([item.close for item in daily], [Decimal('10'), Decimal('30')])
+
+    def test_the_forming_minute_joins_todays_daily_and_weekly_bar(self):
+        self.store.upsert((bar(NOW - timedelta(days=1), '10'), bar(NOW - timedelta(minutes=2), '12')))
+        self.connect()
+        self.service.select(STOCK.instrument_id)
+        self.session.pending = [Tick(STOCK.instrument_id, Decimal('15'), 3, NOW, NOW, NOW.date())]
+        self.service.poll()
+        for period in ('1d', '1w'):
+            with self.subTest(period=period):
+                latest = self.service.series(MarketSeriesQuery(STOCK.instrument_id, period)).bars[-1]
+                self.assertEqual((latest.close, latest.high, latest.final), (Decimal('15'), Decimal('15'), False))
+        self.assertEqual(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars[-1].volume, 5)
+
+    def test_a_week_closes_once_the_next_begins_or_on_its_weekend(self):
+        friday = datetime(2026, 10, 30, 1, tzinfo=timezone.utc)  # 09:00 in Taipei on a Friday
+        self.store.upsert(tuple(bar(friday - timedelta(days=days)) for days in (7, 4, 3, 2, 1)))  # last Friday, then Monday to Thursday
+        for now, current_final in (
+            (friday, False),  # Friday morning: today's session is open
+            (friday + timedelta(hours=6), False),  # Friday 15:00: the week may still trade on its Saturday
+            (friday + timedelta(days=1), True),  # Saturday: every day of the week has closed
+            (friday + timedelta(days=3), True),  # Monday: the next week has begun
+        ):
+            self.now = now
+            with self.subTest(now=now):
+                weekly = self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1w')).bars
+                self.assertEqual([item.trade_date for item in weekly], [date(2026, 10, 23), date(2026, 10, 26)])
+                self.assertEqual([item.final for item in weekly], [True, current_final])
+                self.assertEqual(weekly[-1].volume, 8)
 
     def test_page_revision_survives_history_growth_and_unknown_quotes_stay_none(self):
         self.store.upsert(tuple(bar(NOW - timedelta(minutes=i)) for i in range(1, 5)))
