@@ -196,7 +196,11 @@ class VerdictTests(unittest.TestCase):
         self.assertNotIn(ui_text('walk_forward.verdict.insufficient.explanation'), text)
         self.assertNotIn(ui_text('walk_forward.verdict.recommended').format(30), text)
         unknown = oos_statistics_text(state([fold(0, 0, many_days, trades=None)]))
-        self.assertIn(ui_text('walk_forward.verdict.insufficient.trades_explanation').format(ui_text('walk_forward.verdict.trades_unknown'), 30), unknown)
+        self.assertIn(ui_text('walk_forward.verdict.trades_unknown').format(30), unknown)
+        # A qualifying run states the rule it actually passed: four tests and at least 30 closed trades.
+        edge = oos_statistics_text(state([fold(0, 0, many_days, trades=30)]))
+        self.assertIn(ui_text('walk_forward.verdict.statistical_edge.explanation'), edge.splitlines()[1])
+        self.assertIn('30', ui_text('walk_forward.verdict.statistical_edge.explanation'))
         # Too few days AND too few trades: the day-count explanation stays and the trade line follows it.
         both = oos_statistics_text(state([fold(0, 0, ['.001', '.002'] * 5, trades=2)]))
         self.assertIn(ui_text('walk_forward.verdict.insufficient.explanation'), both)
