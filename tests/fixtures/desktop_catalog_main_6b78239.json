@@ -2033,7 +2033,7 @@
       "walk_forward.verdict.fragile_edge.name": "脆弱優勢",
       "walk_forward.verdict.fragile_edge.explanation": "檢定顯著，但有高嚴重度警訊。",
       "walk_forward.verdict.statistical_edge.name": "具統計優勢（仍非保證）",
-      "walk_forward.verdict.statistical_edge.explanation": "兩項檢定顯著且沒有高嚴重度警訊，仍非未來獲利保證。",
+      "walk_forward.verdict.statistical_edge.explanation": "四項檢定都顯著、已平倉交易至少 30 筆，且沒有高嚴重度警訊；仍非未來獲利保證。",
       "walk_forward.verdict.line": "裁決：{0}；{1}",
       "walk_forward.verdict.scope": "這是樣本外每日報酬的統計結論，不是交易許可；不影響研究資格、候選選擇或紙上資格。",
       "walk_forward.verdict.recommended": "建議觀測數：{0} 天。",
@@ -3465,7 +3465,7 @@
       "screen.set_window_long": "突破新高：長期（日）",
       "screen.set_download_breakout": "帶量突破新高時自動下載近一年 K 線",
       "walk_forward.verdict.insufficient.trades_explanation": "已平倉交易 {0} 筆，少於 {1} 筆，尚不足以判讀。",
-      "walk_forward.verdict.trades_unknown": "未知"
+      "walk_forward.verdict.trades_unknown": "已平倉交易筆數不明，無法確認是否達到 {0} 筆，尚不足以判讀。"
     }
   },
   "aliases": {
@@ -6826,7 +6826,7 @@
       "walk_forward.verdict.fragile_edge.name": "脆弱優勢",
       "walk_forward.verdict.fragile_edge.explanation": "檢定顯著，但有高嚴重度警訊。",
       "walk_forward.verdict.statistical_edge.name": "具統計優勢（仍非保證）",
-      "walk_forward.verdict.statistical_edge.explanation": "兩項檢定顯著且沒有高嚴重度警訊，仍非未來獲利保證。",
+      "walk_forward.verdict.statistical_edge.explanation": "四項檢定都顯著、已平倉交易至少 30 筆，且沒有高嚴重度警訊；仍非未來獲利保證。",
       "walk_forward.verdict.line": "裁決：{0}；{1}",
       "walk_forward.verdict.scope": "這是樣本外每日報酬的統計結論，不是交易許可；不影響研究資格、候選選擇或紙上資格。",
       "walk_forward.verdict.recommended": "建議觀測數：{0} 天。",
@@ -8258,7 +8258,7 @@
       "screen.set_window_long": "突破新高：長期（日）",
       "screen.set_download_breakout": "帶量突破新高時自動下載近一年 K 線",
       "walk_forward.verdict.insufficient.trades_explanation": "已平倉交易 {0} 筆，少於 {1} 筆，尚不足以判讀。",
-      "walk_forward.verdict.trades_unknown": "未知",
+      "walk_forward.verdict.trades_unknown": "已平倉交易筆數不明，無法確認是否達到 {0} 筆，尚不足以判讀。",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
