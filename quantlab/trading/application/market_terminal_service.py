@@ -398,9 +398,7 @@ class MarketTerminalService:
         if len(self._days) >= _DAY_CACHE_INSTRUMENTS:
             del self._days[next(iter(self._days))]
         self._days[item.instrument_id] = cached
-        days = cached[2]
-        if forming is not None and (not days or days[-1].end <= forming.start):
-            days = (*days, forming)
+        days = cached[2] if forming is None else self._with_forming(item.instrument_id, cached[2], forming)
         groups: dict[date, list[LiveBar]] = {}
         for bar in days:
             groups.setdefault(bar.trade_date, []).append(bar)
@@ -411,6 +409,36 @@ class MarketTerminalService:
             for day, members in groups.items()
             for result in aggregate_bars(tuple(members), '1d', now=now, trade_date_closed=day < local.date() or day == local.date() and local.time() >= close)
         )
+
+    def _with_forming(self, instrument_id: str, days: tuple[LiveBar, ...], forming: LiveBar) -> tuple[LiveBar, ...]:
+        """The stored days with the forming minute counted in its trade date, as aggregating its minutes would.
+
+        A minute already stored under the same start is not counted twice. The forming minute gives the day its open
+        only before the first stored minute and its close only after the last (a stale one may lie in between).
+        """
+        for index in range(len(days) - 1, -1, -1):
+            day = days[index]
+            if day.trade_date < forming.trade_date:
+                break
+            if day.trade_date != forming.trade_date:
+                continue
+            if day.start <= forming.start < day.end and self.store.read(instrument_id, forming.start, forming.end):
+                return days
+            first, last = forming.start < day.start, forming.start >= day.end
+            folded = replace(
+                day,
+                start=forming.start if first else day.start,
+                end=forming.end if last else day.end,
+                open=forming.open if first else day.open,
+                high=max(day.high, forming.high),
+                low=min(day.low, forming.low),
+                close=forming.close if last else day.close,
+                volume=day.volume + forming.volume,
+                final=False,
+                incomplete=day.incomplete or forming.incomplete,
+            )
+            return (*days[:index], folded, *days[index + 1 :])
+        return tuple(sorted((*days, forming), key=lambda bar: bar.start))
 
     def views(self) -> tuple[MarketWatchView, ...]:
         with self.lock:

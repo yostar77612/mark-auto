@@ -263,6 +263,19 @@ class KlineStoreTests(unittest.TestCase):
         self.assertEqual({bar.session for bar in daily}, {'ALL'})
         self.assertEqual(self.store.read_daily('TWSE:2317', start, end), ())
 
+    def test_read_daily_compares_extremes_as_numbers_not_text(self):
+        def at(offset, opening, high, low, closing):
+            start = START + timedelta(minutes=offset)
+            return LiveBar(
+                'TWSE:2330', start, start + timedelta(minutes=1), date(2026, 10, 30), 'DAY', *map(Decimal, (opening, high, low, closing)), 1, final=True
+            )
+
+        # As text '99.9' > '100.5' and '9.5' > '10.0'; as numbers the high is 100.5 and the low 9.5.
+        self.store.upsert((at(0, '99.5', '99.5', '99.0', '99.5'), at(1, '100.0', '100.5', '9.5', '100.0'), at(2, '99.0', '99.9', '10.0', '99.0')))
+        (day,) = self.store.read_daily('TWSE:2330', START, START + timedelta(minutes=3))
+        self.assertEqual((day.open, day.high, day.low, day.close, day.volume), (Decimal('99.5'), Decimal('100.5'), Decimal('9.5'), Decimal('99.0'), 3))
+        self.assertEqual((day.start, day.end), (START, START + timedelta(minutes=3)))
+
     def test_read_daily_keeps_a_price_finer_than_a_double_ordered(self):
         self.store.upsert((minute(0), minute(1, '10.123456789123456781')))
         (day,) = self.store.read_daily('TWSE:2330', START, START + timedelta(minutes=2))

@@ -84,8 +84,9 @@ def _decode_day(instrument_id: str, row: tuple) -> LiveBar:
 _READ = 'SELECT * FROM bars_1m WHERE instrument_id=? AND start_utc>=? AND start_utc<? ORDER BY start_utc'
 # A daily or weekly chart of several years would decode about 65,000 minutes per year; SQLite sums them per trade date
 # instead (five years of one stock, 2026-11-26: 0.2 s, where fetching the plain rows alone took 1.9 s). The extremes come
-# back as REAL: the stored prices are the text of the SDK's floats, so its repr gives back the very text (any price a
-# double holds comes back equal in value); open and close are read from the first and last minute rows themselves.
+# back as REAL and are compared as numbers: for the SDK's K-bar rows, stored as the text of a float, repr gives back the
+# very text; live-tick rows hold decimal text ('2250') and come back equal in value ('2250.0'), as does any price a
+# double holds. Open and close are read from the first and last minute rows themselves, so they keep their stored text.
 _DAILY = '''
     WITH days AS (
         SELECT trade_date, MIN(start_utc) AS first, MAX(start_utc) AS last, MAX(end_utc) AS stop,

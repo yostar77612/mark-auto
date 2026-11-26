@@ -16,7 +16,7 @@ from quantlab.trading.application.contracts import MarketSeriesPage, MarketSerie
 from quantlab.trading.application.history_sync import HistorySync
 from quantlab.trading.application.market_terminal_service import DAY_CHART_LOOKBACK_DAYS, MarketTerminalService
 from quantlab.trading.domain.freshness import LiveMarketSettings
-from quantlab.trading.domain.live_bars import DataGap, LiveBar, aggregate_bars
+from quantlab.trading.domain.live_bars import DataGap, LiveBar, MinuteState, aggregate_bars
 from quantlab.trading.domain.ticks import Tick
 from quantlab.trading.domain.validation import DomainError
 from quantlab.trading.domain.watch import FIXED_INDICES, WatchInstrument, WatchKind
@@ -288,7 +288,8 @@ class TerminalServiceTests(unittest.TestCase):
         self.assertEqual([item.close for item in daily], [Decimal('10'), Decimal('30')])
 
     def test_the_forming_minute_joins_todays_daily_and_weekly_bar(self):
-        self.store.upsert((bar(NOW - timedelta(days=1), '10'), bar(NOW - timedelta(minutes=2), '12')))
+        # The usual live case: the last stored minute ends exactly where the forming minute starts.
+        self.store.upsert((bar(NOW - timedelta(days=1), '10'), bar(NOW - timedelta(minutes=1), '12')))
         self.connect()
         self.service.select(STOCK.instrument_id)
         self.session.pending = [Tick(STOCK.instrument_id, Decimal('15'), 3, NOW, NOW, NOW.date())]
@@ -298,6 +299,43 @@ class TerminalServiceTests(unittest.TestCase):
                 latest = self.service.series(MarketSeriesQuery(STOCK.instrument_id, period)).bars[-1]
                 self.assertEqual((latest.close, latest.high, latest.final), (Decimal('15'), Decimal('15'), False))
         self.assertEqual(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars[-1].volume, 5)
+
+    def test_a_forming_minute_without_any_stored_minute_makes_todays_bar(self):
+        self.connect()
+        self.service.select(STOCK.instrument_id)
+        self.session.pending = [Tick(STOCK.instrument_id, Decimal('15'), 3, NOW, NOW, NOW.date())]
+        self.service.poll()
+        for period in ('1d', '1w'):
+            with self.subTest(period=period):
+                (latest,) = self.service.series(MarketSeriesQuery(STOCK.instrument_id, period)).bars
+                self.assertEqual((latest.close, latest.trade_date, latest.volume, latest.final), (Decimal('15'), NOW.date(), 3, False))
+
+    def test_a_stale_forming_minute_counts_in_its_day_as_aggregating_the_minutes_would(self):
+        stored = (bar(NOW - timedelta(minutes=3), '10'), bar(NOW - timedelta(minutes=1), '11'))
+        self.store.upsert(stored)
+        for start, close in ((NOW - timedelta(minutes=2), '9'), (NOW - timedelta(minutes=5), '8'), (NOW - timedelta(minutes=1), '50'), (NOW, '13')):
+            price = Decimal(close)
+            minute = LiveBar(STOCK.instrument_id, start, start + timedelta(minutes=1), start.date(), 'DAY', price, price, price, price, 1, incomplete=True)
+            self.service._minutes[STOCK.instrument_id] = MinuteState(minute, (start, -1), (start, -1), ('TEST', start.date(), 'DAY'))
+            # The previous code merged the forming minute into the stored minutes unless its start was already stored.
+            minutes = stored if start in {item.start for item in stored} else (*stored, minute)
+            expected = aggregate_bars(minutes, '1d', now=self.now, trade_date_closed=False)
+            with self.subTest(start=start):
+                self.assertEqual(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars, expected)
+
+    def test_a_stock_day_is_final_from_1330_in_taipei(self):
+        self.store.upsert((bar(NOW - timedelta(hours=1)),))  # 09:00 in Taipei
+        for now, final in ((datetime(2026, 10, 30, 5, 29, tzinfo=timezone.utc), False), (datetime(2026, 10, 30, 5, 30, tzinfo=timezone.utc), True)):
+            self.now = now
+            with self.subTest(now=now):
+                self.assertEqual(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars[0].final, final)
+
+    def test_browsing_the_weekly_chart_requests_the_annual_history(self):
+        calls = []
+        self.history._lookback = lambda instrument, days, priority: calls.append(days)
+        self.history.browse(STOCK, '1w')
+        self.history.browse(STOCK, '1m')
+        self.assertEqual(calls, [self.history.settings.daily_lookback_days, self.history.settings.minute_lookback_days])
 
     def test_a_week_closes_once_the_next_begins_or_on_its_weekend(self):
         friday = datetime(2026, 10, 30, 1, tzinfo=timezone.utc)  # 09:00 in Taipei on a Friday
