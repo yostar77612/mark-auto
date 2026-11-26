@@ -323,6 +323,16 @@ class TerminalServiceTests(unittest.TestCase):
             with self.subTest(start=start):
                 self.assertEqual(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars, expected)
 
+    def test_a_stale_forming_minute_keeps_a_closed_day_from_being_final(self):
+        stored = (bar(NOW - timedelta(minutes=3), '10'), bar(NOW - timedelta(minutes=1), '11'))
+        self.store.upsert(stored)
+        self.now = NOW + timedelta(hours=4)  # 14:00 in Taipei: the stock day has closed
+        stale = LiveBar(STOCK.instrument_id, NOW - timedelta(minutes=2), NOW - timedelta(minutes=1), NOW.date(), 'DAY', *[Decimal('9')] * 4, 1, incomplete=True)
+        self.service._minutes[STOCK.instrument_id] = MinuteState(stale, (stale.start, -1), (stale.start, -1), ('TEST', stale.start.date(), 'DAY'))
+        expected = aggregate_bars((stored[0], stale, stored[1]), '1d', now=self.now, trade_date_closed=True)
+        self.assertFalse(expected[0].final)  # the stale minute is not final, so neither is its day
+        self.assertEqual(self.service.series(MarketSeriesQuery(STOCK.instrument_id, '1d')).bars, expected)
+
     def test_a_stock_day_is_final_from_1330_in_taipei(self):
         self.store.upsert((bar(NOW - timedelta(hours=1)),))  # 09:00 in Taipei
         for now, final in ((datetime(2026, 10, 30, 5, 29, tzinfo=timezone.utc), False), (datetime(2026, 10, 30, 5, 30, tzinfo=timezone.utc), True)):
