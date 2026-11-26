@@ -18,7 +18,7 @@ from unittest.mock import patch
 from desktop_app.strings.catalog import ui_text
 from desktop_app.features.walk_forward.presenter import compact_walk_forward, oos_statistics_text
 from quantlab.core import canonical_json
-from quantlab import significance as sig
+from quantlab import significance as sig, verdict
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDENS = json.loads((ROOT / 'tests/fixtures/significance_goldens.json').read_text(encoding='utf-8'))
@@ -153,8 +153,6 @@ class SignificanceTests(unittest.TestCase):
         self.assertGreater(result['p_value_t_hac'], Decimal('.05'))
         self.assertGreater(result['p_value_block_bootstrap'], Decimal('.05'))
         self.assertEqual((result['hac_lag'], result['block_length']), (4, 6))
-        from quantlab import verdict
-
         self.assertEqual(verdict.judge(result, sig.required_observations(values), values, ())['level'], verdict.LUCK_SUSPECTED)
         # The same days shuffled into alternation keep their edge under every test.
         alternating = ['.012', '-.008'] * 80

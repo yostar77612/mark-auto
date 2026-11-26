@@ -13,6 +13,7 @@ from desktop_app.features.walk_forward.presenter import compact_walk_forward, oo
 from quantlab import significance as sig, verdict
 from quantlab.core import canonical_json, content_hash
 from quantlab.research import _eligible
+from quantlab.research_core.application.walk_forward_projection import oos_statistics_data
 from quantlab import walk_forward as wf
 from tests.test_significance_b2 import fold, state
 
@@ -154,8 +155,6 @@ class VerdictTests(unittest.TestCase):
         self.assertIsNone(judge(returns=[])['level'])
 
     def test_walk_forward_verdict_counts_evaluated_oos_closed_trades(self):
-        from quantlab.research_core.application.walk_forward_projection import oos_statistics_data
-
         returns = ['.001', '.002'] * 15
 
         def level(*folds):
