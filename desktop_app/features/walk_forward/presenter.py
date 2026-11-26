@@ -152,8 +152,9 @@ def _closed_trades_text(reasons):
     for reason in reasons:
         if reason.startswith(_verdict.CLOSED_TRADES_REASON):
             count, minimum = reason[len(_verdict.CLOSED_TRADES_REASON) :].split(' < ')
-            shown = ui_text('walk_forward.verdict.trades_unknown') if count == 'unknown' else count
-            return ui_text('walk_forward.verdict.insufficient.trades_explanation').format(shown, minimum)
+            if count == 'unknown':
+                return ui_text('walk_forward.verdict.trades_unknown').format(minimum)
+            return ui_text('walk_forward.verdict.insufficient.trades_explanation').format(count, minimum)
     return None
 
 

@@ -72,6 +72,32 @@ def compounded_drawdown(returns):
         return None
 
 
+def half_sample_flags(returns):
+    """A high ``half_sample_not_positive`` flag when either chronological half fails to compound above 1.
+
+    One regime can carry a whole window; an edge must also earn money in each
+    half on its own. The first half has len // 2 days. Invalid samples add no
+    flag because judge already rejects them as insufficient.
+    """
+    if not isinstance(returns, (list, tuple)) or len(returns) < 2:
+        return []
+    cut = len(returns) // 2
+    try:
+        with localcontext(Context(prec=400)):
+            growth = []
+            for half in (returns[:cut], returns[cut:]):
+                equity = Decimal(1)
+                for raw in half:
+                    value = _number(raw)
+                    if value is None or value < -1:
+                        return []
+                    equity *= 1 + value
+                growth.append(equity)
+    except DecimalException:
+        return []
+    return [{'severity': 'high', 'code': 'half_sample_not_positive'}] if min(growth) <= 1 else []
+
+
 def _flags(flags):
     if not isinstance(flags, (list, tuple)):
         return []

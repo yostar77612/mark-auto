@@ -22,7 +22,7 @@ from quantlab.value_bounds import _bounded_value
 PROTOCOL = 'm3-prospective-e1-v1'
 SOURCE_URL = 'https://openapi.taifex.com.tw/v1/DailyMarketReportFut'
 POLICY = {
-    'version': 'm3-e1-policy-v2',
+    'version': 'm3-e1-policy-v3',
     'candidate_count': 1,
     'selection': 'frozen_before_first_observation',
     'returns': 'net_daily_returns_including_flat_days',
@@ -33,8 +33,11 @@ POLICY = {
     'alpha': '0.05',
     'inference': 'all_of_student_t_iid_bootstrap_newey_west_t_circular_block_bootstrap',
     'required_verdict': 'statistical_edge',
-    'minimum_observations': 30,
+    # About six months of TMF full-day sessions, so one regime cannot carry the verdict alone.
+    'minimum_observations': 120,
     'minimum_closed_trades': 30,
+    'regime_check': 'both_chronological_halves_compound_positive',
+    'holdout_scope': 'product_all_delivery_months',
     'max_bars': 10000,
     'max_runtime_seconds': 900,
     'worker_memory_mb': 512,
@@ -128,7 +131,8 @@ def calendar_for(plan):
     value = plan['calendar']
     if type(value) is not dict or set(value) != {'version', 'sessions'} or type(value['sessions']) is not list:
         refuse()
-    if not 1 <= len(value['sessions']) <= POLICY['max_bars']:
+    # A window shorter than the verdict minimum can never qualify; freezing it would only consume the dates.
+    if not POLICY['minimum_observations'] <= len(value['sessions']) <= POLICY['max_bars']:
         refuse()
     calendar = SessionCalendar(value['sessions'], version=value['version'])
     # Exact contract-specific sessions avoid shadowing or inferred holidays/expiry.

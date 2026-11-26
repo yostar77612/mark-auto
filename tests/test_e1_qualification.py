@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
-from threading import Event
+from threading import Event, Thread, Timer
 import unittest
 from unittest.mock import patch
 
@@ -30,12 +30,13 @@ from quantlab.trading.runtime.e1_reader import read_e1_summaries
 
 UTC = timezone.utc
 BEFORE = datetime(2027, 1, 1, tzinfo=UTC)
-AFTER = BEFORE + timedelta(days=80)
+AFTER = BEFORE + timedelta(days=200)
 CONTRACT = 'TAIFEX:TMF:202712'
+NEXT_MONTH = 'TAIFEX:TMF:202801'
 SPEC = json.dumps({'strategy_id': 'synthetic_contract_test', 'family': 'trend', 'parameters': {'fast': 2, 'slow': 5}, 'rules': {}})
 
 
-def fixtures(count=40):
+def fixtures(count=130):  # policy minimum_observations is 120 sessions
     sessions, rows = [], []
     for index in range(count):
         at = BEFORE + timedelta(days=index + 1, minutes=45)
@@ -150,7 +151,7 @@ class E1QualificationTests(unittest.TestCase):
         self.assertEqual(evidence.candidate_ref, ref)
         self.assertEqual(evidence.signal_spec_json, protocol.canonical_spec_json(SPEC))
         self.assertEqual(evidence.completed_at, AFTER)
-        self.assertEqual(evidence.sample_count, 40)
+        self.assertEqual(evidence.sample_count, len(self.calendar.sessions))
         catalog = ResearchWorkspaceCandidateCatalog(self.workspace, qualification_registry=self.registry)
         self.assertEqual(catalog.resolve(ref), evidence)
         self.assertEqual(catalog.passed()[0].candidate_ref, ref)
@@ -192,6 +193,76 @@ class E1QualificationTests(unittest.TestCase):
         )
         self.assertEqual(row['status'], 'previously_consumed')
         self.assertEqual(self.state(ref)[1], 'reserved')
+
+    def test_e1_window_is_consumed_for_every_delivery_month(self):
+        def plan(contract, shift=timedelta(0)):
+            rows = [
+                {**row, 'contract_id': contract, 'open': row['open'] + shift, 'end': row['end'] + shift, 'trade_date': (row['open'] + shift).date().isoformat()}
+                for row in self.calendar.sessions
+            ]
+            config = replace(self.config, instrument_expiries={contract: '2028-01-19'})
+            calendar = SessionCalendar(rows, version='synthetic-e1-calendar-v1')
+            return {'campaign_ref': 'synthetic-campaign', 'contract_id': contract, 'signal_spec_json': SPEC, 'calendar': calendar, 'config': config}
+
+        def host(name):
+            return qualification.E1QualificationHost(self.workspace, registry_path=self.root / name / 'holdout-registry.sqlite3')
+
+        # The next-month plan is valid on its own registry ...
+        self.assertTrue(protocol.is_hash(host('fresh-controls').freeze(**plan(NEXT_MONTH))))
+        # ... but the same dates on another TMF month are the same market: one E1 attempt per window.
+        self.freeze()
+        self.unavailable(lambda: self.host.freeze(**plan(NEXT_MONTH)))
+        # A later, non-overlapping window on that month stays available.
+        self.assertTrue(protocol.is_hash(self.host.freeze(**plan(NEXT_MONTH, timedelta(days=200)))))
+        # An earlier campaign holdout on one month also blocks an E1 plan on another.
+        session = self.calendar.sessions[5]
+        bar = replace(synthetic_dataset(1).bars[0], timestamp=session['open'], end=session['end'], trade_date=session['trade_date'], contract_id=CONTRACT)
+        campaign_registry = self.root / 'campaign-controls' / 'holdout-registry.sqlite3'
+        row = _reserve_holdout(
+            Dataset((bar,), {}, {}), registry_path=campaign_registry, campaign_id='synthetic-legacy', selection_hash='synthetic', output_dir=self.root / 'c'
+        )
+        self.assertEqual(row['status'], 'reserved_consumed')
+        self.unavailable(lambda: host('campaign-controls').freeze(**plan(NEXT_MONTH)))
+        self.assertEqual(store.coverage_product('TWSE:2330'), 'TWSE:2330')
+        self.assertEqual(store.coverage_product(CONTRACT), 'TAIFEX:TMF')
+        self.assertEqual(store.coverage_product('TAIFEX:TMF:20271'), 'TAIFEX:TMF:20271')
+
+    def test_window_shorter_than_minimum_observations_cannot_freeze(self):
+        self.assertEqual(protocol.POLICY['minimum_observations'], 120)
+        short, _ = fixtures(119)
+        self.unavailable(lambda: self.freeze(calendar=short))
+        enough, _ = fixtures(120)
+        self.assertTrue(protocol.is_hash(self.freeze(calendar=enough)))
+
+    def test_freeze_confirmation_waits_for_a_competing_writer(self):
+        original = store.connection
+        calls = []
+
+        def connection(registry, **options):
+            calls.append(options)
+            if len(calls) == 2:  # reserve()'s confirmation, right after the durable reservation
+                held, release = Event(), Event()
+
+                def hold():
+                    with original(registry, write=True):
+                        held.set()
+                        release.wait(5)
+
+                thread = Thread(target=hold)
+                thread.start()
+                self.addCleanup(thread.join, 5)
+                self.assertTrue(held.wait(5))
+                Timer(0.3, release.set).start()
+            return original(registry, **options)
+
+        with patch.object(store, 'connection', side_effect=connection):
+            ref = self.freeze()
+        self.assertEqual(self.state(ref)[1], 'reserved')
+        self.assertEqual([options.get('busy_ms', 0) for options in calls], [0, 2000])
+        for bad in (-1, 2001, True, '10'):
+            with self.assertRaises(DomainError):
+                with store.connection(self.registry, busy_ms=bad):
+                    pass
 
     def test_concurrent_freeze_has_one_winner_and_no_partial_rows(self):
         def run():
@@ -299,7 +370,7 @@ class E1QualificationTests(unittest.TestCase):
             old = self.freeze()
             self.complete(old)
         self.now = BEFORE
-        shift = timedelta(days=41)
+        shift = timedelta(days=len(self.calendar.sessions) + 1)  # the next window must not overlap
         sessions = [
             dict(row, open=row['open'] + shift, end=row['end'] + shift, trade_date=(row['open'] + shift).date().isoformat()) for row in self.calendar.sessions
         ]
@@ -527,7 +598,7 @@ class E1VerdictInputsTests(unittest.TestCase):
 
         edge = ['.012', '-.008'] * 40
         # The version names the rule set; old frozen plans carry the old one and refuse.
-        self.assertEqual(protocol.POLICY['version'], 'm3-e1-policy-v2')
+        self.assertEqual(protocol.POLICY['version'], 'm3-e1-policy-v3')
         self.assertEqual(protocol.POLICY['minimum_closed_trades'], 30)
         self.assertEqual(outcome(edge, 30)['verdict'], 'statistical_edge')
         # One long holding cannot qualify, however many daily returns it spans.
@@ -536,6 +607,11 @@ class E1VerdictInputsTests(unittest.TestCase):
         # Ten-day runs look significant only to the i.i.d. tests.
         held = (['.012'] * 10 + ['-.008'] * 10) * 8
         self.assertEqual(outcome(held, 80)['verdict'], 'luck_suspected')
+        # A strong second half cannot rescue a losing first half (one regime carrying the window).
+        self.assertEqual(protocol.POLICY['regime_check'], 'both_chronological_halves_compound_positive')
+        regime = ['.0005', '-.0007'] * 60 + ['.012', '-.008'] * 60
+        self.assertEqual(outcome(regime, 120)['verdict'], 'fragile_edge')
+        self.assertEqual(outcome(['.012', '-.008'] * 120, 120)['verdict'], 'statistical_edge')
 
 
 if __name__ == '__main__':
