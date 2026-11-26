@@ -14,16 +14,20 @@ from quantlab.trading.runtime import e1_protocol as protocol
 from quantlab.trading.runtime import e1_source as source
 from quantlab.trading.runtime import e1_store as store
 from quantlab.trading.runtime.v1_signal_source import validated_spec
-from quantlab.verdict import LEVELS, judge
+from quantlab.verdict import LEVELS, half_sample_flags, judge
 import time
 
 
 def _evaluate(dataset, spec_json, config):
-    """One fixed spec, one full predeclared window; only minimal E1 leaves worker."""
+    """One fixed spec, one full predeclared window; only minimal E1 leaves worker.
+
+    Both chronological halves must also compound above 1 (policy regime_check).
+    """
     result = run_backtest(dataset, validated_spec(spec_json), config)
     returns = [row['return'] for row in result.metrics['daily_returns']]
     stats = mean_positive_test(returns, n_bootstrap=protocol.POLICY['bootstrap_draws'], seed=protocol.POLICY['bootstrap_seed'])
-    verdict = judge(stats, required_observations(returns), returns, ())['level']
+    flags = half_sample_flags(returns)
+    verdict = judge(stats, required_observations(returns), returns, flags, closed_trades=result.metrics['trade_count'])['level']
     return {'verdict': verdict, 'sample_count': len(returns), 'result_hash': content_hash(result)}
 
 

@@ -4,12 +4,19 @@ No reference-project code or flow was adapted. Outputs use 12 decimal places,
 ROUND_HALF_EVEN; floats are internal only. Percentiles use linear interpolation.
 Bootstrap p is the exceedance count / actual draws, without add-one correction.
 The 1000-draw floor takes precedence over the work cap for n > 50,000.
+
+The Student t and the i.i.d. bootstrap assume independent days. A strategy that
+holds a position for several days produces serially correlated daily returns,
+which makes both look more significant than they are. The autocorrelation-robust
+pair is a Newey-West (Bartlett kernel) t and a circular block bootstrap; callers
+that judge an edge must use the larger of the p values.
 """
 
 from collections import Counter
 from datetime import date
 from decimal import Context, Decimal, InvalidOperation, ROUND_HALF_EVEN, localcontext
 import math
+import operator
 import random
 import statistics
 
@@ -18,7 +25,23 @@ PRECISION = Decimal('0.000000000001')
 BOOTSTRAP_WORK_CAP = 50_000_000
 REQUIRED_OBSERVATIONS_CAP = 1_000_000_000
 EXPLANATION = '假設沒有優勢時，出現至少這麼好結果的機率'
-STATISTICS = ('n', 'mean', 'sd', 't', 'p_value_t', 'p_value_bootstrap', 'ci_lower', 'ci_upper', 'n_bootstrap_actual')
+STATISTICS = (
+    'n',
+    'mean',
+    'sd',
+    't',
+    'p_value_t',
+    'p_value_bootstrap',
+    'ci_lower',
+    'ci_upper',
+    'n_bootstrap_actual',
+    't_hac',
+    'p_value_t_hac',
+    'hac_lag',
+    'p_value_block_bootstrap',
+    'block_length',
+)
+P_VALUES = ('p_value_t', 'p_value_bootstrap', 'p_value_t_hac', 'p_value_block_bootstrap')
 MISSING = '每日報酬有缺值，不補值'
 NONFINITE = '每日報酬有缺值或非有限值，不補值'
 OUT_OF_RANGE = '每日報酬超出計算範圍，不補值'
@@ -132,6 +155,48 @@ def _resample_means(values, mean, actual, rng):
             yield math.fsum(rng.choices(centered, k=n)) / n
 
 
+def newey_west_lag(n):
+    """Newey-West (1994) automatic lag floor(4 * (n / 100) ** (2 / 9)), at most n - 1."""
+    return max(0, min(n - 1, int(4 * (n / 100) ** (2 / 9))))
+
+
+def block_length(n):
+    """Smallest b with b ** 3 >= n: the n ** (1 / 3) circular block length, exact in integers."""
+    length = 1
+    while length**3 < n:
+        length += 1
+    return length
+
+
+def _long_run_variance(values, mean, lag):
+    """Bartlett-weighted autocovariances times n / (n - 1), so lag 0 is exactly the sample variance."""
+    n = len(values)
+    centered = [value - mean for value in values]
+    total = math.fsum(map(operator.mul, centered, centered))
+    for distance in range(1, lag + 1):
+        weight = 1 - distance / (lag + 1)
+        total += 2 * weight * math.fsum(map(operator.mul, centered[distance:], centered[:-distance]))
+    return total / (n - 1)
+
+
+def _block_resample_means(values, mean, actual, rng):
+    """Circular block bootstrap of the centered values; the last block is cut to keep n days."""
+    n = len(values)
+    length = block_length(n)
+    centered = [value - mean for value in values]
+    prefix = [0.0]
+    for value in centered + centered[: length - 1]:
+        prefix.append(prefix[-1] + value)
+    full, rest = divmod(n, length)
+    blocks = [prefix[start + length] - prefix[start] for start in range(n)]
+    tails = [prefix[start + rest] - prefix[start] for start in range(n)] if rest else ()
+    for _ in range(actual):
+        total = math.fsum(rng.choices(blocks, k=full))
+        if tails:
+            total += rng.choice(tails)
+        yield total / n
+
+
 def _percentile(ordered, probability):
     position = (len(ordered) - 1) * probability
     low = int(position)
@@ -157,8 +222,15 @@ def mean_positive_test(returns, *, n_bootstrap=5000, alpha=Decimal('0.05'), seed
         result.update(t=_decimal(t), p_value_t=_decimal(_t_tail(t, len(values) - 1)))
     except (ArithmeticError, ValueError):
         result['t_reason'] = result['p_value_t_reason'] = '檢定超出計算範圍'
+    lag = newey_west_lag(len(values))
+    result['hac_lag'] = lag
+    try:
+        t_hac = mean / math.sqrt(_long_run_variance(values, mean, lag) / len(values))
+        result.update(t_hac=_decimal(t_hac), p_value_t_hac=_decimal(_t_tail(t_hac, len(values) - 1)))
+    except (ArithmeticError, ValueError):
+        result['t_hac_reason'] = result['p_value_t_hac_reason'] = '檢定超出計算範圍'
     if type(n_bootstrap) is not int or n_bootstrap < 1 or not Decimal('0') < Decimal(str(alpha)) < Decimal('1'):
-        for key in ('p_value_bootstrap', 'ci_lower', 'ci_upper', 'n_bootstrap_actual'):
+        for key in ('p_value_bootstrap', 'ci_lower', 'ci_upper', 'n_bootstrap_actual', 'p_value_block_bootstrap', 'block_length'):
             result[key + '_reason'] = '重抽設定無效'
         return result
     actual = min(n_bootstrap, max(1000, BOOTSTRAP_WORK_CAP // len(values)))
@@ -168,11 +240,15 @@ def mean_positive_test(returns, *, n_bootstrap=5000, alpha=Decimal('0.05'), seed
     p = sum(value >= mean for value in samples) / actual
     samples.sort()
     tail = float(alpha) / 2
+    # A separate stream keeps the i.i.d. draws, and their goldens, exactly as before.
+    blocked = _block_resample_means(values, mean, actual, random.Random(seed + 1))
     result.update(
         p_value_bootstrap=_decimal(p),
         ci_lower=_decimal(mean + _percentile(samples, tail)),
         ci_upper=_decimal(mean + _percentile(samples, 1 - tail)),
         n_bootstrap_actual=actual,
+        p_value_block_bootstrap=_decimal(sum(value >= mean for value in blocked) / actual),
+        block_length=block_length(len(values)),
     )
     return result
 

@@ -447,6 +447,7 @@ M3 **不提供**使用者調整門檻的介面（調整 = 修改程式的新版�
 | 名稱 | 預設 | 意義 |
 |---|---|---|
 | `BUILD_REQUIRED_VERDICT` | `statistical_edge` | E1 閘：v1 verdict 等級（與 `quantlab.verdict.STATISTICAL_EDGE` 字面相同，由測試比對）。 |
+| `QUALIFIED_EXECUTION_INTERVALS`（`candidate_intake`） | `{'1d': ()}` | E1 週期閘（2026-11-26 回測審查）：E1 只用日 K 驗證，執行卻在單一盤中的 1m／5m K 上重算同一規格，回看期數變成分鐘，等於另一個沒驗證過的策略；日 K 證據因此不涵蓋任何執行週期，建成一律以 `candidate_data_mismatch` 拒絕，直到 E1 能用執行週期驗證。 |
 | `BUILD_MIN_RESEARCH_TRADES` | 10 | E2 至少 10 筆完成的交易，否則不能建成（長波交易少，所以不設更高）。 |
 | `EXECUTOR_MAX_BARS` | 5000 | 視窗 K 棒數上限（每根 K 棒重算整段歷史的成本上限）。 |
 | `PROMOTION_MIN_TRADING_DAYS` | 10 | 當沖、短波：至少 10 個**完整**交易日。 |

@@ -143,7 +143,12 @@ ENTRIES = (
     (46, 1994, 'walk_forward.statistics.source', '\u6a23\u672c\u5916\u6bcf\u65e5\u5831\u916c\uff1b\u4e0d\u540c fold \u7684 OOS \u671f\u9593\u4e0d\u91cd\u758a'),
     (46, 1995, 'walk_forward.statistics.days', '\u89c0\u6e2c\u5929\u6578\uff1a{0}'),
     (46, 1996, 'walk_forward.statistics.mean', '\u5e73\u5747\u65e5\u5831\u916c\uff08\u6bd4\u503c\uff09\uff1a{0}'),
-    (46, 1997, 'walk_forward.statistics.p_values', '\u55ae\u5c3e p \u503c\uff1aStudent t = {0}\uff1b\u5e73\u79fb\u91cd\u62bd = {1}'),
+    (
+        46,
+        1997,
+        'walk_forward.statistics.p_values',
+        '\u55ae\u5c3e p \u503c\uff1aStudent t = {0}\uff1b\u5e73\u79fb\u91cd\u62bd = {1}\uff1b\u81ea\u76f8\u95dc\u4fee\u6b63 t = {2}\uff1b\u5340\u584a\u91cd\u62bd = {3}',
+    ),
     (46, 1998, 'walk_forward.statistics.interval', '95% \u767e\u5206\u4f4d\u4fe1\u8cf4\u5340\u9593\uff1a[{0}, {1}]'),
     (46, 1999, 'walk_forward.statistics.required', '\u76ee\u524d {0} \u5929\uff0c\u5efa\u8b70\u81f3\u5c11 {1} \u5929'),
     (46, 2000, 'walk_forward.statistics.draws', '\u5be6\u969b\u91cd\u62bd\uff1a{0}\uff1b\u7565\u904e\u672a\u6210\u529f\u8a55\u4f30\u7684 fold\uff1a{1}'),
@@ -207,7 +212,7 @@ ENTRIES = (
         48,
         2032,
         "walk_forward.verdict.statistical_edge.explanation",
-        "\u5169\u9805\u6aa2\u5b9a\u986f\u8457\u4e14\u6c92\u6709\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a\uff0c\u4ecd\u975e\u672a\u4f86\u7372\u5229\u4fdd\u8b49\u3002",
+        "\u56db\u9805\u6aa2\u5b9a\u90fd\u986f\u8457\u3001\u5df2\u5e73\u5009\u4ea4\u6613\u81f3\u5c11 30 \u7b46\uff0c\u4e14\u6c92\u6709\u9ad8\u56b4\u91cd\u5ea6\u8b66\u8a0a\uff1b\u4ecd\u975e\u672a\u4f86\u7372\u5229\u4fdd\u8b49\u3002",
     ),
     (48, 2033, "walk_forward.verdict.line", "\u88c1\u6c7a\uff1a{0}\uff1b{1}"),
     (

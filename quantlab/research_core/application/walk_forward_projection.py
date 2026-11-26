@@ -58,6 +58,20 @@ def compact_walk_forward(state, reference):
     }
 
 
+def _oos_closed_trades(state):
+    """Closed round trips over the folds merge_oos_daily_returns used; None when any count is unknown."""
+    total = 0
+    for fold in state.get('folds', []):
+        oos = fold.get('oos') or {}
+        if fold.get('status') != 'evaluated' or oos.get('status') != 'evaluated':
+            continue
+        count = (oos.get('result') or {}).get('metrics', {}).get('trade_count')
+        if type(count) is not int or count < 0:
+            return None
+        total += count
+    return total
+
+
 def oos_statistics_data(state):
     """Fixed bounded statistics; daily returns never enter IPC."""
     if state.get('status') != 'completed':
@@ -68,7 +82,8 @@ def oos_statistics_data(state):
         return result
     stats = _significance.mean_positive_test(merged['returns'])
     required = _significance.required_observations(merged['returns'])
-    result.update(stats=stats, required=required, decline=_significance.oos_decline_test(state), verdict=_verdict.judge(stats, required, merged['returns'], ()))
+    verdict = _verdict.judge(stats, required, merged['returns'], (), closed_trades=_oos_closed_trades(state))
+    result.update(stats=stats, required=required, decline=_significance.oos_decline_test(state), verdict=verdict)
     if 'decline' in result:
         result['decline'] = {key: value for key, value in result['decline'].items() if not key.startswith('p_value_increase')}
     return result

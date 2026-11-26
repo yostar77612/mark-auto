@@ -42,6 +42,24 @@ coverage identity; it does not pretend that future bar contents already exist.
 `e1_plans` and `e1_captures` are separate versioned records in the same authority.
 The exact observed dataset is frozen durably before the evaluation worker starts.
 
+## Evaluation policy (m3-e1-policy-v3, backtest review 2026-11-26)
+
+- A frozen calendar has at least `minimum_observations` = 120 full-day sessions
+  (about six months), so one regime cannot carry the verdict; a shorter window
+  refuses at freeze instead of consuming dates that can never qualify.
+- `statistical_edge` needs at least 30 closed trades and all four p values
+  (Student t, i.i.d. bootstrap, Newey-West t, circular block bootstrap) below
+  0.05, then both chronological halves of the daily returns must compound above
+  1 (`regime_check`); a failing half is the high flag `half_sample_not_positive`
+  and yields `fragile_edge`.
+- Coverage rows stay keyed by the exact contract, but an E1 freeze conflicts
+  with any earlier E1 or campaign row of the same product (`holdout_scope`): every
+  TAIFEX:TMF delivery month is one market, so a window tried on one month cannot
+  be retried on another. Campaign holdouts keep their per-contract check; an E1
+  window is frozen before its first session, so they cannot inform its receipt.
+- The post-commit confirmation waits up to 2 s for a competing writer that will
+  itself refuse; every other E1 store transaction still fails fast on a lock.
+
 The initial reservation first enters `committing`. Only a post-commit timestamp
 before the first observation changes it to `reserved`; a crash/late commit cannot
 be retried. Capture exclusively claims `capturing` before the request and moves
