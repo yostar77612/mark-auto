@@ -597,6 +597,8 @@ class E1VerdictInputsTests(unittest.TestCase):
                 return qualification._evaluate(None, SPEC, None)
 
         edge = ['.012', '-.008'] * 40
+        # The version names the rule set; old frozen plans carry the old one and refuse.
+        self.assertEqual(protocol.POLICY['version'], 'm3-e1-policy-v2')
         self.assertEqual(protocol.POLICY['minimum_closed_trades'], 30)
         self.assertEqual(outcome(edge, 30)['verdict'], 'statistical_edge')
         # One long holding cannot qualify, however many daily returns it spans.

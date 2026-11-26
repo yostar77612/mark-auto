@@ -107,7 +107,10 @@ from .m6_screener import ENTRIES as _part_m6_screener
 
 from .auto_connect import ENTRIES as _part_auto_connect
 
+from .backtest_review import ENTRIES as _part_backtest_review
+
 PARTS = (
+    _part_backtest_review,
     _part_auto_connect,
     _part_m6_screener,
     _part_m5_sector,

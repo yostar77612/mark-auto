@@ -32,6 +32,8 @@ STATISTICS = (
 P_VALUES = ('p_value_t', 'p_value_bootstrap', 'p_value_t_hac', 'p_value_block_bootstrap')
 # Daily returns of one long holding are not independent evidence; an edge needs this many round trips.
 MIN_CLOSED_TRADES = 30
+# Reason text is '<prefix><count or "unknown"> < <minimum>'; presenters parse it with this prefix.
+CLOSED_TRADES_REASON = 'insufficient_closed_trades: '
 _UNCHECKED = object()
 
 
@@ -149,7 +151,7 @@ def judge(oos_test, oos_required, oos_returns, flags, *, closed_trades=_UNCHECKE
                 f'recommended_observations: {count}' if count is not None else (why if type(why) is str and why else 'required_observations_unavailable')
             )
         if few_trades:
-            reasons.append(f'insufficient_closed_trades: {closed_trades if type(closed_trades) is int else "unknown"} < {MIN_CLOSED_TRADES}')
+            reasons.append(f'{CLOSED_TRADES_REASON}{closed_trades if type(closed_trades) is int else "unknown"} < {MIN_CLOSED_TRADES}')
     elif values['mean'] < 0:
         level, reasons = NEGATIVE_EXPECTANCY, ['negative_mean']
     elif any(values[key] >= Decimal('0.05') for key in P_VALUES):

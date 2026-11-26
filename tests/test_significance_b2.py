@@ -144,6 +144,14 @@ class SignificanceTests(unittest.TestCase):
         self.assertEqual(result['block_length'], length)
         self.assertAlmostEqual(float(result['p_value_block_bootstrap']), expected, delta=1e-12)
 
+    def test_block_bootstrap_counts_ties_as_at_least_as_good(self):
+        # Every 4-day circular block of an exact +-.01 alternation sums to 0, so each resampled mean
+        # ties the observed mean 0; ties count (>=), exactly like the i.i.d. bootstrap.
+        values = [0.01, -0.01] * 30
+        result = sig.mean_positive_test(values, n_bootstrap=200)
+        self.assertEqual(result['block_length'], 4)
+        self.assertEqual(result['p_value_block_bootstrap'], Decimal('1.000000000000'))
+
     def test_held_positions_are_less_significant_under_robust_tests(self):
         # Ten-day holds: i.i.d. tests call this significant; serial correlation says otherwise.
         values = (['.012'] * 10 + ['-.008'] * 10) * 8

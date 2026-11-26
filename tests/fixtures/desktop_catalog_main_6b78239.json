@@ -3463,7 +3463,9 @@
       "screen.set_window_short": "突破新高：短期（日）",
       "screen.set_window_mid": "突破新高：中期（日）",
       "screen.set_window_long": "突破新高：長期（日）",
-      "screen.set_download_breakout": "帶量突破新高時自動下載近一年 K 線"
+      "screen.set_download_breakout": "帶量突破新高時自動下載近一年 K 線",
+      "walk_forward.verdict.insufficient.trades_explanation": "已平倉交易 {0} 筆，少於 {1} 筆，尚不足以判讀。",
+      "walk_forward.verdict.trades_unknown": "未知"
     }
   },
   "aliases": {
@@ -8255,6 +8257,8 @@
       "screen.set_window_mid": "突破新高：中期（日）",
       "screen.set_window_long": "突破新高：長期（日）",
       "screen.set_download_breakout": "帶量突破新高時自動下載近一年 K 線",
+      "walk_forward.verdict.insufficient.trades_explanation": "已平倉交易 {0} 筆，少於 {1} 筆，尚不足以判讀。",
+      "walk_forward.verdict.trades_unknown": "未知",
       "ui.research_controls.text_1": "發現舊版工作區內的預算／保留集紀錄；為避免重設已用額度，研究已封鎖。請保留原始紀錄，需另外核對遷移，不會自動重設或刪除。",
       "ui.research_controls.text_2": "不可逆研究紀錄不得放在可還原狀態資料夾內",
       "ui.campaign_generator.text_1": "模型研究僅支援官方 ChatGPT 訂閱；不提供本機模型或付費 API 備援",
@@ -13042,7 +13046,9 @@
     "screen.set_window_short",
     "screen.set_window_mid",
     "screen.set_window_long",
-    "screen.set_download_breakout"
+    "screen.set_download_breakout",
+    "walk_forward.verdict.insufficient.trades_explanation",
+    "walk_forward.verdict.trades_unknown"
   ],
   "alias_order": [
     "ui.research_controls.text_1",
