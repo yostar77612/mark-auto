@@ -131,8 +131,9 @@ def calendar_for(plan):
     value = plan['calendar']
     if type(value) is not dict or set(value) != {'version', 'sessions'} or type(value['sessions']) is not list:
         refuse()
-    # A window shorter than the verdict minimum can never qualify; freezing it would only consume the dates.
-    if not POLICY['minimum_observations'] <= len(value['sessions']) <= POLICY['max_bars']:
+    # Structure only: store paths (load, cancel, mark failed) must still read plans frozen
+    # under an older, shorter minimum. The current minimum belongs to validate_plan.
+    if not 1 <= len(value['sessions']) <= POLICY['max_bars']:
         refuse()
     calendar = SessionCalendar(value['sessions'], version=value['version'])
     # Exact contract-specific sessions avoid shadowing or inferred holidays/expiry.
@@ -179,6 +180,9 @@ def validate_plan(plan, *, workspace, registry, current_sources=True):
     if current_sources and (plan['source_digest'] != source_digest() or plan['source_digest'] != RUNTIME_SOURCE_DIGEST):
         refuse()
     calendar = calendar_for(plan)
+    # A window shorter than the verdict minimum can never qualify; freezing it would only consume the dates.
+    if len(calendar.sessions) < POLICY['minimum_observations']:
+        refuse()
     created = timestamp(plan['created_at'])
     if created >= min(row['open'] for row in calendar.sessions) or created > utc_now():
         refuse()

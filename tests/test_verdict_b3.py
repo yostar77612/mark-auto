@@ -164,6 +164,8 @@ class VerdictTests(unittest.TestCase):
         # An odd day joins the second half: [.1] then [-.1, .05] = 0.945.
         self.assertEqual(verdict.half_sample_flags(['.1', '-.1', '.05']), high)
         self.assertEqual(verdict.half_sample_flags(['.01', '-.005', '.02']), [])
+        # Pins the cut at len // 2: with (len + 1) // 2 the first half would be [-.01, .03] and pass.
+        self.assertEqual(verdict.half_sample_flags(['-.01', '.03', '.03']), high)
         for invalid in ([], ['.01'], ['bad', '.01'], ['-1.5', '.01'], 'not-a-list', None):
             self.assertEqual(verdict.half_sample_flags(invalid), [], invalid)
         returns = ['.01', '.02'] * 30
@@ -200,7 +202,7 @@ class VerdictTests(unittest.TestCase):
         # A qualifying run states the rule it actually passed: four tests and at least 30 closed trades.
         edge = oos_statistics_text(state([fold(0, 0, many_days, trades=30)]))
         self.assertIn(ui_text('walk_forward.verdict.statistical_edge.explanation'), edge.splitlines()[1])
-        self.assertIn('30', ui_text('walk_forward.verdict.statistical_edge.explanation'))
+        self.assertIn(f'{verdict.MIN_CLOSED_TRADES} 筆', ui_text('walk_forward.verdict.statistical_edge.explanation'))
         # Too few days AND too few trades: the day-count explanation stays and the trade line follows it.
         both = oos_statistics_text(state([fold(0, 0, ['.001', '.002'] * 5, trades=2)]))
         self.assertIn(ui_text('walk_forward.verdict.insufficient.explanation'), both)

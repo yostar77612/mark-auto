@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import sqlite3
+import sys
 from tempfile import TemporaryDirectory
 from threading import Event, Thread, Timer
 import unittest
@@ -259,10 +260,105 @@ class E1QualificationTests(unittest.TestCase):
             ref = self.freeze()
         self.assertEqual(self.state(ref)[1], 'reserved')
         self.assertEqual([options.get('busy_ms', 0) for options in calls], [0, 2000])
+        self.assertEqual([options.get('commit_busy_ms', 0) for options in calls], [2000, 0])
         for bad in (-1, 2001, True, '10'):
-            with self.assertRaises(DomainError):
-                with store.connection(self.registry, busy_ms=bad):
-                    pass
+            for name in ('busy_ms', 'commit_busy_ms'):
+                with self.assertRaises(DomainError):
+                    with store.connection(self.registry, **{name: bad}):
+                        pass
+
+    def test_reservation_commit_waits_out_a_competitor_reader(self):
+        # A competing freeze probing the lock briefly holds a read lock; the durable
+        # reservation commit must wait it out instead of failing, while BEGIN stays fail-fast.
+        released, started = Event(), []
+
+        def inside_reserve():
+            frame = sys._getframe()
+            while frame is not None:
+                if frame.f_code is store.reserve.__code__:
+                    return True
+                frame = frame.f_back
+            return False
+
+        def clock():
+            # reserve() first reads the clock inside its write transaction, just before COMMIT.
+            if not started and inside_reserve():
+                started.append(True)
+                held = Event()
+
+                def read():
+                    with closing(sqlite3.connect(self.registry, timeout=0)) as db:
+                        db.execute('BEGIN')
+                        db.execute('SELECT COUNT(*) FROM coverage').fetchone()
+                        held.set()
+                        released.wait(5)
+                        db.rollback()
+
+                thread = Thread(target=read)
+                thread.start()
+                self.addCleanup(thread.join, 5)
+                self.assertTrue(held.wait(5))
+                Timer(0.3, released.set).start()
+            return self.now
+
+        with store.connection(self.registry, write=True, create=True):
+            pass  # schema exists, so the competitor's read has a table to lock
+        with patch.object(protocol, 'utc_now', side_effect=clock):
+            ref = self.freeze()
+        self.assertEqual(started, [True])
+        self.assertEqual(self.state(ref)[1], 'reserved')
+
+    def test_plan_frozen_under_an_older_shorter_minimum_can_still_be_cancelled(self):
+        short, _ = fixtures(40)
+        with patch.dict(protocol.POLICY, minimum_observations=30):
+            ref = self.freeze(calendar=short)
+        # The current policy never evaluates or reads it as evidence ...
+        self.unavailable(lambda: self.host.evaluate(ref))
+        self.assertFalse(self.summaries())
+        # ... but the store still loads it, so its end can be recorded; coverage stays consumed.
+        self.assertIsNone(self.host.cancel(ref))
+        self.assertEqual(self.state(ref)[1], 'cancelled')
+        self.unavailable(lambda: self.freeze(calendar=short))
+
+    def test_product_prefix_needs_the_separator_and_matches_the_bare_product(self):
+        session = self.calendar.sessions[5]
+        for contract, blocked in (('TAIFEX:TMFX:202712', False), ('TAIFEX:TM', False), ('TAIFEX:TMF', True), ('TAIFEX:TMF:202801', True)):
+            with self.subTest(contract=contract):
+                registry = self.root / ('prefix-' + contract.replace(':', '-')) / 'holdout-registry.sqlite3'
+                with store.connection(registry, write=True, create=True) as db:
+                    db.execute('INSERT INTO reservations VALUES (?,?,?,?,?)', ('r', 'h', 'c', 's', 'd'))
+                    db.execute(
+                        'INSERT INTO coverage VALUES (?,?,?,?)',
+                        ('r', contract, protocol.coverage_time(session['open']), protocol.coverage_time(session['end'])),
+                    )
+                host = qualification.E1QualificationHost(self.workspace, registry_path=registry)
+                values = {
+                    'campaign_ref': 'synthetic-campaign',
+                    'contract_id': CONTRACT,
+                    'signal_spec_json': SPEC,
+                    'calendar': self.calendar,
+                    'config': self.config,
+                }
+                if blocked:
+                    self.unavailable(lambda: host.freeze(**values))
+                else:
+                    self.assertTrue(protocol.is_hash(host.freeze(**values)))
+
+    def test_cross_month_windows_touching_or_overlapping_by_one_session(self):
+        self.freeze()
+        last = self.calendar.sessions[-1]
+
+        def window(first_open):
+            rows = []
+            for index in range(len(self.calendar.sessions)):
+                at = first_open + timedelta(days=index)
+                rows.append({**last, 'contract_id': NEXT_MONTH, 'open': at, 'end': at + timedelta(hours=5), 'trade_date': at.date().isoformat()})
+            config = replace(self.config, instrument_expiries={NEXT_MONTH: '2028-01-19'})
+            calendar = SessionCalendar(rows, version='synthetic-e1-calendar-v1')
+            return {'campaign_ref': 'synthetic-campaign', 'contract_id': NEXT_MONTH, 'signal_spec_json': SPEC, 'calendar': calendar, 'config': config}
+
+        self.unavailable(lambda: self.host.freeze(**window(last['open'])))
+        self.assertTrue(protocol.is_hash(self.host.freeze(**window(last['open'] + timedelta(days=1)))))
 
     def test_concurrent_freeze_has_one_winner_and_no_partial_rows(self):
         def run():
@@ -611,7 +707,10 @@ class E1VerdictInputsTests(unittest.TestCase):
         self.assertEqual(protocol.POLICY['regime_check'], 'both_chronological_halves_compound_positive')
         regime = ['.0005', '-.0007'] * 60 + ['.012', '-.008'] * 60
         self.assertEqual(outcome(regime, 120)['verdict'], 'fragile_edge')
+        # ... nor can a strong first half hide a losing second half.
+        self.assertEqual(outcome(['.012', '-.008'] * 60 + ['.0005', '-.0007'] * 60, 120)['verdict'], 'fragile_edge')
         self.assertEqual(outcome(['.012', '-.008'] * 120, 120)['verdict'], 'statistical_edge')
+        self.assertEqual(protocol.POLICY['holdout_scope'], 'product_all_delivery_months')
 
 
 if __name__ == '__main__':

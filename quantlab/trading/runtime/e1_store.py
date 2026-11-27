@@ -51,14 +51,21 @@ def validate_schema(db):
 
 
 @contextmanager
-def connection(registry, *, write=False, create=False, busy_ms=0):
-    """Fail fast on a held lock unless the caller names a bounded wait (``busy_ms``)."""
+def connection(registry, *, write=False, create=False, busy_ms=0, commit_busy_ms=0):
+    """Fail fast on a held lock unless the caller names a bounded wait.
+
+    ``busy_ms`` applies to the whole transaction. ``commit_busy_ms`` applies only to
+    the final COMMIT, which needs every reader gone. A competitor that is merely
+    probing the lock briefly holds one, and must not fail a transaction that already
+    owns the write lock.
+    """
     if not create and not registry.is_file():
         refuse()
     if create:
         registry.parent.mkdir(parents=True, exist_ok=True)
-    if type(busy_ms) is not int or not 0 <= busy_ms <= 2000:
-        refuse()
+    for wait in (busy_ms, commit_busy_ms):
+        if type(wait) is not int or not 0 <= wait <= 2000:
+            refuse()
     mode = 'rwc' if create else 'rw' if write else 'ro'
     with closing(sqlite3.connect(sqlite_uri(registry) + '?mode=' + mode, uri=True, timeout=0)) as db:
         db.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, 2_000_000)
@@ -76,6 +83,8 @@ def connection(registry, *, write=False, create=False, busy_ms=0):
             validate_schema(db)
             yield db
             if write:
+                if commit_busy_ms:
+                    db.execute('PRAGMA busy_timeout=' + str(commit_busy_ms))
                 db.commit()
         finally:
             if db.in_transaction:
@@ -106,7 +115,8 @@ def reserve(registry, workspace, plan):
     reference = content_hash(plan)
     values, coverage = reservation_values(reference, plan)
     contract, start, end = coverage
-    with connection(registry, write=True, create=True) as db:
+    # BEGIN still fails fast for a competing freeze; only this durable commit may wait for its probe to end.
+    with connection(registry, write=True, create=True, commit_busy_ms=2000) as db:
         product = coverage_product(contract)
         if db.execute(_PRODUCT_OVERLAP_SQL, (product, len(product) + 1, product + ':', end, start)).fetchone():
             refuse()
