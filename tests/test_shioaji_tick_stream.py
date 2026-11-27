@@ -42,6 +42,15 @@ class TickStreamTests(unittest.TestCase):
         self.assertEqual(tick.price, D('101'))  # the trial match left no trace in the queue or in the loss accounting
         self.assertEqual(gateway.drain_tick_losses(), ())
 
+    def test_trial_match_ticks_at_a_full_queue_are_not_counted_as_lost(self):
+        gateway, sdk, _, _ = tick_gateway(market_settings=LiveMarketSettings(queue_limit=1))
+        gateway.subscribe(('WATCH:0',))
+        sdk.emit(simtrade=False)  # a real trade fills the one-slot queue
+        for _ in range(6):
+            sdk.emit(simtrade=True, volume=40000)
+        self.assertEqual(gateway.drain_tick_losses(), ())  # a trial match is not a lost trade
+        self.assertEqual(len(gateway.drain_ticks(9)), 1)
+
     def test_normalisation_rejects_invalid_sdk_input_without_guessing(self):
         from quantlab.trading.adapters.shioaji.tick_stream import normalise_tick
 
