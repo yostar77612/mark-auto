@@ -57,8 +57,20 @@ The exact observed dataset is frozen durably before the evaluation worker starts
   TAIFEX:TMF delivery month is one market, so a window tried on one month cannot
   be retried on another. Campaign holdouts keep their per-contract check; an E1
   window is frozen before its first session, so they cannot inform its receipt.
-- The post-commit confirmation waits up to 2 s for a competing writer that will
-  itself refuse; every other E1 store transaction still fails fast on a lock.
+- Lock waits are bounded and explicit (`connection(busy_ms=, commit_busy_ms=)`, each
+  0..2000 ms, default 0). Only two places wait, both inside `reserve()`: the first
+  transaction waits up to 2 s at COMMIT (never at BEGIN) for a competitor that
+  merely probes the lock, and the post-commit confirmation waits up to 2 s for a
+  competing writer that will itself refuse. If a reader holds the lock past 2 s
+  the freeze fails closed with nothing durable (the transaction rolls back and the
+  window is still free); every other E1 store transaction, and every BEGIN, still
+  fails fast on a lock.
+- The 120-session minimum is enforced where a plan becomes live (`validate_plan`,
+  used by freeze, capture, evaluate and the reader), not in the structural
+  `calendar_for`. A plan frozen under an older, shorter minimum therefore stays
+  loadable so it can be cancelled or marked failed, but it can never be captured,
+  evaluated or read as evidence (its policy and source digest differ). Its coverage
+  stays consumed.
 
 The initial reservation first enters `committing`. Only a post-commit timestamp
 before the first observation changes it to `reserved`; a crash/late commit cannot

@@ -12,12 +12,13 @@ import json
 from pathlib import Path
 import sqlite3
 import sys
+import time
 from tempfile import TemporaryDirectory
 from threading import Event, Thread, Timer
 import unittest
 from unittest.mock import patch
 
-from quantlab.core import canonical_json, content_hash, Dataset
+from quantlab.core import canonical_json, content_hash, Dataset, to_dict
 from quantlab.data import SessionCalendar
 from quantlab.reporting import demo_config, synthetic_dataset
 from quantlab.research import _reserve_holdout
@@ -267,9 +268,8 @@ class E1QualificationTests(unittest.TestCase):
                     with store.connection(self.registry, **{name: bad}):
                         pass
 
-    def test_reservation_commit_waits_out_a_competitor_reader(self):
-        # A competing freeze probing the lock briefly holds a read lock; the durable
-        # reservation commit must wait it out instead of failing, while BEGIN stays fail-fast.
+    def reader_during_reserve(self, hold_seconds):
+        """Patch the clock so a competing reader holds the lock from inside reserve() until just before COMMIT."""
         released, started = Event(), []
 
         def inside_reserve():
@@ -291,34 +291,114 @@ class E1QualificationTests(unittest.TestCase):
                         db.execute('BEGIN')
                         db.execute('SELECT COUNT(*) FROM coverage').fetchone()
                         held.set()
-                        released.wait(5)
+                        released.wait(10)
                         db.rollback()
 
                 thread = Thread(target=read)
                 thread.start()
-                self.addCleanup(thread.join, 5)
+                self.addCleanup(thread.join, 10)
                 self.assertTrue(held.wait(5))
-                Timer(0.3, released.set).start()
+                timer = Timer(hold_seconds, released.set)
+                timer.start()
+                self.addCleanup(timer.cancel)
+                self.addCleanup(released.set)
             return self.now
 
         with store.connection(self.registry, write=True, create=True):
             pass  # schema exists, so the competitor's read has a table to lock
-        with patch.object(protocol, 'utc_now', side_effect=clock):
+        return patch.object(protocol, 'utc_now', side_effect=clock), started
+
+    def test_reservation_commit_waits_out_a_competitor_reader(self):
+        # A competing freeze probing the lock briefly holds a read lock; the durable
+        # reservation commit must wait it out instead of failing.
+        reader, started = self.reader_during_reserve(0.3)
+        with reader:
             ref = self.freeze()
         self.assertEqual(started, [True])
         self.assertEqual(self.state(ref)[1], 'reserved')
+
+    def test_reader_held_past_the_commit_wait_fails_closed_and_leaves_nothing_durable(self):
+        reader, started = self.reader_during_reserve(2.6)  # longer than the 2 s commit wait
+        with reader:
+            self.unavailable(self.freeze)
+        self.assertEqual(started, [True])
+        with database(self.registry) as db:
+            for table in ('reservations', 'coverage', 'e1_plans'):
+                self.assertEqual(db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0], 0, table)
+        # Nothing was consumed, so the same window can still be frozen once the lock is free.
+        self.assertTrue(protocol.is_hash(self.freeze()))
+
+    def test_begin_stays_fail_fast_while_another_writer_holds_the_lock(self):
+        with store.connection(self.registry, write=True, create=True):
+            pass
+        held, release = Event(), Event()
+
+        def hold():
+            with store.connection(self.registry, write=True):
+                held.set()
+                release.wait(10)
+
+        thread = Thread(target=hold)
+        thread.start()
+        self.addCleanup(thread.join, 10)
+        self.addCleanup(release.set)
+        self.assertTrue(held.wait(5))
+        started = time.monotonic()
+        self.unavailable(self.freeze)
+        self.assertLess(time.monotonic() - started, 1.0)  # the 2 s commit wait never applies to BEGIN
 
     def test_plan_frozen_under_an_older_shorter_minimum_can_still_be_cancelled(self):
         short, _ = fixtures(40)
         with patch.dict(protocol.POLICY, minimum_observations=30):
             ref = self.freeze(calendar=short)
-        # The current policy never evaluates or reads it as evidence ...
+        # Every session is over, so only the policy/minimum/digest guards can refuse these, not the clock.
+        self.now = AFTER
+        self.unavailable(lambda: self.host.capture(ref, network_authorized=True))
+        self.fetch.assert_not_called()
         self.unavailable(lambda: self.host.evaluate(ref))
+        self.assertEqual(self.state(ref)[1], 'reserved')  # refused before any claim, so no state change
         self.assertFalse(self.summaries())
         # ... but the store still loads it, so its end can be recorded; coverage stays consumed.
         self.assertIsNone(self.host.cancel(ref))
         self.assertEqual(self.state(ref)[1], 'cancelled')
+        self.now = BEFORE
         self.unavailable(lambda: self.freeze(calendar=short))
+
+    def test_plan_frozen_by_an_older_source_version_cannot_be_captured_or_evaluated(self):
+        with patch.object(protocol, 'source_digest', return_value='a' * 64), patch.object(protocol, 'RUNTIME_SOURCE_DIGEST', 'a' * 64):
+            ref = self.freeze()
+        self.now = AFTER
+        self.unavailable(lambda: self.host.capture(ref, network_authorized=True))
+        self.fetch.assert_not_called()
+        self.unavailable(lambda: self.host.evaluate(ref))
+        self.assertEqual(self.state(ref)[1], 'reserved')
+        self.assertIsNone(self.host.cancel(ref))  # the current source can still end it
+
+    def test_validate_plan_refuses_a_foreign_policy_and_a_short_window(self):
+        plan = protocol.make_plan(
+            workspace=self.workspace,
+            registry=self.registry,
+            campaign_ref='synthetic-campaign',
+            contract_id=CONTRACT,
+            signal_spec_json=SPEC,
+            calendar=self.calendar,
+            config=self.config,
+            evidence_mode='production',
+        )
+
+        def check(value):
+            return protocol.validate_plan(value, workspace=self.workspace, registry=self.registry)
+
+        check(plan)
+        self.unavailable(lambda: check({**plan, 'policy': {**plan['policy'], 'minimum_closed_trades': 1}}))
+        sessions = plan['calendar']['sessions']
+        self.unavailable(lambda: check({**plan, 'calendar': {**plan['calendar'], 'sessions': sessions[:119]}}))
+
+    def test_calendar_structure_accepts_one_session_and_refuses_none(self):
+        rows = [to_dict(row) for row in self.calendar.sessions]
+        one = {'contract_id': CONTRACT, 'calendar': {'version': 'v', 'sessions': rows[:1]}}
+        self.assertEqual(len(protocol.calendar_for(one).sessions), 1)  # structural only; the minimum is validate_plan's
+        self.unavailable(lambda: protocol.calendar_for({**one, 'calendar': {'version': 'v', 'sessions': []}}))
 
     def test_product_prefix_needs_the_separator_and_matches_the_bare_product(self):
         session = self.calendar.sessions[5]
@@ -344,7 +424,7 @@ class E1QualificationTests(unittest.TestCase):
                 else:
                     self.assertTrue(protocol.is_hash(host.freeze(**values)))
 
-    def test_cross_month_windows_touching_or_overlapping_by_one_session(self):
+    def test_cross_month_windows_overlapping_by_one_session_conflict_and_the_next_day_does_not(self):
         self.freeze()
         last = self.calendar.sessions[-1]
 
