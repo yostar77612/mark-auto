@@ -223,6 +223,66 @@ class KlineStoreTests(unittest.TestCase):
         self.store.upsert((minute(),), source='LIVE_TICKS')
         self.assertEqual(self.store.missing_ranges('TWSE:2330', START, START + timedelta(minutes=1)), ((START, START + timedelta(minutes=1)),))
 
+    @staticmethod
+    def sdk_minutes(instrument_id, opening, day, count, seed):
+        """`count` minutes from `opening` in one trade date, priced as the SDK's float text ('2012.25', '2035.0')."""
+        bars = []
+        for index in range(count):
+            start = opening + timedelta(minutes=index * 3)
+            base = round(2000 + (index * 37 + seed) % 101 * 0.25, 2)
+            first, last = base, round(base + (index % 7 - 3) * 0.5, 2)
+            prices = [Decimal(repr(value)) for value in (first, max(first, last) + (index % 3), min(first, last) - (index % 4) * 0.25, last)]
+            session = 'NIGHT' if start.astimezone(timezone(timedelta(hours=8))).hour >= 15 else 'DAY'
+            bars.append(LiveBar(instrument_id, start, start + timedelta(minutes=1), day, session, *prices, 1 + index % 9, final=True))
+        return tuple(bars)
+
+    def test_read_daily_equals_aggregating_the_stored_minutes_of_each_trade_date(self):
+        from quantlab.trading.domain.live_bars import aggregate_bars
+
+        night = datetime(2026, 11, 18, 7, tzinfo=timezone.utc)  # 15:00 in Taipei: the night session of the 19th opens
+        stored = (
+            *self.sdk_minutes('TAIFEX:TXFR1', night, date(2026, 11, 19), 400, 1),
+            *self.sdk_minutes('TAIFEX:TXFR1', night + timedelta(days=1), date(2026, 11, 20), 400, 5),
+            *self.sdk_minutes('TWSE:2330', night, date(2026, 11, 19), 50, 9),
+        )
+        self.store.upsert(stored)
+        start, end = night + timedelta(minutes=30), night + timedelta(days=1, minutes=600)
+        daily = self.store.read_daily('TAIFEX:TXFR1', start, end)
+        minutes = self.store.read('TAIFEX:TXFR1', start, end)
+        groups = {}
+        for bar in minutes:
+            groups.setdefault(bar.trade_date, []).append(bar)
+        expected = tuple(aggregate_bars(tuple(members), '1d', now=end, trade_date_closed=True)[0] for members in groups.values())
+        self.assertEqual(len(daily), 2)
+        self.assertEqual(daily, expected)
+        # The SDK's float text comes back as the very same text, so a chart shows the stored digits.
+        self.assertEqual(
+            [tuple(map(str, (bar.open, bar.high, bar.low, bar.close))) for bar in daily],
+            [tuple(map(str, (bar.open, bar.high, bar.low, bar.close))) for bar in expected],
+        )
+        self.assertEqual({bar.session for bar in daily}, {'ALL'})
+        self.assertEqual(self.store.read_daily('TWSE:2317', start, end), ())
+
+    def test_read_daily_compares_extremes_as_numbers_not_text(self):
+        def at(offset, opening, high, low, closing):
+            start = START + timedelta(minutes=offset)
+            return LiveBar(
+                'TWSE:2330', start, start + timedelta(minutes=1), date(2026, 10, 30), 'DAY', *map(Decimal, (opening, high, low, closing)), 1, final=True
+            )
+
+        # As text '99.9' > '100.5' and '9.5' > '10.0'; as numbers the high is 100.5 and the low 9.5.
+        self.store.upsert((at(0, '99.5', '99.5', '99.0', '99.5'), at(1, '100.0', '100.5', '9.5', '100.0'), at(2, '99.0', '99.9', '10.0', '99.0')))
+        (day,) = self.store.read_daily('TWSE:2330', START, START + timedelta(minutes=3))
+        self.assertEqual((day.open, day.high, day.low, day.close, day.volume), (Decimal('99.5'), Decimal('100.5'), Decimal('9.5'), Decimal('99.0'), 3))
+        self.assertEqual((day.start, day.end), (START, START + timedelta(minutes=3)))
+
+    def test_read_daily_keeps_a_price_finer_than_a_double_ordered(self):
+        self.store.upsert((minute(0), minute(1, '10.123456789123456781')))
+        (day,) = self.store.read_daily('TWSE:2330', START, START + timedelta(minutes=2))
+        self.assertEqual((day.open, day.close, day.volume), (Decimal('10.123456789123456789'), Decimal('10.123456789123456781'), 24))
+        self.assertTrue(day.low <= min(day.open, day.close) <= max(day.open, day.close) <= day.high)
+        self.assertLess(day.high - day.low, Decimal('1e-14'))
+
 
 def _corrupt_middle(path):
     """Overwrite 2,000 bytes in the middle of the file: quick_check fails, the schema still reads."""

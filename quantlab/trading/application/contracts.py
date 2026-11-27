@@ -89,7 +89,7 @@ class MarketSeriesQuery:
         identity(self.instrument_id)
         if type(self.retry_history) is not bool:
             raise DomainError('validation_failed', 'history retry flag')
-        if self.period not in ('1m', '3m', '5m', '15m', '30m', '60m', '1d'):
+        if self.period not in ('1m', '3m', '5m', '15m', '30m', '60m', '1d', '1w'):
             raise DomainError('validation_failed', 'market series period')
         integer(self.offset, 'series offset')
         integer(self.limit, 'series limit', 1)

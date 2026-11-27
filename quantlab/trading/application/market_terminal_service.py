@@ -24,6 +24,24 @@ logger = logging.getLogger(__name__)
 
 _TAIPEI = ZoneInfo('Asia/Taipei')
 TAPE_LIMIT = 200
+# Daily and weekly charts show every stored trade date this far back; minute charts keep the history lookback.
+DAY_CHART_LOOKBACK_DAYS = 3660
+# The summed days kept for the most recently charted instruments (about a thousand small bars each).
+_DAY_CACHE_INSTRUMENTS = 4
+
+
+def _week_bars(days: tuple[LiveBar, ...], now: datetime) -> tuple[LiveBar, ...]:
+    """Daily bars as Monday-to-Sunday weeks; a week is closed once the next week has begun, or on its own weekend."""
+    local = now.astimezone(_TAIPEI)
+    this_week = local.date() - timedelta(days=local.weekday())
+    weeks: dict[date, list[LiveBar]] = {}
+    for bar in days:
+        weeks.setdefault(bar.trade_date - timedelta(days=bar.trade_date.weekday()), []).append(bar)
+    return tuple(
+        result
+        for monday, members in weeks.items()
+        for result in aggregate_bars(tuple(members), '1w', now=now, trade_date_closed=monday < this_week or monday == this_week and local.weekday() >= 5)
+    )
 
 
 @dataclass(frozen=True)
@@ -77,6 +95,7 @@ class MarketTerminalService:
         self._revision = 0
         self._pages: dict[tuple[str, str], tuple[int, tuple[LiveBar, ...]]] = {}
         self._view_bars: dict[str, tuple[int, tuple[LiveBar, ...]]] = {}
+        self._days: dict[str, tuple[int, datetime, tuple[LiveBar, ...]]] = {}
         self.on_tick: Callable[[Tick, tuple[LiveBar, ...]], None] = lambda tick, bars: None
         self.on_bars: Callable[[str, tuple[LiveBar, ...], datetime, date], None] = lambda key, bars, now, day: None
 
@@ -335,28 +354,20 @@ class MarketTerminalService:
                 revision, bars = cached
             else:
                 now = self.now()
-                start = now - timedelta(days=self.history.settings.daily_lookback_days)
-                persisted = self.store.read_cached(query.instrument_id, start, now)
                 current = self._minutes.get(query.instrument_id)
-                merged = {bar.start: bar for bar in persisted}
-                if current is not None and not current.bar.final and current.bar.start not in merged:
-                    merged[current.bar.start] = current.bar
-                bars = tuple(sorted(merged.values(), key=lambda bar: bar.start))
-                if query.period != '1m':
-                    if query.period == '1d':
-                        groups: dict[object, list[LiveBar]] = {}
-                        for bar in bars:
-                            groups.setdefault(bar.trade_date, []).append(bar)
-                        local = now.astimezone(_TAIPEI)
-                        close = DAY_CLOSE if item.kind is WatchKind.FUTURE else time(13, 30)
-                        bars = tuple(
-                            result
-                            for day, members in groups.items()
-                            for result in aggregate_bars(
-                                tuple(members), '1d', now=now, trade_date_closed=day < local.date() or day == local.date() and local.time() >= close
-                            )
-                        )
-                    else:
+                forming = current.bar if current is not None and not current.bar.final else None
+                if query.period in ('1d', '1w'):
+                    bars = self._day_bars(item, now, forming)
+                    if query.period == '1w':
+                        bars = _week_bars(bars, now)
+                else:
+                    start = now - timedelta(days=self.history.settings.daily_lookback_days)
+                    persisted = self.store.read_cached(query.instrument_id, start, now)
+                    merged = {bar.start: bar for bar in persisted}
+                    if forming is not None and forming.start not in merged:
+                        merged[forming.start] = forming
+                    bars = tuple(sorted(merged.values(), key=lambda bar: bar.start))
+                    if query.period != '1m':
                         bars = aggregate_bars(bars, query.period, now=now)
                 revision = self.market_revision
                 self._pages[key] = revision, bars
@@ -371,6 +382,63 @@ class MarketTerminalService:
                 next_offset=stop if stop < len(bars) else None,
                 market_revision=revision,
             )
+
+    def _day_bars(self, item: WatchInstrument, now: datetime, forming: LiveBar | None) -> tuple[LiveBar, ...]:
+        """Every stored trade date of the chart window as one bar, the forming minute folded into its trade date.
+
+        A trade date is final once it has closed. The stored days are summed again only after the store changed or
+        when a stored minute starts after the end of the previous read (the window ends at now); the start of the
+        window is ten years back, so its drift between reads does not matter.
+        """
+        revision = self.store.revision
+        cached = self._days.pop(item.instrument_id, None)
+        last = self.store.last_bar(item.instrument_id) if cached is not None and cached[0] == revision else None
+        if cached is None or cached[0] != revision or last is not None and last.start >= cached[1]:
+            cached = revision, now, self.store.read_daily(item.instrument_id, now - timedelta(days=DAY_CHART_LOOKBACK_DAYS), now)
+        if len(self._days) >= _DAY_CACHE_INSTRUMENTS:
+            del self._days[next(iter(self._days))]
+        self._days[item.instrument_id] = cached
+        days = cached[2] if forming is None else self._with_forming(item.instrument_id, cached[2], forming)
+        groups: dict[date, list[LiveBar]] = {}
+        for bar in days:
+            groups.setdefault(bar.trade_date, []).append(bar)
+        local = now.astimezone(_TAIPEI)
+        close = DAY_CLOSE if item.kind is WatchKind.FUTURE else time(13, 30)
+        return tuple(
+            result
+            for day, members in groups.items()
+            for result in aggregate_bars(tuple(members), '1d', now=now, trade_date_closed=day < local.date() or day == local.date() and local.time() >= close)
+        )
+
+    def _with_forming(self, instrument_id: str, days: tuple[LiveBar, ...], forming: LiveBar) -> tuple[LiveBar, ...]:
+        """The stored days with the forming minute counted in its trade date, as aggregating its minutes would.
+
+        A minute already stored under the same start is not counted twice. The forming minute gives the day its open
+        only before the first stored minute and its close only after the last (a stale one may lie in between).
+        """
+        for index in range(len(days) - 1, -1, -1):
+            day = days[index]
+            if day.trade_date < forming.trade_date:
+                break
+            if day.trade_date != forming.trade_date:
+                continue
+            if day.start <= forming.start < day.end and self.store.read(instrument_id, forming.start, forming.end):
+                return days
+            first, last = forming.start < day.start, forming.start >= day.end
+            folded = replace(
+                day,
+                start=forming.start if first else day.start,
+                end=forming.end if last else day.end,
+                open=forming.open if first else day.open,
+                high=max(day.high, forming.high),
+                low=min(day.low, forming.low),
+                close=forming.close if last else day.close,
+                volume=day.volume + forming.volume,
+                final=False,
+                incomplete=day.incomplete or forming.incomplete,
+            )
+            return (*days[:index], folded, *days[index + 1 :])
+        return tuple(sorted((*days, forming), key=lambda bar: bar.start))
 
     def views(self) -> tuple[MarketWatchView, ...]:
         with self.lock:

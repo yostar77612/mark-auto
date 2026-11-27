@@ -582,6 +582,15 @@ class BoardWidgetTests(unittest.TestCase):
         self.assertIn('領頭羊', widget.members.item(0, 0).toolTip())
         self.assertFalse(widget.members_hint.isVisibleTo(widget))
 
+    def test_detail_chart_offers_the_weekly_period_after_the_daily_one(self):
+        widget, _ = self.make()
+        self.assertEqual(tuple(widget.period_buttons), ('1m', '5m', '15m', '1d', '1w'))
+        weekly = widget.period_buttons['1w']
+        self.assertEqual((weekly.text(), weekly.objectName(), weekly.accessibleName()), ('週K', 'sector_period_1w', '週K'))
+        widget.select_period('1w')
+        self.assertEqual(widget.period, '1w')
+        self.assertEqual([name for name, item in widget.period_buttons.items() if item.isChecked()], ['1w'])
+
     def test_status_text_for_offline_stale_and_closed_and_empty_tables(self):
         widget, service = self.make()
         widget.render_board(SectorBoardView('OFFLINE'))

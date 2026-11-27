@@ -20,7 +20,13 @@ from quantlab.trading.application.sector_contracts import SectorGroupsCommand, S
 _TAIPEI = ZoneInfo('Asia/Taipei')
 REFRESH_MS = 2000
 FILTERS = (('all', 'sector.filter_all'), ('INDUSTRY', 'sector.filter_industry'), ('CONCEPT', 'sector.filter_concept'))
-PERIODS = (('1m', 'terminal.period_1m'), ('5m', 'terminal.period_5m'), ('15m', 'terminal.period_15m'), ('1d', 'terminal.period_1d'))
+PERIODS = (
+    ('1m', 'terminal.period_1m'),
+    ('5m', 'terminal.period_5m'),
+    ('15m', 'terminal.period_15m'),
+    ('1d', 'terminal.period_1d'),
+    ('1w', 'terminal.period_1w'),
+)
 RANK_COLUMNS = ('group', 'kind', 'pct', 'breadth', 'limit_up', 'amount', 'share', 'share_vs', 'count')
 MEMBER_COLUMNS = ('code', 'name', 'price', 'change', 'ratio', 'amount', 'side')
 

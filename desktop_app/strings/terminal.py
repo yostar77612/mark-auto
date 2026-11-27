@@ -49,4 +49,6 @@ ENTRIES = (
     (56, 2677, 'terminal.search_icon', '搜尋商品'),
     (56, 2678, 'terminal.state_dot', '●'),
     (56, 2679, 'terminal.cache_rebuilt', '本機 K 線庫已重建，原檔已保留；歷史 K 線會自動重新下載'),
+    # Weekly chart period (2026-11-26), appended to the latest lane.
+    (78, 3465, 'terminal.period_1w', '週K'),
 )

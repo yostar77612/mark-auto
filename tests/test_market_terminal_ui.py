@@ -189,14 +189,20 @@ class TerminalTests(unittest.TestCase):
             QTest.qWait(5)
         self.assertTrue(predicate())
 
-    def test_search_keyboard_switches_without_adding_and_four_periods(self):
+    def test_search_keyboard_switches_without_adding_and_five_periods(self):
         for query, key in (('2330', STOCK.instrument_id), ('台積', STOCK.instrument_id), ('ix0001', FIXED_INDICES[0].instrument_id)):
             self.widget.search.input.setText(query)
             self.widget.search.search()
             QTest.keyClick(self.widget.search.input, Qt.Key.Key_Return)
             self.wait_for(lambda: self.widget.current_instrument == key and not self.widget._requests)
             self.assertEqual(self.facade.state.watchlist, ())
-        self.assertEqual(tuple(self.widget.period_buttons), ('1m', '5m', '15m', '1d'))
+        self.assertEqual(tuple(self.widget.period_buttons), ('1m', '5m', '15m', '1d', '1w'))
+        self.assertEqual(self.widget.period_buttons['1w'].text(), '週K')
+        self.widget.period_buttons['1w'].click()
+        self.wait_for(lambda: self.widget.period == '1w' and not self.widget._requests)
+        self.assertEqual(self.facade.selections[-1], (FIXED_INDICES[0].instrument_id, '1w'))
+        self.assertIn((FIXED_INDICES[0].instrument_id, '1w'), {(query.instrument_id, query.period) for query in self.facade.queries})
+        self.assertTrue(self.widget.period_buttons['1w'].isChecked())
         self.widget.select_period('15m')
         self.wait_for(lambda: self.widget.period == '15m' and not self.widget._requests)
         self.widget.select_instrument(STOCK.instrument_id)
