@@ -95,6 +95,10 @@ class ShioajiTickStream:
         try:
             if not self.connected():
                 return
+            # A trial match (試撮: stocks 08:30-09:00, futures before each session) is a snapshot of the simulated
+            # opening price with its cumulative simulated volume, not a trade: it must not reach quotes, tape or bars.
+            if getattr(raw, 'simtrade', False) is True:
+                return
             instrument_id = self.by_code[sdk_text(sdk_value(raw, 'code'))]
             with self._lock:
                 if instrument_id not in self._active:
