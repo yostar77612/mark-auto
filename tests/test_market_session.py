@@ -232,6 +232,20 @@ class MarketSessionTests(unittest.TestCase):
         self.assertFalse(self.session.connected)
         self.assertEqual((), self.session.drain_ticks(10))
 
+    def test_trial_match_tick_leaves_no_tick_and_no_quote_details(self):
+        self.session.connect()
+        self.session.subscribe(STOCK)
+        trial = SimpleNamespace(
+            code='2330', datetime=datetime(2026, 10, 30, 8, 40, 20), close=101, volume=40000, open=101, high=102, low=100, total_volume=40000, simtrade=True
+        )
+        self.api.callbacks['stock'](trial)
+        self.assertEqual((), self.session.drain_ticks(10))
+        self.assertFalse({'open', 'high', 'low', 'total_volume'} & set(self.session.quote_details(STOCK.instrument_id)))
+        real = SimpleNamespace(**{**vars(trial), 'datetime': datetime(2026, 10, 30, 9, 0, 20), 'volume': 3, 'total_volume': 3, 'simtrade': False})
+        self.api.callbacks['stock'](real)
+        self.assertEqual(1, len(self.session.drain_ticks(10)))
+        self.assertEqual(3, self.session.quote_details(STOCK.instrument_id)['total_volume'])
+
     def test_reconnect_logs_out_before_new_client_and_subscriptions_deduplicate(self):
         self.session.connect()
         self.session.subscribe(STOCK)
